@@ -5,7 +5,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | Step | Title | Status | Date | Commit |
 |---|---|---|---|---|
 | S00 | Project bootstrap | done | 2026-11-06 | afbfc52 |
-| S01 | Modular skeleton | done | 2026-11-06 | |
+| S01 | Modular skeleton | done | 2026-11-06 | e14060a |
 | S02 | Front-end foundation (TALL + TallStackUI) | todo | | |
 | S03 | Filament admin panel | todo | | |
 | S04 | Roles and permissions | todo | | |
