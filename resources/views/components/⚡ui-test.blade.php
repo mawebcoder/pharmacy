@@ -27,9 +27,11 @@ new #[Layout('layouts::app')] #[Title('تست رابط کاربری')] class ext
 
     public function saveDates(): void
     {
+        $today = now(config('app.display_timezone'))->toDateString();
+
         $this->validate([
-            'deliveryDate' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
-            'birthDate' => ['nullable', 'date_format:Y-m-d', 'before:today'],
+            'deliveryDate' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.$today],
+            'birthDate' => ['nullable', 'date_format:Y-m-d', 'before:'.$today],
         ], attributes: [
             'deliveryDate' => 'تاریخ تحویل',
             'birthDate' => 'تاریخ تولد',

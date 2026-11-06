@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
 
     /*
@@ -78,7 +80,23 @@ return [
     |
     */
 
-    'timezone' => env('APP_TIMEZONE', 'Asia/Tehran'),
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Display and Schedule Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Timestamps are stored in UTC (the timezone above) and converted to this
+    | timezone, as Jalali dates, wherever people see them: the storefront via
+    | Carbon's toJalali() and the admin panel via FilamentTimezone. Scheduled
+    | tasks run on the same local clock (e.g. dailyAt('02:00') is 02:00 Tehran).
+    |
+    */
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Tehran'),
+
+    'schedule_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Tehran'),
 
     /*
     |--------------------------------------------------------------------------

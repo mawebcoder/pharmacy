@@ -3,6 +3,7 @@
 FROM mysql:8.4
 
 COPY conf.d/my.cnf /etc/mysql/conf.d/zz-app.cnf
+COPY --chmod=755 initdb/ /docker-entrypoint-initdb.d/
 
 EXPOSE 3306
 

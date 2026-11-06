@@ -1,70 +1,53 @@
 <?php
 
-namespace Tests\Feature;
+declare(strict_types=1);
 
 use App\Models\User;
 use Database\Seeders\SuperAdminSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use RuntimeException;
-use Tests\TestCase;
 
-class SuperAdminSeederTest extends TestCase
-{
-    use RefreshDatabase;
+beforeEach(function (): void {
+    config(['auth.superadmin' => [
+        'name' => 'مدیر ارشد',
+        'email' => 'owner@pharmacy.test',
+        'password' => 'a-strong-secret',
+    ]]);
+});
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+it('creates the super admin from the auth config', function (): void {
+    $this->seed(SuperAdminSeeder::class);
 
-        config(['auth.superadmin' => [
-            'name' => 'مدیر ارشد',
-            'email' => 'owner@pharmacy.test',
-            'password' => 'a-strong-secret',
-        ]]);
-    }
+    $user = User::firstWhere('email', 'owner@pharmacy.test');
 
-    public function test_it_creates_the_super_admin_from_the_auth_config(): void
-    {
-        $this->seed(SuperAdminSeeder::class);
+    expect($user->name)->toBe('مدیر ارشد')
+        ->and($user->is_admin)->toBeTrue()
+        ->and(Hash::check('a-strong-secret', $user->password))->toBeTrue()
+        ->and($user->email_verified_at)->not->toBeNull();
+});
 
-        $user = User::firstWhere('email', 'owner@pharmacy.test');
+it('keeps a changed password and restores admin access when run again', function (): void {
+    $this->seed(SuperAdminSeeder::class);
+    User::firstWhere('email', 'owner@pharmacy.test')->forceFill(['password' => 'changed-later', 'is_admin' => false])->save();
 
-        $this->assertSame('مدیر ارشد', $user->name);
-        $this->assertTrue($user->is_admin);
-        $this->assertTrue(Hash::check('a-strong-secret', $user->password));
-        $this->assertNotNull($user->email_verified_at);
-    }
+    $this->seed(SuperAdminSeeder::class);
 
-    public function test_running_it_again_keeps_the_changed_password_and_restores_admin_access(): void
-    {
-        $this->seed(SuperAdminSeeder::class);
-        User::firstWhere('email', 'owner@pharmacy.test')->forceFill(['password' => 'changed-later', 'is_admin' => false])->save();
+    $user = User::firstWhere('email', 'owner@pharmacy.test');
+    expect(User::count())->toBe(1)
+        ->and($user->is_admin)->toBeTrue()
+        ->and(Hash::check('changed-later', $user->password))->toBeTrue();
+});
 
-        $this->seed(SuperAdminSeeder::class);
+it('refuses the default password in production', function (): void {
+    config(['auth.superadmin.password' => 'password']);
+    $this->app['env'] = 'production';
 
-        $user = User::firstWhere('email', 'owner@pharmacy.test');
-        $this->assertSame(1, User::count());
-        $this->assertTrue($user->is_admin);
-        $this->assertTrue(Hash::check('changed-later', $user->password));
-    }
+    // Called directly: db:seed skips silently in production unless --force is given.
+    $this->app->make(SuperAdminSeeder::class)->run();
+})->throws(RuntimeException::class, 'SUPERADMIN_PASSWORD');
 
-    public function test_the_default_password_is_refused_in_production(): void
-    {
-        config(['auth.superadmin.password' => 'password']);
-        $this->app['env'] = 'production';
+it('has a default email and password in the config', function (): void {
+    $this->refreshApplication();
 
-        $this->expectException(RuntimeException::class);
-
-        // Called directly: db:seed skips silently in production unless --force is given.
-        $this->app->make(SuperAdminSeeder::class)->run();
-    }
-
-    public function test_the_default_config_has_an_email_and_password(): void
-    {
-        $this->refreshApplication();
-
-        $this->assertNotEmpty(config('auth.superadmin.email'));
-        $this->assertNotEmpty(config('auth.superadmin.password'));
-    }
-}
+    expect(config('auth.superadmin.email'))->not->toBeEmpty()
+        ->and(config('auth.superadmin.password'))->not->toBeEmpty();
+});

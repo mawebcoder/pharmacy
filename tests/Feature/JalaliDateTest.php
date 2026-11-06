@@ -1,53 +1,58 @@
 <?php
 
-namespace Tests\Feature;
+declare(strict_types=1);
 
+use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Support\Carbon;
-use Tests\TestCase;
 
-class JalaliDateTest extends TestCase
-{
-    public function test_the_application_runs_on_tehran_time(): void
-    {
-        $this->assertSame('Asia/Tehran', config('app.timezone'));
-        $this->assertSame('Asia/Tehran', now()->timezoneName);
-    }
+it('stores times in UTC and displays them in Tehran time', function (): void {
+    expect(config('app.timezone'))->toBe('UTC')
+        ->and(now()->timezoneName)->toBe('UTC')
+        ->and(config('app.display_timezone'))->toBe('Asia/Tehran')
+        ->and(FilamentTimezone::get())->toBe('Asia/Tehran');
+});
 
-    public function test_carbon_dates_are_shown_in_jalali(): void
-    {
-        $date = Carbon::parse('2026-11-06 14:30');
+it('shows UTC timestamps as Jalali dates in Tehran time', function (): void {
+    $storedAt = Carbon::parse('2026-11-06 10:30', 'UTC');
 
-        $this->assertSame('1405/08/15', $date->toJalali());
-        $this->assertSame('1405/08/15 14:30', $date->toJalali('Y/m/d H:i'));
-    }
+    expect($storedAt->toJalali())->toBe('1405/08/15')
+        ->and($storedAt->toJalali('Y/m/d H:i'))->toBe('1405/08/15 14:00');
+});
 
-    public function test_nowruz_is_the_first_day_of_the_jalali_year(): void
-    {
-        $this->assertSame('1405/01/01', Carbon::parse('2026-03-21')->toJalali());
-        $this->assertSame('1404/12/29', Carbon::parse('2026-03-20')->toJalali());
-    }
+it('moves to the next Jalali day after midnight in Tehran even while it is still the same day in UTC', function (): void {
+    expect(Carbon::parse('2026-11-06 21:00', 'UTC')->toJalali('Y/m/d H:i'))->toBe('1405/08/16 00:30');
+});
 
-    public function test_the_date_picker_binds_a_gregorian_value_with_jalali_limits(): void
-    {
-        $html = (string) $this->blade(
-            '<x-jalali-date label="تاریخ تحویل" name="delivery_date" value="2026-11-11" :min="$min" max="2026-12-06" />',
-            ['min' => Carbon::parse('2026-11-06')],
-        );
+it('starts the Jalali year on Nowruz', function (): void {
+    expect(Carbon::parse('2026-03-21 12:00', 'UTC')->toJalali())->toBe('1405/01/01')
+        ->and(Carbon::parse('2026-03-20 12:00', 'UTC')->toJalali())->toBe('1404/12/29');
+});
 
-        $this->assertStringContainsString('x-data="jalaliDate(', $html);
-        $this->assertStringContainsString('2026-11-11', $html);
-        $this->assertStringContainsString('2026-11-06', $html);
-        $this->assertStringContainsString('2026-12-06', $html);
-        $this->assertStringContainsString('name="delivery_date"', $html);
-        $this->assertStringContainsString('<label for="jalali-date-delivery-date"', $html);
-    }
+it('binds a Gregorian value to the date picker with Jalali limits', function (): void {
+    $html = (string) $this->blade(
+        '<x-jalali-date label="تاریخ تحویل" name="delivery_date" value="2026-11-11" :min="$min" max="2026-12-06" />',
+        ['min' => Carbon::parse('2026-11-06', 'UTC')],
+    );
 
-    public function test_the_date_picker_shows_validation_errors(): void
-    {
-        $this->withViewErrors(['delivery_date' => 'تاریخ تحویل الزامی است.']);
+    expect($html)
+        ->toContain('x-data="jalaliDate(')
+        ->toContain('2026-11-11')
+        ->toContain('2026-11-06')
+        ->toContain('2026-12-06')
+        ->toContain('name="delivery_date"')
+        ->toContain('<label for="jalali-date-delivery-date"');
+});
 
-        $this->blade('<x-jalali-date name="delivery_date" hint="راهنما" />')
-            ->assertSee('تاریخ تحویل الزامی است.')
-            ->assertDontSee('راهنما');
-    }
-}
+it('uses the Tehran calendar day as "today" in the date picker', function (): void {
+    $this->travelTo(Carbon::parse('2026-11-06 21:00', 'UTC'));
+
+    expect((string) $this->blade('<x-jalali-date name="delivery_date" />'))->toContain('2026-11-07');
+});
+
+it('shows validation errors under the date picker', function (): void {
+    $this->withViewErrors(['delivery_date' => 'تاریخ تحویل الزامی است.']);
+
+    $this->blade('<x-jalali-date name="delivery_date" hint="راهنما" />')
+        ->assertSee('تاریخ تحویل الزامی است.')
+        ->assertDontSee('راهنما');
+});
