@@ -9,7 +9,7 @@
 - Part A: Business roadmap
 - Part B: Product, design system, design standards, screen specifications and competitor insights (B1–B13)
 - Part C: Architecture, stack and standards
-- Part D: Data model, flows, routes, integrations, images, security, testing, DevOps
+- Part D: Data model, flows, routes, integrations, images, security, testing, DevOps, search engine (D21), reporting & warehouse (D22)
 - Part E: Implementation steps (S00–S40), AI working agreement, entity → step index (E5) and the implementation skill (E6)
 - Appendix: glossaries, env template, sources
 
@@ -50,7 +50,7 @@ Medicines have government-set consumer prices: `selling_price ≤ official_price
 | 3–6 | e-Namad application (needs live site with contact/about/terms) | Ops | e-Namad badge |
 | 3–8 | Product data: top 300 SKUs with photos (1:1 white), weights, dimensions, IRC codes, descriptions | Content | Import file |
 | 4–8 | Packaging: choose 4–6 carton sizes, map to Tipax packing ids | Ops | Box list |
-| 6–9 | Melipayamak account + approved templates (OTP, order events) | Ops | Templates |
+| 6–9 | **Melli Payamak** account, documents, credit, API key, allowed server IP, 7 approved patterns (OTP + order events) | Ops | bodyIds |
 | 8–10 | Soft launch to friends/family, 50 real orders | All | Bug list, cost data |
 | 10–12 | Public launch, Instagram/Telegram campaign, Torob/Emalls listing | Marketing | Traffic |
 | 12+ | Partner pharmacy contract → start P2 | Founder | Contract |
@@ -377,7 +377,7 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | Cache / queue / session | **Redis 7** | separate DB indexes: 0 cache, 1 queue, 2 session |
 | Queue workers | **Laravel Horizon** run by **Supervisor** | |
 | Web server | Nginx + PHP-FPM 8.5 (or FrankenPHP/Octane in P3) | |
-| Search | Laravel Scout `database` driver in MVP; Meilisearch in P2 | |
+| Search | Laravel Scout `database` driver (MySQL FULLTEXT) in MVP; self-hosted Meilisearch with hybrid search + local embeddings (Ollama `bge-m3`) in P2 (D21) | pin Meilisearch version at install |
 | Images | spatie/laravel-medialibrary + spatie/image (Imagick with AVIF/WebP support) + libvips optional | |
 | CDN | ArvanCloud CDN in front of object storage (S3-compatible, e.g. ArvanCloud Object Storage) | |
 | Tests | **Pest 4** (+ Livewire, Filament testing helpers, Pest browser plugin) | |
@@ -406,9 +406,11 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | `laravel/pulse` | Production performance monitoring | System |
 | `laravel/telescope` | Local debugging only | Dev |
 | `laravel/scout` | Search abstraction | Search |
+| `meilisearch/meilisearch-php`, `http-interop/http-factory-guzzle` | Meilisearch client (P2, D21.5) | Search |
 | `openspout/openspout` (or `maatwebsite/excel`) | Provider price Excel import | Pricing |
 | `mews/purifier` or Symfony HtmlSanitizer | Sanitize rich text | Shared |
 | `sentry/sentry-laravel` | Error tracking | System |
+| `melipayamak/php` (optional) or own HTTP client | Melli Payamak SMS (D11.6) [CONFIRM package] | Notifications |
 | `pestphp/pest`, `pestphp/pest-plugin-laravel`, `pestphp/pest-plugin-livewire`, `pestphp/pest-plugin-browser` | Tests | Dev |
 | `larastan/larastan`, `laravel/pint`, `rector/rector` | Quality | Dev |
 | `barryvdh/laravel-debugbar` | Local only | Dev |
@@ -437,6 +439,7 @@ app/
     Search/        # search index, logs, synonyms
     Notifications/ # SMS sender, templates, logs
     System/        # integration logs, health, activity
+    Reporting/     # rpt_* warehouse tables, builders, dashboard widgets, report pages (D22)
 ```
 
 Each module has the same shape:
@@ -450,7 +453,10 @@ app/Modules/Catalog/
   Queries/                       # read models / query objects for PLP, PDP
   Events/  Listeners/  Jobs/
   Policies/
-  Http/Controllers/              # only for non-Livewire endpoints (webhooks, callbacks)
+  Http/Controllers/              # thin: Form Request → DTO → Action → Resource (webhooks, callbacks, AJAX, P2 API)
+  Http/Requests/                 # Form Requests with baseRules(), prepareForValidation(), toDto()
+  Http/Resources/                # API Resources for every JSON response
+  Livewire/Forms/                # Livewire Form objects reusing baseRules(), exposing toDto()
   Livewire/                      # storefront components of this module
   Filament/Resources/            # admin resources of this module
   Database/Migrations/  Database/Factories/  Database/Seeders/
@@ -474,19 +480,248 @@ Rules:
 - Money: integer **Rial** everywhere (`Money` value object in Shared), formatted as Toman in views via a Blade helper `@toman($rial)`.
 - Units: grams, millimetres in DB; convert at integration boundary.
 - Enums: backed string enums with `label(): string` returning Persian text.
-- No business logic in Livewire components or Filament resources: they call Actions.
-- Validation in Form Requests / Livewire `#[Validate]` / Filament form rules, plus domain checks in Actions.
+- No business logic in controllers, Livewire components or Filament resources: they build a **DTO** and call an **Action** (C5).
+- Validation in **Form Requests** (controllers), Livewire Form objects and Filament field rules that all reuse the Form Request's `baseRules()`; domain checks in Actions.
+- Every JSON response goes through an **API Resource**.
 - DB transactions in Actions that write several tables; `lockForUpdate()` for payments, stock-like counters (flash deal sold count, coupon usage).
 - Config via `config/*.php` + `.env`; never `env()` outside config files.
 - Pint preset `laravel`, Larastan level 8 must pass in CI.
 - Conventional commits: `feat(catalog): add brands resource`, `fix(payments): handle code 101`.
 - Branch per step: `feat/S07-brands`.
 
+## C5. Request → DTO → Action → Resource pattern (mandatory)
+
+Every write operation and every JSON response follows one path. No exceptions without the user's approval.
+
+```
+HTTP request ──▶ Form Request (validation + authorization)
+             ──▶ $request->toDto()  ──▶ readonly DTO (typed, normalised)
+             ──▶ Action::__invoke(DTO)  (business logic, transaction, events)
+             ──▶ Model / result DTO
+             ──▶ API Resource (JSON)  or  redirect / view
+```
+
+Rules:
+1. **Controllers are thin**: resolve the Form Request, build the DTO with `$request->toDto()`, call one Action, return a Resource/redirect. No queries, no business rules, no `Model::create($request->all())`.
+2. **Validation lives in Form Requests** (`app/Modules/{Module}/Http/Requests`): `authorize()` uses policies; `rules()` returns explicit rules; `prepareForValidation()` normalises input (Persian/Arabic digits → Latin, mobile `+98` → `09…`, trims, Persian letters via `PersianNormalizer`). Never validate inside Actions what the request already validates; Actions only enforce **domain** rules (e.g. coupon still valid, price ≤ official price) and throw domain exceptions.
+3. **DTOs** (`app/Modules/{Module}/Data`) are `final readonly` classes with typed constructor properties, money as `int` Rial, enums as enum types, nested DTOs for nested data, and named constructors: `fromRequest()` (or the request's `toDto()`), `fromArray()` (Livewire/Filament/jobs), `fromModel()` when needed. No Eloquent models or `Request` objects inside DTOs.
+4. **Actions** (`app/Modules/{Module}/Actions`) are `final` invokable classes, one use case each, **accept a DTO** (plus at most an authenticated actor or a model being acted on) and return a model or a result DTO. They own transactions, locking, events and logging. Actions are the only place that writes to the database for that use case.
+5. **API Resources** (`app/Modules/{Module}/Http/Resources`) shape every JSON response: autocomplete, AJAX endpoints, webhook acknowledgements that return data, and the P2 `/api/v1`. Never return models or arrays straight from a controller. Money in resources is returned as Rial `int` plus a formatted Toman string; dates as ISO-8601 plus Jalali string.
+6. **Livewire and Filament use the same Actions and DTOs**: Livewire components validate with **Livewire Form objects** that reuse the Form Request's `rules()` and expose `toDto()`; Filament pages override `handleRecordCreation()` / `handleRecordUpdate()` (or action `->action()`) to build the DTO from form data and call the Action. Business logic is never duplicated between controller, Livewire and Filament.
+7. **Tests**: each Form Request (rules + normalisation), each DTO (construction/mapping), each Action (behaviour, transaction, events) and each Resource (JSON shape) has tests.
+
+### C5.1 Folder layout per module
+```
+app/Modules/Cart/
+  Http/
+    Controllers/ApplyCouponController.php
+    Requests/ApplyCouponRequest.php
+    Resources/CartResource.php
+  Data/ApplyCouponData.php
+  Actions/ApplyCoupon.php
+  Livewire/Forms/ApplyCouponForm.php
+```
+
+### C5.2 Example: Form Request with `toDto()`
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Cart\Http\Requests;
+
+use App\Modules\Cart\Data\ApplyCouponData;
+use App\Modules\Shared\Support\PersianNormalizer;
+use Illuminate\Foundation\Http\FormRequest;
+
+final class ApplyCouponRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('update', $this->route('cart')) ?? false;
+    }
+
+    public static function baseRules(): array
+    {
+        return [
+            'code' => ['required', 'string', 'min:3', 'max:32', 'regex:/^[A-Za-z0-9\-]+$/'],
+        ];
+    }
+
+    public function rules(): array
+    {
+        return self::baseRules();
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'code' => mb_strtoupper(PersianNormalizer::digits(trim((string) $this->input('code')))),
+        ]);
+    }
+
+    public function toDto(): ApplyCouponData
+    {
+        return new ApplyCouponData(
+            cartId: (int) $this->route('cart')->id,
+            code: $this->validated('code'),
+            customerId: (int) $this->user()->id,
+        );
+    }
+}
+```
+
+### C5.3 Example: DTO
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Cart\Data;
+
+final readonly class ApplyCouponData
+{
+    public function __construct(
+        public int $cartId,
+        public string $code,
+        public int $customerId,
+    ) {}
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            cartId: (int) $data['cart_id'],
+            code: (string) $data['code'],
+            customerId: (int) $data['customer_id'],
+        );
+    }
+}
+```
+
+### C5.4 Example: Action
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Cart\Actions;
+
+use App\Modules\Cart\Data\ApplyCouponData;
+use App\Modules\Cart\Exceptions\CouponNotApplicable;
+use App\Modules\Cart\Models\Cart;
+use App\Modules\Cart\Models\Coupon;
+use Illuminate\Support\Facades\DB;
+
+final class ApplyCoupon
+{
+    public function __construct(private readonly ValidateCoupon $validateCoupon) {}
+
+    #[\NoDiscard]
+    public function __invoke(ApplyCouponData $data): Cart
+    {
+        return DB::transaction(function () use ($data): Cart {
+            $cart   = Cart::query()->lockForUpdate()->findOrFail($data->cartId);
+            $coupon = Coupon::query()->where('code', $data->code)->first()
+                ?? throw CouponNotApplicable::notFound($data->code);
+
+            ($this->validateCoupon)($coupon, $cart, $data->customerId); // domain rules, throws on failure
+
+            $cart->coupon()->associate($coupon)->save();
+
+            return $cart->refresh()->load('items.variant', 'coupon');
+        });
+    }
+}
+```
+
+### C5.5 Example: thin controller + API Resource
+```php
+final class ApplyCouponController
+{
+    public function __invoke(ApplyCouponRequest $request, ApplyCoupon $applyCoupon): CartResource
+    {
+        $cart = $applyCoupon($request->toDto());
+
+        return CartResource::make($cart);
+    }
+}
+```
+```php
+final class CartResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id'          => $this->id,
+            'items'       => CartItemResource::collection($this->whenLoaded('items')),
+            'coupon'      => $this->whenLoaded('coupon', fn () => ['code' => $this->coupon->code]),
+            'subtotal'    => ['rial' => $this->subtotal, 'toman' => Money::rial($this->subtotal)->formatToman()],
+            'discount'    => ['rial' => $this->discount_total, 'toman' => Money::rial($this->discount_total)->formatToman()],
+            'total'       => ['rial' => $this->total, 'toman' => Money::rial($this->total)->formatToman()],
+            'updated_at'  => $this->updated_at->toIso8601String(),
+        ];
+    }
+}
+```
+Domain exceptions (e.g. `CouponNotApplicable`) are rendered centrally (exception handler) as `422` JSON for API/AJAX and as a validation-style error for Livewire.
+
+### C5.6 Example: Livewire Form object → same DTO and Action
+```php
+final class ApplyCouponForm extends Form
+{
+    public string $code = '';
+
+    public function rules(): array
+    {
+        return ApplyCouponRequest::baseRules();
+    }
+
+    public function toDto(int $cartId, int $customerId): ApplyCouponData
+    {
+        $this->code = mb_strtoupper(PersianNormalizer::digits(trim($this->code)));
+        $this->validate();
+
+        return new ApplyCouponData(cartId: $cartId, code: $this->code, customerId: $customerId);
+    }
+}
+
+// in the Livewire component
+public function apply(ApplyCoupon $applyCoupon): void
+{
+    $cart = $applyCoupon($this->form->toDto($this->cart->id, auth()->id()));
+    $this->dispatch('cart-updated');
+}
+```
+
+### C5.7 Example: Filament resource page → DTO and Action
+```php
+final class CreateBrand extends CreateRecord
+{
+    protected static string $resource = BrandResource::class;
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        return app(CreateBrandAction::class)(BrandData::fromArray($data));
+    }
+}
+```
+Filament form validation rules come from the same source as the Form Request (`StoreBrandRequest::baseRules()`), applied to the Filament fields so admin and HTTP validation never drift apart.
+
+### C5.8 Where each piece is required
+
+| Entry point | Validation | DTO | Action | Response |
+|---|---|---|---|---|
+| Controller (webhooks, payment callback, AJAX, P2 API) | **Form Request** | `$request->toDto()` | yes | **API Resource** (JSON) or redirect |
+| Livewire component | Livewire Form object reusing Form Request `baseRules()` | `$form->toDto()` | yes | view / events |
+| Filament resource/page/action | Filament field rules from the same `baseRules()` | `XData::fromArray($data)` | yes | Filament notification |
+| Jobs / console commands | input checked in the command/job | `XData::fromArray()` | yes | logs |
+
+
 ---
 
 # Part D: Data model, flows, routes, integrations, images, security, testing, DevOps
 
-> Sections D0–D11 are the complete MVP technical specification (entities, locations, shipping, Tipax, Zarinpal, images, jobs, open questions, integration setup guide). Sections D12–D20 add schema conventions, flows, routes, components, image device matrix, security, performance, testing and DevOps.
+> Sections D0–D11 are the complete MVP technical specification (entities, locations, shipping, Tipax, Zarinpal, images, jobs, open questions, integration setup guide). Sections D12–D22 add schema conventions, flows, routes, components, image device matrix, security, performance, testing, DevOps, the search engine plan and reporting.
 
 ## D0. Rules for AI agents working on this project
 
@@ -497,7 +732,8 @@ Rules:
 5. **Snapshot data on orders:** an order stores copies of product names, prices, addresses and shipping quotes, never only foreign keys.
 6. **Idempotency:** payment verification, order placement and shipment creation must be safe to run twice.
 7. **Persian first:** all user-facing text is Persian, RTL, with Shamsi (Jalali) dates in the UI. Store timestamps in UTC.
-8. **Prescription medicines are out of MVP scope.** Products with `requires_prescription = true` cannot be added to the cart until phase 2.
+8. **Request → DTO → Action → Resource** (C5) for every write and every JSON response: Form Requests validate, `toDto()` builds a readonly DTO, the controller/Livewire/Filament passes the DTO to an Action, JSON is returned through an API Resource.
+9. **Prescription medicines are out of MVP scope.** Products with `requires_prescription = true` cannot be added to the cart until phase 2.
 
 ---
 
@@ -1029,7 +1265,8 @@ BNPL (Snapp Pay, Torob Pay, Digipay) is phase 2 behind the same `PaymentGateway`
 | RecalculatePrices (after imports / rule changes) | on demand + nightly | `pricing` |
 | MarkNearExpiry (expiry < 90 days) | daily | `default` |
 | ProcessImage | on upload | `media` |
-| SendSms | on event | `notifications` |
+| SendSms (Melli Payamak) | on event | `notifications` |
+| RefreshReportingWarehouse | 02:00 and 14:00 Tehran (twiceDaily) + weekly full rebuild Friday 03:00 | `reporting` |
 
 Use Laravel Horizon for queue monitoring.
 
@@ -1042,7 +1279,7 @@ Use Laravel Horizon for queue monitoring.
 3. Currency of Tipax `finalPrice` in `/Pricing`.
 4. Tipax order callback payload, retry policy and signature; V3 webhook event payload.
 5. Tipax rules for shipping supplements and OTC medicines (content type "داروهای مجاز").
-6. Zarinpal refund API access after 30 minutes.
+6. Zarinpal refund API access after 30 minutes; Melli Payamak REST response JSON shape, credit-check method and PHP SDK package name (D11.6).
 7. Licence of the location dataset (GPL-3.0) for a closed-source product.
 8. Legal: partner pharmacy before enabling OTC / prescription products.
 
@@ -1081,10 +1318,17 @@ ZARINPAL_CALLBACK_URL="${APP_URL}/payment/zarinpal/callback"
 ZARINPAL_TIMEOUT_SECONDS=15
 PAYMENT_PENDING_EXPIRY_MINUTES=30
 
-# ---------- SMS (Melipayamak) ----------
-SMS_DRIVER=log                                    # log (local) | melipayamak
-SMS_API_KEY=
-SMS_SENDER=
+# ---------- SMS: Melli Payamak (D11.6) ----------
+SMS_DRIVER=melipayamak                            # log in local/testing
+MELIPAYAMAK_USERNAME=
+MELIPAYAMAK_API_KEY=
+MELIPAYAMAK_BASE_URL=https://rest.payamak-panel.com
+MELIPAYAMAK_PATTERN_OTP=                          # bodyId of approved pattern (other pattern ids in D11.6)
+
+# ---------- Reporting warehouse (D22) ----------
+REPORTING_DB_DATABASE=pharmacy_reporting
+REPORTING_DB_USERNAME=
+REPORTING_DB_PASSWORD=
 
 # ---------- Images / CDN ----------
 IMAGES_ORIGINALS_DISK=local
@@ -1253,11 +1497,108 @@ $this->app->singleton(PaymentGateway::class, fn ($app) => $app->make(ZarinpalGat
 4. Run `php artisan tipax:sync-cities` (D11.3 step 6) after every location import.
 5. In **Admin → Locations**, enable delivery cities and draw own-courier zones.
 
-### D11.6 SMS provider: Melipayamak
-Decided 2026-11-06: customer SMS (OTP and order events) is sent through **Melipayamak (ملی پیامک)**.
-- Implement `App\Notifications\Sms\SmsSender` interface with drivers: `log` for local and tests, `melipayamak` for staging and production.
-- Required templates: `otp`, `order_paid`, `order_shipped` (with Tipax tracking code), `order_delivered`, `payment_failed`.
-- Most Iranian providers require pre-approved templates for OTP; register them in the provider panel before go-live.
+### D11.6 SMS provider: Melli Payamak (ملی پیامک)
+
+**Decision:** all SMS (OTP and order notifications) go through **Melli Payamak** (melipayamak.com), using its **shared service line with approved patterns** (خط خدماتی اشتراکی – پیامک پترن). Pattern messages are delivered even to numbers on the operators' advertising blacklist, which makes them right for OTP and transactional messages.
+
+**How it works**
+- In the Melli Payamak panel you create a **pattern** (predefined text) with variables, e.g. `کد ورود شما به داروخانه: {0}` and submit it for approval. Each approved pattern gets a numeric **bodyId**.
+- To send, you call the API with the recipient, the bodyId and the variable values joined by `;` (e.g. `text = "48213"` or `"PH-140508-000123;3920418377"`). Only **one mobile number per call**.
+
+**API (REST, from Melli Payamak docs, method SendByBaseNumber, last updated 22 Azar 1404)**
+```
+POST https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber
+Content-Type: application/x-www-form-urlencoded
+
+username=<panel username>&password=<API key>&text=<arg1;arg2>&to=09123456789&bodyId=<pattern id>
+```
+SOAP alternative: `http://api.payamak-panel.com/post/Send.asmx?wsdl`, method `SendByBaseNumber2` (same parameters). Official PHP SDK: `melipayamak/php` (`$api->sms()->sendByBaseNumber($text, $to, $bodyId)`) **[CONFIRM]** package name/version on Packagist; a small own HTTP client is equally fine.
+
+**Return values (ReturnValue)**
+
+| Value | Meaning |
+|---|---|
+| number with more than 15 digits (recId) | Sent successfully; use it to check delivery (GetDeliveries) |
+| −111 | Caller IP not valid |
+| −110 | Must use **ApiKey** instead of the password |
+| −109 | Allowed IP must be set for API use |
+| −108 | IP blocked after failed attempts |
+| −10 | Variables contain a link |
+| −7 / −6 | Sender line error / internal error: contact support |
+| −5 | Text does not match the pattern's variables |
+| −4 | bodyId wrong or pattern not approved |
+| −3 | Sending line not defined |
+| −2 | Only one mobile number allowed per call |
+| −1 | Web service access disabled |
+| 0 | Wrong username or password |
+| 2 | Not enough credit |
+| 6 | System updating |
+| 7 | Text contains a filtered word |
+| 10 / 12 | User not active / documents incomplete |
+| 11 | Not sent |
+| 16 / 18 | Recipient not found / invalid recipient |
+| 17 | Empty text |
+| 19 | Hourly limit exceeded |
+| 35 | (REST) recipient is on the operators' blacklist |
+
+**[CONFIRM]** the exact REST response JSON shape (e.g. `Value`, `RetStatus`, `StrRetStatus`) with a test account.
+
+**Patterns to register (Persian texts, variables in order)**
+
+| Template key | Example text | Variables |
+|---|---|---|
+| `otp` | کد ورود شما به داروخانه {0} است. این کد را در اختیار کسی قرار ندهید. | code |
+| `order_paid` | سفارش {0} با موفقیت پرداخت شد. مبلغ: {1} تومان | order number, amount |
+| `order_shipped` | سفارش {0} تحویل تیپاکس شد. کد رهگیری: {1} | order number, tracking code |
+| `order_out_for_delivery` | سفارش {0} امروز توسط پیک ما تحویل می‌شود. | order number |
+| `order_delivered` | سفارش {0} تحویل شد. از خرید شما سپاسگزاریم. | order number |
+| `payment_failed` | پرداخت سفارش {0} ناموفق بود. می‌توانید دوباره تلاش کنید. | order number |
+| `stock_available` | {0} دوباره موجود شد. | product name (short) |
+
+Rules: no links inside variables (error −10); keep variables short; brand name inside the fixed pattern text.
+
+**Configuration**
+```dotenv
+SMS_DRIVER=melipayamak            # log in local/testing
+MELIPAYAMAK_USERNAME=
+MELIPAYAMAK_API_KEY=              # use the panel API key as "password" (required: −110 otherwise)
+MELIPAYAMAK_BASE_URL=https://rest.payamak-panel.com
+MELIPAYAMAK_TIMEOUT_SECONDS=8
+MELIPAYAMAK_PATTERN_OTP=          # bodyId
+MELIPAYAMAK_PATTERN_ORDER_PAID=
+MELIPAYAMAK_PATTERN_ORDER_SHIPPED=
+MELIPAYAMAK_PATTERN_ORDER_OUT_FOR_DELIVERY=
+MELIPAYAMAK_PATTERN_ORDER_DELIVERED=
+MELIPAYAMAK_PATTERN_PAYMENT_FAILED=
+MELIPAYAMAK_PATTERN_STOCK_AVAILABLE=
+```
+`config/sms.php` maps template keys → bodyIds; `notification_templates` stores the key, the Persian text (for display/logs) and the bodyId.
+
+**Laravel design (module Notifications)**
+```
+app/Modules/Notifications/
+  Contracts/SmsSender.php              // send(SmsMessageData $message): SmsResultData
+  Data/SmsMessageData.php              // readonly: mobile, templateKey, args (list<string>)
+  Data/SmsResultData.php               // readonly: success, providerMessageId, code, error
+  Drivers/LogSmsSender.php             // local/testing: writes to log + notification_logs
+  Drivers/MelipayamakSmsSender.php     // REST BaseServiceNumber, maps return codes to SmsResultData
+  Enums/MelipayamakError.php           // codes above → Persian messages, retryable flag
+  Actions/SendTemplatedSms.php         // takes SmsMessageData, resolves bodyId, logs, dispatches job
+  Jobs/SendSmsJob.php                  // queue "notifications", retries 3× with backoff for retryable codes (6, 11, 19, timeouts)
+```
+- OTP is sent **synchronously-first** (queue `notifications` with high priority, timeout 8 s) so the code arrives within seconds; other templates are normal queued jobs.
+- Every send writes `notification_logs` (mobile masked as 0912***6789, template, recId, code, duration).
+- Non-retryable codes (−4, −5, −10, 0, 2, 7, 16, 18, 35) are not retried; credit-low (2) triggers an admin alert.
+- A daily job checks the panel credit **[CONFIRM]** credit API method name and alerts below a threshold.
+
+**Setup steps**
+1. Create the Melli Payamak account, complete documents (error 12 otherwise), buy credit.
+2. In the panel: get the **API key**, set the **allowed server IP** (errors −109/−111 otherwise).
+3. Register and get approval for the 7 patterns above; copy each **bodyId** into `.env`.
+4. `php artisan sms:test 09xxxxxxxxx otp` sends a test OTP and prints the return value.
+5. Production: `SMS_DRIVER=melipayamak`; local/testing: `SMS_DRIVER=log`. Tests always use the `log` driver or `Http::fake()`.
+
+**Security**: never log OTP codes in plain text (log `*****`), rate limits from D13.1 apply before calling the provider, API key only in `.env`.
 
 ### D11.7 Scheduler and workers (production server)
 ```bash
@@ -1293,7 +1634,7 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 - [ ] Zarinpal gateway active on production domain; server IP set; one real payment and reverse tested
 - [ ] Scheduler and Horizon running; failed-job alerts set up
 - [ ] `integration_logs` redact secrets; error tracking (e.g. Sentry) connected
-- [ ] SMS templates approved
+- [ ] Melli Payamak patterns approved, bodyIds in `.env`, server IP allowed, credit alert working
 - [ ] e-Namad on the site
 
 ## D12. Database schema conventions, indexes and migrations
@@ -1634,7 +1975,8 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 
 | Level | What | Tools |
 |---|---|---|
-| Unit | Actions, value objects (Money, Jalali), pricing engine, box packer, Persian normaliser, enums | Pest |
+| Unit | Actions (called with DTOs), DTO construction/mapping, value objects (Money, Jalali), pricing engine, box packer, Persian normaliser, enums | Pest |
+| Request & Resource | Form Request rules, authorisation and `prepareForValidation()` normalisation; `toDto()` output; API Resource JSON shape (`assertJsonStructure`) | Pest |
 | Feature | HTTP routes, Livewire components (`Livewire::test`), Filament resources (`livewire(ListProducts::class)->assertCanSeeTableRecords(...)`), policies, jobs, events | Pest + Laravel/Livewire/Filament helpers |
 | Integration (faked) | Tipax client and Zarinpal client with `Http::fake()` using recorded fixtures from the sandbox | Pest |
 | Architecture | Module boundaries (`arch()->expect('App\Modules\Catalog')->not->toUse('App\Modules\Orders\Models')`), strict types, no `env()` outside config, no debug functions | Pest arch |
@@ -1702,6 +2044,549 @@ On every push: Pint (test mode), Larastan, `composer audit`, `php artisan test -
 - Sentry (errors), Laravel Pulse (slow queries, jobs, requests), Horizon (queues), spatie/laravel-health (checks + Telegram/email alerts), `integration_logs` dashboard widget, uptime monitor on `/up`.
 - Alerts: payment verify failures > 3 in 10 min, Tipax registration failures, queue wait > 60 s, disk > 80 %.
 
+## D21. Search engine (MySQL FULLTEXT → Meilisearch hybrid)
+
+> **Decision:** MVP uses **MySQL FULLTEXT** through Laravel Scout's `database` driver. Phase 2 moves to self-hosted **Meilisearch** with **hybrid (keyword + vector) search** using a **local multilingual embedding model**. "Similar products" is computed in a nightly batch and stored in MySQL in both phases. Search controllers/Livewire follow C5 (Form Request → DTO → Action → API Resource).
+
+### D21.1 Summary
+
+| | MVP (Phase 1) | Phase 2 |
+|---|---|---|
+| Engine | MySQL 8.4 InnoDB FULLTEXT | Meilisearch (self-hosted, open source) |
+| Laravel integration | Laravel Scout, `database` driver | Laravel Scout, `meilisearch` driver |
+| Typo tolerance | No (synonyms + normalisation only) | Yes, built in |
+| Autocomplete | Prefix match (`word*`) on name, brand, SKU | Instant search-as-you-type |
+| Facets with counts | SQL `GROUP BY` (cached 5 min) | Built-in facet distribution |
+| Semantic search | No | Hybrid search, `semanticRatio` ≈ 0.4–0.5 |
+| Similar products | Nightly batch → `product_similarities` table | Same (optionally Meilisearch similar-documents) |
+| Extra cost | 0 | 0 software cost; a 2–4 GB RAM VPS or the app server |
+| When to switch | — | > 3,000 active products, or search-exit rate > 40 %, or zero-result rate > 10 % |
+
+Why not others:
+
+- **Algolia / foreign SaaS**: paid, hosted outside Iran, accounts and payments can be blocked by sanctions.
+- **Elasticsearch / OpenSearch**: powerful but needs 4–8 GB RAM and operational effort; not needed at this scale.
+- **Typesense**: good alternative with vector search; Meilisearch chosen for its official Laravel Scout driver, simpler setup and larger Laravel community.
+- **Vector search inside MySQL**: MySQL 8.4 has no vector type. MySQL 9.x adds `VECTOR`, but Oracle's manual states `DISTANCE()` "is available only for users of MySQL HeatWave on OCI and MySQL AI; it is not included in MySQL Commercial or Community distributions", and a VECTOR column "cannot be used as any type of key". So live vector search in MySQL Community is not practical.
+
+---
+
+### D21.2 Search requirements
+
+1. Search Persian and English product names, brand names (Persian and Latin), active ingredients, SKU and barcode.
+2. Treat these as equal: Arabic/Persian letters (ي/ی, ك/ک, ة/ه, أ/إ/ا), Persian/Arabic/Latin digits, ZWNJ (نیم‌فاصله) vs space vs none, diacritics.
+3. Synonyms: «ویتامین دی» = «ویتامین D» = «D3»; «امگا ۳» = «omega 3» = «روغن ماهی»; «ضد آفتاب» = «کرم ضدآفتاب» = «sunscreen».
+4. Filters: category, brand, dosage form, suitable for (age/gender), price range, in stock, discount %, near-expiry, damaged-box.
+5. Sort: relevance, best selling, newest, cheapest, most expensive, highest discount.
+6. Autocomplete under the search box: up to 6 products, 3 brands, 3 categories, 3 tags, in < 150 ms.
+7. Zero-result page with popular tags/categories and logging of the query.
+8. Only active, sellable variants appear; prescription products appear with their info badge but cannot be added to cart in MVP.
+
+---
+
+### D21.3 Persian text normalisation (both phases)
+
+Applied identically when **indexing** and when **querying** (class `Search\Support\PersianNormalizer`):
+
+| Step | Example |
+|---|---|
+| Arabic → Persian letters | `ي` → `ی`, `ك` → `ک`, `ة` → `ه`, `أ إ آ` → `ا` (keep `آ` in display text only) |
+| Digits → Latin | `۱۲۳` / `١٢٣` → `123` |
+| Remove diacritics and tatweel | `ـ`, `َ ُ ِ ّ ً` removed |
+| ZWNJ handling | index both forms: `ضدآفتاب` and `ضد آفتاب` (ZWNJ → space, plus a joined variant) |
+| Lowercase Latin, trim, collapse spaces | `Vitamin  D3` → `vitamin d3` |
+| Unit normalisation | `۱۰۰۰ واحد`, `1000IU`, `1000 iu` → `1000 iu` |
+
+Unit test cases are part of S12 (see S12).
+
+---
+
+### D21.4 Phase 1: MySQL FULLTEXT with Laravel Scout
+
+#### D21.4.1 Server settings (my.cnf)
+```ini
+[mysqld]
+innodb_ft_min_token_size = 2          # default 3 drops 2-letter Persian words such as «مو» (hair), «لب» (lip), «تب» (fever)
+innodb_ft_enable_stopword = ON
+innodb_ft_server_stopword_table = 'pharmacy/search_stopwords'   # custom Persian list
+ngram_token_size = 2                  # only if the ngram parser is used (not recommended for Persian)
+```
+After changing token size, rebuild the FULLTEXT index (`ALTER TABLE products DROP INDEX ..., ADD FULLTEXT ...` or `OPTIMIZE TABLE` with `innodb_optimize_fulltext_only=ON`). **[CONFIRM]** on the target MySQL version.
+
+Persian stopwords table (`search_stopwords(value VARCHAR(30))`): از، به، با، در، برای، و، یا، که، این، آن، را، تا، بر.
+
+#### D21.4.2 Denormalised search column
+Add to `products`:
+```php
+$table->text('search_text')->nullable();               // normalised: name_fa, name_en, brand fa/en, tags, ingredients keywords, synonyms
+$table->string('search_codes', 500)->nullable();       // SKUs and barcodes of all variants, space separated
+$table->fullText('search_text');
+$table->index('search_codes');                         // for prefix LIKE 'abc%'
+```
+`search_text` is rebuilt by `Search\Actions\BuildProductSearchText` on product/variant/brand/tag save (queued).
+
+#### D21.4.3 Scout configuration
+```bash
+composer require laravel/scout
+php artisan vendor:publish --provider="Laravel\Scout\ScoutServiceProvider"
+```
+`.env`
+```dotenv
+SCOUT_DRIVER=database
+SCOUT_QUEUE=true
+```
+Model:
+```php
+use Laravel\Scout\Attributes\SearchUsingFullText;
+use Laravel\Scout\Attributes\SearchUsingPrefix;
+use Laravel\Scout\Searchable;
+
+final class Product extends Model
+{
+    use Searchable;
+
+    #[SearchUsingFullText(['search_text'])]
+    #[SearchUsingPrefix(['search_codes'])]
+    public function toSearchableArray(): array
+    {
+        return [
+            'search_text'  => $this->search_text,
+            'search_codes' => $this->search_codes,
+        ];
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        return $this->status === ProductStatus::Active;
+    }
+}
+```
+
+#### D21.4.4 Query pipeline
+
+1. Normalise the query (D21.3).
+2. Expand synonyms from `search_synonyms` (e.g. query «ویتامین دی» → `ویتامین دی | vitamin d | d3`).
+3. Run `Product::search($q)->query(fn ($b) => $b->with([...])->where(...filters))->paginate(24)`.
+4. For autocomplete use boolean prefix mode on the last word (`+ویتامین +د*`) with limit 6, cached 10 min per normalised prefix.
+5. Facet counts: one SQL query per facet group over the matched ids, cached 5 min per query hash (Redis tag `search`).
+6. Log to `search_logs` (normalised query, results count, clicked product).
+
+#### D21.4.5 Ranking in MVP
+Relevance from MATCH score, then boost:
+```
+score = match_score × 1.0
+      + (is_in_stock ? 0.5 : 0)
+      + log10(1 + sales_30d) × 0.3
+      + (brand exact match ? 1.0 : 0)
+```
+Implemented as an `orderByRaw` after fetching candidate ids (top 200), so the boost stays simple and testable.
+
+#### D21.4.6 Limits to watch
+
+- No typo tolerance: compensate with synonyms and the "did you mean" list built from `search_logs` zero-result queries reviewed in admin.
+- Facet counts get slower beyond ~5,000 products; Redis cache hides it until Phase 2.
+
+---
+
+### D21.5 Phase 2: Meilisearch
+
+#### D21.5.1 Why Meilisearch
+Open source and free to self-host; built-in typo tolerance, prefix search, filters with facet counts, synonyms, ranking rules; official Laravel Scout driver; **hybrid search** (keyword + vector) with a `semanticRatio` parameter (Meilisearch docs: "the default (`0.5`) works well for most use cases").
+
+#### D21.5.2 Server sizing and install
+
+| Products | RAM | Disk | Where |
+|---|---|---|---|
+| ≤ 20,000 | 2 GB (4 GB with local embedding model) | 10 GB SSD | Separate small VPS inside Iran (recommended) or app server |
+| 20,000–200,000 | 4–8 GB | 20–40 GB SSD | Separate VPS |
+
+Install (binary + systemd, or Docker). Pin a version and upgrade deliberately. **[CONFIRM]** latest stable version at install time.
+```bash
+# Docker example
+docker run -d --name meilisearch --restart unless-stopped \
+  -p 127.0.0.1:7700:7700 \
+  -e MEILI_ENV=production \
+  -e MEILI_MASTER_KEY="<64-char random secret>" \
+  -v /srv/meili_data:/meili_data \
+  getmeili/meilisearch:<pinned-version>
+```
+Expose only to the app server (bind 127.0.0.1 or private network + firewall). Never expose the master key to the browser.
+
+#### D21.5.3 Laravel setup
+```bash
+composer require meilisearch/meilisearch-php http-interop/http-factory-guzzle
+```
+`.env`
+```dotenv
+SCOUT_DRIVER=meilisearch
+MEILISEARCH_HOST=http://10.0.0.5:7700
+MEILISEARCH_KEY=<admin API key, not the master key>
+SCOUT_QUEUE=true
+```
+Create keys with the master key once: an **admin key** for the app (indexing + search, server side only) and, if the browser ever queries Meilisearch directly, a **search-only key** restricted to the `products` index (not needed: all search goes through Laravel).
+
+#### D21.5.4 Document shape (`toSearchableArray` for Meilisearch)
+```php
+return [
+    'id'             => $this->id,
+    'name_fa'        => PersianNormalizer::forIndex($this->name_fa),
+    'name_en'        => mb_strtolower((string) $this->name_en),
+    'brand_fa'       => $this->brand?->name_fa,
+    'brand_en'       => $this->brand?->name_en,
+    'category_ids'   => $this->categories->pluck('id')->all(),
+    'category_names' => $this->categories->pluck('name_fa')->all(),
+    'tags'           => $this->tags->pluck('name_fa')->all(),
+    'form'           => $this->attributeValue('form'),           // e.g. "قرص"
+    'suitable_for'   => $this->attributeValues('suitable_for'),  // e.g. ["بانوان", "بالای ۱۸ سال"]
+    'ingredients'    => $this->ingredientKeywords(),             // short list, not full text
+    'codes'          => $this->variants->flatMap(fn ($v) => [$v->sku, $v->barcode])->filter()->values()->all(),
+    'min_price'      => $this->minActivePrice(),                 // Rial
+    'discount_pct'   => $this->maxDiscountPercent(),
+    'in_stock'       => $this->hasAvailableVariant(),
+    'is_near_expiry' => $this->hasNearExpiryVariant(),
+    'is_damaged_box' => $this->hasDamagedBoxVariant(),
+    'product_type'   => $this->product_type->value,
+    'sales_30d'      => $this->sales_30d,
+    'created_at'     => $this->created_at->timestamp,
+];
+```
+
+#### D21.5.5 Index settings (`config/scout.php`)
+```php
+'meilisearch' => [
+    'host' => env('MEILISEARCH_HOST'),
+    'key'  => env('MEILISEARCH_KEY'),
+    'index-settings' => [
+        Product::class => [
+            'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'ingredients', 'category_names', 'codes'],
+            'filterableAttributes' => ['category_ids', 'brand_fa', 'form', 'suitable_for', 'min_price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
+            'sortableAttributes'   => ['min_price', 'discount_pct', 'sales_30d', 'created_at'],
+            'rankingRules'         => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock:desc', 'sales_30d:desc'],
+            'typoTolerance'        => ['minWordSizeForTypos' => ['oneTypo' => 4, 'twoTypos' => 8], 'disableOnAttributes' => ['codes']],
+            'pagination'           => ['maxTotalHits' => 2000],
+            'faceting'             => ['maxValuesPerFacet' => 100],
+        ],
+    ],
+],
+```
+Apply with `php artisan scout:sync-index-settings`, then `php artisan scout:import "App\Modules\Catalog\Models\Product"`.
+**[CONFIRM]** custom ranking rule syntax (`attribute:desc`) and that `in_stock` as a boolean sorts as expected on the installed version.
+
+#### D21.5.6 Synonyms
+Synced from the admin `search_synonyms` table to Meilisearch with a job (`PUT /indexes/products/settings/synonyms`), mutual groups:
+```json
+{
+  "ویتامین دی": ["ویتامین d", "d3", "vitamin d"],
+  "امگا 3": ["omega 3", "روغن ماهی", "امگا۳"],
+  "ضد آفتاب": ["ضدآفتاب", "sunscreen", "کرم ضد آفتاب"]
+}
+```
+
+#### D21.5.7 Hybrid (semantic) search
+Goal: queries like «یه چیزی برای ریزش مو» (something for hair loss) find biotin, zinc and hair-supplement products even when those words are not in the title.
+
+**Embedding model (local, free, multilingual with Persian):**
+
+| Option | How | Notes |
+|---|---|---|
+| A. Ollama + `bge-m3` | Run Ollama on the search VPS; Meilisearch embedder `source: "ollama"` | Strong multilingual quality; 1024 dimensions; CPU works for small catalogs, slower indexing **[CONFIRM]** speed |
+| B. Meilisearch built-in `huggingFace` embedder with a multilingual sentence-transformers model (e.g. `paraphrase-multilingual-MiniLM-L12-v2`, 384 dims) | Runs inside Meilisearch, no extra service | Lighter; check model compatibility with Meilisearch's HuggingFace embedder **[CONFIRM]** |
+| C. `userProvided` | Our Laravel job computes vectors (via Ollama) and sends them in `_vectors` | Full control, reusable for "similar products" |
+
+Foreign paid APIs (OpenAI, Cohere…) are not recommended: access and payment from Iran are unreliable.
+
+Embedder settings (option A):
+```json
+PATCH /indexes/products/settings
+{
+  "embedders": {
+    "default": {
+      "source": "ollama",
+      "url": "http://127.0.0.1:11434/api/embeddings",
+      "model": "bge-m3",
+      "documentTemplate": "{{doc.name_fa}} {{doc.name_en}} برند {{doc.brand_fa}}. دسته: {{doc.category_names}}. کاربرد: {{doc.tags}}. ترکیبات: {{doc.ingredients}}"
+    }
+  }
+}
+```
+Keep `documentTemplate` short and meaningful (name, brand, category, uses, key ingredients); long descriptions add noise and slow indexing.
+
+Query with hybrid search from Laravel:
+```php
+$results = Product::search($q, function (Indexes $index, string $query, array $options) use ($filters) {
+    $options['filter'] = $filters;                       // e.g. ['in_stock = true', 'min_price 0 TO 50000000']
+    $options['facets'] = ['brand_fa', 'form', 'suitable_for', 'category_ids'];
+    $options['hybrid'] = ['embedder' => 'default', 'semanticRatio' => 0.4];
+    return $index->search($query, $options);
+})->paginate(24);
+```
+Tuning: start `semanticRatio` at 0.4 (keyword-heavy, better for exact product/brand names); use 0.7 on the zero-result fallback ("did you mean these?"). For SKU/barcode-looking queries (digits only) skip hybrid.
+
+#### D21.5.8 Indexing pipeline
+
+- `Searchable` + `SCOUT_QUEUE=true`: model changes are pushed by queued jobs on the `search` queue (Horizon supervisor with 1–2 processes).
+- Related changes (brand rename, tag rename, price recalculation, stock status) dispatch `ReindexProducts` for affected product ids in chunks of 500.
+- Nightly `scout:import` safety re-sync (off-peak) and a weekly full re-index into a new index + swap (`swap-indexes`) to avoid downtime **[CONFIRM]** command availability in the Scout version.
+
+#### D21.5.9 Operations
+
+- **Backups:** daily Meilisearch dump (`POST /dumps`) or snapshot; the index can always be rebuilt from MySQL (source of truth), so backups only shorten recovery time.
+- **Monitoring:** `/health` in spatie/laravel-health; alert if down > 2 min; search falls back to MySQL FULLTEXT automatically (keep the Phase 1 code path as fallback driver).
+- **Security:** private network only, master key stored only on the search server, admin key in Laravel `.env`, firewall allows only the app server IP, TLS if crossing networks.
+- **Upgrades:** dump → upgrade binary/container → import dump; test on staging first.
+
+---
+
+### D21.6 Similar products (both phases)
+
+Shown on the product page ("محصولات مشابه") and in the cart ("ممکن است نیاز داشته باشید").
+
+1. **Nightly job** `ComputeProductSimilarities`:
+   - Phase 1 (no vectors): similarity by shared category, shared tags, same form, same suitable-for, similar price band, co-purchase count from orders (weights tunable in config).
+   - Phase 2 (vectors): get each product's embedding (Ollama `bge-m3` or Meilisearch `_vectors`), compute cosine similarity in PHP in batches, combine with the Phase 1 score.
+2. Store the top 12 per product:
+```php
+Schema::create('product_similarities', function (Blueprint $table) {
+    $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('similar_product_id')->constrained('products')->cascadeOnDelete();
+    $table->decimal('score', 6, 4);
+    $table->string('source', 16);        // rules | vector | copurchase | manual
+    $table->timestamps();
+    $table->primary(['product_id', 'similar_product_id']);
+    $table->index(['product_id', 'score']);
+});
+```
+
+3. Admin can pin or exclude items (`product_relations` with type `alternative` overrides the computed list).
+4. PDP reads the table (cached), so there is no runtime vector search.
+
+Embeddings, if stored in MySQL for this batch: `product_embeddings(product_id PK, model, dims, vector BLOB (packed float32), updated_at)`; pack/unpack with `pack('g*', ...$floats)` / `unpack('g*', $blob)`.
+
+---
+
+### D21.7 Admin features
+
+- **Synonyms** resource (Filament): term + list of synonyms, sync button for Meilisearch.
+- **Search insights** page: top queries, zero-result queries (with "add synonym" action), queries with low click-through.
+- **Boosts / pins** (Phase 2): pin products for a query (e.g. «ضد آفتاب» → featured brand) implemented as a pre-query lookup that prepends pinned ids.
+- **Reindex** action (super admin): re-sync index settings and re-import.
+
+---
+
+### D21.8 Testing
+
+| Test | What |
+|---|---|
+| Unit | `PersianNormalizer` cases (letters, digits, ZWNJ, units); synonym expansion; ranking formula |
+| Feature (MySQL) | search finds products by Persian name, English name, brand, SKU prefix; inactive products excluded; filters and facet counts correct; zero-result logging |
+| Feature (Meilisearch) | run against a Meilisearch test container in CI (or skip with a group tag locally); index settings applied; typo («ویتامیم» → «ویتامین»); hybrid query returns hair supplements for «ریزش مو» with a fixture dataset |
+| Fallback | Meilisearch down → MySQL driver used, page still returns results |
+| Performance | autocomplete p95 < 150 ms on 5,000-product fixture; PLP search p95 < 400 ms |
+
+---
+
+### D21.9 Implementation steps
+
+| Step | Phase | Work | Done when |
+|---|---|---|---|
+| SR1 | 1 | `PersianNormalizer`, stopwords table, `search_text`/`search_codes` columns, `BuildProductSearchText` job | Unit tests pass |
+| SR2 | 1 | Scout `database` driver, search page, autocomplete, synonyms table, search logs | Feature tests pass; autocomplete < 150 ms |
+| SR3 | 1 | Facets with cached counts, ranking boost | Correct counts in tests |
+| SR4 | 1 | Similar products (rules + co-purchase) nightly job + PDP rail | Table filled; PDP shows 12 items |
+| SR5 | 1 | Admin: synonyms, search insights | Admin can add synonym from zero-result list |
+| SR6 | 2 | Meilisearch server (staging then prod), keys, firewall, health check | `/health` green; app connects |
+| SR7 | 2 | Switch Scout driver, document shape, index settings, synonyms sync, fallback to MySQL | All search tests pass on both drivers |
+| SR8 | 2 | Ollama + `bge-m3` (or HuggingFace embedder), embedder settings, hybrid query, ratio tuning | Semantic fixture tests pass; manual check with 30 real queries |
+| SR9 | 2 | Vector-based similar products, pins/boosts | PDP similar list improved in review |
+
+Phase 1 steps SR1–SR5 are delivered inside **S12** (SR4 similar products may follow S13); Phase 2 steps SR6–SR9 run after launch. Each step follows the working agreement (E1) (plan with examples → approval → implement → tests → ask to commit → ask to push), using the `implement-roadmap-section` skill.
+
+---
+
+### D21.10 Costs
+
+| Item | MVP | Phase 2 |
+|---|---|---|
+| Software licences | 0 | 0 (open source) |
+| Server | none extra | 1 VPS 4 vCPU / 4–8 GB RAM inside Iran (search + Ollama), or app server upgrade |
+| Embedding API | none | none (local model) |
+| Operations | none | backups, monitoring, upgrades (~1–2 h/month) |
+
+## D22. Reporting and the reporting warehouse
+
+> **Decision:** dashboard reports read from **pre-aggregated, denormalised warehouse tables** (`rpt_*`) in a separate `reporting` database, refreshed **every 12 hours** (02:00 and 14:00 Asia/Tehran). Operational work queues (R8, R10, R26, R27) stay **live**. ★ = MVP report; others come after launch when data accumulates (their tables can still be built in MVP).
+
+### D22.1 Reports list
+
+**Sales and profit**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R1 | Sales overview | Revenue, orders, average order value for today/7/30/90 days vs previous period | `rpt_daily_sales` | ★ |
+| R2 | Gross & net margin | Revenue − provider cost; then − shipping, payment fees, packaging, coupons; daily trend | `rpt_daily_sales` | ★ |
+| R3 | Margin by category & brand | Best and worst earning categories/brands (to tune markup rules) | `rpt_daily_category_brand` | ★ |
+| R4 | Top products | Best sellers by quantity, revenue and margin | `rpt_product_performance` | ★ |
+| R5 | Low-margin / loss orders | Orders where shipping or discounts ate the profit | `rpt_order_profitability` | ★ |
+| R6 | Sales by city & province | Where customers are | `rpt_daily_geo` | |
+| R7 | Sales by hour & weekday | Heatmap for timing deals and SMS | `rpt_sales_heatmap` | |
+
+**Orders and operations**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R8 | Orders by status (work queue) | Counts per status now + oldest order per status | **live** | ★ |
+| R9 | Fulfilment speed | Paid → sourced → packed → handed to Tipax → delivered times vs 24 h target | `rpt_fulfilment` | ★ |
+| R10 | Sourcing backlog | Items waiting on providers, by provider, oldest request | **live** | ★ |
+| R11 | Cancellations & returns | Rates, reasons, refunded amounts | `rpt_daily_cancellations_returns` | ★ |
+| R12 | Out-of-stock demand | Stock-alert sign-ups and blocked add-to-cart attempts by product | `rpt_stock_demand` | |
+
+**Providers and pricing**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R13 | Provider performance | Purchase value, average discount, fill rate, lead time per provider | `rpt_provider_performance` | ★ |
+| R14 | Price change log | Cost/price changes above X % after imports | `rpt_price_changes` | ★ |
+| R15 | Expiry watch | Variants expiring in 30/60/90 days and their value | `rpt_expiry_watch` | |
+
+**Shipping and payments**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R16 | Shipping cost vs charged | Customer-paid shipping vs Tipax actual cost, by service and province | `rpt_daily_shipping` | ★ |
+| R17 | Delivery performance | On-time rate, average days per carrier service / own courier | `rpt_daily_shipping` | |
+| R18 | Payment success rate | Started vs verified Zarinpal payments, failures by error code, fees | `rpt_daily_payments` | ★ |
+
+**Customers and marketing**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R19 | New vs returning customers | Sign-ups, first orders, repeat rate in 30/60 days | `rpt_daily_sales`, `rpt_customer_summary` | ★ |
+| R20 | Customer lifetime value | Top customers, average spend per customer, segments | `rpt_customer_summary` | |
+| R21 | Coupon performance | Uses, discount given, revenue and margin per coupon | `rpt_coupon_performance` | ★ |
+| R22 | Abandoned carts | Carts with items and no order in 24 h, value, top products | `rpt_daily_abandoned_carts` | |
+| R23 | Conversion funnel | Visits → product views → add to cart → checkout → paid | `rpt_daily_funnel` (needs `analytics_events`) | |
+
+**Search and catalog**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R24 | Search insights | Top searches, zero-result searches, searches with no click | `rpt_daily_search` | ★ |
+| R25 | Catalog health | Products missing photo/weight/dimensions/IRC/description; never-sold products | `rpt_catalog_health` | ★ |
+
+**System health**
+
+| ID | Report | What it shows | Source | ★ |
+|---|---|---|---|---|
+| R26 | Integration errors | Failed Tipax, Zarinpal, Melli Payamak calls in last 24 h | **live** (`integration_logs`, `notification_logs`) | ★ |
+| R27 | Queue & job health | Waiting/failed jobs, wait times (Horizon) | **live** | |
+
+### D22.2 Architecture
+- **Connection:** `config/database.php` → connection `reporting` (same MySQL server, database `pharmacy_reporting`, user with write access only to that DB and **read-only** access to the main DB). Warehouse tables never join back to the shop DB at dashboard time.
+- **Module:** `app/Modules/Reporting` (Builders, Queries, Filament widgets/pages, Jobs, Migrations on the `reporting` connection).
+- **Refresh schedule:** `Schedule::job(new RefreshReportingWarehouse)->twiceDaily(2, 14)->timezone('Asia/Tehran')->withoutOverlapping()->onOneServer();` on Horizon queue `reporting` (1 process, timeout 1800 s, memory 1 GB).
+- **Incremental window:** every run recomputes the **last 7 days** (orders change: cancellations, returns, actual Tipax cost) for date-based tables; snapshot tables (`rpt_customer_summary`, `rpt_expiry_watch`, `rpt_catalog_health`, `rpt_product_performance`) are rebuilt fully.
+- **Weekly full rebuild** (Friday 03:00): build into `*_new` tables, then atomic `RENAME TABLE rpt_x TO rpt_x_old, rpt_x_new TO rpt_x; DROP TABLE rpt_x_old;`.
+- **Idempotency:** incremental = `DELETE WHERE date BETWEEN window` + `INSERT … SELECT` inside one transaction per table; re-running gives identical results.
+- **Run log:** `rpt_refresh_runs` (id, started_at, finished_at, status, window_from, window_to, tables JSON with rows/duration, error). Dashboard shows "آخرین به‌روزرسانی: …" and a **Refresh now** action (super admin, queued, rate-limited to once per 15 min).
+- **Alert:** health check fails if the last successful run is older than 13 hours.
+- **Dates:** every date-grained row stores `date` (Tehran calendar date), `jalali_year`, `jalali_month`, `jalali_week`, `jalali_day` so charts group by Persian month/week.
+- **Money:** all amounts `unsignedBigInteger` Rial (signed `bigInteger` for margins/differences that can be negative).
+- **Cost allocation:** order-level shipping (actual cost), shipping charged, payment fee, packaging cost and coupon discount are allocated to order items **proportionally to item revenue**; rounding remainder goes to the largest item so totals match exactly.
+- **Margin definitions:**
+  - `gross_margin = revenue − provider_cost`
+  - `net_margin = gross_margin − (shipping_cost_actual − shipping_charged) − payment_fee − packaging_cost` (coupon discount is already deducted from revenue)
+- **Orders included:** `paid_at` not null; cancelled/refunded orders are included with negative refund rows so totals reconcile with payments.
+
+### D22.3 Warehouse tables
+
+`rpt_fact_order_items` (grain: one order item; base fact for R1–R7)
+```
+id, order_id, order_item_id (unique), order_number, customer_id, is_first_order (bool)
+date, hour (0–23), weekday (0–6, Saturday=0), jalali_year, jalali_month, jalali_week, jalali_day
+order_status, province_id, province_name, city_id, city_name
+product_id, product_name, variant_id, sku, brand_id, brand_name, category_id, category_name, product_type
+provider_id, provider_name, carrier_service_code, coupon_code
+qty, revenue, provider_cost, discount_alloc, shipping_charged_alloc, shipping_cost_alloc, payment_fee_alloc, packaging_alloc
+gross_margin, net_margin, refunded_amount, refreshed_at
+indexes: (date), (date, category_id), (date, brand_id), (product_id, date), (customer_id), (province_id, date)
+```
+
+`rpt_daily_sales` (grain: day) → R1, R2, R19
+```
+date (PK), jalali_*, orders, items, revenue, aov, provider_cost, gross_margin, net_margin,
+shipping_charged, shipping_cost, payment_fees, packaging_cost, discounts,
+new_customers, returning_customers, first_orders, cancellations, refunds_amount, refreshed_at
+```
+
+`rpt_daily_category_brand` (day × category × brand) → R3: `date, category_id, category_name, brand_id, brand_name, qty, revenue, provider_cost, gross_margin, net_margin` · unique(date, category_id, brand_id)
+
+`rpt_product_performance` (product × period) → R4: `period ('7d','30d','90d'), product_id, product_name, brand_name, qty, revenue, gross_margin, net_margin, rank_qty, rank_revenue, rank_margin` · unique(period, product_id)
+
+`rpt_order_profitability` (order) → R5: `order_id (PK), order_number, date, revenue, provider_cost, shipping_charged, shipping_cost, payment_fee, packaging_cost, discount, net_margin, net_margin_pct, is_loss (bool), loss_reason ('shipping','discount','both')`
+
+`rpt_daily_geo` (day × city) → R6: `date, province_id, province_name, city_id, city_name, orders, customers, revenue, net_margin`
+
+`rpt_sales_heatmap` (weekday × hour, rolling 90 days) → R7: `weekday, hour, orders, revenue, window_from, window_to`
+
+`rpt_fulfilment` (order) → R9: `order_id (PK), date, paid_at, sourced_at, packed_at, shipped_at, delivered_at, paid_to_sourced_min, sourced_to_packed_min, packed_to_shipped_min, shipped_to_delivered_min, paid_to_shipped_min, met_24h_sla (bool), shipping_method`
+
+`rpt_daily_cancellations_returns` (day × type × reason) → R11: `date, type ('cancel','return'), reason, count, refunded_amount`
+
+`rpt_stock_demand` (day × product) → R12: `date, product_id, variant_id, stock_alert_signups, blocked_add_to_cart` (blocked attempts recorded in `analytics_events`)
+
+`rpt_provider_performance` (provider × Jalali month) → R13: `jalali_year, jalali_month, provider_id, provider_name, purchases, purchase_value, avg_discount_pct, items_requested, items_received, fill_rate_pct, avg_lead_hours`
+
+`rpt_price_changes` (variant × change) → R14: `changed_at, date, variant_id, sku, product_name, old_cost, new_cost, old_price, new_price, cost_change_pct, price_change_pct, price_import_id, flagged (bool)`
+
+`rpt_expiry_watch` (variant, snapshot) → R15: `variant_id, sku, product_name, expiry_date, days_left, bucket ('≤30','31–60','61–90'), is_near_expiry, last_cost, last_price`
+
+`rpt_daily_shipping` (day × carrier service × province) → R16, R17: `date, carrier_code, service_code, province_id, shipments, shipping_charged, shipping_cost, difference, delivered, delivered_on_time, avg_delivery_days`
+
+`rpt_daily_payments` (day × gateway) → R18: `date, gateway, started, verified, failed, cancelled, failures_by_code (JSON), verified_amount, fees`
+
+`rpt_customer_summary` (customer, snapshot) → R19, R20: `customer_id (PK), first_order_at, last_order_at, orders, revenue, net_margin, avg_order_value, days_since_last_order, segment ('new','active','at_risk','lost','vip'), city_name`
+
+`rpt_coupon_performance` (coupon × day) → R21: `date, coupon_id, code, uses, unique_customers, discount_total, revenue, net_margin`
+
+`rpt_daily_abandoned_carts` (day) → R22: `date, carts, carts_value, top_products (JSON top 10)`
+
+`rpt_daily_funnel` (day) → R23: `date, sessions, product_views, add_to_cart, checkout_started, orders_paid` (needs a small `analytics_events` table: session_id, customer_id, event, product_id, created_at; written asynchronously, kept 90 days)
+
+`rpt_daily_search` (day × normalised query) → R24: `date, normalized_query, searches, zero_results, clicks, ctr_pct`
+
+`rpt_catalog_health` (product, snapshot) → R25: `product_id, product_name, status, missing_image, missing_weight, missing_dimensions, missing_irc, missing_description, never_sold, issues_count`
+
+`rpt_refresh_runs`: see D22.2.
+
+### D22.4 Laravel design
+```
+app/Modules/Reporting/
+  Contracts/WarehouseBuilder.php        // table(): string; build(ReportWindowData $window): BuildResultData
+  Data/ReportWindowData.php             // readonly: from (date), to (date), full (bool)
+  Data/BuildResultData.php              // readonly: table, rows, durationMs
+  Builders/FactOrderItemsBuilder.php    // runs first; others aggregate from it where possible
+  Builders/DailySalesBuilder.php … (one per rpt_ table)
+  Actions/RefreshWarehouse.php          // runs builders in dependency order, writes rpt_refresh_runs
+  Jobs/RefreshReportingWarehouse.php    // queue "reporting"
+  Queries/SalesOverviewQuery.php …      // read models for widgets (return DTOs)
+  Filament/Widgets/…                    // StatsOverview (R1/R2), charts, tables
+  Filament/Pages/Reports/*.php          // one page per report group with filters (date range, Jalali month, category, brand, provider)
+  Database/Migrations/                  // on the "reporting" connection
+```
+- Builders use `INSERT … SELECT` SQL on the database server (fast, low memory), not Eloquent loops.
+- Widgets read only through Queries; Queries return DTOs; Filament never queries `rpt_*` tables directly.
+- Dashboard (B12): 4 KPI stats (R1/R2), sales & margin chart (30 days), work queues (R8, R10 live), integration errors (R26 live), last-refresh time.
+- Export: each report page offers CSV/XLSX export of the current filter (OpenSpout).
+- Access: report pages visible to `super_admin`; operators see only R8, R9, R10, R16; margins and provider costs never visible to `content_editor`.
+
+### D22.5 Tests
+- Each builder: create orders/items/payments/shipments with factories → run builder for a window → assert totals (revenue, margins, allocations sum exactly to order totals).
+- Idempotency: run twice → same rows and sums.
+- Window: data outside the 7-day window is untouched by incremental runs.
+- Swap: weekly full rebuild leaves the dashboard readable during the build (table exists at all times).
+- Health: last successful run older than 13 h → health check fails.
+- Widgets/pages: render with seeded `rpt_*` data; access restricted by role.
+
 ---
 
 # Part E: Implementation steps and the AI working agreement
@@ -1717,7 +2602,7 @@ For **every** step below, the agent follows this loop and never skips a gate:
    - open decisions as questions with a recommended default;
    - packages to install (name + version), if any.
 3. **Branch**: `git checkout -b feat/S{nn}-{slug}` from `main`.
-4. **Implement** following Part C rules (module structure, Actions, enums, strict types).
+4. **Implement** following Part C rules (module structure, **Form Request → DTO → Action → API Resource** per C5, enums, strict types).
 5. **Test**: write Pest tests listed in the step (and any needed), then run:
    `vendor/bin/pint --test && vendor/bin/phpstan analyse && php artisan test --parallel`.
 6. **Report**: show the user the summary of changes, test results (counts, failures = 0), and screenshots/URLs for UI steps. Fix failures before reporting.
@@ -1746,7 +2631,7 @@ Never: commit or push without explicit approval; call real Tipax/Zarinpal produc
 | 4 Checkout, payments, shipping | S21–S28 |
 | 5 Orders operations | S29–S32 |
 | 6 Content, SEO, trust | S33–S36 |
-| 7 Hardening & launch | S37–S40 |
+| 7 Hardening & launch | S37–S40 (S41–S42 reporting must be done before S40) |
 
 ## E3. Steps
 
@@ -1814,7 +2699,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** attach values/tags; chip links to `/t/{slug}`.
 
 ### S12 PLP and search
-- **Refs:** D13.2, D15.1, D17, B1, B7–B13
+- **Refs:** D21 (search engine plan, SR1–SR5), D13.2, D15.1, D17, B1, B7–B13
 - **Build:** CategoryPage, BrandPage, TagPage, SearchPage with filters (brand, form, suitable-for, price, in-stock, discount %), sort, cursor pagination, mobile filter slide, quick view, instant search box, Scout database driver, synonyms, search logs.
 - **Tests:** filter combinations, Persian normalisation in search, zero-result logging, query count bounded (no N+1).
 
@@ -1840,7 +2725,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S17 Customer OTP auth
 - **Refs:** D13.1, D3.3, D16, D11.6, B7–B13
-- **Build:** customers, otp_codes, SMS sender interface (`log` driver), OtpLogin Livewire (TallStackUI pin), rate limits, profile completion.
+- **Build:** customers, otp_codes, SMS sender interface (`log` driver until S28 adds Melli Payamak), OtpLogin Livewire (TallStackUI pin), rate limits, profile completion.
 - **Tests:** rate limits, expiry, attempts, login + session regeneration, guest cart merge hook.
 
 ### S18 Addresses and account area
@@ -1893,10 +2778,10 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job, status mapping → order status, label link, cancel action.
 - **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
 
-### S28 Notifications (SMS)
-- **Refs:** D11.6, D3.6 (templates)
-- **Build:** templates + logs, events → SMS (otp, order_paid, order_shipped with tracking code, delivered, payment_failed), Melipayamak driver (D11.6).
-- **Tests:** template rendering, queued sending, failure logging.
+### S28 Notifications (SMS via Melli Payamak)
+- **Refs:** D11.6, D3.6 (templates), D13.1
+- **Build:** `SmsSender` contract, `LogSmsSender` + `MelipayamakSmsSender` (REST BaseServiceNumber with pattern bodyIds), templates ↔ bodyIds, notification logs (masked mobile, recId, code), `SendSmsJob` with retry rules, low-credit alert, `sms:test` command; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
+- **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
@@ -1953,9 +2838,19 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:** Horizon config + Supervisor file, scheduler, Sentry, Pulse, health checks + alerts, backups + restore runbook, deploy script.
 - **Tests:** health check endpoints; scheduler list matches D9.
 
+### S41 Reporting warehouse
+- **Refs:** D22.2, D22.3, D22.4, D22.5, D12.1
+- **Build:** `reporting` DB connection + migrations for all `rpt_*` tables and `rpt_refresh_runs`, builders (fact first, then aggregates), `RefreshWarehouse` action, `RefreshReportingWarehouse` job, twice-daily schedule + weekly full rebuild with table swap, health check (13 h), Refresh-now action, `analytics_events` table + async tracking for R12/R23.
+- **Tests:** D22.5 (totals, allocation sums, idempotency, window, swap, health).
+
+### S42 Dashboard and report pages
+- **Refs:** D22.1, D22.4, B12, B7–B13
+- **Build:** dashboard widgets (KPIs R1/R2, sales & margin chart, live R8/R10/R26), report pages per group with filters (date range, Jalali month, category, brand, provider) and CSV/XLSX export; ★ reports in MVP, others behind a feature flag until data exists; role-based visibility.
+- **Tests:** widgets render from seeded `rpt_*` data; live widgets query counts bounded; access by role; export matches filters.
+
 ### S40 Launch
 - **Refs:** D11.9, A3, A4
-- **Build:** production credentials (Tipax, Zarinpal, SMS), go-live checklist, demo data removed, soft-launch feedback fixes, browser smoke tests on mobile/tablet/desktop.
+- **Build:** production credentials (Tipax, Zarinpal, Melli Payamak), reporting warehouse first run verified, go-live checklist, demo data removed, soft-launch feedback fixes, browser smoke tests on mobile/tablet/desktop.
 - **Tests:** full Pest browser smoke suite green against staging.
 
 ## E4. Using the `implement-roadmap-section` skill
@@ -1981,6 +2876,8 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Products, variants, product FAQs, product relations | S10 | Catalog |
 | Attributes, attribute values, tags (nutrient/need) | S11 | Catalog |
 | PLP, filters, search, synonyms, search logs | S12 | Catalog / Search |
+| Similar products (nightly batch) | S13 + D21.6 (SR4) | Search / Catalog |
+| Meilisearch, hybrid/semantic search, embeddings (P2) | D21.9 SR6–SR9 | Search |
 | PDP, reviews display, product questions, stock alerts | S13 | Catalog |
 | Providers, provider prices | S14 | Pricing |
 | Pricing rules, pricing engine | S15 | Pricing |
@@ -1996,7 +2893,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Checkout wizard, orders, order items, order numbering | S25 | Checkout / Orders |
 | Payments, payment refunds, Zarinpal | S26 | Payments |
 | Shipments, shipment packages, shipment events, Tipax webhooks | S27 | Shipping |
-| Notification templates, notification logs, SMS | S28 | Notifications |
+| Notification templates, notification logs, SMS (Melli Payamak), OTP delivery | S28 | Notifications |
 | Order admin, order status histories, cancellations, customer order pages | S29 | Orders |
 | Provider purchases (sourcing) | S30 | Orders / Pricing |
 | Packing | S31 | Orders / Shipping |
@@ -2008,6 +2905,8 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Security hardening | S37 | System |
 | Performance and caching | S38 | System |
 | Horizon, Supervisor, monitoring, backups, deploy | S39 | System |
+| Reporting warehouse (`rpt_*` tables, 12-hour refresh) | S41 | Reporting |
+| Dashboard and reports R1–R27 | S42 | Reporting |
 | Launch | S40 | — |
 
 ## E6. The `implement-roadmap-section` skill (full instructions)
@@ -2107,4 +3006,6 @@ Update `ROADMAP_PROGRESS.md`: step id, title, status `done`, date, commit hash (
 - Zarinpal docs https://www.zarinpal.com/docs/paymentGateway/ (connectToGateway, sandBox, errorList, reverse, unVerified, Inquiry)
 - Iran locations https://github.com/sajaddp/list-of-cities-in-Iran, https://packagist.org/packages/zarbinco/laravel-iran-locations
 - Filament v5 release (2026-01-16) https://laravel-news.com/filament-5 ; TallStackUI v4 https://tallstackui.com/docs
+- MySQL vector functions/type https://dev.mysql.com/doc/refman/9.5/en/vector-functions.html, https://dev.mysql.com/doc/refman/9.5/en/vector.html ; Meilisearch hybrid search https://meilisearch.com/docs/capabilities/hybrid_search/overview ; Laravel Scout https://laravel.com/docs/scout
+- Melli Payamak shared service line (pattern) web service: https://www.melipayamak.com/api/sendbybasenumber2/ and https://www.melipayamak.com/api/sendbybasenumber/
 - IFDA online drug sale cancellation (2023) https://newspaper.irandaily.ir/7388/7/4931

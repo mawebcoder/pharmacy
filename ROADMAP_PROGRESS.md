@@ -45,3 +45,5 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S38 | Performance | todo | | |
 | S39 | Observability, backups, ops | todo | | |
 | S40 | Launch | todo | | |
+| S41 | Reporting warehouse (before S40) | todo | | |
+| S42 | Dashboard and report pages (before S40) | todo | | |
