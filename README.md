@@ -26,8 +26,8 @@ docker compose exec app npm run build
 | Service | Address |
 |---|---|
 | Storefront | http://localhost:7000 |
-| Admin (moves to `/admin` in S03) | http://admin.localhost:7000 |
-| Horizon | http://admin.localhost:7000/horizon |
+| Admin panel (2FA required) | http://localhost:7000/admin |
+| Horizon (admins with 2FA) | http://localhost:7000/horizon |
 | MySQL (from the host) | 127.0.0.1:7070 |
 | Vite dev server | `docker compose exec app npm run dev` on port 5173 |
 

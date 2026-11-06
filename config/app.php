@@ -65,19 +65,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Domain
-    |--------------------------------------------------------------------------
-    |
-    | The Filament admin panel and Horizon are served only on this subdomain,
-    | at its root (e.g. admin.example.ir). Locally, *.localhost resolves to
-    | 127.0.0.1 without any hosts-file change.
-    |
-    */
-
-    'admin_domain' => env('ADMIN_DOMAIN', 'admin.localhost'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

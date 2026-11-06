@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Modules\Identity\Http\Middleware\LogOutIdleAdmins;
 use App\Modules\Shared\Support\Modules;
 use App\Modules\Shared\Support\Toman;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
@@ -14,11 +16,13 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentTimezone;
+use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\AccountWidget;
@@ -97,9 +101,14 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->domain(config('app.admin_domain'))
-            ->path('')
+            ->path('admin')
+            // Staff only, with a mandatory authenticator app (TOTP) and recovery codes (roadmap D16).
+            ->authGuard('admin')
             ->login()
+            ->profile()
+            ->multiFactorAuthentication([
+                AppAuthentication::make()->recoverable(),
+            ], isRequired: true)
             ->spa()
             ->brandName((string) config('app.display_name'))
             ->font('Vazirmatn')
@@ -118,6 +127,14 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
             ])
+            // Sidebar groups in roadmap B6 order; a group appears once it has a page.
+            ->navigationGroups(['کاتالوگ', 'قیمت‌گذاری', 'فروش', 'ارسال', 'محتوا', 'مشتریان', 'تنظیمات', 'سیستم'])
+            ->navigationItems([
+                NavigationItem::make('صف‌ها (Horizon)')
+                    ->url('/horizon', shouldOpenInNewTab: true)
+                    ->icon(Heroicon::OutlinedQueueList)
+                    ->group('سیستم'),
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -131,6 +148,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+                LogOutIdleAdmins::class,
+            ], isPersistent: true);
     }
 }

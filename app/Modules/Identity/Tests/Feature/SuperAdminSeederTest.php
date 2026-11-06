@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
-use Database\Seeders\SuperAdminSeeder;
+use App\Modules\Identity\Database\Seeders\SuperAdminSeeder;
+use App\Modules\Identity\Models\AdminUser;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function (): void {
@@ -14,27 +14,27 @@ beforeEach(function (): void {
     ]]);
 });
 
-it('creates the super admin from the auth config', function (): void {
+it('creates the super admin as an active admin user from the auth config', function (): void {
     $this->seed(SuperAdminSeeder::class);
 
-    $user = User::firstWhere('email', 'owner@pharmacy.test');
+    $admin = AdminUser::firstWhere('email', 'owner@pharmacy.test');
 
-    expect($user->name)->toBe('مدیر ارشد')
-        ->and($user->is_admin)->toBeTrue()
-        ->and(Hash::check('a-strong-secret', $user->password))->toBeTrue()
-        ->and($user->email_verified_at)->not->toBeNull();
+    expect($admin->name)->toBe('مدیر ارشد')
+        ->and($admin->is_active)->toBeTrue()
+        ->and(Hash::check('a-strong-secret', $admin->password))->toBeTrue()
+        ->and($admin->hasTwoFactorAuthentication())->toBeFalse();
 });
 
-it('keeps a changed password and restores admin access when run again', function (): void {
+it('keeps a changed password and reactivates the admin when run again', function (): void {
     $this->seed(SuperAdminSeeder::class);
-    User::firstWhere('email', 'owner@pharmacy.test')->forceFill(['password' => 'changed-later', 'is_admin' => false])->save();
+    AdminUser::firstWhere('email', 'owner@pharmacy.test')->forceFill(['password' => 'changed-later', 'is_active' => false])->save();
 
     $this->seed(SuperAdminSeeder::class);
 
-    $user = User::firstWhere('email', 'owner@pharmacy.test');
-    expect(User::count())->toBe(1)
-        ->and($user->is_admin)->toBeTrue()
-        ->and(Hash::check('changed-later', $user->password))->toBeTrue();
+    $admin = AdminUser::firstWhere('email', 'owner@pharmacy.test');
+    expect(AdminUser::count())->toBe(1)
+        ->and($admin->is_active)->toBeTrue()
+        ->and(Hash::check('changed-later', $admin->password))->toBeTrue();
 });
 
 it('refuses the default password in production', function (): void {

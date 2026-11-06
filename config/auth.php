@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\Identity\Models\AdminUser;
 
 return [
 
@@ -44,6 +45,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Staff in the Filament admin panel (roadmap D16), never shared with customers.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admin_users',
+        ],
     ],
 
     /*
@@ -67,6 +74,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'admin_users' => [
+            'driver' => 'eloquent',
+            'model' => AdminUser::class,
         ],
 
         // 'users' => [
@@ -118,11 +130,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Idle Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Admins are signed out of the panel after this many minutes without a
+    | request (roadmap D16).
+    |
+    */
+
+    'admin_idle_timeout' => (int) env('ADMIN_IDLE_TIMEOUT_MINUTES', 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | Super Admin
     |--------------------------------------------------------------------------
     |
-    | The first admin account, created by Database\Seeders\SuperAdminSeeder
-    | (php artisan db:seed --class=SuperAdminSeeder). Override the defaults in
+    | The first admin (admin_users), created by php artisan db:seed (or
+    | --class="App\Modules\Identity\Database\Seeders\SuperAdminSeeder"). Override the defaults in
     | .env; in production the default password is refused. The password is
     | only used when the account is created; later runs never overwrite it.
     |
