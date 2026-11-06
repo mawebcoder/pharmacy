@@ -10,4 +10,4 @@ parameters:
         - routes
     excludePaths:
         # Pest test files inside modules (closures bound to the test case) are checked by running them.
-        - app/Modules/*/Tests
+        - app/Modules/*/Tests/*

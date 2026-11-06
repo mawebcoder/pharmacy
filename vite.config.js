@@ -9,8 +9,13 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
             fonts: [
+                // Self-hosted at build time (roadmap B4): Persian + Latin glyphs only, preload the two main weights.
                 bunny('Vazirmatn', {
                     weights: [400, 500, 700],
+                    subsets: ['arabic', 'latin'],
+                    preload: [{ weight: 400 }, { weight: 700 }],
+                    // Metric-matched fallbacks need the extra "fontaine" package; swap + preload is enough here.
+                    optimizedFallbacks: false,
                 }),
             ],
         }),

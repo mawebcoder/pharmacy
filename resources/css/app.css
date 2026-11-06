@@ -3,13 +3,18 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../../vendor/tallstackui/tallstackui/src/**/*.php';
+@source '../../app/Modules/**/*.php';
+@source '../../app/Modules/**/*.blade.php';
 
+/*
+| Design tokens (docs/pharmacy-roadmap.md B3). Templates use only these names; no raw hex values.
+| The primary scale is complete because TallStackUI uses every shade; 50, 700 and 800 are the B3 values.
+*/
 @theme {
     --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* Health-focused palette from the competitor report (teal primary, coral accent). */
-    --color-primary-50: #f0fdfa;
+    --color-primary-50: #e6f6f3;
     --color-primary-100: #ccfbf1;
     --color-primary-200: #99f6e4;
     --color-primary-300: #5eead4;
@@ -21,10 +26,33 @@
     --color-primary-900: #134e4a;
     --color-primary-950: #042f2e;
 
-    --color-accent: #f97362;
-    --color-mint: #e6f6f3;
-    --color-surface: #f8fafc;
-    --color-ink: #1e293b;
-    --color-muted: #64748b;
-    --color-rx: #7c3aed;
+    --color-accent-500: #f97362;
+    --color-accent-600: #e85d4c;
+    --color-ink-900: #1e293b;
+    --color-ink-500: #64748b;
+    --color-line-200: #e2e8f0;
+    --color-surface-50: #f8fafc;
+    --color-success-600: #16a34a;
+    --color-warning-500: #f59e0b;
+    --color-danger-600: #dc2626;
+    --color-rx-600: #7c3aed;
+
+    --radius-card: 0.75rem;
+    --shadow-card: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+@layer base {
+    /* B3: line-height 1.7 for Persian body text. */
+    body {
+        line-height: 1.7;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
 }

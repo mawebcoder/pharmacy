@@ -18,6 +18,13 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | The shop name people see (header, footer, page titles, admin brand). Kept apart from APP_NAME because
+    | APP_NAME also builds Redis and Horizon key prefixes. Moves to site settings in S35.
+    */
+
+    'display_name' => env('APP_DISPLAY_NAME', 'داروخانه آنلاین'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

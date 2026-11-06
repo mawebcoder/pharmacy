@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Shared;
 
+use App\Modules\Shared\Support\JalaliDate;
+use App\Modules\Shared\Support\Toman;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
@@ -20,6 +24,24 @@ final class SharedServiceProvider extends ModuleServiceProvider
 
         $this->guessModulePolicyNames();
         $this->guessModuleFactoryNames();
+        $this->registerDisplayHelpers();
+    }
+
+    /**
+     * Persian display helpers (roadmap B2 rule 9, C4):
+     * - {{ $order->created_at->toJalali('Y/m/d H:i') }} → "1405/08/15 14:00" (Latin digits, Tehran time)
+     * - @jalali($order->created_at)                    → "۱۵ آبان ۱۴۰۵" (Persian digits, Tehran time)
+     * - @toman($variant->price)                       → "۱٬۲۵۰٬۰۰۰ تومان" (price stored in rial)
+     */
+    private function registerDisplayHelpers(): void
+    {
+        Carbon::macro('toJalali', function (string $format = 'Y/m/d'): string {
+            /** @var Carbon $this */
+            return JalaliDate::format($this, $format);
+        });
+
+        Blade::directive('toman', fn (string $expression): string => '<?php echo e(\\'.Toman::class."::format({$expression})); ?>");
+        Blade::directive('jalali', fn (string $expression): string => '<?php echo e(\\'.JalaliDate::class."::display({$expression})); ?>");
     }
 
     /**
