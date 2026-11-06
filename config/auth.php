@@ -114,4 +114,22 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin
+    |--------------------------------------------------------------------------
+    |
+    | The first admin account, created by Database\Seeders\SuperAdminSeeder
+    | (php artisan db:seed --class=SuperAdminSeeder). Override the defaults in
+    | .env; in production the default password is refused. The password is
+    | only used when the account is created; later runs never overwrite it.
+    |
+    */
+
+    'superadmin' => [
+        'name' => env('SUPERADMIN_NAME', 'مدیر سیستم'),
+        'email' => env('SUPERADMIN_EMAIL', 'admin@pharmacy.test'),
+        'password' => env('SUPERADMIN_PASSWORD', 'password'),
+    ],
+
 ];

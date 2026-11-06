@@ -12,11 +12,17 @@
 /.phpunit.cache
 /.vscode
 /.zed
+pharmacy-mvp-technical-spec.zip
 /auth.json
 /node_modules
 /public/build
+/public/css/filament
 /public/fonts-manifest.dev.json
+/public/fonts/filament
 /public/hot
+/public/js/filament
+/public/js/ariaieboy
+/public/css/ariaieboy
 /public/storage
 /storage/*.key
 /storage/pail
