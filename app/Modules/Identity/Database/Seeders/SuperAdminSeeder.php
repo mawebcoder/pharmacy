@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Database\Seeders;
 
+use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
 use Illuminate\Database\Seeder;
 use RuntimeException;
@@ -11,7 +12,8 @@ use RuntimeException;
 final class SuperAdminSeeder extends Seeder
 {
     /**
-     * Create the first admin from config('auth.superadmin'), or make sure the existing one is active again.
+     * Create the first admin from config('auth.superadmin') with the super_admin role, or make sure the existing one
+     * is active and still a super admin.
      * An existing password is never overwritten. The admin sets up 2FA on first sign-in.
      */
     public function run(): void
@@ -32,5 +34,8 @@ final class SuperAdminSeeder extends Seeder
         $admin->name = $superAdmin['name'];
         $admin->is_active = true;
         $admin->save();
+
+        $this->call(RolesSeeder::class);
+        $admin->assignRole(AdminRole::SuperAdmin->value);
     }
 }

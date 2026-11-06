@@ -23,6 +23,8 @@ pharmacy-mvp-technical-spec.zip
 /public/js/filament
 /public/js/ariaieboy
 /public/css/ariaieboy
+/public/css/novadaemon
+/public/js/novadaemon
 /public/storage
 /storage/*.key
 /storage/pail

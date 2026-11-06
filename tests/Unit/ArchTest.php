@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+
 arch('application code uses strict types')
     ->expect(['App', 'Database'])
     ->toUseStrictTypes();
@@ -34,6 +36,10 @@ foreach ($modules as $module) {
         ->expect("App\\Modules\\{$module}\\Data")
         ->toBeFinal()
         ->toBeReadonly();
+
+    arch("{$module} models record their changes in the audit log")
+        ->expect("App\\Modules\\{$module}\\Models")
+        ->toUseTrait(LogsActivity::class);
 
     arch("{$module} actions are final and invokable")
         ->expect("App\\Modules\\{$module}\\Actions")

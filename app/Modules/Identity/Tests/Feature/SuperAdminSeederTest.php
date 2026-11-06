@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Identity\Database\Seeders\SuperAdminSeeder;
 use App\Modules\Identity\Models\AdminUser;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
     config(['auth.superadmin' => [
@@ -22,7 +23,15 @@ it('creates the super admin as an active admin user from the auth config', funct
     expect($admin->name)->toBe('مدیر ارشد')
         ->and($admin->is_active)->toBeTrue()
         ->and(Hash::check('a-strong-secret', $admin->password))->toBeTrue()
-        ->and($admin->hasTwoFactorAuthentication())->toBeFalse();
+        ->and($admin->hasTwoFactorAuthentication())->toBeFalse()
+        ->and($admin->isSuperAdmin())->toBeTrue();
+});
+
+it('creates the three staff roles on the admin guard', function (): void {
+    $this->seed(SuperAdminSeeder::class);
+
+    expect(Role::where('guard_name', 'admin')->orderBy('name')->pluck('name')->all())
+        ->toBe(['content_editor', 'operator', 'super_admin']);
 });
 
 it('keeps a changed password and reactivates the admin when run again', function (): void {

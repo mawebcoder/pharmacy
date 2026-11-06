@@ -25,14 +25,18 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     }
 
     /**
-     * Horizon is for signed-in admins (the "admin" guard) who have set up 2FA, in every environment.
+     * Horizon is for active super admins with 2FA (the "admin" guard), in every environment.
      * The parent class would let anyone in locally.
      */
     protected function authorization(): void
     {
         $this->gate();
 
-        Horizon::auth(fn (Request $request): bool => Gate::forUser($request->user('admin'))->allows('viewHorizon'));
+        Horizon::auth(function (Request $request): bool {
+            $admin = $request->user('admin');
+
+            return $admin instanceof AdminUser && $admin->canViewHorizon();
+        });
     }
 
     /**
@@ -40,8 +44,6 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewHorizon', fn (?AdminUser $admin = null): bool => $admin instanceof AdminUser
-            && $admin->is_active
-            && $admin->hasTwoFactorAuthentication());
+        Gate::define('viewHorizon', fn (?AdminUser $admin = null): bool => $admin instanceof AdminUser && $admin->canViewHorizon());
     }
 }

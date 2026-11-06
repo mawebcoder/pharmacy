@@ -48,8 +48,8 @@ it('does not let a signed-in customer into the admin panel', function (): void {
         ->assertRedirect('/admin/login');
 });
 
-it('lists the admin sidebar groups in roadmap order with the Horizon link under System', function (): void {
-    $admin = AdminUser::factory()->withTwoFactorAuthentication()->create();
+it('shows the System group with the Horizon link to a super admin', function (): void {
+    $admin = AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create();
 
     $this->actingAs($admin, 'admin')
         ->get('/admin')

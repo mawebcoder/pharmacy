@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Modules\Identity\Http\Middleware\LogOutIdleAdmins;
+use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Shared\Support\Modules;
 use App\Modules\Shared\Support\Toman;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
@@ -93,7 +96,12 @@ class AdminPanelProvider extends PanelProvider
                 ->discoverWidgets(in: app_path("Modules/{$module}/Filament/Widgets"), for: "App\\Modules\\{$module}\\Filament\\Widgets");
         }
 
-        return $panel;
+        // Roles and permissions (roadmap S04). Registered after module discovery so Shield sees the Identity
+        // module's RoleResource (Persian role names) and does not add its own.
+        return $panel->plugins([
+            FilamentShieldPlugin::make()
+                ->navigationGroup('سیستم'),
+        ]);
     }
 
     private function configurePanel(Panel $panel): Panel
@@ -133,8 +141,14 @@ class AdminPanelProvider extends PanelProvider
                 NavigationItem::make('صف‌ها (Horizon)')
                     ->url('/horizon', shouldOpenInNewTab: true)
                     ->icon(Heroicon::OutlinedQueueList)
-                    ->group('سیستم'),
+                    ->group('سیستم')
+                    ->visible(function (): bool {
+                        $admin = Filament::auth()->user();
+
+                        return $admin instanceof AdminUser && $admin->canViewHorizon();
+                    }),
             ])
+
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
