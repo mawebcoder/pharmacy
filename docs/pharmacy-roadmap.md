@@ -1941,7 +1941,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 |---|---|
 | Admin access | Separate `admin` guard and `admin_users` table; **Filament MFA (TOTP) mandatory**; strong passwords; session timeout 30 min idle; optional IP allowlist for `/admin` in Nginx |
 | Authorization | spatie/laravel-permission roles (`super_admin`, `operator`, `content_editor`, `pharmacist` P2); a Policy for every Filament resource; deny by default |
-| Customer auth | OTP only; rate limits (D13.1); codes hashed; session regenerated on login; `remember` cookie 30 days, `secure`, `httponly`, `samesite=lax` |
+| Customer auth | **Laravel Sanctum** (decided 2026-11-06): storefront customers authenticate through Sanctum (stateful, cookie-based for the Livewire storefront and its AJAX endpoints; the same setup issues tokens for the P2 `/api/v1` apps); exact guard setup confirmed in the S17 plan. OTP only; rate limits (D13.1); codes hashed; session regenerated on login; `remember` cookie 30 days, `secure`, `httponly`, `samesite=lax` |
 | CSRF | On all web forms (Livewire handles it); excluded only for webhooks |
 | Input | Validation on every input; Persian digit normalisation; rich text sanitized (purifier) before save; no raw `{!! !!}` except sanitized HTML |
 | Mass assignment | `$fillable` on every model; no `$guarded = []` |
@@ -2726,7 +2726,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S17 Customer OTP auth
 - **Refs:** D13.1, D3.3, D16, D11.6, B7–B13
-- **Build:** customers, otp_codes, SMS sender interface (`log` driver until S28 adds Melli Payamak), OtpLogin Livewire (TallStackUI pin), rate limits, profile completion.
+- **Build:** `laravel/sanctum` (storefront customer authentication, D16), customers, otp_codes, SMS sender interface (`log` driver until S28 adds Melli Payamak), OtpLogin Livewire (TallStackUI pin), rate limits, profile completion.
 - **Tests:** rate limits, expiry, attempts, login + session regeneration, guest cart merge hook.
 
 ### S18 Addresses and account area

@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn (): View => view('welcome'));
+// Placeholder until the real home page (S33).
+Route::livewire('/', 'pages::home')->name('home');
 
-// Temporary: TallStackUI RTL / Persian evaluation page.
-Route::livewire('/ui-test', 'ui-test')->name('ui-test');
+// Design-system gallery for design QA (roadmap B13); local environment only.
+if (app()->environment('local')) {
+    Route::livewire('/dev/ui', 'pages::dev.ui')->name('dev.ui');
+}

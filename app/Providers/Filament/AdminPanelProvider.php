@@ -5,14 +5,22 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Modules\Shared\Support\Modules;
+use App\Modules\Shared\Support\Toman;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentTimezone;
+use Filament\Support\RawJs;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -23,6 +31,52 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * Admin display rules (roadmap B12): Jalali dates in Tehran time, money in toman (stored as rial).
+     */
+    public function boot(): void
+    {
+        FilamentTimezone::set((string) config('app.display_timezone'));
+
+        // jalali() is a macro registered by ariaieboy/filament-jalali, which PHPStan cannot see.
+        DatePicker::configureUsing(fn (DatePicker $picker) => $picker->jalali()); // @phpstan-ignore method.notFound
+        DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->jalali()); // @phpstan-ignore method.notFound
+
+        $this->registerTomanMacros();
+    }
+
+    /**
+     * ->toman() on table columns, infolist entries and inputs. The database value is always rial.
+     */
+    private function registerTomanMacros(): void
+    {
+        TextColumn::macro('toman', function (): TextColumn {
+            // Macros run bound to the component; PHPStan only sees the provider as $this.
+            /** @var TextColumn $this */ // @phpstan-ignore varTag.nativeType
+            return $this->formatStateUsing(fn (int|float|string|null $state): string => Toman::format($state))->alignEnd();
+        });
+
+        TextEntry::macro('toman', function (): TextEntry {
+            // Macros run bound to the component; PHPStan only sees the provider as $this.
+            /** @var TextEntry $this */ // @phpstan-ignore varTag.nativeType
+            return $this->formatStateUsing(fn (int|float|string|null $state): string => Toman::format($state));
+        });
+
+        // Admins type toman with thousands separators (485,000); the rial value (4850000) is saved.
+        TextInput::macro('toman', function (): TextInput {
+            // Macros run bound to the component; PHPStan only sees the provider as $this.
+            /** @var TextInput $this */ // @phpstan-ignore varTag.nativeType
+            return $this
+                ->mask(RawJs::make("\$money(\$input, '.', ',', 0)"))
+                ->stripCharacters([',', '٬'])
+                ->numeric()
+                ->minValue(0)
+                ->suffix(Toman::UNIT)
+                ->formatStateUsing(fn (int|float|string|null $state): ?int => blank($state) ? null : Toman::fromRial($state))
+                ->dehydrateStateUsing(fn (int|float|string|null $state): ?int => Toman::rialFromInput($state));
+        });
+    }
+
     public function panel(Panel $panel): Panel
     {
         $panel = $this->configurePanel($panel);
@@ -47,7 +101,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('')
             ->login()
             ->spa()
-            ->brandName(config('app.name'))
+            ->brandName((string) config('app.display_name'))
             ->font('Vazirmatn')
             ->colors([
                 'primary' => Color::hex('#0F766E'),
