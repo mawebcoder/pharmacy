@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers\Filament;
 
+use App\Modules\Shared\Support\Modules;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -21,6 +24,21 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
+    {
+        $panel = $this->configurePanel($panel);
+
+        // Each module registers its own admin resources, pages and widgets (roadmap C3 rule 3).
+        foreach (Modules::names() as $module) {
+            $panel
+                ->discoverResources(in: app_path("Modules/{$module}/Filament/Resources"), for: "App\\Modules\\{$module}\\Filament\\Resources")
+                ->discoverPages(in: app_path("Modules/{$module}/Filament/Pages"), for: "App\\Modules\\{$module}\\Filament\\Pages")
+                ->discoverWidgets(in: app_path("Modules/{$module}/Filament/Widgets"), for: "App\\Modules\\{$module}\\Filament\\Widgets");
+        }
+
+        return $panel;
+    }
+
+    private function configurePanel(Panel $panel): Panel
     {
         return $panel
             ->default()

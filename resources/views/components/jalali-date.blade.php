@@ -1,6 +1,6 @@
 {{--
     Jalali (Shamsi) date picker. Binds a Gregorian Y-m-d string, so the server side stays standard:
-    <x-jalali-date label="تاریخ تحویل" wire:model.live="deliveryDate" :min="today()" />
+    <x-jalali-date label="تاریخ تحویل" wire:model.live="deliveryDate" :min="now()" />
 --}}
 @props([
     'label' => null,
@@ -19,10 +19,14 @@
     $errorKey = $model ?: $name;
     // Stable across Livewire re-renders so morphing keeps the label/input pairing.
     $id = $attributes->get('id', 'jalali-date-'.($errorKey ? \Illuminate\Support\Str::slug($errorKey) : \Illuminate\Support\Str::random(8)));
-    $toIso = fn ($date) => $date instanceof \DateTimeInterface ? $date->format('Y-m-d') : $date;
+    // Dates are compared as calendar days in the display timezone (Asia/Tehran), not UTC.
+    $displayTimezone = config('app.display_timezone');
+    $toIso = fn ($date) => $date instanceof \DateTimeInterface
+        ? \Illuminate\Support\Carbon::instance($date)->setTimezone($displayTimezone)->format('Y-m-d')
+        : $date;
     $config = [
         'value' => $toIso($value),
-        'today' => today()->toDateString(),
+        'today' => now($displayTimezone)->toDateString(),
         'min' => $toIso($min),
         'max' => $toIso($max),
     ];
