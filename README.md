@@ -43,6 +43,14 @@ docker compose exec app php artisan test --parallel
 
 CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs the same checks plus `composer audit` and the asset build on every push.
 
+## Modules
+
+Business code lives in `app/Modules/{Module}` (roadmap C3), one service provider per module, extending `App\Modules\Shared\ModuleServiceProvider`. It loads the module's migrations, `Routes/web.php`, views (`catalog::…`), Livewire components (`catalog::product-page`) and console commands. Create one with:
+
+```bash
+docker compose exec app php artisan make:module Coupons
+```
+
 ## Working on a roadmap step
 
 Each step (`S00`–`S40`) gets its own branch, `feat/S{nn}-{slug}`. With Claude Code, run the `implement-roadmap-section` skill with a step id or entity (e.g. `S07` or `Brands`).

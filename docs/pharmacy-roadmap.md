@@ -391,7 +391,7 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | `livewire/livewire:^4.0` | Storefront components | Storefront |
 | `tallstackui/tallstackui:^4.0` | UI components | Storefront |
 | `spatie/laravel-permission` | Roles & permissions | Identity |
-| `bezhansalleh/filament-shield` | Permission UI for Filament [CONFIRM v5 support; else build a simple Role resource] | Identity |
+| `bezhansalleh/filament-shield:^4.3` | Roles & permissions UI for Filament (decided 2026-11-06; v4.3 supports Filament ^4/^5 and spatie/laravel-permission ^6–^8), https://filamentphp.com/plugins/bezhansalleh-shield | Identity |
 | `spatie/laravel-medialibrary` | Media, conversions, responsive images | Media |
 | `srwiez/thumbhash` | ThumbHash placeholders | Media |
 | `spatie/laravel-activitylog` | Admin activity log | System |
@@ -470,7 +470,7 @@ Rules:
 2. Cross-module side effects use **events** (e.g. `Orders\Events\OrderPaid` → Shipping, Notifications, Pricing listen).
 3. Each module registers its own Filament resources: in `AdminPanelProvider`, `->discoverResources(in: app_path("Modules/{$m}/Filament/Resources"), for: "App\\Modules\\{$m}\\Filament\\Resources")` for each module.
 4. Each module loads its migrations: `$this->loadMigrationsFrom(__DIR__.'/Database/Migrations')`.
-5. Livewire components are registered with a module prefix, e.g. `catalog.product-page`.
+5. Livewire components are registered under the module's Livewire 4 namespace (the module name in kebab case), e.g. `catalog::product-page` → class `App\Modules\Catalog\Livewire\ProductPage`, or a single-file `⚡product-page.blade.php` in the module's `resources/views/livewire`. (Not `catalog.product-page`: in Livewire 4 a dot means a sub-folder.) Module Blade views use the same prefix: `view('catalog::...')`.
 6. Composer PSR-4 already covers `App\\` → `app/`; tests under `app/Modules/*/Tests` are added to `phpunit.xml` test suites.
 
 ## C4. Coding standards
@@ -1917,6 +1917,7 @@ Webhooks (no CSRF, rate-limited, secret header): `POST /webhooks/tipax/order/{re
 Admin: Filament panel `/admin` (separate guard `admin`, MFA required).
 
 ### D15.2 Shared Livewire / Blade components
+Names below are written `module.component` for readability; in code a module component is referenced as `module::component` (C3 rule 5), e.g. `catalog.product-card` → `catalog::product-card`.
 `layout.app` (header with search, mega menu, mini-cart, bottom nav), `search.instant-box`, `catalog.product-card`, `catalog.quick-view`, `catalog.filters` (desktop sidebar / mobile slide), `catalog.sort`, `catalog.variant-picker`, `cart.mini-cart`, `cart.add-button`, `content.flash-deal-countdown`, `content.banner-slider`, `content.chips`, `checkout.address-form` (map), `checkout.shipping-options`, `orders.tracking-timeline`, `media.picture`, `ui.price`, `ui.badge-*` (discount, near-expiry, damaged-box, rx, original).
 
 ### D15.3 Filament resources (per module)
@@ -1927,7 +1928,7 @@ Payments: PaymentResource (read-only + reverse action), PaymentRefundResource.
 Cart: CouponResource.
 Shipping: ShipmentResource, CarrierServiceResource, ShippingBoxResource, OriginResource, CarrierCityMappingResource (bulk fix), DeliveryZoneResource, DeliverySlotResource, CourierResource, ShippingRuleResource.
 Content: BannerResource, HomeSectionResource (reorder), FlashDealResource, PageResource, FaqResource, MenuResource, ContactMessageResource.
-Identity: CustomerResource, AdminUserResource, RoleResource.
+Identity: CustomerResource, AdminUserResource, RoleResource (provided by Filament Shield).
 Settings: GeneralSettings page (spatie/laravel-settings), SocialLinkResource, TrustBadgeResource, PharmacistResource, SeoRedirectResource, NotificationTemplateResource.
 System: ActivityLogResource, IntegrationLogResource, Health page.
 Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, MarginTrend, IntegrationErrors.
@@ -2660,7 +2661,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S04 Roles and permissions
 - **Refs:** D3.6 (admin), D16
-- **Build:** spatie/laravel-permission, roles `super_admin`, `operator`, `content_editor`; policies scaffold; Role management (filament-shield if v5-compatible, else simple RoleResource); activitylog.
+- **Build:** spatie/laravel-permission, roles `super_admin`, `operator`, `content_editor`; policies scaffold; Role management with **Filament Shield** (`bezhansalleh/filament-shield`: role resource, permission generation for every resource/page/widget, `super_admin` role); activitylog.
 - **Tests:** each role sees only allowed resources.
 
 ### S05 Locations

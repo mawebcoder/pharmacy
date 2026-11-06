@@ -14,3 +14,29 @@ arch('no debugging calls are left behind')
 arch('env() is only read in config files')
     ->expect('env')
     ->not->toBeUsed();
+
+/*
+| Module boundaries (roadmap C3 rule 1) and the C5 building blocks, generated for every module in app/Modules.
+*/
+$modules = array_map(basename(...), glob(dirname(__DIR__, 2).'/app/Modules/*', GLOB_ONLYDIR) ?: []);
+
+foreach ($modules as $module) {
+    $otherModulesModels = array_values(array_map(
+        fn (string $other): string => "App\\Modules\\{$other}\\Models",
+        array_diff($modules, [$module]),
+    ));
+
+    arch("{$module} module does not use other modules' models")
+        ->expect("App\\Modules\\{$module}")
+        ->not->toUse($otherModulesModels);
+
+    arch("{$module} DTOs are final and readonly")
+        ->expect("App\\Modules\\{$module}\\Data")
+        ->toBeFinal()
+        ->toBeReadonly();
+
+    arch("{$module} actions are final and invokable")
+        ->expect("App\\Modules\\{$module}\\Actions")
+        ->toBeFinal()
+        ->toBeInvokable();
+}
