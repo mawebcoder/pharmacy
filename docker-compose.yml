@@ -1,0 +1,93 @@
+name: pharmacy
+
+x-php: &php
+  build: &php-build
+    context: ./docker
+    dockerfile: php/Dockerfile
+    args:
+      UID: ${DOCKER_UID:-1000}
+      GID: ${DOCKER_GID:-1000}
+  restart: unless-stopped
+  volumes:
+    - ./:/var/www/html
+  networks:
+    - pharmacy
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *php
+    build:
+      <<: *php-build
+      target: app
+    image: pharmacy/app:dev
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+
+  supervisor:
+    <<: *php
+    build:
+      <<: *php-build
+      target: supervisor
+    image: pharmacy/supervisor:dev
+    depends_on:
+      app:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: ./docker/nginx
+    image: pharmacy/nginx:dev
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-7000}:80"
+    volumes:
+      - ./:/var/www/html:ro
+    networks:
+      - pharmacy
+    depends_on:
+      app:
+        condition: service_healthy
+
+  mysql:
+    build:
+      context: ./docker/mysql
+    image: pharmacy/mysql:dev
+    restart: unless-stopped
+    ports:
+      - "${FORWARD_DB_PORT:-7070}:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - pharmacy
+
+  redis:
+    build:
+      context: ./docker/redis
+    image: pharmacy/redis:dev
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - pharmacy
+
+networks:
+  pharmacy:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
