@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\System\Models\IntegrationLog;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteBulkAction;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 arch('application code uses strict types')
@@ -18,6 +20,11 @@ arch('no debugging calls are left behind')
 arch('env() is only read in config files')
     ->expect('env')
     ->not->toBeUsed();
+
+// Records are deleted one at a time, so each delete goes through its own checks (decided 2026-11-07).
+arch('admin tables have no bulk delete')
+    ->expect('App')
+    ->not->toUse([DeleteBulkAction::class, ForceDeleteBulkAction::class]);
 
 /*
 | Module boundaries (roadmap C3 rule 1) and the C5 building blocks, generated for every module in app/Modules.

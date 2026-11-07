@@ -342,7 +342,7 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 
 ## B12. Admin (Filament) design rules
 - Use Filament's default components and spacing; only the brand colour (`#0F766E`), font (Vazirmatn) and logo are customised.
-- Tables: first column = primary identifier (name/number), status as badge with consistent colours (same mapping as storefront), money columns right-aligned in Toman, dates Jalali, max 7 visible columns (others toggleable), filters for status/date/brand/category, bulk actions only where safe.
+- Tables: first column = primary identifier (name/number), status as badge with consistent colours (same mapping as storefront), money columns right-aligned in Toman, dates Jalali, max 7 visible columns (others toggleable), filters for status/date/brand/category, bulk actions only where safe and **never bulk delete** (decided 2026-11-07: records are deleted one at a time so each delete runs its own checks).
 - Forms: grouped in sections/tabs in this order: General → Content → Pricing/Inventory → Media → SEO; required fields marked; helper text for business rules (e.g. "قیمت نهایی نمی‌تواند از قیمت مصوب بیشتر باشد").
 - Order view: status timeline on top, actions as header buttons with confirmation modals, items table with cost and margin (visible to `super_admin` only).
 - Dashboard: 4 KPI stats on top, then charts (sales/margin 30 days), then work queues (sourcing backlog, packing queue, failed integrations).
@@ -2692,8 +2692,8 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S10 Products and variants
 - **Refs:** D3.1, D12.2, D12.3, D15.3
-- **Build:** products, product_variants, categories pivot, FAQs, relations; ProductResource with tabs and Variants relation manager; dimension/weight fields + `dimensions_verified`; `requires_prescription` guard.
-- **Tests:** create product with 2 variants; rx product cannot be activated for sale in MVP; factories.
+- **Build:** products, product_variants, categories pivot, FAQs, relations; ProductResource with tabs and Variants relation manager; dimension/weight fields + `dimensions_verified`; `requires_prescription` guard; `Brand::products()` and `Brand::hasProducts()` checking it (a brand with products cannot be deleted, decided 2026-11-07 in S07).
+- **Tests:** create product with 2 variants; rx product cannot be activated for sale in MVP; deleting a brand that has products is refused; factories.
 
 ### S11 Attributes and tags
 - **Refs:** D3.1, B1 (Darunet filters, Darochi nutrient chips)

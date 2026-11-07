@@ -26,7 +26,10 @@ final class RolesSeeder extends Seeder
             // S05 Locations: switch delivery on or off per city.
             'ViewAny:City', 'View:City', 'Update:City',
         ],
-        'content_editor' => [],
+        'content_editor' => [
+            // S07 Catalog: create and edit brands (deleting is left to super admins).
+            'ViewAny:Brand', 'View:Brand', 'Create:Brand', 'Update:Brand',
+        ],
     ];
 
     public function run(): void

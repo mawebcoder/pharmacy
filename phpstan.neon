@@ -11,3 +11,5 @@ parameters:
     excludePaths:
         # Pest test files inside modules (closures bound to the test case) are checked by running them.
         - app/Modules/*/Tests/*
+        # Single-file Livewire components (Blade with an anonymous class) are checked by their tests, like resources/views.
+        - app/Modules/*/resources/*
