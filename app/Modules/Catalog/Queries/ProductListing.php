@@ -69,7 +69,7 @@ final readonly class ProductListing
                 ->setIndexUid($index)
                 ->setQuery($text)
                 ->setFilter($this->filtersExcept($criteria, $groups, null))
-                ->setFacets(['brand_id', 'attribute_value_ids', 'min_price', 'in_stock', 'is_near_expiry', 'is_damaged_box'])
+                ->setFacets(['brand_id', 'attribute_value_ids', 'price', 'in_stock', 'is_near_expiry', 'is_damaged_box'])
                 ->setSort($sort->meilisearchSort())
                 ->setPage(max(1, $criteria->page))
                 ->setHitsPerPage(max(1, $criteria->perPage))
@@ -83,7 +83,7 @@ final readonly class ProductListing
                 ->setIndexUid($index)
                 ->setQuery($text)
                 ->setFilter($this->filtersExcept($criteria, $groups, $group))
-                ->setFacets([$group === 'brand' ? 'brand_id' : ($group === 'price' ? 'min_price' : 'attribute_value_ids')])
+                ->setFacets([$group === 'brand' ? 'brand_id' : ($group === 'price' ? 'price' : 'attribute_value_ids')])
                 ->setLimit(0);
         }
 
@@ -94,7 +94,7 @@ final readonly class ProductListing
         $distributionFor = fn (string $group, string $facet): array => $results[$facetQueryFor[$group] ?? 0]['facetDistribution'][$facet] ?? $main['facetDistribution'][$facet] ?? [];
 
         $ids = array_map(fn (array $hit): int => (int) $hit['id'], $main['hits']);
-        $priceStats = $results[$facetQueryFor['price'] ?? 0]['facetStats']['min_price'] ?? null;
+        $priceStats = $results[$facetQueryFor['price'] ?? 0]['facetStats']['price'] ?? null;
 
         return new ListingResult(
             products: $this->page($ids, (int) ($main['totalHits'] ?? count($ids)), $criteria),
@@ -133,8 +133,8 @@ final readonly class ProductListing
         }
 
         $price = array_filter([
-            $criteria->minPrice === null ? null : 'min_price >= '.$criteria->minPrice,
-            $criteria->maxPrice === null ? null : 'min_price <= '.$criteria->maxPrice,
+            $criteria->minPrice === null ? null : 'price >= '.$criteria->minPrice,
+            $criteria->maxPrice === null ? null : 'price <= '.$criteria->maxPrice,
         ]);
 
         if ($price !== []) {
@@ -156,7 +156,7 @@ final readonly class ProductListing
             $criteria->brandId === null ? null : 'brand_id = '.$criteria->brandId,
             $criteria->tagId === null ? null : 'tag_ids = '.$criteria->tagId,
             $criteria->inStock ? 'in_stock = true' : null,
-            $criteria->minDiscount === null ? null : 'max_discount_pct >= '.$criteria->minDiscount,
+            $criteria->minDiscount === null ? null : 'discount_pct >= '.$criteria->minDiscount,
             $criteria->nearExpiry ? 'is_near_expiry = true' : null,
             $criteria->damagedBox ? 'is_damaged_box = true' : null,
         ]));

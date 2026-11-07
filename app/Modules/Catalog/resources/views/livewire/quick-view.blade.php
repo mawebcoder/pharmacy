@@ -24,7 +24,7 @@
                                         {{ $variant->getStockStatus()->label() }}
                                     </p>
                                 </div>
-                                <x-ui.price :price="$variant->currentPrice()" :old="$variant->getSalePrice() === null ? null : $variant->getPrice()" size="sm" />
+                                <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="sm" />
                             </li>
                         @endforeach
                     </ul>

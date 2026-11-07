@@ -27,12 +27,13 @@ beforeEach(function (): void {
 });
 
 /**
- * An active product with one variant: price in rial, optional sale price and stock.
+ * An active product with one variant: price in rial, optional sale price and stock. No box price unless given, so
+ * the only discount is the sale price.
  */
 function sellable(array $product = [], array $variant = []): Product
 {
     $created = Product::factory()->active()->create($product);
-    ProductVariant::factory()->for($created)->create([ProductVariant::COLUMN_PRICE => 1_000_000, ...$variant]);
+    ProductVariant::factory()->for($created)->create([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 1_000_000, ...$variant]);
 
     return $created->fresh();
 }
@@ -165,6 +166,18 @@ describe('filters', function (): void {
     it('puts the biggest discount first', function (): void {
         expect(listedNames(new ListingCriteria(sort: ListingSort::BiggestDiscount))[0])->toBe('کرم اوسرین');
     });
+});
+
+it('filters and sorts by the price of the default SKU, not the cheapest one', function (): void {
+    $packs = sellable([Product::COLUMN_NAME_FA => 'قرص ۹۰ عددی'], [ProductVariant::COLUMN_PRICE => 3_000_000]);
+    $thirty = ProductVariant::factory()->for($packs)->create([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 1_000_000, ProductVariant::COLUMN_SORT => 2]);
+    $packs->setDefaultVariantId($packs->variants()->where(ProductVariant::COLUMN_PRICE, 3_000_000)->sole()->getId())->save();
+    sellable([Product::COLUMN_NAME_FA => 'قرص میانه'], [ProductVariant::COLUMN_PRICE => 2_000_000]);
+    indexProductsForSearch();
+
+    expect(listedNames(new ListingCriteria(sort: ListingSort::Cheapest)))->toBe(['قرص میانه', 'قرص ۹۰ عددی'])
+        ->and(listedNames(new ListingCriteria(maxPrice: 1_500_000)))->toBe([])
+        ->and($thirty->getSort())->toBe(2);
 });
 
 it('pages through results, 24 at a time', function (): void {

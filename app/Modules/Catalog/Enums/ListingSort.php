@@ -45,9 +45,9 @@ enum ListingSort: string implements HasLabel
             // sales_30d is 0 until orders exist (S20), so newest decides.
             self::BestSelling => ['sales_30d:desc', 'created_at:desc'],
             self::Newest => ['created_at:desc'],
-            self::Cheapest => ['min_price:asc'],
-            self::MostExpensive => ['min_price:desc'],
-            self::BiggestDiscount => ['max_discount_pct:desc'],
+            self::Cheapest => ['price:asc'],
+            self::MostExpensive => ['price:desc'],
+            self::BiggestDiscount => ['discount_pct:desc'],
         };
     }
 

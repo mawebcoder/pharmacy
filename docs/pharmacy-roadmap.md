@@ -783,6 +783,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | slug | string | unique |
 | brand_id | FK | |
 | primary_category_id | FK | plus pivot `category_product` for extra categories |
+| default_variant_id | FK nullable | the admin's default SKU (decided 2026-11-07, S12); see «Default SKU» below |
 | product_type | enum | `cosmetic`, `personal_care`, `supplement`, `otc`, `rx`, `medical_device` |
 | requires_prescription | bool | blocks add-to-cart in MVP |
 | irc_code | string | IFDA registration code, shown on PDP |
@@ -798,9 +799,10 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | product_id | FK | |
 | sku, barcode | string | |
 | title_fa | string | e.g. "۳۰ عددی", "طعم پرتقال" |
-| official_price | bigint Rial | consumer price printed on the box (medicines: legal cap) |
-| price | bigint Rial | our selling price (computed by pricing engine, can be overridden) |
-| sale_price | bigint Rial nullable | active discount price |
+| sort | int | admin's order (drag and drop); decides the next SKU when the default is out of stock |
+| official_price | bigint Rial nullable | «قیمت مصرف‌کننده (روی جعبه)», the compare-at price: caps price and sale price for every product type; required for medicines |
+| price | bigint Rial | «قیمت فروش»: our selling price (computed by pricing engine, can be locked by hand) |
+| sale_price | bigint Rial nullable | «قیمت حراج»: active discount price, below price |
 | stock_status | enum | `available`, `on_request`, `out_of_stock` (no own stock; reflects provider availability) |
 | expiry_date | date nullable | shown on PDP |
 | is_near_expiry | bool | feeds "زودمصرف" section |
@@ -813,6 +815,8 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | requires_cold_chain | bool | blocked from shipping in MVP |
 | max_per_order | int nullable | |
 | is_active | bool | |
+
+**Default SKU** (decided 2026-11-07, S12): `Product::getDefaultVariant()` is the SKU shown on cards, in quick view and in the search box, sent to Meilisearch, and added by «افزودن به سبد» (S19): the admin's choice (`default_variant_id`) while it is active and in stock; otherwise the first active, in-stock variant in `sort` order; when nothing is in stock, the admin's choice or else the first active variant (shown «ناموجود»). Only the choice is stored, so the default returns to it by itself once it is back in stock. Admin: «پیش‌فرض کن» in the variants table, drag to reorder (`SetDefaultVariant`, `ReorderProductVariants`). The struck-through price is the box price whenever the customer pays less (`compareAtPrice()`; without a box price, the price before the sale), and discount % is measured against it. The variant form shows a «قیمت‌ها چطور کار می‌کنند» guide above the price fields; S15 adds the engine paragraphs to it.
 
 **attributes**: `name_fa`, `code`, `type` (`select`, `multi_select`), `is_filterable`, `sort`. **attribute_values**: `attribute_id`, `value_fa`, `sort`. Pivot **product_attribute_value**. Used for: form (tablet, syrup, cream…), "suitable for" (age, gender), skin type, hair type. Attributes are chosen from lists only; the `text` type was dropped (decided 2026-11-07 in S11: free details belong in the description). `StandardAttributesSeeder` adds the standard attributes (form, suitable_for, age_group, benefit, skin_type, hair_type) based on the reference sites' filters (darunet «نوع دارو»/«مناسب برای», mosbatesabz «فرم محصول»/«رده سنی»/«فیلتر کارایی»); it only adds what is missing, and admins add or edit attributes and values in the admin.
 
@@ -832,14 +836,16 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 **provider_prices**: `provider_id`, `variant_id`, `cost` (Rial), `discount_percent`, `is_available`, `lead_time_hours`, `updated_at`. Unique (`provider_id`, `variant_id`).
 
-**pricing_rules**: `scope_type` (`global`, `category`, `brand`, `product`), `scope_id`, `markup_percent`, `cap_at_official_price` (bool, forced true for `otc`/`rx`), `rounding` (e.g. round up to 1,000 Rial), `priority`, `is_active`.
+**Commission** (decided 2026-11-07, S12; replaces the `pricing_rules` scopes): set **per product only** — `products.commission_percent` (nullable) — with one store-wide default % in settings for products without their own. No brand, category or global rules. Rounding (e.g. up to 1,000 Rial) is a store setting. **product_variants.price_locked** (bool, «قیمت دستی»): when on, the engine leaves `price` alone (the box-price cap still applies).
 
 Pricing engine:
 ```
-cost   = lowest available provider cost for the variant
-price  = round_up(cost × (1 + markup_percent/100), rounding)
-if cap_at_official_price: price = min(price, official_price)
+cost   = lowest available provider cost for the variant («قیمت خرید از تأمین‌کننده»)
+price  = round_up(cost × (1 + commission_percent/100), rounding)   # product's %, else the default
+if official_price: price = min(price, official_price)               # every product type
+sale_price stays manual and must be < price (≤ official_price)
 ```
+Provider prices are our cost: never in the Meilisearch document or any storefront view.
 
 **price_imports**: `provider_id`, `file_path`, `status` (`pending`, `processing`, `done`, `failed`), `rows_total`, `rows_updated`, `rows_failed`, `error_report_path`, `admin_id`.
 
@@ -2710,7 +2716,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** attach values/tags; chip links to `/t/{slug}`.
 
 ### S12 PLP and search
-- **Decisions (2026-11-07):** Meilisearch now (see D21 update) for search and listings; numbered pages + «نمایش بیشتر»; a simple `/p/{slug}` product page now (S13 builds the full page); Search module owns the box, `/search`, synonyms (+ Excel/CSV import), logs and insights, and asks Catalog through its queries; the MySQL `innodb_ft_min_token_size = 2` setting is kept in the Docker config.
+- **Decisions (2026-11-07):** default SKU per product with fallback in admin order, the SKU list with price, sale price and compare-at (box) price in the Meilisearch document, `price`/`discount_pct` filters and sorts from the default SKU, discount measured against the box price, box-price cap for every product type, search-box rows show the price (add-to-cart button in S19) — see D3.1 «Default SKU»; Meilisearch now (see D21 update) for search and listings; numbered pages + «نمایش بیشتر»; a simple `/p/{slug}` product page now (S13 builds the full page); Search module owns the box, `/search`, synonyms (+ Excel/CSV import), logs and insights, and asks Catalog through its queries; the MySQL `innodb_ft_min_token_size = 2` setting is kept in the Docker config.
 - **Refs:** D21 (search engine plan, SR1–SR5), D13.2, D15.1, D17, B1, B7–B13
 - **Build:** CategoryPage, BrandPage, TagPage, SearchPage with filters (brand, form, suitable-for, price, in-stock, discount %), sort, cursor pagination, mobile filter slide, quick view, instant search box, Scout database driver, synonyms, search logs.
 - **Tests:** filter combinations, Persian normalisation in search, zero-result logging, query count bounded (no N+1).
@@ -2722,17 +2728,17 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S14 Providers and provider prices
 - **Refs:** D3.2, A1
-- **Build:** providers, provider_prices, Filament resources, availability flag → variant `stock_status`.
-- **Tests:** cheapest available provider selection.
+- **Build:** providers, provider_prices, Filament resources, availability flag → variant `stock_status`; a «قیمت خرید از تأمین‌کننده» table on each variant in the admin. Stock changes go through an action that calls `ProductSearchIndex::refresh` (the default SKU may switch).
+- **Tests:** cheapest available provider selection; a stock change switches the default SKU in the search document.
 
 ### S15 Pricing engine
 - **Refs:** D3.2 (engine), D13.9
-- **Build:** pricing_rules, `CalculateVariantPrice` action, `RecalculatePrices` job, official-price cap for otc/rx, rounding, flag > 15 % changes.
-- **Tests:** rule priority (product > brand > category > global), cap, rounding, 100 % branch coverage.
+- **Build:** `products.commission_percent` + store default %, `product_variants.price_locked` («قیمت دستی»), `CalculateVariantPrice` action, `RecalculatePrices` job (after provider cost, commission or default % changes; refreshes the search index), box-price cap for every product type, rounding, flag > 15 % changes; add the engine paragraphs (commission, automatic price, «قیمت دستی», full example) to the variant form's pricing guide and a short guide next to «کمیسیون» on the product form (decided 2026-11-07, S12).
+- **Tests:** product commission vs the default %, cap on every type, rounding, manual lock, sale price ≤ price, 100 % branch coverage.
 
 ### S16 Price import
 - **Refs:** D13.9
-- **Build:** upload Excel → parse (OpenSpout) → match → preview diff page → apply → recalc; error report download.
+- **Build:** upload Excel → parse (OpenSpout) → match → preview diff page → apply → recalc (through the S14/S15 actions, so the search index follows); error report download.
 - **Tests:** fixture file with matched/unmatched rows; apply updates prices.
 
 ### S17 Customer OTP auth
@@ -2742,12 +2748,12 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S18 Addresses and account area
 - **Refs:** D3.3, B5 (account), B7–B13
-- **Build:** addresses with map pin and Locations selects, account dashboard, profile, wishlist, my reviews.
+- **Build:** addresses with map pin and Locations selects, account dashboard, profile, wishlist, my reviews; a heart button on the product card, quick view and product page adds to the wishlist (guests get the OTP login first, then the product is saved).
 - **Tests:** owner-only access (policy), default address switching.
 
 ### S19 Cart
 - **Refs:** D13.3, D3.4, B7–B13
-- **Build:** carts/cart_items, add-to-cart action + button, mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
+- **Build:** carts/cart_items, add-to-cart action + button (on the card, quick view and the search box's product rows: a «+» that adds the default SKU, with a «تغییر» link to the product page; decided 2026-11-07, S12), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
 - **Tests:** qty limits, rx/cold-chain blocked, price snapshot refresh, merge.
 
 ### S20 Coupons

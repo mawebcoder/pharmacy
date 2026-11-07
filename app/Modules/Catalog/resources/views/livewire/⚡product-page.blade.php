@@ -92,7 +92,7 @@ new class extends Component
                                 @endif
                             </p>
                         </div>
-                        <x-ui.price :price="$variant->currentPrice()" :old="$variant->getSalePrice() === null ? null : $variant->getPrice()" />
+                        <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" />
                     </li>
                 @endforeach
             </ul>

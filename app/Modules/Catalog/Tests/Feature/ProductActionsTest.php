@@ -161,14 +161,15 @@ describe('variants', function (): void {
         expect(fn () => app(SaveProductVariant::class)($product, variantData($prices)))->toThrow(ProductChangeRefused::class, $reason);
     })->with([
         'sale price not below price' => ['cosmetic', [ProductVariant::COLUMN_SALE_PRICE => 4_600_000], 'قیمت حراج'],
-        'medicine above the official price' => ['otc', [ProductVariant::COLUMN_PRICE => 5_000_000], 'قیمت مصوب'],
-        'medicine without an official price' => ['otc', [ProductVariant::COLUMN_OFFICIAL_PRICE => null], 'قیمت مصوب'],
+        'medicine above the box price' => ['otc', [ProductVariant::COLUMN_PRICE => 5_000_000], 'قیمت مصرف‌کننده'],
+        'cosmetic above the box price' => ['cosmetic', [ProductVariant::COLUMN_PRICE => 5_000_000], 'قیمت مصرف‌کننده'],
+        'medicine without a box price' => ['otc', [ProductVariant::COLUMN_OFFICIAL_PRICE => null], 'قیمت مصرف‌کننده'],
     ]);
 
-    it('lets cosmetics be priced above the box price', function (): void {
+    it('leaves the price of a product without a box price uncapped', function (): void {
         $product = Product::factory()->create();
 
-        $variant = app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_PRICE => 5_000_000]));
+        $variant = app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 5_000_000]));
 
         expect($variant->getPrice())->toBe(5_000_000);
     });

@@ -1,4 +1,6 @@
-{{-- Search box with suggestions (roadmap D21.2 item 6): see App\Modules\Search\Livewire\InstantSearch. --}}
+{{-- Search box with suggestions (roadmap D21.2 item 6): see App\Modules\Search\Livewire\InstantSearch.
+     Product rows show the default SKU's price; the add-to-cart button joins them in S19. --}}
+@use('App\Modules\Catalog\Support\ProductCardData')
 @php
     $hasText = mb_strlen(trim($value)) >= $minLength;
     $suggestions = $hasText ? $this->suggestions : null;
@@ -70,6 +72,7 @@
                 <p class="px-3 pt-2 pb-1 text-xs font-bold text-ink-500">محصولات</p>
                 <ul>
                     @foreach ($suggestions->products as $product)
+                        @php($card = ProductCardData::for($product))
                         <li wire:key="suggest-product-{{ $product->getId() }}">
                             <a role="option" href="{{ route('products.show', $product) }}" wire:navigate class="flex min-h-14 items-center gap-3 rounded-md px-3 py-1 hover:bg-surface-50 focus:bg-primary-50 focus:outline-none">
                                 <span class="size-11 shrink-0 overflow-hidden rounded-md bg-white">
@@ -79,6 +82,11 @@
                                     <span class="line-clamp-1 text-sm text-ink-900">{{ $product->getNameFa() }}</span>
                                     <span class="block text-xs text-ink-500">{{ $product->getBrand()?->getNameFa() }}</span>
                                 </span>
+                                @if ($card->price !== null && $card->inStock)
+                                    <x-ui.price :price="$card->price" :old="$card->oldPrice" size="sm" class="shrink-0" />
+                                @else
+                                    <span class="shrink-0 text-xs text-ink-500">ناموجود</span>
+                                @endif
                             </a>
                         </li>
                     @endforeach

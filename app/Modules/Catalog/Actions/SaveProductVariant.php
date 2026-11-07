@@ -34,7 +34,9 @@ final class SaveProductVariant
         }
 
         $saved = DB::transaction(function () use ($product, $data, $variant): ProductVariant {
-            $variant ??= (new ProductVariant)->setProductId($product->getId());
+            $variant ??= (new ProductVariant)
+                ->setProductId($product->getId())
+                ->setSort((int) $product->variants()->max(ProductVariant::COLUMN_SORT) + 1);
 
             $variant
                 ->setSku($data->sku ?? ($variant->exists ? $variant->getSku() : VariantSku::next($product->loadMissing('brand'))))
@@ -63,7 +65,7 @@ final class SaveProductVariant
             return $variant;
         });
 
-        ProductSearchIndex::refresh($product);
+        ProductSearchIndex::refresh($product->unsetRelation('variants'));
 
         return $saved;
     }

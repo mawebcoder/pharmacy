@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Models;
 use App\Modules\Catalog\Database\Factories\ProductVariantFactory;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Support\Toman;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -37,6 +38,8 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public const string COLUMN_BARCODE = 'barcode';
 
     public const string COLUMN_TITLE_FA = 'title_fa';
+
+    public const string COLUMN_SORT = 'sort';
 
     public const string COLUMN_OFFICIAL_PRICE = 'official_price';
 
@@ -125,6 +128,19 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public function setTitleFa(string $value): static
     {
         return $this->setAttribute(self::COLUMN_TITLE_FA, $value);
+    }
+
+    /**
+     * Position in the admin's order of the product's variants; the next SKU after an out-of-stock default.
+     */
+    public function getSort(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_SORT);
+    }
+
+    public function setSort(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SORT, $value);
     }
 
     /**
@@ -376,12 +392,42 @@ final class ProductVariant extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_EXPIRY_DATE, $date);
     }
 
+    public function isInStock(): bool
+    {
+        return $this->getStockStatus() !== StockStatus::OutOfStock;
+    }
+
     /**
      * The price the customer pays now, in rial: the sale price when set, else the price.
      */
     public function currentPrice(): int
     {
         return $this->getSalePrice() ?? $this->getPrice();
+    }
+
+    /**
+     * The struck-through price, in rial: the box price when the customer pays less than it; without a box price,
+     * the price before the sale. Null when there is nothing to strike through.
+     */
+    public function compareAtPrice(): ?int
+    {
+        $official = $this->getOfficialPrice();
+
+        if ($official !== null && $official > $this->currentPrice()) {
+            return $official;
+        }
+
+        return $official === null && $this->getSalePrice() !== null ? $this->getPrice() : null;
+    }
+
+    /**
+     * Discount against the struck-through price, in whole percent.
+     */
+    public function discountPercent(): int
+    {
+        $compareAt = $this->compareAtPrice();
+
+        return $compareAt === null ? 0 : Toman::discountPercent($compareAt, $this->currentPrice());
     }
 
     public function getCreatedAt(): ?Carbon
@@ -461,6 +507,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_REQUIRES_COLD_CHAIN => 'boolean',
             self::COLUMN_MAX_PER_ORDER => 'integer',
             self::COLUMN_IS_ACTIVE => 'boolean',
+            self::COLUMN_SORT => 'integer',
         ];
     }
 }

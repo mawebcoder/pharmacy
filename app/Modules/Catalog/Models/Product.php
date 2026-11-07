@@ -52,6 +52,8 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_PRIMARY_CATEGORY_ID = 'primary_category_id';
 
+    public const string COLUMN_DEFAULT_VARIANT_ID = 'default_variant_id';
+
     public const string COLUMN_PRODUCT_TYPE = 'product_type';
 
     public const string COLUMN_REQUIRES_PRESCRIPTION = 'requires_prescription';
@@ -266,6 +268,21 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return $this->setAttribute(self::COLUMN_PRIMARY_CATEGORY_ID, $categoryId);
     }
 
+    /**
+     * The variant the admin chose as default; see getDefaultVariant() for the one actually shown.
+     */
+    public function getDefaultVariantId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_DEFAULT_VARIANT_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setDefaultVariantId(?int $variantId): static
+    {
+        return $this->setAttribute(self::COLUMN_DEFAULT_VARIANT_ID, $variantId);
+    }
+
     public function getProductType(): ProductType
     {
         return $this->getAttribute(self::COLUMN_PRODUCT_TYPE);
@@ -379,7 +396,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
      */
     public function variants(): HasMany
     {
-        return $this->hasMany(ProductVariant::class)->orderBy(ProductVariant::COLUMN_ID);
+        return $this->hasMany(ProductVariant::class)->orderBy(ProductVariant::COLUMN_SORT)->orderBy(ProductVariant::COLUMN_ID);
     }
 
     /**
@@ -388,6 +405,24 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function getVariants(): Collection
     {
         return $this->getRelationValue('variants');
+    }
+
+    /**
+     * The SKU shown on cards and in search and added by «افزودن به سبد» (decided 2026-11-07, S12): the admin's
+     * choice while it is active and in stock; otherwise the first active, in-stock variant in the admin's order;
+     * when nothing is in stock, the admin's choice or else the first active variant (shown as «ناموجود»).
+     * Only the choice is stored, so the default returns to it by itself once it is back in stock.
+     */
+    public function getDefaultVariant(): ?ProductVariant
+    {
+        $active = $this->getVariants()->filter(fn (ProductVariant $variant): bool => $variant->isActive() && ! $variant->trashed());
+        $chosen = $active->first(fn (ProductVariant $variant): bool => $variant->getId() === $this->getDefaultVariantId());
+
+        if ($chosen?->isInStock()) {
+            return $chosen;
+        }
+
+        return $active->first(fn (ProductVariant $variant): bool => $variant->isInStock()) ?? $chosen ?? $active->first();
     }
 
     /**
@@ -536,7 +571,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return LogOptions::defaults()
             ->useLogName('catalog')
             ->logOnly([
-                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_PRIMARY_CATEGORY_ID,
+                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
                 self::COLUMN_PRODUCT_TYPE, self::COLUMN_REQUIRES_PRESCRIPTION, self::COLUMN_IRC_CODE, self::COLUMN_SHORT_DESCRIPTION,
                 self::COLUMN_DESCRIPTION, self::COLUMN_INGREDIENTS, self::COLUMN_USAGE, self::COLUMN_WARNINGS, self::COLUMN_SIDE_EFFECTS,
                 self::COLUMN_INTERACTIONS, self::COLUMN_STATUS, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
@@ -558,6 +593,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return [
             self::COLUMN_BRAND_ID => 'integer',
             self::COLUMN_PRIMARY_CATEGORY_ID => 'integer',
+            self::COLUMN_DEFAULT_VARIANT_ID => 'integer',
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
             self::COLUMN_REQUIRES_PRESCRIPTION => 'boolean',
             self::COLUMN_STATUS => ProductStatus::class,

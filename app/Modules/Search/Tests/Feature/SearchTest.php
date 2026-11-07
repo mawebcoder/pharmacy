@@ -12,8 +12,11 @@ use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
 use App\Modules\Search\Actions\SaveSearchSynonym;
+use App\Modules\Search\Livewire\InstantSearch;
 use App\Modules\Search\Models\SearchLog;
 use Meilisearch\Client;
+
+use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
     useSearchIndex();
@@ -75,6 +78,14 @@ it('suggests products, brands, categories and tags while typing', function (): v
         ->and($suggestions->brands->map->getNameFa()->all())->toBe(['ویتابیوتیکس'])
         ->and($suggestions->categories->map->getNameFa()->all())->toBe(['ویتامین‌ها'])
         ->and($suggestions->tags->map->getNameFa()->all())->toBe(['ویتامین D']);
+});
+
+it('shows the default SKU price, struck-through box price and discount in the suggestions', function (): void {
+    $this->vitamin->variants()->sole()->setOfficialPrice(1_250_000)->setPrice(1_200_000)->setSalePrice(1_100_000)->save();
+
+    $html = livewire(InstantSearch::class)->set('value', 'ویتا')->html();
+
+    expect($html)->toMatch('/ویتامین D3 ۱۰۰۰ واحد.*<del.*۱۲۵٬۰۰۰ تومان.*۱۲٪.*۱۱۰٬۰۰۰ تومان/su');
 });
 
 it('says search is unavailable when Meilisearch is down', function (): void {

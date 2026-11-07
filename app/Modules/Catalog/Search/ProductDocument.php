@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Search;
 
-use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
@@ -14,7 +13,8 @@ use App\Modules\Shared\Support\SearchText;
 
 /**
  * The Meilisearch document of a product (roadmap D21.5.4, decided 2026-11-07 in S12). Text fields are normalised
- * with SearchText, the same way queries are. Only active variants count for price, stock and discount.
+ * with SearchText, the same way queries are. price, discount_pct and in_stock come from the default SKU
+ * (Product::getDefaultVariant()), so filters and sorting match the card; variants lists every active SKU.
  * category_ids holds every category above the product's categories too, so a parent category lists its
  * subcategories' products.
  */
@@ -45,11 +45,7 @@ final class ProductDocument
             }
         }
 
-        $prices = $variants->map(fn (ProductVariant $variant): int => $variant->currentPrice());
-        $discounts = $variants->map(fn (ProductVariant $variant): int => $variant->getSalePrice() === null || $variant->getPrice() === 0
-            ? 0
-            : (int) floor(($variant->getPrice() - $variant->getSalePrice()) * 100 / $variant->getPrice()));
-        $inStock = $variants->contains(fn (ProductVariant $variant): bool => $variant->getStockStatus() !== StockStatus::OutOfStock);
+        $default = $product->getDefaultVariant();
 
         return [
             'id' => $product->getId(),
@@ -69,16 +65,41 @@ final class ProductDocument
                 ->map(fn (string $code): string => mb_strtolower($code))
                 ->values()
                 ->all(),
-            'min_price' => $prices->min() ?? 0,
-            'max_discount_pct' => $discounts->max() ?? 0,
-            'in_stock' => $inStock,
-            'in_stock_rank' => $inStock ? 1 : 0,
+            'default_variant' => $default instanceof ProductVariant ? [
+                ...self::variant($default),
+                'final_price' => $default->currentPrice(),
+                'discount_pct' => $default->discountPercent(),
+                'max_per_order' => $default->getMaxPerOrder(),
+            ] : null,
+            'variants' => $variants->map(self::variant(...))->values()->all(),
+            'price' => $default?->currentPrice() ?? 0,
+            'discount_pct' => $default?->discountPercent() ?? 0,
+            'in_stock' => $default?->isInStock() ?? false,
+            'in_stock_rank' => $default?->isInStock() ? 1 : 0,
             'is_near_expiry' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()),
             'is_damaged_box' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isDamagedBox()),
             'product_type' => $product->getProductType()->value,
             // Orders arrive in S20; until then best-selling sorts like newest.
             'sales_30d' => 0,
             'created_at' => $product->getCreatedAt()?->getTimestamp() ?? 0,
+        ];
+    }
+
+    /**
+     * One SKU as stored in the document: prices in rial (compare_at_price is the struck-through price).
+     *
+     * @return array{id: int, sku: string, title_fa: string, price: int, sale_price: int|null, compare_at_price: int|null, in_stock: bool}
+     */
+    private static function variant(ProductVariant $variant): array
+    {
+        return [
+            'id' => $variant->getId(),
+            'sku' => $variant->getSku(),
+            'title_fa' => $variant->getTitleFa(),
+            'price' => $variant->getPrice(),
+            'sale_price' => $variant->getSalePrice(),
+            'compare_at_price' => $variant->compareAtPrice(),
+            'in_stock' => $variant->isInStock(),
         ];
     }
 
@@ -91,8 +112,8 @@ final class ProductDocument
     {
         return [
             'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'category_names', 'attribute_values', 'ingredients', 'codes'],
-            'filterableAttributes' => ['category_ids', 'brand_id', 'tag_ids', 'attribute_value_ids', 'min_price', 'max_discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
-            'sortableAttributes' => ['min_price', 'max_discount_pct', 'sales_30d', 'created_at'],
+            'filterableAttributes' => ['category_ids', 'brand_id', 'tag_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
+            'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
             'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [
                 'minWordSizeForTypos' => ['oneTypo' => 4, 'twoTypos' => 8],

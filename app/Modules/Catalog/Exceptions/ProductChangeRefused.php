@@ -27,17 +27,22 @@ final class ProductChangeRefused extends RuntimeException
 
     public static function aboveOfficialPrice(int $officialPriceToman): self
     {
-        return new self('قیمت دارو نمی‌تواند از قیمت مصوب ('.PersianDigits::toPersian(number_format($officialPriceToman)).' تومان) بیشتر باشد.');
+        return new self('قیمت فروش نمی‌تواند از قیمت مصرف‌کننده روی جعبه ('.PersianDigits::toPersian(number_format($officialPriceToman)).' تومان) بیشتر باشد.');
     }
 
     public static function officialPriceRequired(): self
     {
-        return new self('برای دارو، قیمت مصوب (درج‌شده روی جعبه) لازم است.');
+        return new self('برای دارو، قیمت مصرف‌کننده (روی جعبه) لازم است.');
     }
 
     public static function lastActiveVariant(): self
     {
         return new self('این تنها تنوع فعال یک محصول فعال است. ابتدا محصول را غیرفعال کنید یا تنوع فعال دیگری اضافه کنید.');
+    }
+
+    public static function defaultVariantNotUsable(): self
+    {
+        return new self('فقط یک تنوع فعال از همین محصول می‌تواند SKU پیش‌فرض باشد.');
     }
 
     public static function relatedToItself(): self

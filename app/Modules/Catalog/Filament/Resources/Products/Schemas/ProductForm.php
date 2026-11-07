@@ -91,7 +91,7 @@ final class ProductForm
                                     ->default(ProductType::Cosmetic->value)
                                     ->required()
                                     ->live()
-                                    ->helperText('داروی نسخه‌ای قابل فعال‌سازی برای فروش نیست. قیمت دارو از قیمت مصوب بیشتر نمی‌شود.'),
+                                    ->helperText('داروی نسخه‌ای قابل فعال‌سازی برای فروش نیست. دارو باید قیمت مصرف‌کننده (روی جعبه) داشته باشد.'),
                                 TextInput::make(Product::COLUMN_IRC_CODE)
                                     ->label('کد IRC')
                                     ->extraInputAttributes(['dir' => 'ltr'])

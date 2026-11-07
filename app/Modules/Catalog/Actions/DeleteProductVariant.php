@@ -27,8 +27,12 @@ final class DeleteProductVariant
 
         $variant->delete();
 
+        if ($product instanceof Product && $product->getDefaultVariantId() === $variant->getId()) {
+            $product->setDefaultVariantId(null)->save();
+        }
+
         if ($product instanceof Product) {
-            ProductSearchIndex::refresh($product);
+            ProductSearchIndex::refresh($product->unsetRelation('variants'));
         }
     }
 
