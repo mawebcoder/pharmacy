@@ -18,6 +18,6 @@ final class RecordAdminLogin
             return;
         }
 
-        $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
+        $event->user->setLastLoginAt(now())->saveQuietly();
     }
 }

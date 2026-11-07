@@ -19,12 +19,12 @@ final class CreateAdminUser
         }
 
         return DB::transaction(function () use ($data): AdminUser {
-            $admin = AdminUser::create([
-                'name' => $data->name,
-                'email' => $data->email,
-                'password' => $data->password,
-                'is_active' => $data->isActive,
-            ]);
+            $admin = (new AdminUser)
+                ->setName($data->name)
+                ->setEmail($data->email)
+                ->setPassword($data->password)
+                ->setIsActive($data->isActive);
+            $admin->save();
 
             $admin->syncRoles($data->roles);
 

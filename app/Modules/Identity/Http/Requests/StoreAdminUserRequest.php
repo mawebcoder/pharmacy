@@ -24,12 +24,12 @@ final class StoreAdminUserRequest extends FormRequest
     public static function baseRules(?int $adminUserId = null): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('admin_users', 'email')->ignore($adminUserId)],
-            'password' => [$adminUserId === null ? 'required' : 'nullable', 'string', Password::default()],
+            AdminUser::COLUMN_NAME => ['required', 'string', 'max:255'],
+            AdminUser::COLUMN_EMAIL => ['required', 'string', 'email', 'max:255', Rule::unique(AdminUser::class, AdminUser::COLUMN_EMAIL)->ignore($adminUserId)],
+            AdminUser::COLUMN_PASSWORD => [$adminUserId === null ? 'required' : 'nullable', 'string', Password::default()],
             'roles' => ['array'],
             'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'admin')],
-            'is_active' => ['boolean'],
+            AdminUser::COLUMN_IS_ACTIVE => ['boolean'],
         ];
     }
 
@@ -49,7 +49,7 @@ final class StoreAdminUserRequest extends FormRequest
     {
         $target = $this->route('adminUser');
 
-        return self::baseRules($target instanceof AdminUser ? $target->id : null);
+        return self::baseRules($target instanceof AdminUser ? $target->getId() : null);
     }
 
     public function toDto(): AdminUserData
@@ -63,7 +63,7 @@ final class StoreAdminUserRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'email' => mb_strtolower(trim((string) $this->input('email'))),
+            AdminUser::COLUMN_EMAIL => mb_strtolower(trim((string) $this->input(AdminUser::COLUMN_EMAIL))),
         ]);
     }
 }

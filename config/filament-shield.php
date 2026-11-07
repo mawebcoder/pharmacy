@@ -4,6 +4,7 @@ declare(strict_types=1);
 use App\Modules\Identity\Filament\Resources\AdminUsers\AdminUserResource;
 use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
 use App\Modules\Identity\Models\AdminUser;
+use App\Modules\Locations\Filament\Resources\Cities\CityResource;
 use App\Modules\System\Filament\Resources\ActivityLogs\ActivityLogResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -195,6 +196,11 @@ return [
                 'viewAny',
                 'view',
                 'create',
+                'update',
+            ],
+            CityResource::class => [
+                'viewAny',
+                'view',
                 'update',
             ],
             ActivityLogResource::class => [

@@ -21,19 +21,17 @@ final class SuperAdminSeeder extends Seeder
         /** @var array{name: string, email: string, password: string} $superAdmin */
         $superAdmin = config('auth.superadmin');
 
-        $admin = AdminUser::firstOrNew(['email' => $superAdmin['email']]);
+        $admin = AdminUser::firstOrNew([AdminUser::COLUMN_EMAIL => $superAdmin['email']]);
 
         if (! $admin->exists) {
             if (app()->isProduction() && $superAdmin['password'] === 'password') {
                 throw new RuntimeException('Set SUPERADMIN_PASSWORD in .env before seeding the super admin in production.');
             }
 
-            $admin->password = $superAdmin['password'];
+            $admin->setPassword($superAdmin['password']);
         }
 
-        $admin->name = $superAdmin['name'];
-        $admin->is_active = true;
-        $admin->save();
+        $admin->setName($superAdmin['name'])->setIsActive(true)->save();
 
         $this->call(RolesSeeder::class);
         $admin->assignRole(AdminRole::SuperAdmin->value);

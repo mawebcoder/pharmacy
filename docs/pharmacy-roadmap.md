@@ -480,6 +480,7 @@ Rules:
 - Money: integer **Rial** everywhere (`Money` value object in Shared), formatted as Toman in views via a Blade helper `@toman($rial)`.
 - Units: grams, millimetres in DB; convert at integration boundary.
 - Enums: backed string enums with `label(): string` returning Persian text.
+- **Models** (decided 2026-11-06): every column has a constant `COLUMN_<NAME>` (e.g. `public const string COLUMN_REGION_ID = 'region_id';`), and every column has a typed getter and setter (`getRegionId(): ?int`, `setRegionId(?int $regionId): static`); relations have getters too (`getRegion(): ?Region`). Application code uses the constants, getters and setters instead of string column names or magic properties, so every use of a column is traceable. Migrations keep literal column names (they are fixed snapshots of the schema).
 - No business logic in controllers, Livewire components or Filament resources: they build a **DTO** and call an **Action** (C5).
 - Validation in **Form Requests** (controllers), Livewire Form objects and Filament field rules that all reuse the Form Request's `baseRules()`; domain checks in Actions.
 - Every JSON response goes through an **API Resource**.

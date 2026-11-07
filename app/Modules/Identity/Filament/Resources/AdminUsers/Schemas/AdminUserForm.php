@@ -21,28 +21,28 @@ final class AdminUserForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $rules = fn (?AdminUser $record, string $field): array => StoreAdminUserRequest::baseRules($record?->id)[$field];
+        $rules = fn (?AdminUser $record, string $field): array => StoreAdminUserRequest::baseRules($record?->getId())[$field];
 
         return $schema
             ->components([
                 Section::make('حساب کاربری')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('name')
+                        TextInput::make(AdminUser::COLUMN_NAME)
                             ->label('نام')
                             ->required()
-                            ->rules(fn (?AdminUser $record): array => $rules($record, 'name')),
-                        TextInput::make('email')
+                            ->rules(fn (?AdminUser $record): array => $rules($record, AdminUser::COLUMN_NAME)),
+                        TextInput::make(AdminUser::COLUMN_EMAIL)
                             ->label('ایمیل')
                             ->email()
                             ->required()
-                            ->rules(fn (?AdminUser $record): array => $rules($record, 'email')),
-                        TextInput::make('password')
+                            ->rules(fn (?AdminUser $record): array => $rules($record, AdminUser::COLUMN_EMAIL)),
+                        TextInput::make(AdminUser::COLUMN_PASSWORD)
                             ->label('رمز عبور')
                             ->password()
                             ->revealable()
                             ->required(fn (?AdminUser $record): bool => ! $record instanceof AdminUser)
-                            ->rules(fn (?AdminUser $record): array => $rules($record, 'password'))
+                            ->rules(fn (?AdminUser $record): array => $rules($record, AdminUser::COLUMN_PASSWORD))
                             ->helperText(fn (?AdminUser $record): string => ($record instanceof AdminUser ? 'برای تغییر ندادن رمز، خالی بگذارید. ' : '')
                                 .'دست‌کم ۱۲ کاراکتر، با حروف بزرگ و کوچک، عدد و نماد.'),
                         Select::make('roles')
@@ -56,7 +56,7 @@ final class AdminUserForm
                                 ->all())
                             ->rules(fn (?AdminUser $record): array => $rules($record, 'roles'))
                             ->nestedRecursiveRules(StoreAdminUserRequest::baseRules()['roles.*']),
-                        Toggle::make('is_active')
+                        Toggle::make(AdminUser::COLUMN_IS_ACTIVE)
                             ->label('فعال')
                             ->helperText('مدیر غیرفعال نمی‌تواند وارد پنل شود.')
                             ->default(true),

@@ -20,7 +20,7 @@ final class UpdateAdminUser
     public function __invoke(AdminUser $admin, AdminUserData $data, AdminUser $actor): AdminUser
     {
         return DB::transaction(function () use ($admin, $data, $actor): AdminUser {
-            $admin = AdminUser::query()->lockForUpdate()->findOrFail($admin->id);
+            $admin = AdminUser::query()->lockForUpdate()->findOrFail($admin->getId());
             $staysSuperAdmin = in_array(AdminRole::SuperAdmin->value, $data->roles, true) && $data->isActive;
 
             if ($admin->is($actor) && ! $data->isActive) {
@@ -31,18 +31,14 @@ final class UpdateAdminUser
                 throw AdminUserChangeRefused::cannotRemoveOwnSuperAdminRole();
             }
 
-            if ($admin->isSuperAdmin() && $admin->is_active && ! $staysSuperAdmin && ! $this->anotherActiveSuperAdminExists($admin)) {
+            if ($admin->isSuperAdmin() && $admin->isActive() && ! $staysSuperAdmin && ! $this->anotherActiveSuperAdminExists($admin)) {
                 throw AdminUserChangeRefused::lastSuperAdmin();
             }
 
-            $admin->fill([
-                'name' => $data->name,
-                'email' => $data->email,
-                'is_active' => $data->isActive,
-            ]);
+            $admin->setName($data->name)->setEmail($data->email)->setIsActive($data->isActive);
 
             if ($data->password !== null) {
-                $admin->password = $data->password;
+                $admin->setPassword($data->password);
             }
 
             $admin->save();
@@ -55,7 +51,7 @@ final class UpdateAdminUser
     private function anotherActiveSuperAdminExists(AdminUser $admin): bool
     {
         return AdminUser::role(AdminRole::SuperAdmin->value)
-            ->where('is_active', true)
+            ->where(AdminUser::COLUMN_IS_ACTIVE, true)
             ->whereKeyNot($admin->getKey())
             ->lockForUpdate()
             ->exists();

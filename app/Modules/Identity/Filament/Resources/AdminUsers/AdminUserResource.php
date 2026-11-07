@@ -34,7 +34,7 @@ final class AdminUserResource extends Resource
 
     protected static ?string $pluralModelLabel = 'مدیران';
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $recordTitleAttribute = AdminUser::COLUMN_NAME;
 
     public static function form(Schema $schema): Schema
     {

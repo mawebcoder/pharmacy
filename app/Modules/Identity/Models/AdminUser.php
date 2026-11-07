@@ -26,17 +26,11 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * A staff member who signs in to the Filament admin panel with the "admin" guard (roadmap D16).
- * The TOTP secret and recovery codes are stored encrypted by Filament's traits.
- *
- * @property int $id
- * @property string $name
- * @property string $email
- * @property string $password
- * @property bool $is_active
- * @property Carbon|null $last_login_at
+ * The TOTP secret and recovery codes are stored encrypted and accessed through Filament's traits
+ * (getAppAuthenticationSecret(), saveAppAuthenticationSecret(), …); the remember token through Laravel's.
  */
-#[Fillable(['name', 'email', 'password', 'is_active'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable([self::COLUMN_NAME, self::COLUMN_EMAIL, self::COLUMN_PASSWORD, self::COLUMN_IS_ACTIVE])]
+#[Hidden([self::COLUMN_PASSWORD, self::COLUMN_REMEMBER_TOKEN])]
 final class AdminUser extends Authenticatable implements FilamentUser, HasActivityLogLabel, HasAppAuthentication, HasAppAuthenticationRecovery, HasName
 {
     /** @use HasFactory<AdminUserFactory> */
@@ -48,10 +42,108 @@ final class AdminUser extends Authenticatable implements FilamentUser, HasActivi
     use LogsActivity;
     use Notifiable;
 
+    public const string COLUMN_ID = 'id';
+
+    public const string COLUMN_NAME = 'name';
+
+    public const string COLUMN_EMAIL = 'email';
+
+    public const string COLUMN_PASSWORD = 'password';
+
+    public const string COLUMN_APP_AUTHENTICATION_SECRET = 'app_authentication_secret';
+
+    public const string COLUMN_APP_AUTHENTICATION_RECOVERY_CODES = 'app_authentication_recovery_codes';
+
+    public const string COLUMN_IS_ACTIVE = 'is_active';
+
+    public const string COLUMN_LAST_LOGIN_AT = 'last_login_at';
+
+    public const string COLUMN_REMEMBER_TOKEN = 'remember_token';
+
+    public const string COLUMN_CREATED_AT = 'created_at';
+
+    public const string COLUMN_UPDATED_AT = 'updated_at';
+
     /**
      * Roles and permissions belong to the "admin" guard, so customers can never hold them.
      */
     protected string $guard_name = 'admin';
+
+    public function getId(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_ID);
+    }
+
+    public function getName(): string
+    {
+        return (string) $this->getAttribute(self::COLUMN_NAME);
+    }
+
+    public function setName(string $name): static
+    {
+        return $this->setAttribute(self::COLUMN_NAME, $name);
+    }
+
+    public function getEmail(): string
+    {
+        return (string) $this->getAttribute(self::COLUMN_EMAIL);
+    }
+
+    public function setEmail(string $email): static
+    {
+        return $this->setAttribute(self::COLUMN_EMAIL, $email);
+    }
+
+    /**
+     * The password hash.
+     */
+    public function getPassword(): string
+    {
+        return (string) $this->getAttribute(self::COLUMN_PASSWORD);
+    }
+
+    /**
+     * Takes the plain password; the "hashed" cast stores its hash.
+     */
+    public function setPassword(string $plainPassword): static
+    {
+        return $this->setAttribute(self::COLUMN_PASSWORD, $plainPassword);
+    }
+
+    public function isActive(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_IS_ACTIVE);
+    }
+
+    public function getIsActive(): bool
+    {
+        return $this->isActive();
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_ACTIVE, $isActive);
+    }
+
+    public function getLastLoginAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_LAST_LOGIN_AT);
+    }
+
+    public function setLastLoginAt(?Carbon $lastLoginAt): static
+    {
+        return $this->setAttribute(self::COLUMN_LAST_LOGIN_AT, $lastLoginAt);
+    }
+
+    public function getCreatedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_CREATED_AT);
+    }
+
+    public function getUpdatedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_UPDATED_AT);
+    }
 
     /**
      * Audit trail (roadmap D16): who changed which account. Passwords and 2FA secrets are never logged.
@@ -60,14 +152,14 @@ final class AdminUser extends Authenticatable implements FilamentUser, HasActivi
     {
         return LogOptions::defaults()
             ->useLogName('admin')
-            ->logOnly(['name', 'email', 'is_active'])
+            ->logOnly([self::COLUMN_NAME, self::COLUMN_EMAIL, self::COLUMN_IS_ACTIVE])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
 
     public function activityLogLabel(): string
     {
-        return "مدیر: {$this->name}";
+        return 'مدیر: '.$this->getName();
     }
 
     public function isSuperAdmin(): bool
@@ -81,29 +173,17 @@ final class AdminUser extends Authenticatable implements FilamentUser, HasActivi
      */
     public function canViewHorizon(): bool
     {
-        return $this->is_active && $this->hasTwoFactorAuthentication() && $this->isSuperAdmin();
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-            'last_login_at' => 'datetime',
-        ];
+        return $this->isActive() && $this->hasTwoFactorAuthentication() && $this->isSuperAdmin();
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active;
+        return $this->isActive();
     }
 
     public function getFilamentName(): string
     {
-        return $this->name;
+        return $this->getName();
     }
 
     /**
@@ -112,5 +192,17 @@ final class AdminUser extends Authenticatable implements FilamentUser, HasActivi
     public function hasTwoFactorAuthentication(): bool
     {
         return filled($this->getAppAuthenticationSecret());
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            self::COLUMN_PASSWORD => 'hashed',
+            self::COLUMN_IS_ACTIVE => 'boolean',
+            self::COLUMN_LAST_LOGIN_AT => 'datetime',
+        ];
     }
 }

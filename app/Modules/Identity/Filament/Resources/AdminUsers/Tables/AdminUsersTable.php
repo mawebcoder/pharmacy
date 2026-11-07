@@ -25,11 +25,11 @@ final class AdminUsersTable
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('roles'))
             ->columns([
-                TextColumn::make('name')
+                TextColumn::make(AdminUser::COLUMN_NAME)
                     ->label('نام')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('email')
+                TextColumn::make(AdminUser::COLUMN_EMAIL)
                     ->label('ایمیل')
                     ->searchable(),
                 TextColumn::make('roles.name')
@@ -40,17 +40,17 @@ final class AdminUsersTable
                     ->label('تأیید دو مرحله‌ای')
                     ->state(fn (AdminUser $record): bool => $record->hasTwoFactorAuthentication())
                     ->boolean(),
-                IconColumn::make('is_active')
+                IconColumn::make(AdminUser::COLUMN_IS_ACTIVE)
                     ->label('فعال')
                     ->boolean(),
-                TextColumn::make('last_login_at')
+                TextColumn::make(AdminUser::COLUMN_LAST_LOGIN_AT)
                     ->label('آخرین ورود')
                     ->jalaliDateTime() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
                     ->placeholder('—')
                     ->sortable(),
             ])
             ->filters([
-                TernaryFilter::make('is_active')->label('فعال'),
+                TernaryFilter::make(AdminUser::COLUMN_IS_ACTIVE)->label('فعال'),
                 SelectFilter::make('roles')
                     ->label('نقش')
                     ->relationship('roles', 'name')
@@ -72,6 +72,6 @@ final class AdminUsersTable
                         Notification::make()->success()->title('تأیید دو مرحله‌ای بازنشانی شد.')->send();
                     }),
             ])
-            ->defaultSort('name');
+            ->defaultSort(AdminUser::COLUMN_NAME);
     }
 }

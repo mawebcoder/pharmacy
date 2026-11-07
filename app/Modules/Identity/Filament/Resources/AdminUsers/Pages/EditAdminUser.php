@@ -31,7 +31,7 @@ final class EditAdminUser extends EditRecord
         $record = $this->getRecord();
 
         $data['roles'] = $record->getRoleNames()->all();
-        unset($data['password']);
+        unset($data[AdminUser::COLUMN_PASSWORD]);
 
         return $data;
     }

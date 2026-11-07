@@ -6,19 +6,37 @@ namespace App\Modules\Identity\Database\Seeders;
 
 use App\Modules\Identity\Enums\AdminRole;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Creates the staff roles. operator and content_editor start without permissions (deny by default);
- * each roadmap step grants its new admin pages to the right role.
+ * Creates the staff roles and grants each one the admin pages it needs (deny by default). Each roadmap step
+ * adds its new permissions here. Re-running only adds permissions; ones granted later in the admin are kept.
  */
 final class RolesSeeder extends Seeder
 {
+    /**
+     * Shield permission keys per role. super_admin needs none: it passes every check.
+     *
+     * @var array<string, list<string>>
+     */
+    public const array PERMISSIONS = [
+        'operator' => [
+            // S05 Locations: switch delivery on or off per city.
+            'ViewAny:City', 'View:City', 'Update:City',
+        ],
+        'content_editor' => [],
+    ];
+
     public function run(): void
     {
-        foreach (AdminRole::cases() as $role) {
-            Role::findOrCreate($role->value, 'admin');
+        foreach (AdminRole::cases() as $roleName) {
+            $role = Role::findOrCreate($roleName->value, 'admin');
+
+            foreach (self::PERMISSIONS[$roleName->value] ?? [] as $permission) {
+                $role->givePermissionTo(Permission::findOrCreate($permission, 'admin'));
+            }
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

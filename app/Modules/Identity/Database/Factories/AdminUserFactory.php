@@ -30,11 +30,11 @@ final class AdminUserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'password' => self::$password ??= Hash::make('password'),
-            'is_active' => true,
-            'remember_token' => Str::random(10),
+            AdminUser::COLUMN_NAME => fake()->name(),
+            AdminUser::COLUMN_EMAIL => fake()->unique()->safeEmail(),
+            AdminUser::COLUMN_PASSWORD => self::$password ??= Hash::make('password'),
+            AdminUser::COLUMN_IS_ACTIVE => true,
+            AdminUser::COLUMN_REMEMBER_TOKEN => Str::random(10),
         ];
     }
 
@@ -44,7 +44,7 @@ final class AdminUserFactory extends Factory
     public function withTwoFactorAuthentication(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'app_authentication_secret' => (new Google2FA)->generateSecretKey(),
+            AdminUser::COLUMN_APP_AUTHENTICATION_SECRET => (new Google2FA)->generateSecretKey(),
         ]);
     }
 
@@ -70,7 +70,7 @@ final class AdminUserFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'is_active' => false,
+            AdminUser::COLUMN_IS_ACTIVE => false,
         ]);
     }
 }
