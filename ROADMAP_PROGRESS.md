@@ -16,7 +16,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S09 | Media pipeline | done | 2026-11-07 | 07c41d4 |
 | S10 | Products and variants | done | 2026-11-07 | b46e31f |
 | S11 | Attributes and tags | done | 2026-11-07 | c1726da |
-| S12 | PLP and search | done | 2026-11-07 | |
+| S12 | PLP and search | done | 2026-11-07 | 8f64af1 |
 | S13 | PDP | todo | | |
 | S14 | Providers and provider prices | todo | | |
 | S15 | Pricing engine | todo | | |
