@@ -212,6 +212,19 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
+        // Image processing (roadmap D9, S09): slow jobs (AVIF encoding) on their own workers and timeout.
+        'supervisor-media' => [
+            'connection' => 'redis',
+            'queue' => ['media'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 512,
+            'tries' => 3,
+            'timeout' => 310,
+            'nice' => 0,
+        ],
     ],
 
     'environments' => [
@@ -220,6 +233,9 @@ return [
                 'maxProcesses' => 10,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
+            ],
+            'supervisor-media' => [
+                'maxProcesses' => 2,
             ],
         ],
 

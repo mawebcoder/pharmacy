@@ -13,7 +13,7 @@ new class extends Component
 
     public function mount(string $slug): void
     {
-        $category = Category::query()->where(Category::COLUMN_SLUG, $slug)->firstOrFail();
+        $category = Category::query()->with('media')->where(Category::COLUMN_SLUG, $slug)->firstOrFail();
 
         abort_unless($category->isShownOnStorefront(), 404);
 
@@ -24,7 +24,7 @@ new class extends Component
     {
         return $this->view([
             'ancestors' => $this->category->ancestors(),
-            'subcategories' => $this->category->children()->active()->get(),
+            'subcategories' => $this->category->children()->active()->with('media')->get(),
         ])->title($this->category->getSeoTitle() ?? $this->category->getNameFa());
     }
 };
@@ -43,6 +43,18 @@ new class extends Component
         </ol>
     </nav>
 
+    @if ($category->getBannerDesktop() || $category->getBannerMobile())
+        <x-media::art-directed
+            :desktop="$category->getBannerDesktop()"
+            :mobile="$category->getBannerMobile()"
+            desktop-slot="category-banner-desktop"
+            mobile-slot="category-banner-mobile"
+            :alt="'بنر '.$category->getNameFa()"
+            :priority="true"
+            class="aspect-4/3 w-full rounded-card object-cover md:aspect-4/1"
+        />
+    @endif
+
     <header class="space-y-2">
         <h1 class="text-2xl font-bold text-ink-900 xl:text-3xl">{{ $category->getNameFa() }}</h1>
         @if ($category->getDescription())
@@ -55,7 +67,8 @@ new class extends Component
             <ul class="flex gap-2 md:flex-wrap">
                 @foreach ($subcategories as $subcategory)
                     <li wire:key="subcategory-{{ $subcategory->getId() }}" class="shrink-0">
-                        <a href="{{ route('category.show', $subcategory) }}" wire:navigate class="flex h-11 items-center rounded-full border border-line-200 bg-white px-4 text-sm text-ink-900 hover:border-primary-300 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                        <a href="{{ route('category.show', $subcategory) }}" wire:navigate class="flex h-11 items-center gap-2 rounded-full border border-line-200 bg-white px-4 text-sm text-ink-900 hover:border-primary-300 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                            <x-media::picture :media="$subcategory->getIcon()" slot-name="category-chip" alt="" class="size-6 object-contain" />
                             {{ $subcategory->getNameFa() }}
                         </a>
                     </li>

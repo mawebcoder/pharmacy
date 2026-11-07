@@ -6,6 +6,9 @@ namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\CategoryFactory;
 use App\Modules\Catalog\Queries\CategoryTree;
+use App\Modules\Media\Concerns\InteractsWithImagePresets;
+use App\Modules\Media\Contracts\HasImagePresets;
+use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -22,11 +25,12 @@ use Spatie\Activitylog\Support\LogOptions;
  * A product category (roadmap D3.1): a tree of at most MAX_DEPTH levels, ordered by "sort" among siblings.
  * Shown on the storefront at /c/{slug} while it and all its parents are active.
  */
-final class Category extends Model implements HasActivityLogLabel
+final class Category extends Model implements HasActivityLogLabel, HasImagePresets
 {
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
 
+    use InteractsWithImagePresets;
     use LogsActivity;
     use SoftDeletes;
 
@@ -60,6 +64,16 @@ final class Category extends Model implements HasActivityLogLabel
     public const string COLUMN_UPDATED_AT = 'updated_at';
 
     public const string COLUMN_DELETED_AT = 'deleted_at';
+
+    /**
+     * Image collections (roadmap D14.2): the icon, and the banner at the top of the category page as separate
+     * desktop/tablet and mobile artwork (decided 2026-11-07 in S09).
+     */
+    public const string IMAGE_ICON = 'icon';
+
+    public const string IMAGE_BANNER_DESKTOP = 'banner_desktop';
+
+    public const string IMAGE_BANNER_MOBILE = 'banner_mobile';
 
     public function getId(): int
     {
@@ -293,6 +307,33 @@ final class Category extends Model implements HasActivityLogLabel
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy(self::COLUMN_PARENT_ID)->orderBy(self::COLUMN_SORT)->orderBy(self::COLUMN_ID);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function imagePresets(): array
+    {
+        return [
+            self::IMAGE_ICON => 'category_icon',
+            self::IMAGE_BANNER_DESKTOP => 'category_banner_desktop',
+            self::IMAGE_BANNER_MOBILE => 'category_banner_mobile',
+        ];
+    }
+
+    public function getIcon(): ?StoredImage
+    {
+        return $this->image(self::IMAGE_ICON);
+    }
+
+    public function getBannerDesktop(): ?StoredImage
+    {
+        return $this->image(self::IMAGE_BANNER_DESKTOP);
+    }
+
+    public function getBannerMobile(): ?StoredImage
+    {
+        return $this->image(self::IMAGE_BANNER_MOBILE);
     }
 
     public function getRouteKeyName(): string

@@ -13,7 +13,7 @@ new class extends Component
 
     public function mount(string $slug): void
     {
-        $this->brand = Brand::query()->active()->where(Brand::COLUMN_SLUG, $slug)->firstOrFail();
+        $this->brand = Brand::query()->active()->with('media')->where(Brand::COLUMN_SLUG, $slug)->firstOrFail();
     }
 
     public function render(): \Illuminate\Contracts\View\View
@@ -34,19 +34,24 @@ new class extends Component
         </ol>
     </nav>
 
-    <header class="rounded-card border border-line-200 bg-white p-4 shadow-card md:p-6">
-        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 class="text-2xl font-bold text-ink-900 xl:text-3xl">{{ $brand->getNameFa() }}</h1>
-            @if ($brand->getNameEn())
-                <span dir="ltr" class="text-ink-500">{{ $brand->getNameEn() }}</span>
+    <header class="flex flex-col gap-4 rounded-card border border-line-200 bg-white p-4 shadow-card md:flex-row md:items-start md:p-6">
+        @if ($brand->getLogo())
+            <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" :alt="'لوگوی '.$brand->getNameFa()" :priority="true" class="h-12 w-24 shrink-0 object-contain md:h-15 md:w-30 xl:h-20 xl:w-40" />
+        @endif
+        <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h1 class="text-2xl font-bold text-ink-900 xl:text-3xl">{{ $brand->getNameFa() }}</h1>
+                @if ($brand->getNameEn())
+                    <span dir="ltr" class="text-ink-500">{{ $brand->getNameEn() }}</span>
+                @endif
+            </div>
+            @if ($brand->getCountryName())
+                <p class="mt-2 text-sm text-ink-500">کشور: {{ $brand->getCountryName() }}</p>
+            @endif
+            @if ($brand->getDescription())
+                <p class="mt-4 max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $brand->getDescription() }}</p>
             @endif
         </div>
-        @if ($brand->getCountryName())
-            <p class="mt-2 text-sm text-ink-500">کشور: {{ $brand->getCountryName() }}</p>
-        @endif
-        @if ($brand->getDescription())
-            <p class="mt-4 max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $brand->getDescription() }}</p>
-        @endif
     </header>
 
     <section aria-labelledby="brand-products" class="space-y-3">

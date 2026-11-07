@@ -29,7 +29,7 @@ final class ActiveBrandsQuery
     {
         $collator = new Collator('fa');
 
-        $brands = Brand::query()->active()->get()->all();
+        $brands = Brand::query()->active()->with('media')->get()->all();
         usort($brands, fn (Brand $a, Brand $b): int => (int) $collator->compare($a->getNameFa(), $b->getNameFa()));
 
         /** @var array<string, list<Brand>> $groups */

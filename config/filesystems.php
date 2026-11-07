@@ -49,6 +49,36 @@ return [
             'report' => false,
         ],
 
+        // Generated image sizes (roadmap D8, D14): public, cached forever (content hash in the path).
+        // Served by nginx under /storage/media locally; production uses the "cdn" disk instead.
+        'media' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/media'),
+            'url' => rtrim((string) env('APP_URL', 'http://localhost'), '/').'/storage/media',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        // ArvanCloud Object Storage (S3-compatible) behind the ArvanCloud CDN, inside Iran (roadmap B4, D11.1).
+        // Needs league/flysystem-aws-s3-v3, installed with the deployment step.
+        'cdn' => [
+            'driver' => 's3',
+            'key' => env('IMAGES_CDN_ACCESS_KEY'),
+            'secret' => env('IMAGES_CDN_SECRET_KEY'),
+            'region' => env('IMAGES_CDN_REGION', 'default'),
+            'bucket' => env('IMAGES_CDN_BUCKET'),
+            'endpoint' => env('IMAGES_CDN_ENDPOINT'),
+            'url' => env('IMAGES_CDN_URL'),
+            'visibility' => 'public',
+            'use_path_style_endpoint' => true,
+            'options' => [
+                'CacheControl' => 'public, max-age=31536000, immutable',
+            ],
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

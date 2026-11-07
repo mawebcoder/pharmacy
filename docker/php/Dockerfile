@@ -26,10 +26,18 @@ RUN apk add --no-cache \
         shadow \
         tzdata \
         unzip \
+        # Image optimisers used by spatie/image ->optimize() (roadmap D14.4).
+        jpegoptim \
+        optipng \
+        pngquant \
+        libwebp-tools \
+        gifsicle \
     && install-php-extensions \
         bcmath \
         exif \
         gd \
+        # Imagick with AVIF/HEIF (libheif) and colour-profile support for the media pipeline (S09).
+        imagick \
         intl \
         opcache \
         pcntl \

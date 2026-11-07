@@ -394,6 +394,8 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | `bezhansalleh/filament-shield:^4.3` | Roles & permissions UI for Filament (decided 2026-11-06; v4.3 supports Filament ^4/^5 and spatie/laravel-permission ^6–^8), https://filamentphp.com/plugins/bezhansalleh-shield | Identity |
 | `spatie/laravel-medialibrary` | Media, conversions, responsive images | Media |
 | `srwiez/thumbhash` | ThumbHash placeholders | Media |
+| `filament/spatie-laravel-media-library-plugin` | Admin image upload fields (preview, replace, remove) | Media |
+| `rhukster/dom-sanitizer` | Sanitizes uploaded SVG (MIT) | Media |
 | `spatie/laravel-activitylog` | Admin activity log | System |
 | `spatie/laravel-sluggable` | Slugs (Persian-safe slugger configured) | Shared |
 | `spatie/laravel-settings` | Typed site settings | Settings |
@@ -769,9 +771,9 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 ### D3.1 Catalog
 
-**categories**: `parent_id` (nullable), `name_fa`, `name_en`, `slug`, `icon_image_id`, `banner_image_id`, `description`, `sort`, `is_active`, `seo_title`, `seo_description`.
+**categories**: `parent_id` (nullable), `name_fa`, `name_en`, `slug`, `description`, `sort`, `is_active`, `seo_title`, `seo_description`. Images are medialibrary collections (decided 2026-11-07 in S09): `icon` (preset `category_icon`) and the category-page banner as `banner_desktop` + `banner_mobile` (presets `category_banner_desktop`/`category_banner_mobile`).
 
-**brands**: `name_fa`, `name_en`, `slug`, `logo_image_id`, `country`, `description`, `is_active`, `seo_title`, `seo_description`.
+**brands**: `name_fa`, `name_en`, `slug`, `country`, `description`, `is_active`, `seo_title`, `seo_description`. The logo is the medialibrary collection `logo` (preset `brand_logo`), not an `*_image_id` column (decided 2026-11-07 in S09).
 
 **products**
 
@@ -1830,6 +1832,8 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 | banner_mobile | 800×1000 | 4:5 | 5 MB | JPEG, PNG, WebP |
 | category_icon | SVG preferred, else 256×256 | 1:1 | 500 KB | SVG, PNG |
 | brand_logo | 400×200 (transparent) | 2:1 | 1 MB | SVG, PNG, WebP |
+| category_banner_desktop | 1920×480 (also used on tablet) | 4:1 | 5 MB | JPEG, PNG, WebP |
+| category_banner_mobile | 800×600 | 4:3 | 5 MB | JPEG, PNG, WebP |
 | article_cover | 1200×675 | 16:9 | 5 MB | JPEG, PNG, WebP |
 | prescription (P2) | any, compressed client-side to 2000 px | — | 8 MB | JPEG, PNG, HEIC, PDF |
 
@@ -1844,13 +1848,15 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 | Hero banner | 800×1000 art | 1536×768 art | 1920×600 art | mobile 480, 800 · tablet 1024, 1536 · desktop 1280, 1920 | mobile ≤ 90 KB, tablet ≤ 140 KB, desktop ≤ 180 KB |
 | Category icon | 48 px | 56 px | 64 px | SVG (or 96, 192 PNG/WebP) | ≤ 6 KB |
 | Brand logo | 96×48 | 120×60 | 160×80 | 160, 320 | ≤ 10 KB |
+| Category banner | 100vw (800×600 art) | 100vw (1920×480 art) | 1216 px (1920×480 art) | mobile 480, 800 · desktop 768, 1280, 1920 | mobile ≤ 90 KB, desktop ≤ 180 KB |
 | Article cover (P2) | 100vw | 50vw | 33vw | 400, 800, 1200 | ≤ 80 KB at 800 |
 | OG/social share | — | — | 1200×630 | 1200 | ≤ 150 KB JPEG |
 
 ### D14.4 Formats and quality
 - Output **AVIF** (quality 50) + **WebP** (quality 75) + **JPEG** fallback (quality 80, progressive). Logos/icons with transparency: **SVG**, else WebP lossless.
 - Strip EXIF/GPS, convert to sRGB, auto-orient.
-- ThumbHash (≤ 100 px source) + dominant colour stored per media item.
+- ThumbHash (≤ 100 px source) + dominant colour stored per media item (ThumbHash only, no BlurHash: confirmed 2026-11-07).
+- Uploaded SVG (logos, icons) is sanitized with `rhukster/dom-sanitizer` (MIT) and served as-is with a restrictive CSP; `enshrined/svg-sanitize` is not used because it is GPL.
 - File names with content hash; served from CDN with `Cache-Control: public, max-age=31536000, immutable`.
 
 ### D14.5 Rendering rules

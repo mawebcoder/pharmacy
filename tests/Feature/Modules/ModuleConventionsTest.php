@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Modules\Catalog\Database\Factories\BrandFactory;
+use App\Modules\Catalog\Models\Brand;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Gate;
@@ -19,8 +21,8 @@ it('finds the policy of a module model inside the same module', function (): voi
 });
 
 it('finds the factory of a module model inside the same module', function (): void {
-    expect(Factory::resolveFactoryName('App\Modules\Catalog\Models\Brand'))
-        ->toBe('App\Modules\Catalog\Database\Factories\BrandFactory');
+    expect(Factory::resolveFactoryName(Brand::class))
+        ->toBe(BrandFactory::class);
 });
 
 it('keeps Laravel conventions for models outside modules', function (): void {

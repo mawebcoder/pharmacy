@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\BrandFactory;
+use App\Modules\Media\Concerns\InteractsWithImagePresets;
+use App\Modules\Media\Contracts\HasImagePresets;
+use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use App\Modules\Shared\Support\Countries;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,11 +21,12 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A product brand (roadmap D3.1). Shown on the storefront at /b/{slug} while active.
  */
-final class Brand extends Model implements HasActivityLogLabel
+final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
 {
     /** @use HasFactory<BrandFactory> */
     use HasFactory;
 
+    use InteractsWithImagePresets;
     use LogsActivity;
     use SoftDeletes;
 
@@ -49,6 +53,11 @@ final class Brand extends Model implements HasActivityLogLabel
     public const string COLUMN_UPDATED_AT = 'updated_at';
 
     public const string COLUMN_DELETED_AT = 'deleted_at';
+
+    /**
+     * Image collection for the logo (preset brand_logo, roadmap D14.2).
+     */
+    public const string IMAGE_LOGO = 'logo';
 
     public function getId(): int
     {
@@ -192,6 +201,19 @@ final class Brand extends Model implements HasActivityLogLabel
     public function hasProducts(): bool
     {
         return false;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function imagePresets(): array
+    {
+        return [self::IMAGE_LOGO => 'brand_logo'];
+    }
+
+    public function getLogo(): ?StoredImage
+    {
+        return $this->image(self::IMAGE_LOGO);
     }
 
     public function getRouteKeyName(): string

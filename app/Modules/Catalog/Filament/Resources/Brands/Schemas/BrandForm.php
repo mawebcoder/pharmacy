@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Filament\Resources\Brands\Schemas;
 
 use App\Modules\Catalog\Http\Requests\StoreBrandRequest;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Shared\Support\Countries;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -65,6 +66,11 @@ final class BrandForm
                             ->rows(5)
                             ->maxLength(5000)
                             ->rules(fn (?Brand $record): array => $rules($record, Brand::COLUMN_DESCRIPTION)),
+                    ]),
+                Section::make('تصویر')
+                    ->schema([
+                        ImageUpload::make(Brand::IMAGE_LOGO, 'brand_logo')
+                            ->label('لوگو'),
                     ]),
                 Section::make('سئو')
                     ->description('خالی بگذارید تا از نام و توضیحات برند استفاده شود.')
