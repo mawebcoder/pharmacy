@@ -12,7 +12,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S05 | Locations | done | 2026-11-07 | 22e115c |
 | S06 | Shared kernel | done | 2026-11-07 | 0f1a630 |
 | S07 | Brands | done | 2026-11-07 | 88e4f33 |
-| S08 | Categories | done | 2026-11-07 | (this commit) |
+| S08 | Categories | done | 2026-11-07 | 1209435 |
 | S09 | Media pipeline | todo | | |
 | S10 | Products and variants | todo | | |
 | S11 | Attributes and tags | todo | | |
