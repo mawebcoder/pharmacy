@@ -38,6 +38,9 @@ final class RolesSeeder extends Seeder
             // S11 Catalog: attributes (with values) and tags.
             'ViewAny:Attribute', 'View:Attribute', 'Create:Attribute', 'Update:Attribute',
             'ViewAny:Tag', 'View:Tag', 'Create:Tag', 'Update:Tag',
+            // S12 Search: synonyms and the search insights page.
+            'ViewAny:SearchSynonym', 'View:SearchSynonym', 'Create:SearchSynonym', 'Update:SearchSynonym', 'Delete:SearchSynonym',
+            'View:SearchInsights',
         ],
     ];
 

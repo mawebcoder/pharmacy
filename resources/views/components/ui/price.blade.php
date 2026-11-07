@@ -25,8 +25,8 @@
 
 <div {{ $attributes->class('flex flex-col items-start') }}>
     @if ($discount > 0)
-        <div class="flex items-center gap-2">
-            <del class="text-sm text-ink-500">
+        <div class="flex flex-wrap items-center gap-x-2">
+            <del class="text-sm whitespace-nowrap text-ink-500">
                 <span class="sr-only">قیمت قبلی:</span>
                 @toman($old)
             </del>
@@ -40,6 +40,6 @@
     @if ($price === 0)
         <span @class(['font-bold text-success-600', $priceSize])>رایگان</span>
     @else
-        <span @class(['font-bold text-ink-900', $priceSize])>@toman($price)</span>
+        <span @class(['font-bold whitespace-nowrap text-ink-900', $priceSize])>@toman($price)</span>
     @endif
 </div>

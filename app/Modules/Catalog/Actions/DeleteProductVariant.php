@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Search\ProductSearchIndex;
 
 /**
  * Moves a variant to the trash, unless it is the last active variant of an active product.
@@ -25,6 +26,10 @@ final class DeleteProductVariant
         }
 
         $variant->delete();
+
+        if ($product instanceof Product) {
+            ProductSearchIndex::refresh($product);
+        }
     }
 
     /**

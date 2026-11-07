@@ -4,8 +4,8 @@ use App\Modules\Catalog\Models\Category;
 use Livewire\Component;
 
 /**
- * Category page (roadmap B5 /c/{slug}, B9.3): breadcrumb, title, subcategory chips; the product list, filters and
- * sort come in S12. A category is found only when it and every category above it are active.
+ * Category page (roadmap B5 /c/{slug}, B9.3): breadcrumb, banner, title, subcategory chips and the product list
+ * (products of this category and the ones below it). A category is found only when it and every category above it are active.
  */
 new class extends Component
 {
@@ -77,10 +77,5 @@ new class extends Component
         </nav>
     @endif
 
-    <section aria-labelledby="category-products" class="space-y-3">
-        <h2 id="category-products" class="sr-only">محصولات {{ $category->getNameFa() }}</h2>
-        <div class="rounded-card border border-dashed border-line-200 bg-white px-6 py-12 text-center text-ink-500">
-            محصولات این دسته به‌زودی اضافه می‌شوند.
-        </div>
-    </section>
+    <livewire:catalog::product-listing :category-id="$category->getId()" />
 </div>

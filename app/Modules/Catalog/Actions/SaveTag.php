@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\TagData;
 use App\Modules\Catalog\Models\Tag;
+use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -29,6 +30,8 @@ final class SaveTag
             ->setIsFeatured($data->isFeatured)
             ->setSort($data->sort)
             ->save();
+
+        ProductSearchIndex::refreshWhere($tag->products()->getQuery());
 
         return $tag;
     }

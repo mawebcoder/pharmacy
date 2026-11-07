@@ -254,6 +254,24 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     }
 
     /**
+     * This category's id and the ids of all categories below it.
+     *
+     * @return list<int>
+     */
+    public function subtreeIds(): array
+    {
+        $ids = [$this->getId()];
+        $level = [$this->getId()];
+
+        for ($depth = 1; $depth < self::MAX_DEPTH && $level !== []; $depth++) {
+            $level = self::query()->whereIn(self::COLUMN_PARENT_ID, $level)->pluck(self::COLUMN_ID)->map(intval(...))->all();
+            array_push($ids, ...$level);
+        }
+
+        return $ids;
+    }
+
+    /**
      * Whether the storefront shows this category: it and every category above it are active and not deleted.
      */
     public function isShownOnStorefront(): bool

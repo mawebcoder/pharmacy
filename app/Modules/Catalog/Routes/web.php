@@ -14,3 +14,6 @@ Route::livewire('/c/{slug}', 'catalog::category-page')->name('category.show');
 
 // Tag page: nutrient / need chips link here (roadmap B5); the product list comes in S12.
 Route::livewire('/t/{slug}', 'catalog::tag-page')->name('tags.show');
+
+// Product page: simple until S13 builds the full page (roadmap B5).
+Route::livewire('/p/{slug}', 'catalog::product-page')->name('products.show');

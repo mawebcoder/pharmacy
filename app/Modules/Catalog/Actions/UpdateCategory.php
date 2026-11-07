@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Data\CategoryData;
 use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 use App\Modules\Catalog\Support\CategoryPlacement;
 
@@ -42,6 +43,8 @@ final class UpdateCategory
             ->setSeoTitle($data->seoTitle)
             ->setSeoDescription($data->seoDescription)
             ->save();
+
+        ProductSearchIndex::refreshCategory($category);
 
         return $category;
     }

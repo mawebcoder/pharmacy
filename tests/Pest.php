@@ -22,3 +22,6 @@ pest()->extend(TestCase::class)
 
 // testImage() and testSvg(): real image files for media upload tests.
 require_once __DIR__.'/../app/Modules/Media/Tests/helpers.php';
+
+// useSearchIndex(), indexProductsForSearch(): product search tests against a real Meilisearch index.
+require_once __DIR__.'/../app/Modules/Catalog/Tests/search-helpers.php';

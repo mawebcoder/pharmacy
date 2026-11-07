@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Media\Models\Media;
+use App\Modules\Search\Models\SearchLog;
 use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\System\Models\IntegrationLog;
 use Filament\Actions\DeleteBulkAction;
@@ -58,7 +59,7 @@ foreach ($modules as $module) {
         ->toUseTrait(LogsActivity::class)
         // Log tables are records themselves; auditing them would log every log row. Media rows change on every
         // processing step; changes to what an image belongs to are logged on the owner.
-        ->ignoring([IntegrationLog::class, Media::class]);
+        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class]);
 
     arch("{$module} enums have Persian labels")
         ->expect("App\\Modules\\{$module}\\Enums")

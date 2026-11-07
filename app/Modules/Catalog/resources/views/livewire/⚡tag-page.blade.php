@@ -4,8 +4,7 @@ use App\Modules\Catalog\Models\Tag;
 use Livewire\Component;
 
 /**
- * Tag page (roadmap B5 /t/{slug}, B9.3): the products of a nutrient or need tag. The product list, filters and
- * sort come in S12; for now the header and the other featured tags.
+ * Tag page (roadmap B5 /t/{slug}, B9.3): the products of a nutrient or need tag, with the other featured tags.
  */
 new class extends Component
 {
@@ -46,10 +45,5 @@ new class extends Component
 
     <x-catalog::tag-chips :current="$tag" label="نیازهای دیگر" />
 
-    <section aria-labelledby="tag-products" class="space-y-3">
-        <h2 id="tag-products" class="sr-only">محصولات {{ $tag->getNameFa() }}</h2>
-        <div class="rounded-card border border-dashed border-line-200 bg-white px-6 py-12 text-center text-ink-500">
-            محصولات این برچسب به‌زودی اضافه می‌شوند.
-        </div>
-    </section>
+    <livewire:catalog::product-listing :tag-id="$tag->getId()" />
 </div>

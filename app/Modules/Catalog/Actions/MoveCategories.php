@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Data\CategoryPositionData;
 use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CategoryPlacement;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +33,7 @@ final class MoveCategories
 
         CategoryPlacement::assertAllowed(array_map(fn (CategoryPositionData $position): ?int => $position->parentId, $byId));
 
-        return DB::transaction(function () use ($byId): int {
+        $moved = DB::transaction(function () use ($byId): int {
             $moved = 0;
 
             foreach (Category::query()->whereKey(array_keys($byId))->get() as $category) {
@@ -47,5 +48,12 @@ final class MoveCategories
 
             return $moved;
         });
+
+        if ($moved > 0) {
+            Category::query()->whereKey(array_keys($byId))->whereNull(Category::COLUMN_PARENT_ID)->get()
+                ->each(fn (Category $root) => ProductSearchIndex::refreshCategory($root));
+        }
+
+        return $moved;
     }
 }

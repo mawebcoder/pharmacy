@@ -201,7 +201,8 @@ return [
     'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            // "search": Scout's Meilisearch indexing jobs (S12).
+            'queue' => ['default', 'search'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,

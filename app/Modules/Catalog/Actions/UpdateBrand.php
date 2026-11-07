@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\BrandData;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -30,6 +31,8 @@ final class UpdateBrand
             ->setSeoTitle($data->seoTitle)
             ->setSeoDescription($data->seoDescription)
             ->save();
+
+        ProductSearchIndex::refreshWhere($brand->products()->getQuery());
 
         return $brand;
     }

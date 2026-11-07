@@ -35,3 +35,9 @@ Homestead.yaml
 Thumbs.db
 /public/css/solution-forest
 /public/js/solution-forest
+
+# graphify knowledge graph (local, rebuilt on demand)
+graphify-out/
+
+# medialibrary scratch space for image conversions (left behind when a conversion fails)
+/storage/media-library/

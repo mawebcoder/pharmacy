@@ -8,6 +8,7 @@ use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\NearExpiry;
 use App\Modules\Catalog\Support\VariantPricing;
 use App\Modules\Catalog\Support\VariantSku;
@@ -32,7 +33,7 @@ final class SaveProductVariant
             DeleteProductVariant::assertNotLastActive($product, $variant);
         }
 
-        return DB::transaction(function () use ($product, $data, $variant): ProductVariant {
+        $saved = DB::transaction(function () use ($product, $data, $variant): ProductVariant {
             $variant ??= (new ProductVariant)->setProductId($product->getId());
 
             $variant
@@ -61,5 +62,9 @@ final class SaveProductVariant
 
             return $variant;
         });
+
+        ProductSearchIndex::refresh($product);
+
+        return $saved;
     }
 }

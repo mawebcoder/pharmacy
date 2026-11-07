@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Models;
 use App\Modules\Catalog\Database\Factories\ProductFactory;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Search\ProductDocument;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as BaseCollection;
+use Laravel\Scout\Searchable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -34,6 +37,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     use InteractsWithImagePresets;
     use LogsActivity;
+    use Searchable;
     use SoftDeletes;
 
     public const string COLUMN_ID = 'id';
@@ -487,6 +491,39 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function scopeActive(Builder $query): Builder
     {
         return $query->where(self::COLUMN_STATUS, ProductStatus::Active);
+    }
+
+    /**
+     * Meilisearch index name, with Scout's prefix (tests use their own prefix per process).
+     */
+    public function searchableAs(): string
+    {
+        return config('scout.prefix').'products';
+    }
+
+    /**
+     * Only products for sale are searchable: active, a sellable type, with an active variant.
+     */
+    public function shouldBeSearchable(): bool
+    {
+        return $this->isActive() && ! $this->trashed() && $this->isSellableType() && $this->variants()->active()->exists();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        return ProductDocument::for($this->loadMissing(ProductDocument::RELATIONS));
+    }
+
+    /**
+     * @param  BaseCollection<int, Product>  $models
+     * @return BaseCollection<int, Product>
+     */
+    public function makeSearchableUsing(BaseCollection $models): BaseCollection
+    {
+        return $models instanceof Collection ? $models->load(ProductDocument::RELATIONS) : $models;
     }
 
     public function getRouteKeyName(): string

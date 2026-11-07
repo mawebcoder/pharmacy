@@ -20,7 +20,7 @@
             <span class="text-lg font-bold text-primary-700">{{ config('app.display_name') }}</span>
         </a>
 
-        <x-layout.search class="hidden flex-1 md:block xl:max-w-xl" />
+        <livewire:search::instant-search class="hidden flex-1 md:block xl:max-w-xl" />
 
         <nav class="ms-auto flex items-center gap-1" aria-label="حساب و سبد خرید">
             <a href="/pharmacist" class="hidden h-11 items-center gap-2 rounded-full px-3 text-sm text-ink-900 hover:bg-surface-50 xl:flex">
@@ -40,6 +40,6 @@
     <x-catalog::category-nav />
 
     <div class="border-t border-line-200 px-4 py-2 md:hidden">
-        <x-layout.search id="site-search-mobile" />
+        <livewire:search::instant-search input-id="site-search-mobile" />
     </div>
 </header>

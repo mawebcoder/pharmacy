@@ -4,7 +4,7 @@ use App\Modules\Catalog\Models\Brand;
 use Livewire\Component;
 
 /**
- * Brand page (roadmap B5 /b/{slug}, B9.3): the brand header now; the product list, filters and sort come in S12.
+ * Brand page (roadmap B5 /b/{slug}, B9.3): the brand header and its product list.
  * Inactive and deleted brands are not found.
  */
 new class extends Component
@@ -54,10 +54,5 @@ new class extends Component
         </div>
     </header>
 
-    <section aria-labelledby="brand-products" class="space-y-3">
-        <h2 id="brand-products" class="text-lg font-bold text-ink-900">محصولات {{ $brand->getNameFa() }}</h2>
-        <div class="rounded-card border border-dashed border-line-200 bg-white px-6 py-12 text-center text-ink-500">
-            محصولات این برند به‌زودی اضافه می‌شوند.
-        </div>
-    </section>
+    <livewire:catalog::product-listing :brand-id="$brand->getId()" />
 </div>

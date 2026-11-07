@@ -408,8 +408,8 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | `laravel/pulse` | Production performance monitoring | System |
 | `laravel/telescope` | Local debugging only | Dev |
 | `laravel/scout` | Search abstraction | Search |
-| `meilisearch/meilisearch-php`, `http-interop/http-factory-guzzle` | Meilisearch client (P2, D21.5) | Search |
-| `openspout/openspout` (or `maatwebsite/excel`) | Provider price Excel import | Pricing |
+| `meilisearch/meilisearch-php:^1.17` | Meilisearch client, used from the MVP (decided 2026-11-07 in S12); guzzlehttp/psr7 already provides the HTTP factories, so `http-interop/http-factory-guzzle` is not needed | Search |
+| `openspout/openspout:^4.32` | Excel/CSV reading and writing: search synonyms import (S12), provider price import (S14) | Search, Pricing |
 | `mews/purifier` or Symfony HtmlSanitizer | Sanitize rich text | Shared |
 | `sentry/sentry-laravel` | Error tracking | System |
 | `melipayamak/php` (optional) or own HTTP client | Melli Payamak SMS (D11.6) [CONFIRM package] | Notifications |
@@ -1973,7 +1973,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 - Eager loading everywhere (`preventLazyLoading()` in non-production).
 - `php artisan optimize` on deploy (config, route, view, event cache); OPcache + JIT on.
 - Livewire: `#[Lazy]` for below-the-fold sections, `wire:model.live.debounce.300ms` for search, avoid big public properties (pass ids, not models).
-- Pagination: cursor pagination on PLP for infinite scroll.
+- Pagination: numbered pages on desktop and «نمایش بیشتر» (next 24) on phones and tablets, with `?page=` in the URL (decided 2026-11-07 in S12 instead of cursor pagination, which cannot show page numbers or sort by price well).
 - Queue everything slow (SMS, images, Tipax calls, price recalculation).
 - HTTP: Brotli/gzip, HTTP/2, CDN for static assets with hashed names (Vite).
 
@@ -2054,7 +2054,9 @@ On every push: Pint (test mode), Larastan, `composer audit`, `php artisan test -
 
 ## D21. Search engine (MySQL FULLTEXT → Meilisearch hybrid)
 
-> **Decision:** MVP uses **MySQL FULLTEXT** through Laravel Scout's `database` driver. Phase 2 moves to self-hosted **Meilisearch** with **hybrid (keyword + vector) search** using a **local multilingual embedding model**. "Similar products" is computed in a nightly batch and stored in MySQL in both phases. Search controllers/Livewire follow C5 (Form Request → DTO → Action → API Resource).
+> **Update (2026-11-07, S12, owner's decision):** the MVP uses **Meilisearch from the start** (self-hosted Docker service `getmeili/meilisearch:v1.55.1`, Scout `meilisearch` driver) for search **and** for the category/brand/tag listings with filter counts; Phase 1's MySQL FULLTEXT path is not built. Semantic (hybrid) search stays for later. If Meilisearch is unreachable, listings fall back to the database (newest first, page scope and brands only, no counts) and search says it is temporarily unavailable. Synonyms can also be imported from Excel/CSV in the admin (merging into existing phrases). The sections below keep the original plan for reference.
+>
+> **Decision (original):** MVP uses **MySQL FULLTEXT** through Laravel Scout's `database` driver. Phase 2 moves to self-hosted **Meilisearch** with **hybrid (keyword + vector) search** using a **local multilingual embedding model**. "Similar products" is computed in a nightly batch and stored in MySQL in both phases. Search controllers/Livewire follow C5 (Form Request → DTO → Action → API Resource).
 
 ### D21.1 Summary
 
@@ -2708,6 +2710,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** attach values/tags; chip links to `/t/{slug}`.
 
 ### S12 PLP and search
+- **Decisions (2026-11-07):** Meilisearch now (see D21 update) for search and listings; numbered pages + «نمایش بیشتر»; a simple `/p/{slug}` product page now (S13 builds the full page); Search module owns the box, `/search`, synonyms (+ Excel/CSV import), logs and insights, and asks Catalog through its queries; the MySQL `innodb_ft_min_token_size = 2` setting is kept in the Docker config.
 - **Refs:** D21 (search engine plan, SR1–SR5), D13.2, D15.1, D17, B1, B7–B13
 - **Build:** CategoryPage, BrandPage, TagPage, SearchPage with filters (brand, form, suitable-for, price, in-stock, discount %), sort, cursor pagination, mobile filter slide, quick view, instant search box, Scout database driver, synonyms, search logs.
 - **Tests:** filter combinations, Persian normalisation in search, zero-result logging, query count bounded (no N+1).
