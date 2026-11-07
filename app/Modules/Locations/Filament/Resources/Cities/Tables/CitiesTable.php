@@ -35,9 +35,11 @@ final class CitiesTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('county.'.County::COLUMN_NAME_FA)
-                    ->label('شهرستان'),
+                    ->label('شهرستان')
+                    ->searchable(),
                 TextColumn::make('province.'.Province::COLUMN_NAME_FA)
                     ->label('استان')
+                    ->searchable()
                     ->sortable(),
                 ToggleColumn::make(City::COLUMN_IS_DELIVERY_ENABLED)
                     ->label('ارسال فعال')
