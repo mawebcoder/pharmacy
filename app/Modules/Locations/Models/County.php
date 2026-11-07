@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Locations\Models;
 
 use App\Modules\Locations\Database\Factories\CountyFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +17,6 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A county (شهرستان) of a province (roadmap D4).
  */
-#[Fillable([self::COLUMN_PROVINCE_ID, self::COLUMN_NAME_FA, self::COLUMN_SLUG, self::COLUMN_SOURCE_ID])]
 final class County extends Model
 {
     /** @use HasFactory<CountyFactory> */

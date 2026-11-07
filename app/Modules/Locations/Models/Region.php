@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Locations\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +15,6 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A city region (منطقه شهرداری), e.g. one of Tehran's 22 districts. Filled in S24.
  */
-#[Fillable([self::COLUMN_CITY_ID, self::COLUMN_NAME_FA, self::COLUMN_NUMBER])]
 final class Region extends Model
 {
     use LogsActivity;

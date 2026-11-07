@@ -6,6 +6,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\System\Models\IntegrationLog;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ForceDeleteBulkAction;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 arch('application code uses strict types')
@@ -25,6 +26,11 @@ arch('env() is only read in config files')
 arch('admin tables have no bulk delete')
     ->expect('App')
     ->not->toUse([DeleteBulkAction::class, ForceDeleteBulkAction::class]);
+
+// Models are written through setters and save(), never mass assigned (roadmap C4, decided 2026-11-07).
+arch('models declare no fillable attributes')
+    ->expect(['App\\Models', 'App\\Modules'])
+    ->not->toHaveAttribute(Fillable::class);
 
 /*
 | Module boundaries (roadmap C3 rule 1) and the C5 building blocks, generated for every module in app/Modules.

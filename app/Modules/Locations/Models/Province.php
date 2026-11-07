@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Locations\Models;
 
 use App\Modules\Locations\Database\Factories\ProvinceFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +16,6 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * An Iranian province (استان), imported from the location dataset (roadmap D4).
  */
-#[Fillable([self::COLUMN_NAME_FA, self::COLUMN_SLUG, self::COLUMN_TEL_PREFIX, self::COLUMN_SOURCE_ID])]
 final class Province extends Model
 {
     /** @use HasFactory<ProvinceFactory> */

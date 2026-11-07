@@ -21,7 +21,8 @@ final class SuperAdminSeeder extends Seeder
         /** @var array{name: string, email: string, password: string} $superAdmin */
         $superAdmin = config('auth.superadmin');
 
-        $admin = AdminUser::firstOrNew([AdminUser::COLUMN_EMAIL => $superAdmin['email']]);
+        $admin = AdminUser::query()->where(AdminUser::COLUMN_EMAIL, $superAdmin['email'])->first()
+            ?? (new AdminUser)->setEmail($superAdmin['email']);
 
         if (! $admin->exists) {
             if (app()->isProduction() && $superAdmin['password'] === 'password') {

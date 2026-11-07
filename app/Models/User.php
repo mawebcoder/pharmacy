@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,7 +14,6 @@ use Illuminate\Support\Carbon;
 /**
  * Laravel's default "web" guard user. Customers get their own model and table in S17.
  */
-#[Fillable([self::COLUMN_NAME, self::COLUMN_EMAIL, self::COLUMN_PASSWORD])]
 #[Hidden([self::COLUMN_PASSWORD, self::COLUMN_REMEMBER_TOKEN])]
 class User extends Authenticatable
 {

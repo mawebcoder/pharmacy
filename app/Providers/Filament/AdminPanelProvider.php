@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
+use App\Modules\Identity\Filament\Auth\EditAdminProfile;
 use App\Modules\Identity\Http\Middleware\LogOutIdleAdmins;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Shared\Support\Modules;
@@ -118,7 +119,7 @@ class AdminPanelProvider extends PanelProvider
             // Staff only, with a mandatory authenticator app (TOTP) and recovery codes (roadmap D16).
             ->authGuard('admin')
             ->login()
-            ->profile()
+            ->profile(EditAdminProfile::class)
             ->multiFactorAuthentication([
                 AppAuthentication::make()->recoverable(),
             ], isRequired: true)

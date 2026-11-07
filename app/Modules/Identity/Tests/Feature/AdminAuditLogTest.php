@@ -15,7 +15,7 @@ it('logs admin account changes with who made them and never the password', funct
     $admin = AdminUser::factory()->create(['is_active' => true]);
     $this->actingAs($actor, 'admin');
 
-    $admin->update(['is_active' => false, 'password' => 'Another-Secret-1405!']);
+    $admin->setIsActive(false)->setPassword('Another-Secret-1405!')->save();
 
     $activity = Activity::query()->where('event', 'updated')->whereMorphedTo('subject', $admin)->latest('id')->first();
     expect($activity->causer->is($actor))->toBeTrue()
@@ -46,7 +46,7 @@ it('shows activity in Persian on the activity log page', function (): void {
     $this->actingAs($actor, 'admin');
     $admin = AdminUser::factory()->create(['name' => 'سارا']);
 
-    $admin->update(['is_active' => false]);
+    $admin->setIsActive(false)->save();
 
     Pest\Livewire\livewire(ListActivityLogs::class)
         ->assertSee(['ویرایش', 'مدیر: سارا', 'فعال', 'مدیر سیستم']);
@@ -56,7 +56,7 @@ it('opens an activity with its changes for super admins only', function (): void
     $superAdmin = AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create();
     $operator = AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::Operator)->create();
     $admin = AdminUser::factory()->create();
-    $admin->update(['is_active' => false]);
+    $admin->setIsActive(false)->save();
     $activity = Activity::query()->where('event', 'updated')->whereMorphedTo('subject', $admin)->firstOrFail();
 
     $this->actingAs($superAdmin, 'admin')->get("/admin/activity-logs/{$activity->id}")

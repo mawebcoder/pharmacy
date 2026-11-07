@@ -480,7 +480,7 @@ Rules:
 - Money: integer **Rial** everywhere (`Money` value object in Shared), formatted as Toman in views via a Blade helper `@toman($rial)`.
 - Units: grams, millimetres in DB; convert at integration boundary.
 - Enums: backed string enums with `label(): string` returning Persian text.
-- **Models** (decided 2026-11-06): every column has a constant `COLUMN_<NAME>` (e.g. `public const string COLUMN_REGION_ID = 'region_id';`), and every column has a typed getter and setter (`getRegionId(): ?int`, `setRegionId(?int $regionId): static`); relations have getters too (`getRegion(): ?Region`). Application code uses the constants, getters and setters instead of string column names or magic properties, so every use of a column is traceable. Migrations keep literal column names (they are fixed snapshots of the schema).
+- **Models** (decided 2026-11-06): every column has a constant `COLUMN_<NAME>` (e.g. `public const string COLUMN_REGION_ID = 'region_id';`), and every column has a typed getter and setter (`getRegionId(): ?int`, `setRegionId(?int $regionId): static`); relations have getters too (`getRegion(): ?Region`). Application code uses the constants, getters and setters instead of string column names or magic properties, so every use of a column is traceable. Migrations keep literal column names (they are fixed snapshots of the schema). Models declare **no `$fillable`** (decided 2026-11-07): they stay fully guarded (Laravel's default), and every write goes through the setters and `save()`; never `create([...])`, `update([...])` or `fill()` with arrays (factories and query-builder upserts are fine).
 - No business logic in controllers, Livewire components or Filament resources: they build a **DTO** and call an **Action** (C5).
 - Validation in **Form Requests** (controllers), Livewire Form objects and Filament field rules that all reuse the Form Request's `baseRules()`; domain checks in Actions.
 - Every JSON response goes through an **API Resource**.
@@ -1945,7 +1945,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 | Customer auth | **Laravel Sanctum** (decided 2026-11-06): storefront customers authenticate through Sanctum (stateful, cookie-based for the Livewire storefront and its AJAX endpoints; the same setup issues tokens for the P2 `/api/v1` apps); exact guard setup confirmed in the S17 plan. OTP only; rate limits (D13.1); codes hashed; session regenerated on login; `remember` cookie 30 days, `secure`, `httponly`, `samesite=lax` |
 | CSRF | On all web forms (Livewire handles it); excluded only for webhooks |
 | Input | Validation on every input; Persian digit normalisation; rich text sanitized (purifier) before save; no raw `{!! !!}` except sanitized HTML |
-| Mass assignment | `$fillable` on every model; no `$guarded = []` |
+| Mass assignment | No `$fillable` and never `$guarded = []`: models stay fully guarded and are written only through setters and `save()` (decided 2026-11-07) |
 | SQL | Eloquent/Query Builder bindings only; no string-built SQL |
 | Files | Validate MIME by content, size limits, re-encode images (strips payloads), random file names, originals on private disk, SVG sanitized (only admins upload SVG) |
 | Payments | Amount computed server-side; verify with Zarinpal before marking paid; verify idempotent (100/101); `lockForUpdate`; callback domain registered; never trust `Status=OK` alone |
@@ -2957,7 +2957,7 @@ Follow the example message in roadmap section E1. Do not write code until the us
 ## 5. Implement
 1. Create a branch: `git checkout -b feat/S{nn}-{slug}` from the latest `main` (ask before switching if the working tree is dirty).
 2. Follow the module layout in C3: Models, Enums, Data (readonly DTOs), Actions, Queries, Events/Listeners/Jobs, Policies, Livewire, Filament/Resources, Database/{Migrations,Factories,Seeders}, Routes, Tests.
-3. Rules: `declare(strict_types=1)`; money as integer Rial; grams/millimetres in DB; no business logic in Livewire/Filament classes (call Actions); a policy for every admin resource; `$fillable` on models; secrets only via config/env; external APIs only through the module contracts (`ShippingCarrier`, `PaymentGateway`) and never real production endpoints.
+3. Rules: `declare(strict_types=1)`; money as integer Rial; grams/millimetres in DB; no business logic in Livewire/Filament classes (call Actions); a policy for every admin resource; no `$fillable` (models are written through setters and `save()`); secrets only via config/env; external APIs only through the module contracts (`ShippingCarrier`, `PaymentGateway`) and never real production endpoints.
 4. UI: Persian/RTL text, only B3 tokens and B10 components (TallStackUI on the storefront, Filament defaults in admin), layouts per B9, image rules from D14.
 5. Keep the change limited to the step; if you must change an earlier step's behaviour, say so and get approval.
 

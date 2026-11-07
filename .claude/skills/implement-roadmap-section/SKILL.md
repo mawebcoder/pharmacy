@@ -36,7 +36,7 @@ Follow the example message in roadmap section E1. Do not write code until the us
 ## 5. Implement
 1. Create a branch: `git checkout -b feat/S{nn}-{slug}` from the latest `main` (ask before switching if the working tree is dirty).
 2. Follow the module layout in C3: Models, Enums, Data (readonly DTOs), Actions, Queries, Events/Listeners/Jobs, Policies, Livewire, Filament/Resources, Database/{Migrations,Factories,Seeders}, Routes, Tests.
-3. Rules: `declare(strict_types=1)`; money as integer Rial; grams/millimetres in DB; no business logic in Livewire/Filament classes (call Actions); a policy for every admin resource; `$fillable` on models; secrets only via config/env; external APIs only through the module contracts (`ShippingCarrier`, `PaymentGateway`) and never real production endpoints.
+3. Rules: `declare(strict_types=1)`; money as integer Rial; grams/millimetres in DB; no business logic in Livewire/Filament classes (call Actions); a policy for every admin resource; no `$fillable` (models are written through setters and `save()`); secrets only via config/env; external APIs only through the module contracts (`ShippingCarrier`, `PaymentGateway`) and never real production endpoints.
 4. UI: Persian/RTL text, only B3 tokens and B10 components (TallStackUI on the storefront, Filament defaults in admin), layouts per B9, image rules from D14.
 5. Keep the change limited to the step; if you must change an earlier step's behaviour, say so and get approval.
 

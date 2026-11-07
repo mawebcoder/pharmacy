@@ -7,7 +7,6 @@ namespace App\Modules\Locations\Models;
 use App\Modules\Locations\Database\Factories\CityFactory;
 use App\Modules\Locations\Enums\CityType;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,10 +20,6 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A city. Coordinates are the county centre from GeoNames when known; delivery is switched on by admins (roadmap D4).
  */
-#[Fillable([
-    self::COLUMN_PROVINCE_ID, self::COLUMN_COUNTY_ID, self::COLUMN_NAME_FA, self::COLUMN_SLUG, self::COLUMN_TYPE,
-    self::COLUMN_LATITUDE, self::COLUMN_LONGITUDE, self::COLUMN_IS_DELIVERY_ENABLED, self::COLUMN_SOURCE_ID,
-])]
 final class City extends Model implements HasActivityLogLabel
 {
     /** @use HasFactory<CityFactory> */

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\System\Models;
 
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
@@ -14,11 +13,6 @@ use Illuminate\Support\Carbon;
  * One call to an external service (roadmap D0.4, D3.6). Not itself audited (it is a log); rows older than
  * config('integrations.log.retention_days') are pruned daily.
  */
-#[Fillable([
-    self::COLUMN_SERVICE, self::COLUMN_OPERATION, self::COLUMN_METHOD, self::COLUMN_URL, self::COLUMN_REQUEST,
-    self::COLUMN_RESPONSE, self::COLUMN_HTTP_STATUS, self::COLUMN_DURATION_MS, self::COLUMN_CORRELATION_ID,
-    self::COLUMN_ORDER_ID, self::COLUMN_ERROR, self::COLUMN_CREATED_AT, self::COLUMN_UPDATED_AT,
-])]
 final class IntegrationLog extends Model
 {
     use MassPrunable;

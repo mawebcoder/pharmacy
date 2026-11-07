@@ -14,7 +14,6 @@ use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -29,7 +28,6 @@ use Spatie\Permission\Traits\HasRoles;
  * The TOTP secret and recovery codes are stored encrypted and accessed through Filament's traits
  * (getAppAuthenticationSecret(), saveAppAuthenticationSecret(), …); the remember token through Laravel's.
  */
-#[Fillable([self::COLUMN_NAME, self::COLUMN_EMAIL, self::COLUMN_PASSWORD, self::COLUMN_IS_ACTIVE])]
 #[Hidden([self::COLUMN_PASSWORD, self::COLUMN_REMEMBER_TOKEN])]
 final class AdminUser extends Authenticatable implements FilamentUser, HasActivityLogLabel, HasAppAuthentication, HasAppAuthenticationRecovery, HasName
 {

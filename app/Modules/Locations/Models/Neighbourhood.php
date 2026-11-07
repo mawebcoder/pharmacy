@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Locations\Models;
 
 use Illuminate\Contracts\Database\Query\Expression;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -15,7 +14,6 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A neighbourhood (محله) with an optional boundary polygon. Filled in S24 for own-courier zones.
  */
-#[Fillable([self::COLUMN_REGION_ID, self::COLUMN_CITY_ID, self::COLUMN_NAME_FA])]
 final class Neighbourhood extends Model
 {
     use LogsActivity;

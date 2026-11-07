@@ -7,7 +7,6 @@ namespace App\Modules\Catalog\Models;
 use App\Modules\Catalog\Database\Factories\BrandFactory;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use App\Modules\Shared\Support\Countries;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,10 +18,6 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A product brand (roadmap D3.1). Shown on the storefront at /b/{slug} while active.
  */
-#[Fillable([
-    self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_COUNTRY, self::COLUMN_DESCRIPTION,
-    self::COLUMN_IS_ACTIVE, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
-])]
 final class Brand extends Model implements HasActivityLogLabel
 {
     /** @use HasFactory<BrandFactory> */

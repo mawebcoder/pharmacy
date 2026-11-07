@@ -16,7 +16,7 @@ it('captures a change into a queued job payload instead of writing during the re
     $admin = AdminUser::factory()->create(['is_active' => true]);
     $this->actingAs($actor, 'admin');
 
-    $admin->update(['is_active' => false]);
+    $admin->setIsActive(false)->save();
 
     expect(Activity::query()->where('event', 'updated')->exists())->toBeFalse();
     Queue::assertPushed(WriteActivityLog::class, fn (WriteActivityLog $job): bool => $job->payload['event'] === 'updated'
@@ -30,7 +30,7 @@ it('writes the captured change with the time it happened, even when the job runs
     Queue::fake();
     $this->travelTo(Carbon::parse('2026-11-06 10:00', 'UTC'));
     $admin = AdminUser::factory()->create(['name' => 'سارا']);
-    $admin->update(['name' => 'سارا محمدی']);
+    $admin->setName('سارا محمدی')->save();
     $job = Queue::pushed(WriteActivityLog::class)->last();
 
     $this->travelTo(Carbon::parse('2026-11-06 12:30', 'UTC'));
@@ -47,7 +47,7 @@ it('does not log a change whose transaction is rolled back', function (): void {
 
     try {
         DB::transaction(function () use ($admin): void {
-            $admin->update(['is_active' => false]);
+            $admin->setIsActive(false)->save();
 
             throw new RuntimeException('rolled back');
         });
