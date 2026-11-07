@@ -77,7 +77,7 @@ Medicines have government-set consumer prices: `selling_price ≤ official_price
 | Site | What they do well (adopt) | Weakness | Our improvement |
 |---|---|---|---|
 | **Darunet** (darunet.com) | Deep mega-menu by body need; rich filters (brand, dosage form with counts, "suitable for", price); PDP with **expiry date**, ingredients table, usage, warnings, interactions, FAQ; BNPL instalment preview; pharmacist profile page | Loud pink brand colour; cluttered WooCommerce theme; very long category tree | Same filter depth but collapsible chips + bottom-sheet filters on mobile; calm teal palette; PDP tabs become sticky segmented control |
-| **Darukade** (darukade.com) | Strongest trust: oldest licensed brand, licences page, magazine with **named expert authors and credentials**; express delivery band; quick "need" shortcuts | Long homepage with repetitive product rails | Short homepage, each rail capped at 12 items with "view all"; authors on articles in P2 |
+| **Darukade** (darukade.com) | Strongest trust: oldest licensed brand, licences page, magazine with **named expert authors and credentials**; express delivery band; quick "need" shortcuts | Long homepage with repetitive product rails | Short homepage, each widget capped at 6 items with "view all"; authors on articles in P2 |
 | **Daroodrug** (daroodrug.com) | "Consult a doctor" CTA; daily deals with countdown; **bundles** (immunity pack); trust counters (cities served, orders, SKUs); returns guide | No instalments; deals mixed into many rails | Dedicated deals hub; bundle builder in admin; trust counters computed live |
 | **Darochi** (darochi.com) | **Shop by nutrient** chips (Iron, B9, Zinc, Magnesium, C); quick view; variant picker (size/flavour); nutrition consultation; Snapp Pay rating as trust badge; city SEO pages | Prices in Rial (confusing); thin product content on cards | Always Toman in UI; nutrient chips as first-class **tags**; quick view as TallStackUI modal/slide |
 | **Sarsoon** (sarsoon.com) | **Damaged-box (کج‌جعبه)** and **near-expiry (زودمصرف)** clearance sections; mobile OTP login; free shipping message; payment-methods page | Generic template; weak product imagery | Both clearance sections automated from variant flags + expiry date; badges on cards |
@@ -91,7 +91,7 @@ Medicines have government-set consumer prices: `selling_price ≤ official_price
 4. **Calm health palette**, colour carries meaning: teal = brand/actions, coral = deals only, amber = near expiry, violet = prescription.
 5. **One strong CTA per view**; secondary actions quiet.
 6. **Consistent product cards**: 1:1 image on white, name (2 lines max), brand, price (old struck + new), discount badge, add-to-cart.
-7. **Short homepage**: ≤ 8 sections, each ≤ 12 items.
+7. **Short homepage**: ≤ 8 widgets, each ≤ 6 items (decided 2026-11-07: every home widget, rail, slider and strip shows at most 6).
 8. **Accessibility**: contrast ≥ 4.5:1, focus rings, 44×44 px touch targets, Persian `alt` texts, `lang="fa" dir="rtl"`.
 9. **Persian typography**: Vazirmatn, Persian digits in UI, Jalali dates, Toman with thousands separators (۱٬۲۵۰٬۰۰۰ تومان).
 10. **Performance budget**: ≤ 170 KB JS, ≤ 60 KB CSS (gzip), LCP < 2.5 s, CLS < 0.1, INP < 200 ms.
@@ -152,11 +152,13 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 
 | Route | Page | Key sections / components |
 |---|---|---|
-| `/` | Home | Search, hero banners (desktop/tablet/mobile art), nutrient/need chips, hourly flash deal with countdown, best sellers, new arrivals, bundles, shop by audience (women/men/kids/mother), brands strip, trust badges |
+| `/` | Home | Built by the admin from widgets (D3.6 «Home widgets»): slider, collection rails, brands, categories, tags, trust; later flash deal and bundles (S33) |
+| `/collections/{slug}` | Collection PLP | Same as PLP; `popular` is the system collection «محصولات محبوب» |
 | `/c/{slug}` | Category PLP | Breadcrumb, sub-category chips, filters (brand, form, suitable-for, price, in-stock, discount %), sort, infinite scroll/pagination, quick view |
 | `/b` and `/b/{slug}` | Brands list, brand PLP | A–Z index, logo grid; brand header + PLP |
+| `/categories`, `/collections` | Categories list, collections list | Round icons / collection tiles; optional banner or slider on top (S13b) |
 | `/t/{slug}` | Tag PLP (need/nutrient) | Same as PLP |
-| `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper |
+| `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper. The empty search box shows «محصولات محبوب» (D21.2) |
 | `/p/{slug}` | Product detail (PDP) | Gallery + zoom, brand, badges, price, variant picker, expiry, stock, qty, add-to-cart, sticky buy bar (mobile), tabs (description, ingredients, usage, warnings, side effects, FAQ, reviews), related, ask a pharmacist |
 | `/deals` | Deals hub | Flash deals, discount tiers, near-expiry, damaged-box |
 | `/bundles/{slug}` | Bundle | Items, saving, add bundle |
@@ -175,11 +177,11 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 | Group | Resources / pages |
 |---|---|
 | Dashboard | Sales today/7d/30d, margin, orders by status, sourcing backlog, shipments in transit, low-margin alerts, failed integrations |
-| Catalog | Products (variants as relation manager), Categories (tree), Brands, Attributes, Tags, Bundles, Reviews (moderation), Questions |
+| Catalog | Products (variants as relation manager), Categories (tree), Brands, Attributes, Tags, Collections, Bundles, Reviews (moderation), Questions |
 | Pricing | Providers, Provider prices, Pricing rules, Price imports (upload Excel, preview diff, apply) |
 | Sales | Orders (state actions), Provider purchases, Returns, Coupons, Payments |
 | Shipping | Shipments, Carrier services, Boxes, Origins, City mapping, Delivery zones & slots, Couriers, Shipping rules |
-| Content | Banners, Home sections, Flash deals, Pages, FAQ, Menus, Contact messages |
+| Content | Home page builder («چیدمان صفحه اصلی»: widgets + slider banners), Flash deals, Pages, FAQ, Menus, Contact messages |
 | Customers | Customers, Addresses (read-only), Stock alerts |
 | Settings | General settings, Social links, Trust badges, Pharmacists, SEO redirects, Notification templates |
 | System | Admin users, Roles & permissions, Activity log, Integration log, Horizon link, Health |
@@ -230,7 +232,7 @@ What each site teaches, as a design pattern, and the professional standard we ap
 ### B8.6 Mosbate Sabz (mosbatesabz.com)
 - **Pattern to adopt:** discount tiers (10/20/30/40/50 %, 50 %+); hourly deals; "newly added"; online prescription entry; medical devices and home tests categories; ticket support; scientific team and licences pages; tracking code lookup; cancellation and return policy page.
 - **Problems seen:** visually dense, many competing banners and colours, long menus.
-- **Our standard:** discount tiers as one chip row on the deals hub; maximum 1 hero slider (≤ 5 slides) + 2 secondary banners on home; accent coral used only for deals; support entry points grouped in one "help" menu.
+- **Our standard:** discount tiers as one chip row on the deals hub; sliders of ≤ 6 banners on home; accent coral used only for deals; support entry points grouped in one "help" menu.
 
 ## B9. Screen specifications (per breakpoint)
 
@@ -247,13 +249,15 @@ Breakpoints: mobile < 768 px, tablet 768–1279 px, desktop ≥ 1280 px. Content
 | Bottom navigation | 5 items: خانه، دسته‌ها، جستجو، سبد خرید، حساب من (64 px, safe-area aware) | hidden | hidden |
 
 ### B9.2 Home (order of sections)
-1. Hero slider (art-directed images, ≤ 5 slides, autoplay off on mobile, dots + swipe).
-2. Need/nutrient chips (horizontal scroll, 8–12 chips).
+The home page is built by the admin from widgets (D3.6 «Home widgets», decided 2026-11-07); this is the suggested starting order. Every widget shows at most 6 items.
+
+1. Hero slider (art-directed images, ≤ 6 banners, autoplay off on mobile, dots + swipe).
+2. Need/nutrient chips (horizontal scroll, ≤ 6 chips).
 3. Flash deal (countdown, 1 row of cards, "view all deals").
-4. Best sellers (rail).
-5. Shop by audience (4 tiles: بانوان، آقایان، کودکان، مادر و نوزاد).
+4. Collection rails, e.g. «محصولات محبوب» (≤ 6 cards + «مشاهده همه»).
+5. Categories (round icons, ≤ 6), e.g. بانوان، آقایان، کودکان، مادر و نوزاد.
 6. Bundles (rail).
-7. Brands (logo strip, grayscale → colour on hover).
+7. Brands (round logos, ≤ 6, grayscale → colour on hover).
 8. Trust block (licences, pharmacist, delivery, returns; 4 icons) + trust counters.
 
 Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop only.
@@ -814,9 +818,14 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | is_fragile, is_liquid | bool | maps to Tipax content "مایعات-شکستنی" |
 | requires_cold_chain | bool | blocked from shipping in MVP |
 | max_per_order | int nullable | |
+| image | medialibrary `image` (optional) | the SKU's own photo (another pack or flavour; preset `product`); falls back to the product's main photo in the admin table, cart and the S13 variant picker (decided 2026-11-07) |
 | is_active | bool | |
 
 **Default SKU** (decided 2026-11-07, S12): `Product::getDefaultVariant()` is the SKU shown on cards, in quick view and in the search box, sent to Meilisearch, and added by «افزودن به سبد» (S19): the admin's choice (`default_variant_id`) while it is active and in stock; otherwise the first active, in-stock variant in `sort` order; when nothing is in stock, the admin's choice or else the first active variant (shown «ناموجود»). Only the choice is stored, so the default returns to it by itself once it is back in stock. Admin: «پیش‌فرض کن» in the variants table, drag to reorder (`SetDefaultVariant`, `ReorderProductVariants`). The struck-through price is the box price whenever the customer pays less (`compareAtPrice()`; without a box price, the price before the sale), and discount % is measured against it. The variant form shows a «قیمت‌ها چطور کار می‌کنند» guide above the price fields; S15 adds the engine paragraphs to it.
+
+**collections** (decided 2026-11-07): `name_fa`, `slug`, `description`, `is_system` (not deletable), `is_active`, `starts_at`, `ends_at`, `sort`. Pivot **collection_product** (`collection_id`, `product_id`, `sort`): hand-picked products in the admin's order. Page `/collections/{slug}` uses the PLP (Meilisearch filter `collection_ids`; changing a collection refreshes its products' documents). The system collection `popular` («محصولات محبوب») feeds the empty search box and can be a home widget.
+
+**Admin tables** show a round thumbnail first (products, brands, categories, tags, SKUs; `Media\Filament\Tables\ImageThumbnail`, decided 2026-11-07).
 
 **attributes**: `name_fa`, `code`, `type` (`select`, `multi_select`), `is_filterable`, `sort`. **attribute_values**: `attribute_id`, `value_fa`, `sort`. Pivot **product_attribute_value**. Used for: form (tablet, syrup, cream…), "suitable for" (age, gender), skin type, hair type. Attributes are chosen from lists only; the `text` type was dropped (decided 2026-11-07 in S11: free details belong in the description). `StandardAttributesSeeder` adds the standard attributes (form, suitable_for, age_group, benefit, skin_type, hair_type) based on the reference sites' filters (darunet «نوع دارو»/«مناسب برای», mosbatesabz «فرم محصول»/«رده سنی»/«فیلتر کارایی»); it only adds what is missing, and admins add or edit attributes and values in the admin.
 
@@ -915,8 +924,9 @@ Every transition writes `order_status_histories` and may send an SMS (see `notif
 
 ### D3.6 Content, settings, search, admin
 
-- **banners**: `slot` (`home_main`, `home_secondary`, `category_top`), `title`, `desktop_image_id`, `mobile_image_id`, `link_url`, `starts_at`, `ends_at`, `sort`, `is_active`.
-- **home_sections**: `type` (`flash_deal`, `best_sellers`, `new_arrivals`, `by_tag`, `by_category`, `by_brand`, `manual`, `bundles`, `articles`), `title_fa`, `source_id`, `limit`, `sort`, `is_active`; **home_section_items** for `manual`.
+- **Home widgets** (decided 2026-11-07; replaces `home_sections` and banner slots): **home_widgets**: `type` (`slider`, `collection`, `brands`, `categories`, `tags`, `trust`; S33 adds `flash_deal`, `bundles`), `title_fa`, `settings` (json: e.g. `collection_id`, ordered `brand_ids` / `category_ids`), `sort`, `is_active`, `starts_at`, `ends_at`. The admin adds, sets up, schedules and drags widgets into order on «چیدمان صفحه اصلی», with a preview link. **Every widget shows at most 6 items** (6 banners, 6 cards, 6 logos, 6 icons, 6 chips); a collection rail adds «مشاهده همه». ≤ 8 live widgets (the page warns). The rendered home is cached and cleared when a widget, banner or collection changes.
+- **banners** (decided 2026-11-07): a library («بنرها») of banners created once and reused: `title`, `link_type` (`category`, `collection`, `brand`, `tag`, `product`, `categories_list`, `collections_list`, `brands_list`, `external`), `link_id` (for an item), `external_url` (for `external`; opens in a new tab with `rel="noopener"`), `is_active`, `starts_at`, `ends_at`; images: medialibrary collections `desktop` (1920×600), `tablet` (1536×768), `mobile` (800×1000) (D14.2). The admin picks the target item rather than typing its URL, so links follow slug changes and a banner whose target is gone or inactive is hidden.
+- **banner_placements**: `banner_id`, `placeable_type` (`home_widget` for a slider, `category`, `collection`, `brand`, `tag`, `page` with `page_key` `categories_list` / `collections_list` / `brands_list`), `placeable_id` (nullable for `page`), `page_key`, `sort`. A placement shows one banner, or a slider when it has several; **at most 6 per placement**. Placed from the slider widget form and from each category, collection, brand, tag and list page in the admin (a «بنرها» tab). S13b moves the S07 category banner images into the library (one banner per category, placed on it).
 - **flash_deals**: `variant_id`, `deal_price`, `starts_at`, `ends_at`, `quantity_limit`, `sold_count`.
 - **pages**: `slug` (`about`, `terms`, `privacy`, `returns`, `shipping`, `payment-methods`, `buying-guide`, `licenses`), `title`, `body`, `seo_*`.
 - **faqs**: `group`, `question`, `answer`, `sort`.
@@ -2723,8 +2733,14 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S13 PDP
 - **Refs:** B5 (PDP), B1 (Darunet PDP), D14.3 (PDP), D13.11 (stock alert), B7–B13
-- **Build:** ProductPage with gallery/zoom, variant picker, price, expiry, badges, tabs, related, sticky buy bar, stock alert, product questions (submit), reviews list (approved only).
+- **Build:** ProductPage with gallery/zoom, variant picker (opens on the default SKU; shows each SKU's own image when it has one), optional SKU image upload in the variant form + round thumbnail in the variants table, price, expiry, badges, tabs, related, sticky buy bar, stock alert, product questions (submit), reviews list (approved only).
 - **Tests:** renders variant change, shows expiry, rx product shows "not available online yet", stock alert subscription.
+
+### S13b Collections, popular products and home page builder
+- **Decisions (2026-11-07):** banners are a reusable library with a picked link target (category, collection, brand, tag, product, the categories / collections / brands list pages, or an external URL) and can be placed on the home page (slider widget) and at the top of category, collection, brand, tag and list pages; collections are hand-picked product lists; «محصولات محبوب» is a system collection; the empty search box shows its first 6 in-stock products as cards (phone: swipeable row with the next card peeking; tablet/desktop: 3 × 2 grid) with «مشاهده همه» → `/collections/popular`, the cards get «+ افزودن به سبد» in S19; the admin builds the home page from widgets (slider, collection, brands, categories, tags, trust), each showing at most 6 items.
+- **Refs:** D3.1 (collections), D3.6 (home widgets, banners), B5, B9.2, D14.2 (banner presets), D21.2, B7–B13
+- **Build:** banners library + banner_placements (Filament «بنرها»: images, link target picker, schedule; «بنرها» tab on categories, collections, brands, tags and the list pages; move the S07 category banners into the library), banner/slider at the top of those pages, `/categories` and `/collections` list pages; collections + collection_product, Filament «کالکشن‌ها» (product picker, drag order, schedule; system collection not deletable), `/collections/{slug}` PLP, `collection_ids` in the Meilisearch document; empty-search popular products in the search box; home_widgets + banners, Filament «چیدمان صفحه اصلی» (widget forms per type, banners tab for sliders, drag order, schedule, preview, warnings over 8 widgets), Home page rendering the widgets with the cache.
+- **Tests:** banner link resolves for each target type and follows a slug change; banner with an inactive target or outside its schedule is hidden; ≤ 6 banners per placement; collection page lists only its products in admin order; schedule hides expired collections, widgets and banners; empty search shows ≤ 6 in-stock popular products; every widget renders ≤ 6 items; widget order; cache cleared on change; system collection cannot be deleted.
 
 ### S14 Providers and provider prices
 - **Refs:** D3.2, A1
@@ -2823,7 +2839,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S33 Home, banners, deals
 - **Refs:** B1, B5 (home, deals), D3.6 (content), D14.3 (hero), B7–B13
-- **Build:** banners (3 art directions), home sections builder, flash deals + countdown, deals hub (tiers, near-expiry, damaged-box), bundles page, `MarkNearExpiry` job.
+- **Build:** flash deals + countdown and `flash_deal` / `bundles` home widget types (the builder, banners and sliders come in S13b), deals hub (tiers, near-expiry, damaged-box), bundles page, `MarkNearExpiry` job.
 - **Tests:** scheduling windows, flash deal sold-count lock, near-expiry flagging.
 
 ### S34 Static pages, FAQ, contact, menus
@@ -2896,7 +2912,8 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | PLP, filters, search, synonyms, search logs | S12 | Catalog / Search |
 | Similar products (nightly batch) | S13 + D21.6 (SR4) | Search / Catalog |
 | Meilisearch, hybrid/semantic search, embeddings (P2) | D21.9 SR6–SR9 | Search |
-| PDP, reviews display, product questions, stock alerts | S13 | Catalog |
+| PDP, reviews display, product questions, stock alerts, SKU images | S13 | Catalog |
+| Collections, popular products (empty search box), home page builder (widgets, sliders), banners library and placements | S13b | Catalog / Search / Content |
 | Providers, provider prices | S14 | Pricing |
 | Pricing rules, pricing engine | S15 | Pricing |
 | Price imports | S16 | Pricing |

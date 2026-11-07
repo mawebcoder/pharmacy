@@ -14,6 +14,7 @@ use App\Modules\Catalog\Filament\Resources\Tags\Pages\ListTags;
 use App\Modules\Catalog\Http\Requests\StoreTagRequest;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Media\Filament\Forms\ImageUpload;
+use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use App\Modules\Shared\Support\PersianDigits;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
@@ -108,6 +109,7 @@ final class TagResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('products'))
             ->columns([
+                ImageThumbnail::make(Tag::IMAGE_ICON, 'category_icon'),
                 TextColumn::make(Tag::COLUMN_NAME_FA)
                     ->label('نام')
                     ->description(fn (Tag $record): ?string => $record->getNameEn())

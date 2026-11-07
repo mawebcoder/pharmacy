@@ -8,6 +8,7 @@ use App\Modules\Catalog\Actions\UpdateBrand;
 use App\Modules\Catalog\Data\BrandData;
 use App\Modules\Catalog\Filament\Resources\Brands\BrandResource;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use App\Modules\Shared\Support\Countries;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
@@ -26,6 +27,7 @@ final class BrandsTable
     {
         return $table
             ->columns([
+                ImageThumbnail::make(Brand::IMAGE_LOGO, 'brand_logo'),
                 TextColumn::make(Brand::COLUMN_NAME_FA)
                     ->label('نام')
                     ->description(fn (Brand $record): ?string => $record->getNameEn())

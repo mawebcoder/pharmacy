@@ -10,8 +10,8 @@ use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\EditAction;
-use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -25,13 +25,7 @@ final class ProductsTable
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['brand', 'primaryCategory', 'media'])->withCount('variants'))
             ->columns([
-                SpatieMediaLibraryImageColumn::make(Product::IMAGE_GALLERY)
-                    ->label('')
-                    ->collection(Product::IMAGE_GALLERY)
-                    ->conversion('product-80-webp')
-                    ->limit(1)
-                    ->square()
-                    ->imageSize(40),
+                ImageThumbnail::make(Product::IMAGE_GALLERY, 'product'),
                 TextColumn::make(Product::COLUMN_NAME_FA)
                     ->label('نام')
                     ->description(fn (Product $record): ?string => $record->getNameEn())

@@ -8,6 +8,7 @@ use App\Modules\Catalog\Actions\UpdateCategory;
 use App\Modules\Catalog\Data\CategoryData;
 use App\Modules\Catalog\Filament\Resources\Categories\CategoryResource;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -24,6 +25,7 @@ final class CategoriesTable
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('parent'))
             ->columns([
+                ImageThumbnail::make(Category::IMAGE_ICON, 'category_icon'),
                 TextColumn::make(Category::COLUMN_NAME_FA)
                     ->label('نام')
                     ->description(fn (Category $record): ?string => $record->getNameEn())
