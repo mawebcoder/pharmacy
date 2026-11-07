@@ -9,7 +9,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S02 | Front-end foundation (TALL + TallStackUI) | done | 2026-11-06 | d77c7c1 |
 | S03 | Filament admin panel | done | 2026-11-06 | 5365400 |
 | S04 | Roles and permissions | done | 2026-11-06 | 6922f71 |
-| S05 | Locations | done | 2026-11-07 | |
+| S05 | Locations | done | 2026-11-07 | 22e115c |
 | S06 | Shared kernel | todo | | |
 | S07 | Brands | todo | | |
 | S08 | Categories | todo | | |
