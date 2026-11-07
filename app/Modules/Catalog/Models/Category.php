@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -281,12 +282,32 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     }
 
     /**
-     * Whether any product uses this category; such a category cannot be deleted (DeleteCategory).
-     * Products arrive in S10, which replaces this with a products() relation check.
+     * Products whose primary category this is.
+     *
+     * @return HasMany<Product, $this>
+     */
+    public function primaryProducts(): HasMany
+    {
+        return $this->hasMany(Product::class, Product::COLUMN_PRIMARY_CATEGORY_ID);
+    }
+
+    /**
+     * Products listed in this category as an extra category.
+     *
+     * @return BelongsToMany<Product, $this>
+     */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class);
+    }
+
+    /**
+     * Whether any (not deleted) product uses this category, as primary or extra category; such a category cannot
+     * be deleted (DeleteCategory).
      */
     public function hasProducts(): bool
     {
-        return false;
+        return $this->primaryProducts()->exists() || $this->products()->exists();
     }
 
     /**

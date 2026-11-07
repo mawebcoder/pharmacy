@@ -25,12 +25,16 @@ final class RolesSeeder extends Seeder
         'operator' => [
             // S05 Locations: switch delivery on or off per city.
             'ViewAny:City', 'View:City', 'Update:City',
+            // S10 Catalog: look up products (stock comes from providers in S14).
+            'ViewAny:Product', 'View:Product',
         ],
         'content_editor' => [
             // S07 Catalog: create and edit brands (deleting is left to super admins).
             'ViewAny:Brand', 'View:Brand', 'Create:Brand', 'Update:Brand',
             // S08 Catalog: create, edit and reorder categories.
             'ViewAny:Category', 'View:Category', 'Create:Category', 'Update:Category',
+            // S10 Catalog: products with their variants, FAQs and links.
+            'ViewAny:Product', 'View:Product', 'Create:Product', 'Update:Product',
         ],
     ];
 

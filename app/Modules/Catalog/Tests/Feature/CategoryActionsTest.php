@@ -11,6 +11,7 @@ use App\Modules\Catalog\Data\CategoryData;
 use App\Modules\Catalog\Data\CategoryPositionData;
 use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
 
 function categoryData(array $overrides = []): CategoryData
 {
@@ -135,7 +136,17 @@ describe('deleting and restoring', function (): void {
         expect($child->fresh()->trashed())->toBeFalse();
     });
 
-    it('refuses to delete a category that has products')->todo('S10: needs products to exist');
+    it('refuses to delete a category that has products, as primary or extra category', function (Closure $attach): void {
+        $category = Category::factory()->create();
+        $attach($category);
+
+        expect(fn () => app(DeleteCategory::class)($category))->toThrow(CategoryChangeRefused::class);
+
+        expect($category->fresh()->trashed())->toBeFalse();
+    })->with([
+        'primary category' => [fn (Category $category) => Product::factory()->for($category, 'primaryCategory')->create()],
+        'extra category' => [fn (Category $category) => Product::factory()->create()->categories()->attach($category)],
+    ]);
 });
 
 describe('moving in the tree', function (): void {

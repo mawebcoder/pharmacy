@@ -6,7 +6,9 @@ use App\Modules\Catalog\Actions\CreateBrand;
 use App\Modules\Catalog\Actions\DeleteBrand;
 use App\Modules\Catalog\Actions\UpdateBrand;
 use App\Modules\Catalog\Data\BrandData;
+use App\Modules\Catalog\Exceptions\BrandHasProducts;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Product;
 
 function brandData(array $overrides = []): BrandData
 {
@@ -66,4 +68,20 @@ it('moves a brand without products to the trash', function (): void {
     expect($brand->fresh()->trashed())->toBeTrue();
 });
 
-it('refuses to delete a brand that has products')->todo('S10: needs products to exist');
+it('refuses to delete a brand that has products', function (): void {
+    $brand = Brand::factory()->create();
+    Product::factory()->for($brand)->create();
+
+    expect(fn () => app(DeleteBrand::class)($brand))->toThrow(BrandHasProducts::class);
+
+    expect($brand->fresh()->trashed())->toBeFalse();
+});
+
+it('lets a brand go once its products are deleted', function (): void {
+    $brand = Brand::factory()->create();
+    Product::factory()->for($brand)->create()->delete();
+
+    app(DeleteBrand::class)($brand);
+
+    expect($brand->fresh()->trashed())->toBeTrue();
+});

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 use App\Modules\Catalog\Filament\Resources\Brands\BrandResource;
 use App\Modules\Catalog\Filament\Resources\Categories\CategoryResource;
+use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
 use App\Modules\Identity\Filament\Resources\AdminUsers\AdminUserResource;
 use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
 use App\Modules\Identity\Models\AdminUser;
@@ -210,6 +211,14 @@ return [
                 'restore',
             ],
             CategoryResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
+                'restore',
+            ],
+            ProductResource::class => [
                 'viewAny',
                 'view',
                 'create',

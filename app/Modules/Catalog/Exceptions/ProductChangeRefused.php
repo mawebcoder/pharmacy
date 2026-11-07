@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Catalog\Exceptions;
+
+use App\Modules\Shared\Support\PersianDigits;
+use RuntimeException;
+
+/**
+ * A product or variant change that would break a sales rule (roadmap D0 rule 9, D3.1).
+ */
+final class ProductChangeRefused extends RuntimeException
+{
+    /**
+     * @param  list<string>  $missing  what the product still needs, in Persian
+     */
+    public static function cannotActivate(array $missing): self
+    {
+        return new self('محصول فعال نشد: '.implode('؛ ', $missing).'.');
+    }
+
+    public static function salePriceNotBelowPrice(): self
+    {
+        return new self('قیمت حراج باید کمتر از قیمت فروش باشد.');
+    }
+
+    public static function aboveOfficialPrice(int $officialPriceToman): self
+    {
+        return new self('قیمت دارو نمی‌تواند از قیمت مصوب ('.PersianDigits::toPersian(number_format($officialPriceToman)).' تومان) بیشتر باشد.');
+    }
+
+    public static function officialPriceRequired(): self
+    {
+        return new self('برای دارو، قیمت مصوب (درج‌شده روی جعبه) لازم است.');
+    }
+
+    public static function lastActiveVariant(): self
+    {
+        return new self('این تنها تنوع فعال یک محصول فعال است. ابتدا محصول را غیرفعال کنید یا تنوع فعال دیگری اضافه کنید.');
+    }
+
+    public static function relatedToItself(): self
+    {
+        return new self('محصول نمی‌تواند به خودش مرتبط شود.');
+    }
+}

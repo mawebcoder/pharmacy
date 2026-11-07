@@ -12,7 +12,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
 /**
- * Registers one single-file collection per entry of imagePresets(), and for raster images the conversions of
+ * Registers one collection per entry of imagePresets() (single-image unless listed in multipleImageCollections()), and for raster images the conversions of
  * that preset: every width × format, queued on the "media" queue (roadmap D14.6). SVG gets no conversions; it is
  * sanitized and published as-is.
  *
@@ -27,9 +27,11 @@ trait InteractsWithImagePresets
         foreach ($this->imagePresets() as $collection => $presetName) {
             $preset = ImagePreset::named($presetName);
 
-            $this->addMediaCollection($collection)
-                ->singleFile()
-                ->acceptsMimeTypes($preset->mimes);
+            $mediaCollection = $this->addMediaCollection($collection)->acceptsMimeTypes($preset->mimes);
+
+            if (! in_array($collection, $this->multipleImageCollections(), true)) {
+                $mediaCollection->singleFile();
+            }
         }
     }
 
@@ -59,6 +61,26 @@ trait InteractsWithImagePresets
                 }
             }
         }
+    }
+
+    /**
+     * Collections that hold several images in order (e.g. a product gallery); all others hold one.
+     *
+     * @return list<string>
+     */
+    public function multipleImageCollections(): array
+    {
+        return [];
+    }
+
+    /**
+     * Every image in a collection, in order.
+     *
+     * @return list<StoredImage>
+     */
+    public function images(string $collection): array
+    {
+        return array_values($this->getMedia($collection)->filter(fn ($media): bool => $media instanceof StoredImage)->all());
     }
 
     /**

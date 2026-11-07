@@ -13,6 +13,7 @@ use App\Modules\Shared\Support\Countries;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -195,12 +196,19 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
     }
 
     /**
-     * Whether any product uses this brand; such a brand cannot be deleted (DeleteBrand).
-     * Products arrive in S10, which replaces this with a products() relation check.
+     * @return HasMany<Product, $this>
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Whether any (not deleted) product uses this brand; such a brand cannot be deleted (DeleteBrand).
      */
     public function hasProducts(): bool
     {
-        return false;
+        return $this->products()->exists();
     }
 
     /**

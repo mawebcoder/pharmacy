@@ -736,7 +736,7 @@ Filament form validation rules come from the same source as the Form Request (`S
 6. **Idempotency:** payment verification, order placement and shipment creation must be safe to run twice.
 7. **Persian first:** all user-facing text is Persian, RTL, with Shamsi (Jalali) dates in the UI. Store timestamps in UTC.
 8. **Request → DTO → Action → Resource** (C5) for every write and every JSON response: Form Requests validate, `toDto()` builds a readonly DTO, the controller/Livewire/Filament passes the DTO to an Action, JSON is returned through an API Resource.
-9. **Prescription medicines are out of MVP scope.** Products with `requires_prescription = true` cannot be added to the cart until phase 2.
+9. **Prescription medicines are out of MVP scope.** Products with `requires_prescription = true` (always true for `product_type = rx`) cannot be activated for sale or added to the cart until phase 2. **OTC medicines are sellable in the MVP** (owner's decision, 2026-11-07, S10); the unsellable types are `config('catalog.unsellable_product_types')` (`['rx']`), so OTC can be switched off again with one line. The legal check is still open (D10 #8).
 
 ---
 
@@ -818,7 +818,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 **tags**: `name_fa`, `slug`, `type` (`nutrient`, `need`, `general`), `icon_image_id`, `is_featured`. Pivot **product_tag**. Powers home chips ("آهن", "ویتامین D", "بی‌خوابی").
 
-**images**: see sections D8 and D14. Pivot **product_images**: `product_id`, `variant_id` (nullable), `image_id`, `sort`, `alt_fa`.
+**images**: see sections D8 and D14. Product photos are the medialibrary collection `gallery` (preset `product`, several images in order, the first is the main photo; decided 2026-11-07 in S10) instead of a `product_images` pivot. Persian alt text is the media custom property `alt_fa`; linking a photo to one variant is left for the PDP variant picker (S13).
 
 **product_faqs**: `product_id`, `question`, `answer`, `sort`.
 
@@ -1284,7 +1284,7 @@ Use Laravel Horizon for queue monitoring.
 5. Tipax rules for shipping supplements and OTC medicines (content type "داروهای مجاز").
 6. Zarinpal refund API access after 30 minutes; Melli Payamak REST response JSON shape, credit-check method and PHP SDK package name (D11.6).
 7. Licence of the location dataset (GPL-3.0) for a closed-source product.
-8. Legal: partner pharmacy before enabling OTC / prescription products.
+8. Legal: partner pharmacy before enabling OTC / prescription products. [CONFIRM] OTC selling was enabled by the owner on 2026-11-07 (S10) ahead of this check; prescription products stay blocked.
 
 ---
 
@@ -2698,6 +2698,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S10 Products and variants
 - **Refs:** D3.1, D12.2, D12.3, D15.3
+- **Decisions (2026-11-07):** only Rx is blocked (OTC sellable); slugs from the English name, else Persian; admins type prices in toman until the pricing engine (S15), which then sets `price`; activation needs a brand, primary category, an active variant with a price and at least one photo; medicines need an official price and are never priced above it.
 - **Build:** products, product_variants, categories pivot, FAQs, relations; ProductResource with tabs and Variants relation manager; dimension/weight fields + `dimensions_verified`; `requires_prescription` guard; `Brand::products()` and `Brand::hasProducts()` checking it (a brand with products cannot be deleted, decided 2026-11-07 in S07).
 - **Tests:** create product with 2 variants; rx product cannot be activated for sale in MVP; deleting a brand that has products is refused; factories.
 
