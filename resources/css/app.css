@@ -47,6 +47,16 @@
         line-height: 1.7;
     }
 
+    /* Height of the sticky site header; the header keeps it exact once Alpine starts (layout/header). */
+    :root {
+        --header-height: 7.5rem;
+    }
+
+    /* Alpine: hide x-cloak elements until Alpine starts. */
+    [x-cloak] {
+        display: none !important;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
@@ -54,5 +64,14 @@
             animation-duration: 0.01ms !important;
             transition-duration: 0.01ms !important;
         }
+    }
+}
+
+/* Horizontal chip and link rows scroll by swipe without showing a scrollbar. */
+@utility scrollbar-none {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
     }
 }

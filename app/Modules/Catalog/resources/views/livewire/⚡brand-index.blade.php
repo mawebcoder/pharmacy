@@ -38,7 +38,7 @@ new #[Title('برندها')] class extends Component
             هنوز برندی ثبت نشده است.
         </div>
     @else
-        <nav aria-label="فهرست حروف" class="sticky top-[7.5rem] z-30 -mx-4 overflow-x-auto border-y border-line-200 bg-surface-50/95 px-4 py-2 backdrop-blur md:top-16 md:mx-0 md:rounded-card md:border md:bg-white xl:top-18">
+        <nav aria-label="فهرست حروف" class="scrollbar-none sticky top-(--header-height) z-30 -mx-4 overflow-x-auto border-y border-line-200 bg-surface-50/95 px-4 py-2 backdrop-blur md:mx-0 md:rounded-card md:border md:bg-white">
             <ul class="flex gap-1 md:flex-wrap">
                 @foreach ($this->groups->keys() as $letter)
                     <li>
@@ -51,7 +51,7 @@ new #[Title('برندها')] class extends Component
         </nav>
 
         @foreach ($this->groups as $letter => $brands)
-            <section id="letter-{{ $loop->index }}" aria-labelledby="letter-heading-{{ $loop->index }}" class="scroll-mt-48 space-y-3 md:scroll-mt-36">
+            <section id="letter-{{ $loop->index }}" aria-labelledby="letter-heading-{{ $loop->index }}" class="scroll-mt-[calc(var(--header-height)+4.5rem)] space-y-3">
                 <h2 id="letter-heading-{{ $loop->index }}" class="text-lg font-bold text-ink-900">{{ $letter }}</h2>
 
                 <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">

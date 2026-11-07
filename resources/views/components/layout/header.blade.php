@@ -1,8 +1,17 @@
 {{--
     Site header (roadmap B9.1). Mobile 56px with search below, tablet 64px, desktop 72px.
-    Category bar / mega-menu (S08) and mini-cart total (S19) plug into this header later.
+    Below the header row: the category bar and mega-menu (Catalog module, S08). The mini-cart total plugs in with S19.
 --}}
-<header class="sticky top-0 z-40 border-b border-line-200 bg-white">
+{{-- Publishes the header's current height as --header-height for sticky bars below it (e.g. the brand letter bar). --}}
+<header
+    class="sticky top-0 z-40 border-b border-line-200 bg-white"
+    x-data
+    x-init="
+        const publishHeight = () => document.documentElement.style.setProperty('--header-height', $el.offsetHeight + 'px');
+        publishHeight();
+        new ResizeObserver(publishHeight).observe($el);
+    "
+>
     <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:h-16 md:gap-6 md:px-6 xl:h-18 xl:px-8">
         <a href="{{ route('home') }}" class="flex h-11 shrink-0 items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary-700">
             <span class="grid size-9 place-items-center rounded-card bg-primary-700 text-white">
@@ -27,6 +36,8 @@
             </a>
         </nav>
     </div>
+
+    <x-catalog::category-nav />
 
     <div class="border-t border-line-200 px-4 py-2 md:hidden">
         <x-layout.search id="site-search-mobile" />

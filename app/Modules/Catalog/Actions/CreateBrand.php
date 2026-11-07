@@ -6,7 +6,7 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\BrandData;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Support\BrandSlug;
+use App\Modules\Catalog\Support\CatalogSlug;
 
 final class CreateBrand
 {
@@ -16,7 +16,7 @@ final class CreateBrand
         $brand = (new Brand)
             ->setNameFa($data->nameFa)
             ->setNameEn($data->nameEn)
-            ->setSlug(BrandSlug::for($data->slug, $data->nameFa, $data->nameEn))
+            ->setSlug(CatalogSlug::for(Brand::class, $data->slug, $data->nameFa, $data->nameEn))
             ->setCountry($data->country)
             ->setDescription($data->description)
             ->setIsActive($data->isActive)

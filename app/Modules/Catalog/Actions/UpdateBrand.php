@@ -6,7 +6,7 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\BrandData;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Support\BrandSlug;
+use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
  * Updates a brand. The slug only changes when an admin types a new one, so existing links keep working.
@@ -18,7 +18,7 @@ final class UpdateBrand
     {
         $slug = $data->slug === null || $data->slug === $brand->getSlug()
             ? $brand->getSlug()
-            : BrandSlug::for($data->slug, $data->nameFa, $data->nameEn, $brand->getId());
+            : CatalogSlug::for(Brand::class, $data->slug, $data->nameFa, $data->nameEn, $brand->getId());
 
         $brand
             ->setNameFa($data->nameFa)

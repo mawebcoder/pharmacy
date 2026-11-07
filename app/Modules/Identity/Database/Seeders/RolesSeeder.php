@@ -29,6 +29,8 @@ final class RolesSeeder extends Seeder
         'content_editor' => [
             // S07 Catalog: create and edit brands (deleting is left to super admins).
             'ViewAny:Brand', 'View:Brand', 'Create:Brand', 'Update:Brand',
+            // S08 Catalog: create, edit and reorder categories.
+            'ViewAny:Category', 'View:Category', 'Create:Category', 'Update:Category',
         ],
     ];
 

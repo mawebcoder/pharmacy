@@ -4,22 +4,25 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Support;
 
-use App\Modules\Catalog\Models\Brand;
 use App\Modules\Shared\Support\PersianSlug;
+use Illuminate\Database\Eloquent\Model;
 
 /**
- * Brand URLs: from the English name ("Eurho Vital" → "eurho-vital"), else the Persian name, unique among all
- * brands including deleted ones (their slugs stay reserved until they are gone for good).
+ * Catalog URLs (brands, categories): from the English name ("Eucerin" → "eucerin"), else the Persian name, unique
+ * among all rows of the model including deleted ones (their slugs stay reserved until they are gone for good).
  */
-final class BrandSlug
+final class CatalogSlug
 {
-    public static function for(?string $requested, string $nameFa, ?string $nameEn, ?int $ignoreBrandId = null): string
+    /**
+     * @param  class-string<Model>  $modelClass  a model using SoftDeletes with a "slug" column
+     */
+    public static function for(string $modelClass, ?string $requested, string $nameFa, ?string $nameEn, ?int $ignoreId = null): string
     {
         $source = $requested ?? (filled($nameEn) ? $nameEn : $nameFa);
 
-        return PersianSlug::unique($source, fn (string $slug): bool => Brand::withTrashed()
-            ->where(Brand::COLUMN_SLUG, $slug)
-            ->when($ignoreBrandId !== null, fn ($query) => $query->whereKeyNot($ignoreBrandId))
+        return PersianSlug::unique($source, fn(string $slug): bool => $modelClass::withTrashed() // @phpstan-ignore staticMethod.notFound (soft-deleting models only)
+            ->where('slug', $slug)
+            ->when($ignoreId !== null, fn ($query) => $query->whereKeyNot($ignoreId))
             ->exists());
     }
 }
