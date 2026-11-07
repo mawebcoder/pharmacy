@@ -16,6 +16,8 @@ final readonly class ProductData
 {
     /**
      * @param  list<int>  $categoryIds  extra categories besides the primary one
+     * @param  list<int>  $attributeValueIds  chosen attribute values (any attribute)
+     * @param  list<int>  $tagIds
      */
     public function __construct(
         public string $nameFa,
@@ -37,10 +39,12 @@ final readonly class ProductData
         public ProductStatus $status,
         public ?string $seoTitle,
         public ?string $seoDescription,
+        public array $attributeValueIds = [],
+        public array $tagIds = [],
     ) {}
 
     /**
-     * Keys are the products columns (Product::COLUMN_*) plus "category_ids".
+     * Keys are the products columns (Product::COLUMN_*) plus "category_ids", "attribute_value_ids" and "tag_ids".
      *
      * @param  array<string, mixed>  $data
      */
@@ -48,7 +52,6 @@ final readonly class ProductData
     {
         $type = $data[Product::COLUMN_PRODUCT_TYPE] ?? ProductType::Cosmetic;
         $status = $data[Product::COLUMN_STATUS] ?? ProductStatus::Draft;
-        /** @var array<int, int|string> $categoryIds */
         $categoryIds = $data['category_ids'] ?? [];
 
         return new self(
@@ -57,7 +60,7 @@ final readonly class ProductData
             slug: self::text($data[Product::COLUMN_SLUG] ?? null),
             brandId: (int) ($data[Product::COLUMN_BRAND_ID] ?? 0),
             primaryCategoryId: (int) ($data[Product::COLUMN_PRIMARY_CATEGORY_ID] ?? 0),
-            categoryIds: array_values(array_unique(array_map(intval(...), $categoryIds))),
+            categoryIds: self::ids($categoryIds),
             productType: $type instanceof ProductType ? $type : ProductType::from((string) $type),
             requiresPrescription: (bool) ($data[Product::COLUMN_REQUIRES_PRESCRIPTION] ?? false),
             ircCode: self::text($data[Product::COLUMN_IRC_CODE] ?? null),
@@ -71,7 +74,17 @@ final readonly class ProductData
             status: $status instanceof ProductStatus ? $status : ProductStatus::from((string) $status),
             seoTitle: self::text($data[Product::COLUMN_SEO_TITLE] ?? null),
             seoDescription: self::text($data[Product::COLUMN_SEO_DESCRIPTION] ?? null),
+            attributeValueIds: self::ids($data['attribute_value_ids'] ?? []),
+            tagIds: self::ids($data['tag_ids'] ?? []),
         );
+    }
+
+    /**
+     * @return list<int>
+     */
+    private static function ids(mixed $ids): array
+    {
+        return is_array($ids) ? array_values(array_unique(array_map(intval(...), array_filter($ids, is_numeric(...))))) : [];
     }
 
     private static function text(mixed $value): ?string

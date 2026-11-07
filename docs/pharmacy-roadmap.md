@@ -814,9 +814,9 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | max_per_order | int nullable | |
 | is_active | bool | |
 
-**attributes**: `name_fa`, `code`, `type` (`select`, `multi_select`, `text`), `is_filterable`. **attribute_values**: `attribute_id`, `value_fa`, `sort`. Pivot **product_attribute_value**. Used for: form (tablet, syrup, cream…), "suitable for" (age, gender), skin type, hair type.
+**attributes**: `name_fa`, `code`, `type` (`select`, `multi_select`), `is_filterable`, `sort`. **attribute_values**: `attribute_id`, `value_fa`, `sort`. Pivot **product_attribute_value**. Used for: form (tablet, syrup, cream…), "suitable for" (age, gender), skin type, hair type. Attributes are chosen from lists only; the `text` type was dropped (decided 2026-11-07 in S11: free details belong in the description). `StandardAttributesSeeder` adds the standard attributes (form, suitable_for, age_group, benefit, skin_type, hair_type) based on the reference sites' filters (darunet «نوع دارو»/«مناسب برای», mosbatesabz «فرم محصول»/«رده سنی»/«فیلتر کارایی»); it only adds what is missing, and admins add or edit attributes and values in the admin.
 
-**tags**: `name_fa`, `slug`, `type` (`nutrient`, `need`, `general`), `icon_image_id`, `is_featured`. Pivot **product_tag**. Powers home chips ("آهن", "ویتامین D", "بی‌خوابی").
+**tags**: `name_fa`, `name_en` (optional, for the slug; decided 2026-11-07 in S11), `slug`, `type` (`nutrient`, `need`, `general`), `is_featured`, `sort`. The icon is the medialibrary collection `icon` (preset `category_icon`). Pivot **product_tag**. Powers home chips ("آهن", "ویتامین D", "بی‌خوابی"); featured tags in `sort` order.
 
 **images**: see sections D8 and D14. Product photos are the medialibrary collection `gallery` (preset `product`, several images in order, the first is the main photo; decided 2026-11-07 in S10) instead of a `product_images` pivot. Persian alt text is the media custom property `alt_fa`; linking a photo to one variant is left for the PDP variant picker (S13).
 

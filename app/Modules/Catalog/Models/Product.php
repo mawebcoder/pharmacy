@@ -423,6 +423,40 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     }
 
     /**
+     * Chosen attribute values, e.g. «کرم» for «شکل محصول».
+     *
+     * @return BelongsToMany<AttributeValue, $this>
+     */
+    public function attributeValues(): BelongsToMany
+    {
+        return $this->belongsToMany(AttributeValue::class, 'product_attribute_value');
+    }
+
+    /**
+     * @return Collection<int, AttributeValue>
+     */
+    public function getAttributeValues(): Collection
+    {
+        return $this->getRelationValue('attributeValues');
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * @return Collection<int, Tag>
+     */
+    public function getTags(): Collection
+    {
+        return $this->getRelationValue('tags');
+    }
+
+    /**
      * @return array<string, string>
      */
     public function imagePresets(): array

@@ -35,6 +35,9 @@ final class RolesSeeder extends Seeder
             'ViewAny:Category', 'View:Category', 'Create:Category', 'Update:Category',
             // S10 Catalog: products with their variants, FAQs and links.
             'ViewAny:Product', 'View:Product', 'Create:Product', 'Update:Product',
+            // S11 Catalog: attributes (with values) and tags.
+            'ViewAny:Attribute', 'View:Attribute', 'Create:Attribute', 'Update:Attribute',
+            'ViewAny:Tag', 'View:Tag', 'Create:Tag', 'Update:Tag',
         ],
     ];
 

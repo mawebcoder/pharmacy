@@ -7,20 +7,23 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Data\ProductData;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Support\CatalogSlug;
 use App\Modules\Catalog\Support\ProductActivation;
+use App\Modules\Catalog\Support\ProductAttributes;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Updates a product. Whenever the result is active, the activation checks run (ProductActivation), so e.g. changing
+ * Updates a product with its extra categories, attribute values and tags. Whenever the result is active, the activation checks run (ProductActivation), so e.g. changing
  * an active product into a prescription medicine is refused. The slug only changes when an admin types a new one.
  */
 final class UpdateProduct
 {
     /**
      * @throws ProductChangeRefused
+     * @throws AttributeChangeRefused
      */
     #[\NoDiscard]
     public function __invoke(Product $product, ProductData $data): Product
@@ -32,11 +35,23 @@ final class UpdateProduct
                 ProductActivation::assertAllowed($product);
             }
 
+            ProductAttributes::assertValid($data->attributeValueIds);
+
             $product->save();
-            $product->categories()->sync(array_values(array_diff($data->categoryIds, [$data->primaryCategoryId])));
+            self::syncLinks($product, $data);
 
             return $product;
         });
+    }
+
+    /**
+     * Extra categories (without the primary one), attribute values and tags.
+     */
+    public static function syncLinks(Product $product, ProductData $data): void
+    {
+        $product->categories()->sync(array_values(array_diff($data->categoryIds, [$data->primaryCategoryId])));
+        $product->attributeValues()->sync($data->attributeValueIds);
+        $product->tags()->sync($data->tagIds);
     }
 
     /**

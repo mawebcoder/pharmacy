@@ -7,9 +7,11 @@ namespace App\Modules\Catalog\Http\Requests;
 use App\Modules\Catalog\Data\ProductData;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Tag;
 use App\Modules\Shared\Support\PersianNormalizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -38,6 +40,10 @@ final class StoreProductRequest extends FormRequest
             Product::COLUMN_PRIMARY_CATEGORY_ID => ['required', 'integer', Rule::exists(Category::class, Category::COLUMN_ID)->withoutTrashed()],
             'category_ids' => ['array'],
             'category_ids.*' => ['integer', Rule::exists(Category::class, Category::COLUMN_ID)->withoutTrashed()],
+            'attribute_value_ids' => ['array'],
+            'attribute_value_ids.*' => ['integer', Rule::exists(AttributeValue::class, AttributeValue::COLUMN_ID)],
+            'tag_ids' => ['array'],
+            'tag_ids.*' => ['integer', Rule::exists(Tag::class, Tag::COLUMN_ID)->withoutTrashed()],
             Product::COLUMN_PRODUCT_TYPE => ['required', Rule::enum(ProductType::class)],
             Product::COLUMN_REQUIRES_PRESCRIPTION => ['boolean'],
             Product::COLUMN_IRC_CODE => ['nullable', 'string', 'max:32'],

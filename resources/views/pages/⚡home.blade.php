@@ -18,4 +18,7 @@ new #[Title('خانه')] class extends Component
         <p class="mt-3 text-ink-500 md:text-lg">داروخانه آنلاین به‌زودی راه‌اندازی می‌شود.</p>
         <p class="mt-1 text-sm text-ink-500">آرایشی، بهداشتی، مکمل و تجهیزات پزشکی با ضمانت اصالت کالا.</p>
     </section>
+
+    {{-- Need/nutrient chips (roadmap B9.2 item 2): the featured tags. --}}
+    <x-catalog::tag-chips />
 </div>

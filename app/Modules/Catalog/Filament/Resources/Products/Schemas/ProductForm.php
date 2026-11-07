@@ -7,9 +7,12 @@ namespace App\Modules\Catalog\Filament\Resources\Products\Schemas;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
+use App\Modules\Catalog\Models\Attribute;
+use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Tag;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -20,11 +23,13 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 
 /**
- * Tabs in roadmap B12 order (General → Content → Images → SEO). Field rules come from StoreProductRequest::baseRules()
+ * Tabs in roadmap B12 order (General → Attributes & tags → Content → Images → SEO). Field rules come from StoreProductRequest::baseRules()
  * so admin and HTTP validation never drift (roadmap C5).
  */
 final class ProductForm
 {
+    private const string ATTRIBUTE_STATE = 'attribute_values';
+
     public static function configure(Schema $schema): Schema
     {
         $rules = fn (?Product $record, string $field): array => StoreProductRequest::baseRules($record?->getId())[$field];
@@ -103,6 +108,9 @@ final class ProductForm
                                     ->hiddenOn('create')
                                     ->helperText('برای «فعال»: برند، دسته اصلی، دست‌کم یک تنوع فعال با قیمت و یک تصویر لازم است.'),
                             ]),
+                        Tab::make('ویژگی‌ها و برچسب‌ها')
+                            ->columns(2)
+                            ->schema([...self::attributeFields(), self::tagField()]),
                         Tab::make('محتوا')
                             ->schema([
                                 $text(Product::COLUMN_SHORT_DESCRIPTION, 'توضیح کوتاه', 2),
@@ -137,6 +145,95 @@ final class ProductForm
                             ]),
                     ]),
             ]);
+    }
+
+    /**
+     * One select per attribute, in attribute order: single or multiple choice. State key: attribute_values.{code}.
+     *
+     * @return array<int, Select>
+     */
+    private static function attributeFields(): array
+    {
+        return Attribute::query()
+            ->with('values')
+            ->orderBy(Attribute::COLUMN_SORT)
+            ->get()
+            ->map(fn (Attribute $attribute): Select => Select::make(self::ATTRIBUTE_STATE.'.'.$attribute->getCode())
+                ->label($attribute->getNameFa())
+                ->options($attribute->getValues()->mapWithKeys(fn (AttributeValue $value): array => [$value->getId() => $value->getValueFa()])->all())
+                ->multiple($attribute->isMultiple())
+                ->searchable())
+            ->values()
+            ->all();
+    }
+
+    private static function tagField(): Select
+    {
+        return Select::make('tag_ids')
+            ->label('برچسب‌ها')
+            ->multiple()
+            ->searchable()
+            ->options(fn (): array => Tag::query()
+                ->orderBy(Tag::COLUMN_NAME_FA)
+                ->get()
+                ->groupBy(fn (Tag $tag): string => $tag->getType()->label())
+                ->map(fn ($tags): array => $tags->mapWithKeys(fn (Tag $tag): array => [$tag->getId() => $tag->getNameFa()])->all())
+                ->all())
+            ->nestedRecursiveRules(StoreProductRequest::baseRules()['tag_ids.*'])
+            ->columnSpanFull();
+    }
+
+    /**
+     * The form state of a product's attribute values: attribute code => value id (single) or ids (multiple).
+     *
+     * @return array<string, int|list<int>>
+     */
+    public static function attributeState(Product $product): array
+    {
+        $multiple = [];
+        $single = [];
+
+        foreach ($product->attributeValues()->with('attribute')->get() as $value) {
+            $attribute = $value->getAttributeModel();
+
+            if ($attribute === null) {
+                continue;
+            }
+
+            if ($attribute->isMultiple()) {
+                $multiple[$attribute->getCode()][] = $value->getId();
+            } else {
+                $single[$attribute->getCode()] = $value->getId();
+            }
+        }
+
+        return [...$single, ...$multiple];
+    }
+
+    /**
+     * Turns the form state back into the flat attribute_value_ids list the actions take.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function withAttributeValueIds(array $data): array
+    {
+        /** @var array<string, int|string|list<int|string>|null> $state */
+        $state = $data[self::ATTRIBUTE_STATE] ?? [];
+        $ids = [];
+
+        foreach ($state as $value) {
+            foreach ((array) $value as $id) {
+                if (filled($id)) {
+                    $ids[] = (int) $id;
+                }
+            }
+        }
+
+        unset($data[self::ATTRIBUTE_STATE]);
+        $data['attribute_value_ids'] = $ids;
+
+        return $data;
     }
 
     /**
