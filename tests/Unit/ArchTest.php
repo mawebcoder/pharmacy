@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Shared\Contracts\HasLabel;
+use App\Modules\System\Models\IntegrationLog;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 arch('application code uses strict types')
@@ -39,7 +41,14 @@ foreach ($modules as $module) {
 
     arch("{$module} models record their changes in the audit log")
         ->expect("App\\Modules\\{$module}\\Models")
-        ->toUseTrait(LogsActivity::class);
+        ->toUseTrait(LogsActivity::class)
+        // Log tables are records themselves; auditing them would log every log row.
+        ->ignoring(IntegrationLog::class);
+
+    arch("{$module} enums have Persian labels")
+        ->expect("App\\Modules\\{$module}\\Enums")
+        ->enums()
+        ->toImplement(HasLabel::class);
 
     arch("{$module} actions are final and invokable")
         ->expect("App\\Modules\\{$module}\\Actions")

@@ -6,6 +6,7 @@ use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Locations\Filament\Resources\Cities\CityResource;
 use App\Modules\System\Filament\Resources\ActivityLogs\ActivityLogResource;
+use App\Modules\System\Filament\Resources\IntegrationLogs\IntegrationLogResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
@@ -202,6 +203,10 @@ return [
                 'viewAny',
                 'view',
                 'update',
+            ],
+            IntegrationLogResource::class => [
+                'viewAny',
+                'view',
             ],
             ActivityLogResource::class => [
                 'viewAny',

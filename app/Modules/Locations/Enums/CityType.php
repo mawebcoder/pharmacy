@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Locations\Enums;
 
-enum CityType: string
+use App\Modules\Shared\Contracts\HasLabel;
+use App\Modules\Shared\Enums\LabelledEnum;
+
+enum CityType: string implements HasLabel
 {
+    use LabelledEnum;
+
     case City = 'city';
     case Village = 'village';
 

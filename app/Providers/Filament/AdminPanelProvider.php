@@ -45,6 +45,11 @@ class AdminPanelProvider extends PanelProvider
     {
         FilamentTimezone::set((string) config('app.display_timezone'));
 
+        // ->jalaliDate()/->jalaliDateTime() (ariaieboy/filament-jalali) don't mark columns as date-time, so Filament
+        // would format them in app.timezone (UTC). Every text column and entry shows times in Tehran time instead.
+        TextColumn::configureUsing(fn (TextColumn $column): TextColumn => $column->timezone(FilamentTimezone::get()));
+        TextEntry::configureUsing(fn (TextEntry $entry): TextEntry => $entry->timezone(FilamentTimezone::get()));
+
         // jalali() is a macro registered by ariaieboy/filament-jalali, which PHPStan cannot see.
         DatePicker::configureUsing(fn (DatePicker $picker) => $picker->jalali()); // @phpstan-ignore method.notFound
         DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->jalali()); // @phpstan-ignore method.notFound
