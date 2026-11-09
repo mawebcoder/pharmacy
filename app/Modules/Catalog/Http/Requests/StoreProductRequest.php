@@ -37,6 +37,7 @@ final class StoreProductRequest extends FormRequest
             Product::COLUMN_NAME_EN => ['nullable', 'string', 'max:255'],
             Product::COLUMN_SLUG => ['nullable', 'string', 'max:255', 'regex:'.StoreBrandRequest::SLUG_PATTERN, Rule::unique(Product::class, Product::COLUMN_SLUG)->ignore($productId)],
             Product::COLUMN_BRAND_ID => ['required', 'integer', Rule::exists(Brand::class, Brand::COLUMN_ID)->withoutTrashed()],
+            Product::COLUMN_COMMISSION_PERCENT => ['nullable', 'numeric', 'min:0', 'max:100'],
             Product::COLUMN_PRIMARY_CATEGORY_ID => ['required', 'integer', Rule::exists(Category::class, Category::COLUMN_ID)->withoutTrashed()],
             'category_ids' => ['array'],
             'category_ids.*' => ['integer', Rule::exists(Category::class, Category::COLUMN_ID)->withoutTrashed()],

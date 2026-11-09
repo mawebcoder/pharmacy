@@ -6,7 +6,6 @@ namespace App\Modules\Catalog\Filament\Resources\Products\Schemas;
 
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
-use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
@@ -18,6 +17,8 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Media\Filament\Forms\ImageUpload;
+use App\Modules\Pricing\Filament\Support\PricingGuide;
+use App\Modules\Shared\Support\PersianDigits;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -25,6 +26,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 /**
@@ -71,6 +73,13 @@ final class ProductForm
                                     ->label('برند')
                                     ->required()
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_BRAND_ID)),
+                                TextInput::make(Product::COLUMN_COMMISSION_PERCENT)
+                                    ->label('کمیسیون')
+                                    ->numeric()
+                                    ->suffix('٪')
+                                    ->placeholder(fn (Get $get): string => self::brandCommissionHint($get(Product::COLUMN_BRAND_ID)))
+                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_COMMISSION_PERCENT)),
+                                PricingGuide::productCommission()->columnSpanFull(),
                                 TextInput::make(Product::COLUMN_SLUG)
                                     ->label('نامک (آدرس)')
                                     ->prefix('/products/')
@@ -186,15 +195,16 @@ final class ProductForm
     }
 
     /**
-     * The first SKU, asked for on create so every product has one (S13b). More SKUs, sizes and shipping details are
-     * added on the edit page («تنوع‌ها»). Saved under FIRST_VARIANT; prices are typed in toman.
+     * The first SKU, asked for on create so every product has one (S13b). More SKUs, sizes, shipping details and the
+     * suppliers (which give it a selling price, roadmap D3.2) are added on the edit page («تنوع‌ها»). Saved under
+     * FIRST_VARIANT; the printed price is typed in toman. The SKU starts out of stock until it has a supplier.
      */
     private static function firstVariantSection(): Section
     {
         $rules = StoreProductVariantRequest::baseRules();
 
         return Section::make('اولین تنوع (SKU)')
-            ->description('هر محصول دست‌کم یک تنوع دارد. تنوع‌های دیگر، ابعاد و وزن را بعد از ذخیره در «تنوع‌ها» اضافه کنید.')
+            ->description('هر محصول دست‌کم یک تنوع دارد. قیمت فروش وارد نمی‌شود: بعد از ذخیره، در «تنوع‌ها» برای این تنوع تأمین‌کننده اضافه کنید تا قیمت فروش از قیمت خرید و کمیسیون ساخته شود. تا آن موقع تنوع «ناموجود» است.')
             ->statePath(self::FIRST_VARIANT)
             ->visibleOn('create')
             ->columnSpanFull()
@@ -210,24 +220,21 @@ final class ProductForm
                     ->extraInputAttributes(['dir' => 'ltr'])
                     ->helperText('خالی بگذارید تا خودکار ساخته شود.')
                     ->rules($rules[ProductVariant::COLUMN_SKU]),
-                Select::make(ProductVariant::COLUMN_STOCK_STATUS)
-                    ->label('وضعیت موجودی')
-                    ->options(StockStatus::options())
-                    ->default(StockStatus::Available->value)
-                    ->required(),
                 TextInput::make(ProductVariant::COLUMN_OFFICIAL_PRICE)
                     ->label('قیمت مصرف‌کننده (روی جعبه)')
                     ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                     ->helperText('سقف قیمت فروش. برای دارو الزامی است.'),
-                TextInput::make(ProductVariant::COLUMN_PRICE)
-                    ->label('قیمت فروش')
-                    ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                    ->required(),
-                TextInput::make(ProductVariant::COLUMN_SALE_PRICE)
-                    ->label('قیمت حراج')
-                    ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                    ->helperText('خالی یعنی بدون حراج؛ باید کمتر از قیمت فروش باشد.'),
             ]);
+    }
+
+    /**
+     * Placeholder of the product commission: what applies when it is left empty.
+     */
+    private static function brandCommissionHint(mixed $brandId): string
+    {
+        $commission = blank($brandId) ? null : Brand::query()->find((int) $brandId)?->getCommissionPercent();
+
+        return $commission === null ? 'برند کمیسیون ندارد؛ وارد کنید' : 'خالی = کمیسیون برند ('.PersianDigits::toPersian(rtrim(rtrim(number_format($commission, 2), '0'), '.')).'٪)';
     }
 
     /**

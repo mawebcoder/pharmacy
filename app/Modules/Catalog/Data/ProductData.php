@@ -24,6 +24,7 @@ final readonly class ProductData
         public ?string $nameEn,
         public ?string $slug,
         public int $brandId,
+        public ?float $commissionPercent,
         public int $primaryCategoryId,
         public array $categoryIds,
         public ProductType $productType,
@@ -59,6 +60,7 @@ final readonly class ProductData
             nameEn: self::text($data[Product::COLUMN_NAME_EN] ?? null),
             slug: self::text($data[Product::COLUMN_SLUG] ?? null),
             brandId: (int) ($data[Product::COLUMN_BRAND_ID] ?? 0),
+            commissionPercent: self::percent($data[Product::COLUMN_COMMISSION_PERCENT] ?? null),
             primaryCategoryId: (int) ($data[Product::COLUMN_PRIMARY_CATEGORY_ID] ?? 0),
             categoryIds: self::ids($categoryIds),
             productType: $type instanceof ProductType ? $type : ProductType::from((string) $type),
@@ -92,5 +94,12 @@ final readonly class ProductData
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    private static function percent(mixed $value): ?float
+    {
+        $value = trim(PersianNormalizer::digits((string) $value));
+
+        return $value === '' ? null : (float) $value;
     }
 }

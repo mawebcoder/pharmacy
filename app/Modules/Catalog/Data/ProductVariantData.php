@@ -11,7 +11,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * Input for creating or updating a variant. Prices in rial, weight in grams, sizes in millimetres. A null SKU is
- * generated.
+ * generated. There is no selling price: Pricing calculates it from the suppliers and the commission (roadmap D3.2);
+ * the admin gives the printed price and the haraj.
  */
 final readonly class ProductVariantData
 {
@@ -20,7 +21,6 @@ final readonly class ProductVariantData
         public ?string $sku,
         public ?string $barcode,
         public ?int $officialPrice,
-        public int $price,
         public ?int $salePrice,
         public StockStatus $stockStatus,
         public ?CarbonImmutable $expiryDate,
@@ -53,7 +53,6 @@ final readonly class ProductVariantData
             sku: self::text($data[ProductVariant::COLUMN_SKU] ?? null),
             barcode: self::text($data[ProductVariant::COLUMN_BARCODE] ?? null),
             officialPrice: self::number($data[ProductVariant::COLUMN_OFFICIAL_PRICE] ?? null),
-            price: (int) self::number($data[ProductVariant::COLUMN_PRICE] ?? 0),
             salePrice: self::number($data[ProductVariant::COLUMN_SALE_PRICE] ?? null),
             stockStatus: $stock instanceof StockStatus ? $stock : StockStatus::from((string) $stock),
             expiryDate: blank($expiry) ? null : CarbonImmutable::parse($expiry instanceof \DateTimeInterface ? $expiry->format('Y-m-d') : (string) $expiry)->startOfDay(),

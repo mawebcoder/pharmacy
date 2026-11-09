@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\ProductData;
+use App\Modules\Catalog\Enums\PricingInputChange;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Events\PricingInputsChanged;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Catalog\Support\CatalogSlug;
 use App\Modules\Catalog\Support\ProductActivation;
 use App\Modules\Catalog\Support\ProductAttributes;
@@ -30,6 +33,7 @@ final class UpdateProduct
     {
         return DB::transaction(function () use ($product, $data): Product {
             self::fill($product, $data)->setStatus($data->status);
+            $commissionMayChange = $product->isDirty([Product::COLUMN_COMMISSION_PERCENT, Product::COLUMN_BRAND_ID]);
 
             if ($data->status === ProductStatus::Active) {
                 ProductActivation::assertAllowed($product);
@@ -39,6 +43,10 @@ final class UpdateProduct
 
             $product->save();
             self::syncLinks($product, $data);
+
+            if ($commissionMayChange) {
+                event(new PricingInputsChanged(app(VariantPricingInputs::class)->variantIdsOfProduct($product->getId()), PricingInputChange::Commission, self::adminId()));
+            }
 
             return $product;
         });
@@ -68,6 +76,7 @@ final class UpdateProduct
             ->setNameEn($data->nameEn)
             ->setSlug($slug)
             ->setBrandId($data->brandId)
+            ->setCommissionPercent($data->commissionPercent)
             ->setPrimaryCategoryId($data->primaryCategoryId)
             ->setProductType($data->productType)
             // Prescription medicines always need a prescription.
@@ -82,5 +91,15 @@ final class UpdateProduct
             ->setInteractions($data->interactions)
             ->setSeoTitle($data->seoTitle)
             ->setSeoDescription($data->seoDescription);
+    }
+
+    /**
+     * The signed-in admin, for the price history.
+     */
+    public static function adminId(): ?int
+    {
+        $id = auth('admin')->id();
+
+        return $id === null ? null : (int) $id;
     }
 }

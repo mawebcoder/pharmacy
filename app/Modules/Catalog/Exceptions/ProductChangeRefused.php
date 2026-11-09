@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Exceptions;
 
-use App\Modules\Shared\Support\PersianDigits;
 use RuntimeException;
 
 /**
@@ -25,11 +24,6 @@ final class ProductChangeRefused extends RuntimeException
         return new self('قیمت حراج باید کمتر از قیمت فروش باشد.');
     }
 
-    public static function aboveOfficialPrice(int $officialPriceToman): self
-    {
-        return new self('قیمت فروش نمی‌تواند از قیمت مصرف‌کننده روی جعبه ('.PersianDigits::toPersian(number_format($officialPriceToman)).' تومان) بیشتر باشد.');
-    }
-
     public static function officialPriceRequired(): self
     {
         return new self('برای دارو، قیمت مصرف‌کننده (روی جعبه) لازم است.');
@@ -38,6 +32,16 @@ final class ProductChangeRefused extends RuntimeException
     public static function lastActiveVariant(): self
     {
         return new self('این تنها تنوع فعال یک محصول فعال است. ابتدا محصول را غیرفعال کنید یا تنوع فعال دیگری اضافه کنید.');
+    }
+
+    public static function commissionMissing(): self
+    {
+        return new self('برای این محصول کمیسیون تعیین نشده است: کمیسیون را روی محصول یا برند آن وارد کنید، سپس تنوع را ذخیره کنید.');
+    }
+
+    public static function harajNeedsPrice(): self
+    {
+        return new self('قیمت فروش این تنوع هنوز محاسبه نشده است؛ حراج را بعد از افزودن تأمین‌کننده وارد کنید.');
     }
 
     public static function lastVariant(): self

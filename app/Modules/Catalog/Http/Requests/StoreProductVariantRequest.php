@@ -14,7 +14,8 @@ use Illuminate\Validation\Rules\Unique;
 
 /**
  * Validation for a product variant (roadmap C5). Prices are rial here (the admin form converts from toman).
- * Price rules that depend on the product (medicine cap) are checked by the actions.
+ * There is no selling price (Pricing calculates it, roadmap D3.2); rules that depend on the product (commission,
+ * haraj below the current price, medicines need a printed price) are checked by the actions.
  */
 final class StoreProductVariantRequest extends FormRequest
 {
@@ -30,8 +31,7 @@ final class StoreProductVariantRequest extends FormRequest
             ProductVariant::COLUMN_SKU => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique(ProductVariant::class, ProductVariant::COLUMN_SKU)->ignore($variantId)],
             ProductVariant::COLUMN_BARCODE => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z-]+$/'],
             ProductVariant::COLUMN_OFFICIAL_PRICE => ['nullable', 'integer', 'min:0'],
-            ProductVariant::COLUMN_PRICE => ['required', 'integer', 'min:1'],
-            ProductVariant::COLUMN_SALE_PRICE => ['nullable', 'integer', 'min:1', 'lt:'.ProductVariant::COLUMN_PRICE],
+            ProductVariant::COLUMN_SALE_PRICE => ['nullable', 'integer', 'min:1'],
             ProductVariant::COLUMN_STOCK_STATUS => ['required', Rule::enum(StockStatus::class)],
             ProductVariant::COLUMN_EXPIRY_DATE => ['nullable', 'date'],
             ProductVariant::COLUMN_IS_DAMAGED_BOX => ['boolean'],

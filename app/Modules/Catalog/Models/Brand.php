@@ -43,6 +43,8 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
 
     public const string COLUMN_DESCRIPTION = 'description';
 
+    public const string COLUMN_COMMISSION_PERCENT = 'commission_percent';
+
     public const string COLUMN_IS_ACTIVE = 'is_active';
 
     public const string COLUMN_SEO_TITLE = 'seo_title';
@@ -118,6 +120,21 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
     public function getCountryName(): ?string
     {
         return Countries::name($this->getCountry());
+    }
+
+    /**
+     * Commission % (roadmap D3.2): applies to every product of the brand that has no commission of its own.
+     */
+    public function getCommissionPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_COMMISSION_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setCommissionPercent(?float $commissionPercent): static
+    {
+        return $this->setAttribute(self::COLUMN_COMMISSION_PERCENT, $commissionPercent);
     }
 
     public function getDescription(): ?string
@@ -235,7 +252,7 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
             ->useLogName('catalog')
             ->logOnly([
                 self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_COUNTRY,
-                self::COLUMN_DESCRIPTION, self::COLUMN_IS_ACTIVE, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
+                self::COLUMN_DESCRIPTION, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_IS_ACTIVE, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
@@ -252,6 +269,7 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
     protected function casts(): array
     {
         return [
+            self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
             self::COLUMN_IS_ACTIVE => 'boolean',
         ];
     }

@@ -13,6 +13,7 @@ use App\Modules\Identity\Filament\Resources\AdminUsers\AdminUserResource;
 use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Locations\Filament\Resources\Cities\CityResource;
+use App\Modules\Pricing\Filament\Resources\Providers\ProviderResource;
 use App\Modules\Search\Filament\Resources\SearchSynonyms\SearchSynonymResource;
 use App\Modules\System\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\System\Filament\Resources\IntegrationLogs\IntegrationLogResource;
@@ -263,6 +264,12 @@ return [
                 'update',
                 'delete',
                 'restore',
+            ],
+            ProviderResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
             ],
             HomeWidgetResource::class => [
                 'viewAny',

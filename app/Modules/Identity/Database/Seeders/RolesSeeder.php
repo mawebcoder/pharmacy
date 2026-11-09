@@ -17,7 +17,8 @@ use Spatie\Permission\PermissionRegistrar;
 final class RolesSeeder extends Seeder
 {
     /**
-     * Shield permission keys per role. super_admin needs none: it passes every check.
+     * Shield permission keys per role. super_admin needs none: it passes every check. Suppliers and their prices (S14,
+     * our costs) are left to super_admin.
      *
      * @var array<string, list<string>>
      */
@@ -43,7 +44,7 @@ final class RolesSeeder extends Seeder
             // S12 Search: synonyms and the search insights page.
             'ViewAny:SearchSynonym', 'View:SearchSynonym', 'Create:SearchSynonym', 'Update:SearchSynonym', 'Delete:SearchSynonym',
             'View:SearchInsights',
-            // S13b Content: home page widgets, the banner library and where banners are shown.
+            // S13b Content: home page widgets and the banner library.
             'ViewAny:HomeWidget', 'View:HomeWidget', 'Create:HomeWidget', 'Update:HomeWidget', 'Delete:HomeWidget',
             'ViewAny:Banner', 'View:Banner', 'Create:Banner', 'Update:Banner', 'Delete:Banner',
         ],

@@ -47,6 +47,8 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
     public const string COLUMN_SALE_PRICE = 'sale_price';
 
+    public const string COLUMN_CURRENT_PRICE_ID = 'current_price_id';
+
     public const string COLUMN_STOCK_STATUS = 'stock_status';
 
     public const string COLUMN_EXPIRY_DATE = 'expiry_date';
@@ -174,6 +176,21 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     /**
      * Discounted price in rial while a discount is active.
      */
+    /**
+     * The latest Pricing price record (roadmap D3.2, S15); price, official_price and sale_price copy it.
+     */
+    public function getCurrentPriceId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_CURRENT_PRICE_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setCurrentPriceId(?int $priceId): static
+    {
+        return $this->setAttribute(self::COLUMN_CURRENT_PRICE_ID, $priceId);
+    }
+
     public function getSalePrice(): ?int
     {
         $value = $this->getAttribute(self::COLUMN_SALE_PRICE);
@@ -492,6 +509,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_OFFICIAL_PRICE => 'integer',
             self::COLUMN_PRICE => 'integer',
             self::COLUMN_SALE_PRICE => 'integer',
+            self::COLUMN_CURRENT_PRICE_ID => 'integer',
             self::COLUMN_STOCK_STATUS => StockStatus::class,
             self::COLUMN_EXPIRY_DATE => 'immutable_date',
             self::COLUMN_IS_NEAR_EXPIRY => 'boolean',

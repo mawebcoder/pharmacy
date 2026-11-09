@@ -212,6 +212,20 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
+        // "pricing": price calculations (roadmap D3.2, D9). One process, so a SKU's price records are written in order.
+        'supervisor-pricing' => [
+            'connection' => 'redis',
+            'queue' => ['pricing'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 3,
+            'timeout' => 300,
+            'nice' => 0,
+        ],
+
         // "search": Scout's Meilisearch indexing jobs (S12). One process, so the updates of a product reach
         // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S13b).
         'supervisor-search' => [

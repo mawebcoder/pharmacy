@@ -756,7 +756,7 @@ We sell cosmetics, personal-care products, supplements and (later, via a license
 | Module | Responsibility |
 |---|---|
 | Catalog | categories, brands, products, variants, attributes, tags, images, bundles |
-| Pricing & Providers | providers, provider prices, pricing rules, price imports |
+| Pricing & Providers | providers, provider prices, commission, price records, pricing engine, price imports |
 | Customers | accounts, OTP login, addresses, wishlist, reviews, questions, stock alerts |
 | Cart & Checkout | cart, coupons, shipping quotes, payment start |
 | Orders | orders, items, status history, provider purchases, returns |
@@ -778,7 +778,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 **categories**: `parent_id` (nullable), `name_fa`, `name_en`, `slug`, `description`, `sort`, `is_active`, `seo_title`, `seo_description`. Images are medialibrary collections (decided 2026-11-07 in S09): `icon` (preset `category_icon`) and the category-page banner as `banner_desktop` + `banner_mobile` (presets `category_banner_desktop`/`category_banner_mobile`).
 
-**brands**: `name_fa`, `name_en`, `slug`, `country`, `description`, `is_active`, `seo_title`, `seo_description`. The logo is the medialibrary collection `logo` (preset `brand_logo`), not an `*_image_id` column (decided 2026-11-07 in S09).
+**brands**: `name_fa`, `name_en`, `slug`, `country`, `description`, `commission_percent` (nullable, S15; D3.2), `is_active`, `seo_title`, `seo_description`. The logo is the medialibrary collection `logo` (preset `brand_logo`), not an `*_image_id` column (decided 2026-11-07 in S09).
 
 **products**
 
@@ -805,9 +805,10 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | sku, barcode | string | |
 | title_fa | string | e.g. "۳۰ عددی", "طعم پرتقال" |
 | sort | int | admin's order (drag and drop); decides the next SKU when the default is out of stock |
-| official_price | bigint Rial nullable | «قیمت مصرف‌کننده (روی جعبه)», the compare-at price: caps price and sale price for every product type; required for medicines |
-| price | bigint Rial | «قیمت فروش»: our selling price (computed by pricing engine, can be locked by hand) |
-| sale_price | bigint Rial nullable | «قیمت حراج»: active discount price, below price |
+| official_price | bigint Rial nullable | «قیمت مصرف‌کننده (روی جعبه)», the compare-at price: caps price and sale price for every product type; required for medicines. From S15 it lives on the price record (D3.2) |
+| price | bigint Rial | «قیمت فروش»: our selling price. From S15 it is calculated only (supplier price + commission, D3.2) and lives on the price record; the admin cannot type it |
+| sale_price | bigint Rial nullable | «قیمت حراج»: typed by the admin, below price. From S15 it lives on the price record |
+| current_price_id | FK nullable | the latest `variant_prices` record (S15) |
 | stock_status | enum | `available`, `on_request`, `out_of_stock` (no own stock; reflects provider availability) |
 | expiry_date | date nullable | shown on PDP |
 | is_near_expiry | bool | feeds "زودمصرف" section |
@@ -844,22 +845,31 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 ### D3.2 Pricing and providers
 
-**providers**: `name`, `contact_name`, `phone`, `address`, `city_id`, `payment_terms`, `is_active`, `notes`.
+> **Pricing model (owner, 2026-11-09; replaces the S12 «commission per product only», the store default % and «قیمت دستی»).** The selling price is never typed: it is the cheapest available supplier price plus the commission, capped by the printed (box) price. Every change is kept as a price record.
 
-**provider_prices**: `provider_id`, `variant_id`, `cost` (Rial), `discount_percent`, `is_available`, `lead_time_hours`, `updated_at`. Unique (`provider_id`, `variant_id`).
+**providers** («تأمین‌کنندگان»): `name`, `contact_name`, `phone`, `address`, `city_id`, `payment_terms`, `is_active`, `notes`.
 
-**Commission** (decided 2026-11-07, S12; replaces the `pricing_rules` scopes): set **per product only** — `products.commission_percent` (nullable) — with one store-wide default % in settings for products without their own. No brand, category or global rules. Rounding (e.g. up to 1,000 Rial) is a store setting. **product_variants.price_locked** (bool, «قیمت دستی»): when on, the engine leaves `price` alone (the box-price cap still applies).
+**provider_prices**: `provider_id`, `variant_id`, `cost` (Rial, what we pay), `is_available` («موجود نزد تأمین‌کننده»: set by the supplier or the Excel import), `is_enabled` («فروش از این تأمین‌کننده»: the admin's own on/off, owner 2026-11-09), `lead_time_hours`, `updated_at`. Unique (`provider_id`, `variant_id`). **provider_price_changes** keeps every change of a row (cost, both switches, lead time, who, when). Suppliers and their prices are shown **only on the SKU page** (one page per SKU, opened from the product's SKU table) to admins with supplier permission (super admin by default); each row shows its cost and the selling price it would give with the commission. **Active supplier** = the cheapest row that is enabled, available and whose provider is active; stopping it hands over to the next cheapest automatically (site and Meilisearch follow). The product's SKU table shows the active supplier («تأمین‌کننده فعال») to the same admins. An inactive provider's rows are ignored.
 
-Pricing engine:
+**Commission:** `brands.commission_percent` (nullable) applies to every product of the brand; `products.commission_percent` (nullable) overrides it for that product. The product's commission applies to all its SKUs. A SKU cannot be saved when neither its product nor its brand has a commission.
+
+**Pricing engine** (`Pricing\Actions\CalculateVariantPrice`):
 ```
-cost   = lowest available provider cost for the variant («قیمت خرید از تأمین‌کننده»)
-price  = round_up(cost × (1 + commission_percent/100), rounding)   # product's %, else the default
-if official_price: price = min(price, official_price)               # every product type
-sale_price stays manual and must be < price (≤ official_price)
+supplier price = lowest cost among available provider_prices of the SKU
+commission %   = product.commission_percent ?? brand.commission_percent
+selling price  = round_up(supplier price × (1 + commission %/100), 1,000 toman = 10,000 Rial)
+                 never above the printed (box) price; when capped, the SKU shows «سود کمتر از کمیسیون»
+haraj          = typed by the admin, optional, must be below the selling price
 ```
-Provider prices are our cost: never in the Meilisearch document or any storefront view.
+Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % → selling 935,000 toman; with a haraj of 899,000 the customer pays 899,000 and the margin is 49,000. **No supplier, or no active supplier → the SKU is sold at its printed price** and stays in stock (owner, 2026-11-09; flag `sold_at_printed`); only a SKU with neither an active supplier nor a printed price is «ناموجود» (its last price is kept). A new SKU starts out of stock until the job has priced it. A haraj that is no longer below a new selling price is removed, noted on the record, and flagged.
 
-**price_imports**: `provider_id`, `file_path`, `status` (`pending`, `processing`, `done`, `failed`), `rows_total`, `rows_updated`, `rows_failed`, `error_report_path`, `admin_id`.
+**Storage** (decided 2026-11-09, S14/S15): the records below are the source of truth; `product_variants.price` is a copy of the latest record's selling price written only by the pricing job in the same transaction (search, cards and listings keep reading one row). `official_price` (printed) and `sale_price` (haraj) are the admin's inputs on the SKU and are copied into each record. A new record is written only when something in it changes. **Stock is automatic** (the admin no longer chooses it): in stock when sold from an active supplier or at the printed price, out of stock otherwise. SKUs without any supplier row are listed as «بدون تأمین‌کننده» (they sell at the printed price, so the commission does not shape their margin). `php artisan pricing:recalculate` queues every SKU once after the deploy and runs nightly at 03:00 Tehran time; only real changes are recorded. The SKU page shows the price records as a full table (time, reason, supplier, cost, commission and source, printed, selling, haraj, margin per unit, notes, who), refreshed every 10 s. **Guides** (owner, 2026-11-09): the SKU page, the SKU form, and the commission fields on the product and brand forms show a short Persian guide with a worked example of how pricing works.
+
+**variant_prices** (price records, never updated): `variant_id`, `official_price` (printed), `provider_id` + `provider_cost` (the supplier price used), `commission_percent`, `commission_source` (`product`, `brand`), `price` (selling), `sale_price` (haraj), `reason` (`printed_changed`, `haraj_changed`, `commission_changed`, `provider_price_changed`, `import`, `initial`), `changed_by` (admin id, nullable for jobs), `flags` (json: `capped_by_printed`, `haraj_removed`, `change_over_15_percent`), `created_at`. Any change of the printed price, the haraj, the commission (product or brand) or a supplier price creates a new record. `product_variants.current_price_id` points to the latest record and the site always reads prices from it. **Order items keep `variant_price_id`** (S25/S29), so the sold price, printed price, haraj, commission and supplier cost of that moment stay with the order for real-margin reports. Provider costs never reach Meilisearch or any storefront view.
+
+**Background work** (owner, 2026-11-09): every price calculation runs in a job on the **`pricing`** queue (`RecalculateVariantPrice`, `RecalculatePrices` for a brand, a product or everything); Excel imports run on their own **`price-import`** queue. The admin form shows the expected selling price live while typing; the saved record is written by the job.
+
+**price_imports**: `provider_id`, `file_path`, `status` (`pending`, `processing`, `previewed`, `applying`, `done`, `failed`), `rows_total`, `rows_matched`, `rows_updated`, `rows_failed`, `error_report_path`, `admin_id`.
 
 ### D3.3 Customers
 
@@ -901,7 +911,7 @@ Provider prices are our cost: never in the Meilisearch document or any storefron
 | customer_note, admin_note | |
 | placed_at, paid_at, cancelled_at, delivered_at | |
 
-**order_items**: `order_id`, `variant_id`, `name_snapshot`, `sku`, `quantity`, `unit_price`, `discount`, `total`, `provider_id`, `unit_cost` (for profit).
+**order_items**: `order_id`, `variant_id`, `variant_price_id` (the price record it was sold at, D3.2), `name_snapshot`, `sku`, `quantity`, `unit_price`, `discount`, `total`, `provider_id`, `unit_cost` (for profit).
 
 **order_status_histories**: `order_id`, `from_status`, `to_status`, `actor_type` (`system`, `admin`, `customer`, `carrier`), `actor_id`, `note`.
 
@@ -1284,7 +1294,8 @@ BNPL (Snapp Pay, Torob Pay, Digipay) is phase 2 behind the same `PaymentGateway`
 | ExpirePendingPayments (30 min → payment_failed) | every 5 min | `payments` |
 | PollTipaxTracking | every 30 min | `shipping` |
 | TipaxSyncCities | weekly | `shipping` |
-| RecalculatePrices (after imports / rule changes) | on demand + nightly | `pricing` |
+| RecalculateVariantPrice / RecalculatePrices (after supplier price, printed price, haraj, commission or import changes) | on demand + nightly | `pricing` |
+| ParsePriceImport / ApplyPriceImport (supplier Excel) | on upload / on apply | `price-import` |
 | MarkNearExpiry (expiry < 90 days) | daily | `default` |
 | ProcessImage | on upload | `media` |
 | SendSms (Melli Payamak) | on event | `notifications` |
@@ -1818,7 +1829,7 @@ See D7.2. On verify success: `OrderPaid` event → (a) Orders: status `paid`; (b
 ### D13.9 Provider price import
 1. Admin uploads provider Excel (columns: SKU/barcode, name, cost, discount %, available).
 2. Job parses with OpenSpout, matches by barcode → SKU → name similarity (flagged), shows **preview diff** (old cost, new cost, price change %).
-3. Admin applies → provider_prices updated → `RecalculatePrices` job updates variant prices using rules; changes > 15 % flagged for review.
+3. Admin applies → provider_prices updated (job on `price-import`) → `RecalculatePrices` (on `pricing`) writes new price records with the engine (D3.2); changes > 15 % are flagged in the price history.
 
 ### D13.10 Image upload
 Admin uploads original → validation (D14.2) → medialibrary stores original privately → queued conversions per preset → ThumbHash + dominant colour saved as custom properties → status `ready`.
@@ -2059,7 +2070,7 @@ redirect_stderr=true
 stdout_logfile=/var/www/app/storage/logs/horizon.log
 stopwaitsecs=3600
 ```
-`config/horizon.php` supervisors: `payments` (priority, 2 processes), `shipping` (2), `notifications` (2), `media` (2, memory 512 MB, timeout 300), `default,pricing` (2). `search` (Scout indexing): **1 process**, so a product's updates reach Meilisearch in order (decided 2026-11-09, S13b: parallel workers let an older snapshot overwrite a newer one).
+`config/horizon.php` supervisors: `payments` (priority, 2 processes), `shipping` (2), `notifications` (2), `media` (2, memory 512 MB, timeout 300), `default,pricing` (2). `pricing` (price calculations, D3.2), `price-import` (supplier Excel imports, own supervisor, 1 process), `search` (Scout indexing): **1 process**, so a product's updates reach Meilisearch in order (decided 2026-11-09, S13b: parallel workers let an older snapshot overwrite a newer one).
 
 Cron: `* * * * * www-data php /var/www/app/current/artisan schedule:run >> /dev/null 2>&1`.
 
@@ -2661,10 +2672,11 @@ Never: commit or push without explicit approval; call real Tipax/Zarinpal produc
 | 1 Catalog & media | S06–S13 |
 | 2 Pricing & providers | S14–S16 |
 | 3 Customers & cart | S17–S20 |
-| 4 Checkout, payments, shipping | S21–S28 |
+| 4 Checkout & shipping (stand-ins for external services) | S21, S24, S25 |
 | 5 Orders operations | S29–S32 |
 | 6 Content, SEO, trust | S33–S36 |
-| 7 Hardening & launch | S37–S40 (S41–S42 reporting must be done before S40) |
+| 7 Hardening & reporting | S37–S39, S41–S42 |
+| 8 External integrations, then launch | S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09), then S40 |
 
 ## E3. Steps
 
@@ -2751,19 +2763,20 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** banner link resolves for each target type and follows a slug change; banner with an inactive target or outside its schedule is hidden; ≤ 6 banners per placement; collection page lists only its products in admin order; schedule hides expired collections, widgets and banners; empty search shows ≤ 6 in-stock popular products; every widget renders ≤ 6 items; widget order; widgets without items are left out and the admin shows why; system collection cannot be deleted.
 
 ### S14 Providers and provider prices
+- **Built together with S15** (owner, 2026-11-09): switching suppliers changes the selling price, so suppliers, commission, price records and the engine land on one branch (one commit per step).
 - **Refs:** D3.2, A1
-- **Build:** providers, provider_prices, Filament resources, availability flag → variant `stock_status`; a «قیمت خرید از تأمین‌کننده» table on each variant in the admin. Stock changes go through an action that calls `ProductSearchIndex::refresh` (the default SKU may switch).
-- **Tests:** cheapest available provider selection; a stock change switches the default SKU in the search document.
+- **Build:** Pricing module: providers, provider_prices, Filament «تأمین‌کنندگان» (list, form, active switch, and a view page with a relation-manager table of the supplier's SKUs and their price information, owner 2026-11-09; its sales widgets come in S42); a «قیمت خرید از تأمین‌کننده» table on each SKU (provider, cost in toman, available, lead time; add / edit / remove). Availability → SKU `stock_status` (any available provider → `available`, none → `out_of_stock`; SKUs with no provider rows keep their manual status until S15) through an action that calls `ProductSearchIndex::refresh` (the default SKU may switch). Provider costs never reach the storefront or Meilisearch.
+- **Tests:** cheapest available provider selection (inactive providers and unavailable rows ignored); availability switches stock and the default SKU in the search document; costs are not in the search document; permissions.
 
-### S15 Pricing engine
-- **Refs:** D3.2 (engine), D13.9
-- **Build:** `products.commission_percent` + store default %, `product_variants.price_locked` («قیمت دستی»), `CalculateVariantPrice` action, `RecalculatePrices` job (after provider cost, commission or default % changes; refreshes the search index), box-price cap for every product type, rounding, flag > 15 % changes; add the engine paragraphs (commission, automatic price, «قیمت دستی», full example) to the variant form's pricing guide and a short guide next to «کمیسیون» on the product form (decided 2026-11-07, S12).
-- **Tests:** product commission vs the default %, cap on every type, rounding, manual lock, sale price ≤ price, 100 % branch coverage.
+### S15 Pricing engine and price records
+- **Refs:** D3.2 (engine, variant_prices), D9
+- **Build:** `brands.commission_percent`, `products.commission_percent`; `variant_prices` + `product_variants.current_price_id` (migration copies today's prices into an `initial` record per SKU and drops the old price columns once everything reads from the record); `CalculateVariantPrice` action; `RecalculateVariantPrice` and `RecalculatePrices` jobs on the `pricing` queue (after supplier price, printed price, haraj, product or brand commission changes; refresh the search index); rounding up to 1,000 toman; printed-price cap with the «سود کمتر از کمیسیون» flag; haraj rule; SKU form with a read-only selling price shown live, printed and haraj inputs, and the price history; SKU save refused without a commission; flag > 15 % changes in the history; a list of SKUs that cannot be priced (no commission or no supplier price). Replaces the S12 rules (default %, «قیمت دستی»). Update the pricing guide in the SKU form.
+- **Tests:** product commission over brand, brand fallback, no commission refused, cheapest supplier, rounding, printed cap + flag, haraj below price and removed when no longer below, every trigger creates one record, latest record is read, jobs run on `pricing`, initial records from existing prices, 100 % branch coverage of the engine.
 
 ### S16 Price import
-- **Refs:** D13.9
-- **Build:** upload Excel → parse (OpenSpout) → match → preview diff page → apply → recalc (through the S14/S15 actions, so the search index follows); error report download.
-- **Tests:** fixture file with matched/unmatched rows; apply updates prices.
+- **Refs:** D13.9, D3.2
+- **Build:** upload a supplier Excel/CSV (each row names its supplier by `provider_id`, owner 2026-11-09, so one file may cover several suppliers) → `ParsePriceImport` job (OpenSpout) on the **`price-import`** queue matches rows (barcode → SKU code → name similarity, flagged) → preview page (old cost, new cost, new selling price, change %) → apply → `ApplyPriceImport` job (same queue) updates provider_prices and availability, then the S15 engine reprices on `pricing`; error report download; its own Horizon supervisor for `price-import`.
+- **Tests:** fixture file with matched/unmatched rows; preview changes nothing; apply updates provider prices and creates price records; jobs on the right queues.
 
 ### S17 Customer OTP auth
 - **Refs:** D13.1, D3.3, D16, D11.6, B7–B13
@@ -2790,16 +2803,6 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:** carriers, carrier_services, shipping_boxes, origins, shipping_rules, `ShippingCarrier` contract, DTOs, `BoxPacker`, fallback `RateTable`, Filament resources.
 - **Tests:** box packing cases (single, many small, ship_separately, overweight), fallback rate.
 
-### S22 Tipax client and reference sync
-- **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
-- **Build:** `TipaxClient` (token store, retry, timeouts, logging), commands `tipax:ping`, `tipax:sync-cities`, `tipax:sync-reference`, `tipax:register-origin`; carrier_city_mappings + admin mapping screen.
-- **Tests:** `Http::fake` fixtures for token, cities, services; mapping by normalised name; token refresh.
-
-### S23 Tipax quotes in checkout
-- **Refs:** D6.4, D13.4 step 2
-- **Build:** `TipaxCarrier::quote()` (unit conversion g→kg, mm→cm), `GetServicesBetweenCities`, shipping_quotes cache (20 min), shipping rules (free over X), fallback flag.
-- **Tests:** quote mapping from fixture, cache hit, timeout → fallback estimate.
-
 ### S24 Own courier zones
 - **Refs:** D5.1 (zones, slots, couriers)
 - **Build:** delivery zones (neighbourhoods/polygon), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
@@ -2807,27 +2810,12 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S25 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
-- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots, order numbering, status `pending_payment`.
+- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots, order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); shipping options from the own courier (S24) and the fallback `RateTable` (S21) until Tipax quotes (S23).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content.
-
-### S26 Zarinpal payments
-- **Refs:** D7 (all), D11.4, D16 (payments)
-- **Build:** payments/payment_refunds, `PaymentGateway` contract, `ZarinpalGateway` (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
-- **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
-
-### S27 Tipax shipment registration and tracking
-- **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
-- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job, status mapping → order status, label link, cancel action.
-- **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
-
-### S28 Notifications (SMS via Melli Payamak)
-- **Refs:** D11.6, D3.6 (templates), D13.1
-- **Build:** `SmsSender` contract, `LogSmsSender` + `MelipayamakSmsSender` (REST BaseServiceNumber with pattern bodyIds), templates ↔ bodyIds, notification logs (masked mobile, recId, code), `SendSmsJob` with retry rules, low-credit alert, `sms:test` command; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
-- **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
-- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions, cancellation + refund flow, status histories, customer OrderList/OrderDetail with tracking timeline, guest tracking.
+- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions (shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, status histories, customer OrderList/OrderDetail with tracking timeline, guest tracking.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders.
 
 ### S30 Provider purchases (sourcing)
@@ -2887,8 +2875,40 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S42 Dashboard and report pages
 - **Refs:** D22.1, D22.4, B12, B7–B13
-- **Build:** dashboard widgets (KPIs R1/R2, sales & margin chart, live R8/R10/R26), report pages per group with filters (date range, Jalali month, category, brand, provider) and CSV/XLSX export; ★ reports in MVP, others behind a feature flag until data exists; role-based visibility.
-- **Tests:** widgets render from seeded `rpt_*` data; live widgets query counts bounded; access by role; export matches filters.
+- **Build:** **SKU sales on the SKU page** (owner, 2026-11-09): widgets and charts inside each SKU's suppliers page showing how much was sold (quantity and money), how much was bought from each supplier and sold per supplier, and the SKU's total gross and net margin (from order items' `variant_price_id` records and the reporting facts; filters by date range / Jalali month); **supplier sales on the supplier view page** (owner, 2026-11-09): widgets and charts showing how many products were sold that were bought from this supplier, which products and SKUs, at which prices (selling, haraj, supplier cost from each order item's price record), how much money was sold from this supplier, and its other sales reports (gross/net margin, top SKUs, sales over time; same filters); dashboard widgets (KPIs R1/R2, sales & margin chart, live R8/R10/R26), report pages per group with filters (date range, Jalali month, category, brand, provider) and CSV/XLSX export; ★ reports in MVP, others behind a feature flag until data exists; role-based visibility.
+- **Tests:** SKU page widgets: quantity, revenue, per-supplier split and gross/net margin match seeded order items; supplier page widgets: quantity, products sold, prices and revenue from this supplier match seeded order items; widgets render from seeded `rpt_*` data; live widgets query counts bounded; access by role; export matches filters.
+
+> **Phase 8: External integrations, built last (owner, 2026-11-09).** Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28) are implemented after reporting, right before launch (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping through the own courier and the fallback rate table (S25), shipment status set by hand (S29).
+
+### S22 Tipax client and reference sync
+- **Moved to phase 8** (built after S42; owner, 2026-11-09).
+- **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
+- **Build:** `TipaxClient` (token store, retry, timeouts, logging), commands `tipax:ping`, `tipax:sync-cities`, `tipax:sync-reference`, `tipax:register-origin`; carrier_city_mappings + admin mapping screen.
+- **Tests:** `Http::fake` fixtures for token, cities, services; mapping by normalised name; token refresh.
+
+### S23 Tipax quotes in checkout
+- **Moved to phase 8**; until then checkout quotes the own courier (S24) and the fallback `RateTable` (S21).
+- **Refs:** D6.4, D13.4 step 2
+- **Build:** `TipaxCarrier::quote()` (unit conversion g→kg, mm→cm), `GetServicesBetweenCities`, shipping_quotes cache (20 min), shipping rules (free over X), fallback flag.
+- **Tests:** quote mapping from fixture, cache hit, timeout → fallback estimate.
+
+### S26 Zarinpal payments
+- **Moved to phase 8**; until then checkout pays through the S25 fake gateway.
+- **Refs:** D7 (all), D11.4, D16 (payments)
+- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing the S25 `PaymentGateway` contract (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
+- **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
+
+### S27 Tipax shipment registration and tracking
+- **Moved to phase 8**; until then shipment status is set by hand in the order admin (S29).
+- **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
+- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job, status mapping → order status, label link, cancel action.
+- **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
+
+### S28 Notifications (SMS via Melli Payamak)
+- **Moved to phase 8**; until then the `SmsSender` contract from S17 runs on `LogSmsSender`.
+- **Refs:** D11.6, D3.6 (templates), D13.1
+- **Build:** `SmsSender` contract, `LogSmsSender` + `MelipayamakSmsSender` (REST BaseServiceNumber with pattern bodyIds), templates ↔ bodyIds, notification logs (masked mobile, recId, code), `SendSmsJob` with retry rules, low-credit alert, `sms:test` command; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
+- **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
 ### S40 Launch
 - **Refs:** D11.9, A3, A4

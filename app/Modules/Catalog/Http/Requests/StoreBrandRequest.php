@@ -34,6 +34,7 @@ final class StoreBrandRequest extends FormRequest
             Brand::COLUMN_SLUG => ['nullable', 'string', 'max:255', 'regex:'.self::SLUG_PATTERN, Rule::unique(Brand::class, Brand::COLUMN_SLUG)->ignore($brandId)],
             Brand::COLUMN_COUNTRY => ['nullable', 'string', Rule::in(Countries::codes())],
             Brand::COLUMN_DESCRIPTION => ['nullable', 'string', 'max:5000'],
+            Brand::COLUMN_COMMISSION_PERCENT => ['nullable', 'numeric', 'min:0', 'max:100'],
             Brand::COLUMN_IS_ACTIVE => ['boolean'],
             Brand::COLUMN_SEO_TITLE => ['nullable', 'string', 'max:255'],
             Brand::COLUMN_SEO_DESCRIPTION => ['nullable', 'string', 'max:500'],

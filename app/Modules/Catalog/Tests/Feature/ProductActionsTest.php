@@ -14,6 +14,7 @@ use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Enums\ProductRelationType;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
@@ -82,7 +83,8 @@ describe('creating', function (): void {
             ->getSlug()->toBe('urearepair-plus-10-cream')
             ->getStatus()->toBe(ProductStatus::Draft)
             ->getDefaultVariantId()->toBe($product->variants()->sole()->getId())
-            ->and($product->variants()->sole()->getPrice())->toBe(4_600_000)
+            // No supplier yet: sold at its printed price (roadmap D3.2).
+            ->and($product->variants()->sole())->getPrice()->toBe(4_850_000)->getStockStatus()->toBe(StockStatus::Available)
             ->and($product->categories()->pluck('categories.id')->all())->toBe([$extra->getId()]);
     });
 
@@ -172,23 +174,26 @@ describe('variants', function (): void {
             ->and($product->variants()->count())->toBe(2);
     });
 
-    it('enforces the price rules', function (string $type, array $prices, string $reason): void {
-        $product = Product::factory()->create([Product::COLUMN_PRODUCT_TYPE => ProductType::from($type)]);
-
-        expect(fn () => app(SaveProductVariant::class)($product, variantData($prices)))->toThrow(ProductChangeRefused::class, $reason);
+    it('enforces the price input rules', function (Closure $makeProduct, array $input, string $reason): void {
+        expect(fn () => app(SaveProductVariant::class)($makeProduct(), variantData($input)))->toThrow(ProductChangeRefused::class, $reason);
     })->with([
-        'sale price not below price' => ['cosmetic', [ProductVariant::COLUMN_SALE_PRICE => 4_600_000], 'قیمت حراج'],
-        'medicine above the box price' => ['otc', [ProductVariant::COLUMN_PRICE => 5_000_000], 'قیمت مصرف‌کننده'],
-        'cosmetic above the box price' => ['cosmetic', [ProductVariant::COLUMN_PRICE => 5_000_000], 'قیمت مصرف‌کننده'],
-        'medicine without a box price' => ['otc', [ProductVariant::COLUMN_OFFICIAL_PRICE => null], 'قیمت مصرف‌کننده'],
+        'haraj before a selling price exists' => [fn () => Product::factory()->create(), [ProductVariant::COLUMN_SALE_PRICE => 4_000_000], 'هنوز محاسبه نشده'],
+        'medicine without a box price' => [fn () => Product::factory()->otc()->create(), [ProductVariant::COLUMN_OFFICIAL_PRICE => null], 'قیمت مصرف‌کننده'],
+        'no commission on the product or brand' => [fn () => Product::factory()->for(Brand::factory()->withoutCommission())->create(), [], 'کمیسیون'],
     ]);
 
-    it('leaves the price of a product without a box price uncapped', function (): void {
-        $product = Product::factory()->create();
+    it('refuses a haraj that is not below the current selling price', function (): void {
+        $product = Product::factory()->withVariants()->create();
+        $variant = $product->variants()->sole();
 
-        $variant = app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 5_000_000]));
+        expect(fn () => app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_SALE_PRICE => $variant->getPrice()]), $variant))
+            ->toThrow(ProductChangeRefused::class, 'قیمت حراج');
+    });
 
-        expect($variant->getPrice())->toBe(5_000_000);
+    it('saves a SKU when only the product has a commission', function (): void {
+        $product = Product::factory()->for(Brand::factory()->withoutCommission())->create([Product::COLUMN_COMMISSION_PERCENT => 12]);
+
+        expect(app(SaveProductVariant::class)($product, variantData())->exists)->toBeTrue();
     });
 
     it('marks a variant near expiry from its expiry date', function (string $daysAhead, bool $near): void {

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\BrandData;
+use App\Modules\Catalog\Enums\PricingInputChange;
+use App\Modules\Catalog\Events\PricingInputsChanged;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
@@ -27,10 +30,16 @@ final class UpdateBrand
             ->setSlug($slug)
             ->setCountry($data->country)
             ->setDescription($data->description)
+            ->setCommissionPercent($data->commissionPercent)
             ->setIsActive($data->isActive)
             ->setSeoTitle($data->seoTitle)
-            ->setSeoDescription($data->seoDescription)
-            ->save();
+            ->setSeoDescription($data->seoDescription);
+        $commissionChanged = $brand->isDirty(Brand::COLUMN_COMMISSION_PERCENT);
+        $brand->save();
+
+        if ($commissionChanged) {
+            event(new PricingInputsChanged(app(VariantPricingInputs::class)->variantIdsFollowingBrand($brand), PricingInputChange::Commission, UpdateProduct::adminId()));
+        }
 
         ProductSearchIndex::refreshWhere($brand->products()->getQuery());
 

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
+ * Active brands with a 10 % commission. States: inactive(), withoutCommission().
+ *
  * @extends Factory<Brand>
  */
 final class BrandFactory extends Factory
@@ -29,10 +31,16 @@ final class BrandFactory extends Factory
             Brand::COLUMN_SLUG => Str::slug($nameEn),
             Brand::COLUMN_COUNTRY => fake()->randomElement(['DE', 'US', 'GB', 'IR', 'CH', 'FR']),
             Brand::COLUMN_DESCRIPTION => null,
+            Brand::COLUMN_COMMISSION_PERCENT => 10,
             Brand::COLUMN_IS_ACTIVE => true,
             Brand::COLUMN_SEO_TITLE => null,
             Brand::COLUMN_SEO_DESCRIPTION => null,
         ];
+    }
+
+    public function withoutCommission(): static
+    {
+        return $this->state(fn (array $attributes): array => [Brand::COLUMN_COMMISSION_PERCENT => null]);
     }
 
     public function inactive(): static

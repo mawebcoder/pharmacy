@@ -1,6 +1,6 @@
 # Roadmap progress
 
-Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`.
+Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Rows follow the build order: Tipax, Zarinpal and SMS (S22, S23, S26, S27, S28) come last, before launch (owner, 2026-11-09).
 
 | Step | Title | Status | Date | Commit |
 |---|---|---|---|---|
@@ -19,21 +19,16 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S12 | PLP and search | done | 2026-11-07 | 8f64af1 |
 | S13 | PDP | todo | | |
 | S13b | Collections, popular products and home page builder | done | 2026-11-09 | 670e8d9 |
-| S14 | Providers and provider prices | todo | | |
-| S15 | Pricing engine | todo | | |
+| S14 | Providers and provider prices | in progress | 2026-11-09 | |
+| S15 | Pricing engine and price records | in progress | 2026-11-09 | |
 | S16 | Price import | todo | | |
 | S17 | Customer OTP auth | todo | | |
 | S18 | Addresses and account area | todo | | |
 | S19 | Cart | todo | | |
 | S20 | Coupons | todo | | |
 | S21 | Shipping foundation | todo | | |
-| S22 | Tipax client and reference sync | todo | | |
-| S23 | Tipax quotes in checkout | todo | | |
 | S24 | Own courier zones | todo | | |
 | S25 | Checkout wizard | todo | | |
-| S26 | Zarinpal payments | todo | | |
-| S27 | Tipax shipment registration and tracking | todo | | |
-| S28 | Notifications (SMS) | todo | | |
 | S29 | Order admin and state machine | todo | | |
 | S30 | Provider purchases (sourcing) | todo | | |
 | S31 | Packing | todo | | |
@@ -45,6 +40,11 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S37 | Security hardening | todo | | |
 | S38 | Performance | todo | | |
 | S39 | Observability, backups, ops | todo | | |
-| S40 | Launch | todo | | |
 | S41 | Reporting warehouse (before S40) | todo | | |
 | S42 | Dashboard and report pages (before S40) | todo | | |
+| S22 | Tipax client and reference sync | todo | | |
+| S23 | Tipax quotes in checkout | todo | | |
+| S26 | Zarinpal payments | todo | | |
+| S27 | Tipax shipment registration and tracking | todo | | |
+| S28 | Notifications (SMS) | todo | | |
+| S40 | Launch | todo | | |

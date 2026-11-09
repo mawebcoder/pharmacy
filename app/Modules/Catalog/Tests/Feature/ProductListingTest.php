@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Modules\Catalog\Actions\SaveProductVariant;
 use App\Modules\Catalog\Data\ListingCriteria;
-use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Enums\ProductType;
 use App\Modules\Catalog\Enums\StockStatus;
@@ -17,6 +15,10 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
+use App\Modules\Pricing\Actions\SaveProviderPrice;
+use App\Modules\Pricing\Data\ProviderPriceData;
+use App\Modules\Pricing\Models\Provider;
+use App\Modules\Pricing\Models\ProviderPrice;
 use Illuminate\Support\Facades\DB;
 use Meilisearch\Client;
 
@@ -193,19 +195,21 @@ it('pages through results, 24 at a time', function (): void {
         ->and(app(ProductListing::class)->get(new ListingCriteria(perPage: 48))->products->count())->toBe(26);
 });
 
-it('updates the index when a variant price changes', function (): void {
+it('updates the index when a supplier price changes the selling price', function (): void {
     $product = sellable([Product::COLUMN_NAME_FA => 'کرم'], [ProductVariant::COLUMN_PRICE => 5_000_000]);
     indexProductsForSearch();
 
-    $changed = app(SaveProductVariant::class)($product, ProductVariantData::fromArray([
-        ProductVariant::COLUMN_TITLE_FA => 'تنوع',
-        ProductVariant::COLUMN_PRICE => 500_000,
-        ProductVariant::COLUMN_STOCK_STATUS => 'available',
-    ]), $product->variants()->sole());
+    // 450,000 toman × 1.10 (the brand's commission) = 495,000 toman, already a whole 1,000.
+    $_ = app(SaveProviderPrice::class)(ProviderPriceData::fromArray([
+        ProviderPrice::COLUMN_PROVIDER_ID => Provider::factory()->create()->getId(),
+        ProviderPrice::COLUMN_VARIANT_ID => $product->variants()->sole()->getId(),
+        ProviderPrice::COLUMN_COST => 4_500_000,
+    ]));
     waitForSearchIndex();
 
-    expect($changed->getPrice())->toBe(500_000)
-        ->and(listedNames(new ListingCriteria(maxPrice: 600_000)))->toBe(['کرم']);
+    // Prices in the listing criteria are rial: only the new price is below 4,960,000.
+    expect($product->variants()->sole()->getPrice())->toBe(4_950_000)
+        ->and(listedNames(new ListingCriteria(maxPrice: 4_960_000)))->toBe(['کرم']);
 });
 
 it('falls back to the newest products from the database when search is down', function (): void {

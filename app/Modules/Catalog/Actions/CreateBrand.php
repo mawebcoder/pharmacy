@@ -19,6 +19,7 @@ final class CreateBrand
             ->setSlug(CatalogSlug::for(Brand::class, $data->slug, $data->nameFa, $data->nameEn))
             ->setCountry($data->country)
             ->setDescription($data->description)
+            ->setCommissionPercent($data->commissionPercent)
             ->setIsActive($data->isActive)
             ->setSeoTitle($data->seoTitle)
             ->setSeoDescription($data->seoDescription);

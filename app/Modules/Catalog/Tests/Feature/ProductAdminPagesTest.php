@@ -47,8 +47,7 @@ describe('as a content editor', function (): void {
                 Product::COLUMN_PRIMARY_CATEGORY_ID => $category->getId(),
                 Product::COLUMN_PRODUCT_TYPE => 'cosmetic',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => '۵۰ میلی‌لیتر',
-                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_PRICE => '485,000',
-                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_STOCK_STATUS => 'available',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_OFFICIAL_PRICE => '485,000',
             ])
             ->call('create')
             ->assertHasNoFormErrors()
@@ -58,6 +57,8 @@ describe('as a content editor', function (): void {
         expect($product->getStatus())->toBe(ProductStatus::Draft)
             ->and($product->variants()->sole())
             ->getTitleFa()->toBe('۵۰ میلی‌لیتر')
+            ->getOfficialPrice()->toBe(4_850_000)
+            // No supplier yet: sold at its printed price (roadmap D3.2).
             ->getPrice()->toBe(4_850_000);
     });
 
@@ -71,27 +72,26 @@ describe('as a content editor', function (): void {
             ->call('create')
             ->assertHasFormErrors([
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => 'required',
-                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_PRICE => 'required',
             ]);
 
         expect(Product::query()->count())->toBe(0);
     });
 
-    it('adds two variants with prices typed in toman', function (): void {
+    it('adds two variants with box prices typed in toman, sold at those prices until they have suppliers', function (): void {
         $product = Product::factory()->create();
 
         foreach (['۵۰ میلی‌لیتر' => '485,000', '۲۰۰ میلی‌لیتر' => '1,250,000'] as $title => $price) {
             livewire(VariantsRelationManager::class, ['ownerRecord' => $product, 'pageClass' => EditProduct::class])
                 ->callAction(TestAction::make(CreateAction::class)->table(), [
                     ProductVariant::COLUMN_TITLE_FA => $title,
-                    ProductVariant::COLUMN_PRICE => $price,
-                    ProductVariant::COLUMN_STOCK_STATUS => 'available',
+                    ProductVariant::COLUMN_OFFICIAL_PRICE => $price,
                     ProductVariant::COLUMN_IS_ACTIVE => true,
                 ])
                 ->assertHasNoFormErrors();
         }
 
-        expect($product->variants()->pluck(ProductVariant::COLUMN_PRICE)->all())->toBe([4_850_000, 12_500_000]);
+        expect($product->variants()->pluck(ProductVariant::COLUMN_OFFICIAL_PRICE)->all())->toBe([4_850_000, 12_500_000])
+            ->and($product->variants()->pluck(ProductVariant::COLUMN_PRICE)->all())->toBe([4_850_000, 12_500_000]);
     });
 
     it('uploads the first photo and activates the product in one save', function (): void {

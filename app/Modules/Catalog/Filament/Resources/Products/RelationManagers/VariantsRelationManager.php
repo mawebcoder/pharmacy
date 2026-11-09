@@ -14,6 +14,12 @@ use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Queries\VariantPricingInputs;
+use App\Modules\Pricing\Actions\CalculateVariantPrice;
+use App\Modules\Pricing\Filament\Pages\SkuSuppliers;
+use App\Modules\Pricing\Filament\Support\PricingGuide;
+use App\Modules\Pricing\Queries\SupplierPrices;
+use App\Modules\Shared\Support\Toman;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -22,20 +28,23 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Exceptions\Halt;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
 
 /**
- * Variants of a product (roadmap D3.1): prices typed in toman (saved as rial), sizes in mm, weight in grams.
- * Saving goes through SaveProductVariant (price rules, SKU, near-expiry); refusals are shown as notifications.
+ * Variants of a product (roadmap D3.1): sizes in mm, weight in grams. The printed price and haraj are typed in toman
+ * (saved as rial); the selling price is calculated by Pricing from the active supplier and the commission (D3.2) and
+ * only shown here. Saving goes through SaveProductVariant; refusals are shown as notifications. Admins who can see
+ * suppliers get each SKU's active supplier and a link to its suppliers page.
  */
 final class VariantsRelationManager extends RelationManager
 {
@@ -48,6 +57,12 @@ final class VariantsRelationManager extends RelationManager
     protected static ?string $modelLabel = 'تنوع';
 
     protected static ?string $pluralModelLabel = 'تنوع‌ها';
+
+    /** @var array<int, string>|null */
+    private ?array $activeSupplierNames = null;
+
+    /** @var array<int, bool>|null */
+    private ?array $variantsWithSuppliers = null;
 
     public function form(Schema $schema): Schema
     {
@@ -83,20 +98,23 @@ final class VariantsRelationManager extends RelationManager
                     ->columns(3)
                     ->collapsible()
                     ->schema([
-                        $this->pricingGuide()->columnSpanFull(),
+                        PricingGuide::skuForm()->columnSpanFull(),
                         TextInput::make(ProductVariant::COLUMN_OFFICIAL_PRICE)
                             ->label('قیمت مصرف‌کننده (روی جعبه)')
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                            ->live(onBlur: true)
                             ->helperText('سقف قیمت فروش و قیمت خط‌خورده در سایت. برای دارو الزامی است.'),
-                        TextInput::make(ProductVariant::COLUMN_PRICE)
-                            ->label('قیمت فروش')
-                            ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                            ->required()
-                            ->helperText('نباید از قیمت روی جعبه بیشتر باشد.'),
+                        TextEntry::make('calculated_price')
+                            ->label('قیمت فروش (محاسبه خودکار)')
+                            ->state(fn (Get $get, ?ProductVariant $record): string => $this->expectedPrice($record, Toman::rialFromInput($get(ProductVariant::COLUMN_OFFICIAL_PRICE))))
+                            ->helperText('قابل ویرایش نیست: قیمت خرید تأمین‌کننده فعال × (۱ + کمیسیون).'),
                         TextInput::make(ProductVariant::COLUMN_SALE_PRICE)
                             ->label('قیمت حراج')
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                            ->helperText('خالی یعنی بدون حراج؛ باید کمتر از قیمت فروش باشد.'),
+                            ->disabled(fn (?ProductVariant $record): bool => ($record?->getPrice() ?? 0) === 0)
+                            ->helperText(fn (?ProductVariant $record): string => ($record?->getPrice() ?? 0) === 0
+                                ? 'بعد از محاسبه قیمت فروش (افزودن تأمین‌کننده) قابل وارد کردن است.'
+                                : 'خالی یعنی بدون حراج؛ باید کمتر از قیمت فروش باشد.'),
                     ]),
                 Section::make('موجودی و تاریخ انقضا')
                     ->columns(3)
@@ -104,7 +122,10 @@ final class VariantsRelationManager extends RelationManager
                         Select::make(ProductVariant::COLUMN_STOCK_STATUS)
                             ->label('وضعیت موجودی')
                             ->options(StockStatus::options())
-                            ->default(StockStatus::Available->value)
+                            ->default(StockStatus::OutOfStock->value)
+                            ->disabled()
+                            ->dehydrated()
+                            ->helperText('خودکار: با تأمین‌کننده فعال یا قیمت روی جعبه «موجود»، بدون هیچ‌کدام «ناموجود».')
                             ->required(),
                         DatePicker::make(ProductVariant::COLUMN_EXPIRY_DATE)
                             ->label('تاریخ انقضا')
@@ -165,6 +186,11 @@ final class VariantsRelationManager extends RelationManager
                 TextColumn::make(ProductVariant::COLUMN_OFFICIAL_PRICE)->label('روی جعبه')->toman()->placeholder('—'), // @phpstan-ignore method.notFound (macro)
                 TextColumn::make(ProductVariant::COLUMN_PRICE)->label('قیمت فروش')->toman(), // @phpstan-ignore method.notFound (macro)
                 TextColumn::make(ProductVariant::COLUMN_SALE_PRICE)->label('قیمت حراج')->toman()->placeholder('—'), // @phpstan-ignore method.notFound (macro)
+                TextColumn::make('active_supplier')
+                    ->label('تأمین‌کننده فعال')
+                    ->visible(fn (): bool => $this->canSeeSuppliers())
+                    ->state(fn (ProductVariant $record): ?string => $this->activeSuppliers()[$record->getId()] ?? null)
+                    ->placeholder(fn (ProductVariant $record): string => $this->hasSuppliers()[$record->getId()] ?? false ? 'ندارد: قیمت روی جعبه' : 'بدون تأمین‌کننده: قیمت روی جعبه'),
                 TextColumn::make(ProductVariant::COLUMN_STOCK_STATUS)
                     ->label('موجودی')
                     ->badge()
@@ -183,6 +209,12 @@ final class VariantsRelationManager extends RelationManager
                     ->using(fn (array $data): ProductVariant => $this->save($data)),
             ])
             ->recordActions([
+                Action::make('suppliers')
+                    ->label('تأمین‌کنندگان')
+                    ->icon(Heroicon::OutlinedTruck)
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->canSeeSuppliers())
+                    ->url(fn (ProductVariant $record): string => SkuSuppliers::getUrl(['variant' => $record->getId()])),
                 Action::make('makeDefault')
                     ->label('پیش‌فرض کن')
                     ->icon('heroicon-o-star')
@@ -231,22 +263,61 @@ final class VariantsRelationManager extends RelationManager
     }
 
     /**
-     * How the prices of a variant work, shown above the price fields. The automatic price (commission, provider
-     * price) is added with the pricing engine (S15).
+     * The selling price the SKU would have with this printed price: the active supplier's cost × (1 + commission),
+     * rounded, capped by the printed price; or why there is none yet.
      */
-    private function pricingGuide(): Callout
+    private function expectedPrice(?ProductVariant $variant, ?int $officialPrice): string
     {
-        return Callout::make('قیمت‌ها چطور کار می‌کنند')
-            ->info()
-            ->description(new HtmlString(<<<'HTML'
-                <p><strong>قیمت مصرف‌کننده (روی جعبه):</strong> قیمتی که روی بسته چاپ شده است. سقف قیمت است: قیمت فروش و قیمت حراج هیچ‌وقت از آن بیشتر نمی‌شوند. در سایت خط‌خورده نمایش داده می‌شود و درصد تخفیف نسبت به همین قیمت حساب می‌شود. برای دارو الزامی است.</p>
-                <p><strong>قیمت فروش:</strong> قیمتی که مشتری وقتی حراج فعال نیست می‌پردازد. فعلاً دستی وارد می‌شود؛ با راه‌اندازی موتور قیمت‌گذاری از کمترین قیمت خرید تأمین‌کننده‌ها و کمیسیون محصول حساب خواهد شد.</p>
-                <p><strong>قیمت حراج:</strong> قیمت تخفیف‌خورده؛ اختیاری است و باید کمتر از قیمت فروش باشد. خالی یعنی بدون حراج.</p>
-                <p><strong>مشتری چه می‌پردازد؟</strong> قیمت حراج اگر ثبت شده باشد، در غیر این صورت قیمت فروش.</p>
-                <p><strong>مثال:</strong> روی جعبه ۱۲۵٬۰۰۰، فروش ۱۲۰٬۰۰۰ و حراج ۱۱۰٬۰۰۰ تومان ← مشتری ۱۱۰٬۰۰۰ تومان می‌پردازد و در سایت <del>۱۲۵٬۰۰۰</del> با ۱۲٪ تخفیف دیده می‌شود. بدون حراج: <del>۱۲۵٬۰۰۰</del> ۱۲۰٬۰۰۰ تومان با ۴٪ تخفیف.</p>
-                <p><strong>SKU پیش‌فرض:</strong> تنوعی که در کارت محصول، جستجو و دکمهٔ «افزودن به سبد» استفاده می‌شود (در جدول تنوع‌ها «پیش‌فرض کن»). اگر ناموجود شود، اولین تنوع موجود به ترتیب جدول جای آن را می‌گیرد و پس از موجود شدن دوباره، خودکار برمی‌گردد.</p>
-                HTML))
-            ->extraAttributes(['class' => '[&_p]:mt-2 [&_p:first-child]:mt-0']);
+        $commission = app(VariantPricingInputs::class)->commissionOf($this->product());
+
+        $active = $variant instanceof ProductVariant ? (app(SupplierPrices::class)->activeFor([$variant->getId()])[$variant->getId()] ?? null) : null;
+
+        if ($active === null) {
+            return $officialPrice !== null && $officialPrice > 0
+                ? Toman::format($officialPrice).' (بدون تأمین‌کننده فعال: قیمت روی جعبه)'
+                : 'بدون تأمین‌کننده فعال و قیمت روی جعبه، تنوع ناموجود است';
+        }
+
+        if ($commission === null) {
+            return 'کمیسیون محصول یا برند تعیین نشده است';
+        }
+
+        $price = CalculateVariantPrice::sellingPrice($active->getCost(), $commission);
+        $capped = $officialPrice !== null && $officialPrice > 0 && $price > $officialPrice;
+
+        return Toman::format($capped ? $officialPrice : $price).($capped ? ' (سقف روی جعبه)' : '');
+    }
+
+    private function canSeeSuppliers(): bool
+    {
+        return auth('admin')->user()?->can('ViewAny:Provider') ?? false;
+    }
+
+    /**
+     * @return array<int, string> variant id => active supplier name
+     */
+    private function activeSuppliers(): array
+    {
+        // Without a commission the SKUs are sold at their printed price, not from a supplier.
+        return $this->activeSupplierNames ??= app(VariantPricingInputs::class)->commissionOf($this->product()) === null
+            ? []
+            : app(SupplierPrices::class)->activeNames($this->variantIds());
+    }
+
+    /**
+     * @return array<int, bool>
+     */
+    private function hasSuppliers(): array
+    {
+        return $this->variantsWithSuppliers ??= app(SupplierPrices::class)->hasSuppliers($this->variantIds());
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function variantIds(): array
+    {
+        return array_values(array_map(intval(...), $this->product()->variants()->pluck(ProductVariant::COLUMN_ID)->all()));
     }
 
     /**
