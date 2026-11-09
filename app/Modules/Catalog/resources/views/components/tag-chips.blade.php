@@ -19,21 +19,8 @@
     <nav aria-label="{{ $label }}" {{ $attributes->class('scrollbar-none -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0') }}>
         <ul class="flex gap-2 md:flex-wrap">
             @foreach ($tags as $tag)
-                @php($isCurrent = $current?->is($tag))
                 <li wire:key="tag-chip-{{ $tag->getId() }}" class="shrink-0">
-                    <a
-                        href="{{ route('tags.show', $tag) }}"
-                        wire:navigate
-                        @if ($isCurrent) aria-current="page" @endif
-                        @class([
-                            'flex h-11 items-center gap-2 rounded-full border px-4 text-sm focus-visible:outline-2 focus-visible:outline-primary-700',
-                            'border-primary-700 bg-primary-700 text-white' => $isCurrent,
-                            'border-line-200 bg-white text-ink-900 hover:border-primary-300 hover:text-primary-700' => ! $isCurrent,
-                        ])
-                    >
-                        <x-media::picture :media="$tag->getIcon()" slot-name="category-chip" alt="" class="size-6 object-contain" />
-                        {{ $tag->getNameFa() }}
-                    </a>
+                    <x-catalog::tag-chip :tag="$tag" :current="$current?->is($tag)" />
                 </li>
             @endforeach
         </ul>

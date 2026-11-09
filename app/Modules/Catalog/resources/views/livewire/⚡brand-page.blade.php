@@ -4,7 +4,7 @@ use App\Modules\Catalog\Models\Brand;
 use Livewire\Component;
 
 /**
- * Brand page (roadmap B5 /b/{slug}, B9.3): the brand header and its product list.
+ * Brand page (roadmap B5 /brands/{slug}, B9.3): the brand header and its product list.
  * Inactive and deleted brands are not found.
  */
 new class extends Component
@@ -33,6 +33,8 @@ new class extends Component
             <li aria-current="page" class="text-ink-900">{{ $brand->getNameFa() }}</li>
         </ol>
     </nav>
+
+    <x-content::banners place="brand" :place-id="$brand->getId()" :priority="true" />
 
     <header class="flex flex-col gap-4 rounded-card border border-line-200 bg-white p-4 shadow-card md:flex-row md:items-start md:p-6">
         @if ($brand->getLogo())

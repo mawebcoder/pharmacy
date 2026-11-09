@@ -18,7 +18,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S11 | Attributes and tags | done | 2026-11-07 | c1726da |
 | S12 | PLP and search | done | 2026-11-07 | 8f64af1 |
 | S13 | PDP | todo | | |
-| S13b | Collections, popular products and home page builder | todo | | |
+| S13b | Collections, popular products and home page builder | in progress | 2026-11-09 | |
 | S14 | Providers and provider prices | todo | | |
 | S15 | Pricing engine | todo | | |
 | S16 | Price import | todo | | |

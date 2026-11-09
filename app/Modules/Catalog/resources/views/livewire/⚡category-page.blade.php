@@ -4,7 +4,7 @@ use App\Modules\Catalog\Models\Category;
 use Livewire\Component;
 
 /**
- * Category page (roadmap B5 /c/{slug}, B9.3): breadcrumb, banner, title, subcategory chips and the product list
+ * Category page (roadmap B5 /categories/{slug}, B9.3): breadcrumb, banner, title, subcategory chips and the product list
  * (products of this category and the ones below it). A category is found only when it and every category above it are active.
  */
 new class extends Component
@@ -43,7 +43,11 @@ new class extends Component
         </ol>
     </nav>
 
-    @if ($category->getBannerDesktop() || $category->getBannerMobile())
+    {{-- Banners placed on this category (S13b); until S07's own banner fields are retired, they are the fallback. --}}
+    @php($placedBanners = app(\App\Modules\Content\Queries\PlaceBanners::class)->for(\App\Modules\Content\Enums\BannerPlace::Category, $category->getId()))
+    @if ($placedBanners->isNotEmpty())
+        <x-content::banners :banners="$placedBanners" :priority="true" />
+    @elseif ($category->getBannerDesktop() || $category->getBannerMobile())
         <x-media::art-directed
             :desktop="$category->getBannerDesktop()"
             :mobile="$category->getBannerMobile()"

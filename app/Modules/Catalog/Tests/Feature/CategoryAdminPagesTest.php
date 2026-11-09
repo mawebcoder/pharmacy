@@ -48,7 +48,10 @@ describe('as a super admin', function (): void {
         $leaf = Category::factory()->childOf($middle)->create([Category::COLUMN_NAME_FA => 'ویتامین D']);
 
         livewire(CreateCategory::class)
-            ->assertFormFieldExists(Category::COLUMN_PARENT_ID, fn ($field): bool => $field->getOptions() === [
+            ->assertFormFieldExists(Category::COLUMN_PARENT_ID, fn ($field): bool => array_map(
+                fn (string $label): string => trim(strip_tags($label)),
+                $field->getOptions(),
+            ) === [
                 $root->getId() => 'مکمل‌ها',
                 $middle->getId() => 'مکمل‌ها › ویتامین‌ها',
             ]);

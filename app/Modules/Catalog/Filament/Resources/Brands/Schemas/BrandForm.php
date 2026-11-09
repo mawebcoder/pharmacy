@@ -42,7 +42,7 @@ final class BrandForm
                             ->rules(fn (?Brand $record): array => $rules($record, Brand::COLUMN_NAME_EN)),
                         TextInput::make(Brand::COLUMN_SLUG)
                             ->label('نامک (آدرس)')
-                            ->prefix('/b/')
+                            ->prefix('/brands/')
                             ->extraInputAttributes(['dir' => 'ltr'])
                             ->maxLength(255)
                             ->rules(fn (?Brand $record): array => $rules($record, Brand::COLUMN_SLUG))

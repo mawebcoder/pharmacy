@@ -4,6 +4,7 @@
 @php
     $hasText = mb_strlen(trim($value)) >= $minLength;
     $suggestions = $hasText ? $this->suggestions : null;
+    $popular = ! $hasText && $popularRequested ? $this->popular : null;
     $listId = $inputId.'-suggestions';
 @endphp
 
@@ -36,15 +37,41 @@
         maxlength="120"
         placeholder="جستجوی محصول، برند یا ماده مؤثره"
         wire:model.live.debounce.300ms="value"
-        x-on:focus="open = true"
+        x-on:focus="open = true; $wire.popularRequested || $wire.set('popularRequested', true)"
         x-on:input="open = true"
         x-on:keydown.down.prevent="open = true; $nextTick(() => move(1))"
         role="combobox"
         aria-autocomplete="list"
         aria-controls="{{ $listId }}"
-        x-bind:aria-expanded="open && {{ $hasText ? 'true' : 'false' }}"
+        x-bind:aria-expanded="open && {{ $hasText || ($popular?->isNotEmpty() ?? false) ? 'true' : 'false' }}"
         class="h-11 w-full rounded-full border-0 bg-surface-50 ps-10 pe-4 text-sm text-ink-900 ring-1 ring-line-200 placeholder:text-ink-500 focus:bg-white focus:ring-2 focus:ring-primary-700"
     >
+
+    @if ($popular !== null && $popular->isNotEmpty())
+        {{-- Empty box: «محصولات محبوب» (roadmap D21.2, S13b). Phone: one swipeable row; tablet and desktop: 3 × 2. --}}
+        <div
+            id="{{ $listId }}"
+            x-ref="list"
+            x-show="open"
+            x-cloak
+            class="absolute inset-x-0 top-full z-50 mt-2 max-h-[75vh] overflow-y-auto rounded-card border border-line-200 bg-white p-3 shadow-card"
+        >
+            <div class="mb-2 flex items-center justify-between gap-2">
+                <p class="text-sm font-bold text-ink-900">محصولات محبوب</p>
+                <a href="{{ route('collections.show', 'popular') }}" wire:navigate class="flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
+                    مشاهده همه
+                    <x-ts-icon icon="chevron-left" class="size-4" />
+                </a>
+            </div>
+            <ul class="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-1 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
+                @foreach ($popular as $product)
+                    <li wire:key="popular-{{ $product->getId() }}" class="w-[42%] shrink-0 snap-start md:w-auto">
+                        <x-catalog::product-card :product="$product" :quick-view="false" />
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     @if ($suggestions !== null)
         <div

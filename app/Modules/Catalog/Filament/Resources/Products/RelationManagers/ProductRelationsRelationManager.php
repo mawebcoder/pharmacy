@@ -7,8 +7,10 @@ namespace App\Modules\Catalog\Filament\Resources\Products\RelationManagers;
 use App\Modules\Catalog\Actions\LinkProducts;
 use App\Modules\Catalog\Enums\ProductRelationType;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
+use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductRelation;
+use App\Modules\Catalog\Queries\AdminOptions;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Select;
@@ -39,19 +41,10 @@ final class ProductRelationsRelationManager extends RelationManager
         return $schema
             ->columns(2)
             ->components([
-                Select::make(ProductRelation::COLUMN_RELATED_PRODUCT_ID)
-                    ->label('محصول')
-                    ->searchable()
-                    ->required()
-                    ->getSearchResultsUsing(fn (string $search): array => Product::query()
-                        ->whereKeyNot($this->getOwnerRecord()->getKey())
-                        ->where(fn ($query) => $query
-                            ->where(Product::COLUMN_NAME_FA, 'like', "%{$search}%")
-                            ->orWhere(Product::COLUMN_NAME_EN, 'like', "%{$search}%"))
-                        ->limit(20)
-                        ->pluck(Product::COLUMN_NAME_FA, Product::COLUMN_ID)
-                        ->all())
-                    ->getOptionLabelUsing(fn (int|string $value): ?string => Product::withTrashed()->find($value)?->getNameFa()),
+                // Picked by SKU (decided 2026-11-07, S13b); the SKU's product is linked.
+                ImageSelect::skus(Select::make('related_sku_id'))
+                    ->label('محصول (SKU)')
+                    ->required(),
                 Select::make(ProductRelation::COLUMN_TYPE)
                     ->label('نوع ارتباط')
                     ->options(ProductRelationType::options())
@@ -79,7 +72,9 @@ final class ProductRelationsRelationManager extends RelationManager
                         $product = $this->getOwnerRecord();
 
                         try {
-                            return $linkProducts($product, (int) $data[ProductRelation::COLUMN_RELATED_PRODUCT_ID], ProductRelationType::from((string) $data[ProductRelation::COLUMN_TYPE]));
+                            $relatedProductId = app(AdminOptions::class)->productIdsOfSkus([(int) $data['related_sku_id']])[0] ?? 0;
+
+                            return $linkProducts($product, $relatedProductId, ProductRelationType::from((string) $data[ProductRelation::COLUMN_TYPE]));
                         } catch (ProductChangeRefused $refused) {
                             Notification::make()->danger()->title($refused->getMessage())->send();
                             throw new Halt($refused->getMessage(), $refused->getCode(), $refused);

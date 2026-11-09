@@ -24,7 +24,7 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A product category (roadmap D3.1): a tree of at most MAX_DEPTH levels, ordered by "sort" among siblings.
- * Shown on the storefront at /c/{slug} while it and all its parents are active.
+ * Shown on the storefront at /categories/{slug} while it and all its parents are active.
  */
 final class Category extends Model implements HasActivityLogLabel, HasImagePresets
 {

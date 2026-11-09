@@ -6,18 +6,23 @@ namespace App\Modules\Catalog\Filament\Resources\Products\Schemas;
 
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Enums\StockStatus;
+use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
+use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
 use App\Modules\Catalog\Models\Attribute;
 use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
@@ -29,6 +34,11 @@ use Filament\Schemas\Schema;
 final class ProductForm
 {
     private const string ATTRIBUTE_STATE = 'attribute_values';
+
+    /**
+     * Form state key of the first SKU's fields on create.
+     */
+    public const string FIRST_VARIANT = 'first_variant';
 
     public static function configure(Schema $schema): Schema
     {
@@ -57,32 +67,26 @@ final class ProductForm
                                     ->extraInputAttributes(['dir' => 'ltr'])
                                     ->maxLength(255)
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_NAME_EN)),
-                                Select::make(Product::COLUMN_BRAND_ID)
+                                ImageSelect::images(Select::make(Product::COLUMN_BRAND_ID), 'brand', fn (): array => Brand::query()->orderBy(Brand::COLUMN_NAME_FA)->pluck(Brand::COLUMN_NAME_FA, Brand::COLUMN_ID)->all())
                                     ->label('برند')
-                                    ->options(fn (): array => Brand::query()->orderBy(Brand::COLUMN_NAME_FA)->pluck(Brand::COLUMN_NAME_FA, Brand::COLUMN_ID)->all())
-                                    ->searchable()
                                     ->required()
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_BRAND_ID)),
                                 TextInput::make(Product::COLUMN_SLUG)
                                     ->label('نامک (آدرس)')
-                                    ->prefix('/p/')
+                                    ->prefix('/products/')
                                     ->extraInputAttributes(['dir' => 'ltr'])
                                     ->maxLength(255)
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_SLUG))
                                     ->helperText(fn (?Product $record): string => $record instanceof Product
                                         ? 'تغییر نامک، پیوندهای قبلی این محصول را از کار می‌اندازد.'
                                         : 'خالی بگذارید تا از نام انگلیسی (یا فارسی) ساخته شود.'),
-                                Select::make(Product::COLUMN_PRIMARY_CATEGORY_ID)
+                                ImageSelect::images(Select::make(Product::COLUMN_PRIMARY_CATEGORY_ID), 'category', self::categoryOptions(...))
                                     ->label('دسته اصلی')
-                                    ->options(fn (): array => self::categoryOptions())
-                                    ->searchable()
                                     ->required()
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_PRIMARY_CATEGORY_ID)),
-                                Select::make('category_ids')
+                                ImageSelect::images(Select::make('category_ids'), 'category', self::categoryOptions(...))
                                     ->label('دسته‌های دیگر')
                                     ->multiple()
-                                    ->options(fn (): array => self::categoryOptions())
-                                    ->searchable()
                                     ->rules(fn (?Product $record): array => $rules($record, 'category_ids'))
                                     ->nestedRecursiveRules(StoreProductRequest::baseRules()['category_ids.*']),
                                 Select::make(Product::COLUMN_PRODUCT_TYPE)
@@ -107,6 +111,7 @@ final class ProductForm
                                     ->required()
                                     ->hiddenOn('create')
                                     ->helperText('برای «فعال»: برند، دسته اصلی، دست‌کم یک تنوع فعال با قیمت و یک تصویر لازم است.'),
+                                self::firstVariantSection(),
                             ]),
                         Tab::make('ویژگی‌ها و برچسب‌ها')
                             ->columns(2)
@@ -169,18 +174,60 @@ final class ProductForm
 
     private static function tagField(): Select
     {
-        return Select::make('tag_ids')
+        return ImageSelect::images(Select::make('tag_ids'), 'tag', fn (): array => Tag::query()
+            ->orderBy(Tag::COLUMN_NAME_FA)
+            ->get()
+            ->mapWithKeys(fn (Tag $tag): array => [$tag->getId() => $tag->getNameFa().' ('.$tag->getType()->label().')'])
+            ->all())
             ->label('برچسب‌ها')
             ->multiple()
-            ->searchable()
-            ->options(fn (): array => Tag::query()
-                ->orderBy(Tag::COLUMN_NAME_FA)
-                ->get()
-                ->groupBy(fn (Tag $tag): string => $tag->getType()->label())
-                ->map(fn ($tags): array => $tags->mapWithKeys(fn (Tag $tag): array => [$tag->getId() => $tag->getNameFa()])->all())
-                ->all())
             ->nestedRecursiveRules(StoreProductRequest::baseRules()['tag_ids.*'])
             ->columnSpanFull();
+    }
+
+    /**
+     * The first SKU, asked for on create so every product has one (S13b). More SKUs, sizes and shipping details are
+     * added on the edit page («تنوع‌ها»). Saved under FIRST_VARIANT; prices are typed in toman.
+     */
+    private static function firstVariantSection(): Section
+    {
+        $rules = StoreProductVariantRequest::baseRules();
+
+        return Section::make('اولین تنوع (SKU)')
+            ->description('هر محصول دست‌کم یک تنوع دارد. تنوع‌های دیگر، ابعاد و وزن را بعد از ذخیره در «تنوع‌ها» اضافه کنید.')
+            ->statePath(self::FIRST_VARIANT)
+            ->visibleOn('create')
+            ->columnSpanFull()
+            ->columns(3)
+            ->schema([
+                TextInput::make(ProductVariant::COLUMN_TITLE_FA)
+                    ->label('عنوان تنوع')
+                    ->placeholder('مثلاً ۳۰ عددی یا ۵۰ میلی‌لیتر')
+                    ->required()
+                    ->rules($rules[ProductVariant::COLUMN_TITLE_FA]),
+                TextInput::make(ProductVariant::COLUMN_SKU)
+                    ->label('SKU')
+                    ->extraInputAttributes(['dir' => 'ltr'])
+                    ->helperText('خالی بگذارید تا خودکار ساخته شود.')
+                    ->rules($rules[ProductVariant::COLUMN_SKU]),
+                Select::make(ProductVariant::COLUMN_STOCK_STATUS)
+                    ->label('وضعیت موجودی')
+                    ->options(StockStatus::options())
+                    ->default(StockStatus::Available->value)
+                    ->required(),
+                TextInput::make(ProductVariant::COLUMN_OFFICIAL_PRICE)
+                    ->label('قیمت مصرف‌کننده (روی جعبه)')
+                    ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                    ->helperText('سقف قیمت فروش. برای دارو الزامی است.'),
+                TextInput::make(ProductVariant::COLUMN_PRICE)
+                    ->label('قیمت فروش')
+                    ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                    ->required(),
+                TextInput::make(ProductVariant::COLUMN_SALE_PRICE)
+                    ->label('قیمت حراج')
+                    ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                    ->helperText('خالی یعنی بدون حراج؛ باید کمتر از قیمت فروش باشد.'),
+            ]);
     }
 
     /**

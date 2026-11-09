@@ -36,13 +36,13 @@ it('shows the brand page by slug', function (): void {
 it('finds a brand by its Persian slug', function (): void {
     Brand::factory()->create([Brand::COLUMN_NAME_FA => 'سینره', Brand::COLUMN_SLUG => 'سینره']);
 
-    $this->get('/b/'.rawurlencode('سینره'))->assertOk()->assertSee('سینره');
+    $this->get('/brands/'.rawurlencode('سینره'))->assertOk()->assertSee('سینره');
 });
 
 it('does not show inactive, deleted or unknown brands', function (Closure $makeBrand): void {
     $makeBrand();
 
-    $this->get('/b/eucerin')->assertNotFound();
+    $this->get('/brands/eucerin')->assertNotFound();
 })->with([
     'inactive' => [fn () => Brand::factory()->inactive()->create([Brand::COLUMN_SLUG => 'eucerin'])],
     'deleted' => [fn () => Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin'])->delete()],

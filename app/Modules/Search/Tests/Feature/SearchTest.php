@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Actions\AddProductsToCollection;
 use App\Modules\Catalog\Data\ListingCriteria;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
@@ -95,4 +97,27 @@ it('says search is unavailable when Meilisearch is down', function (): void {
     $this->get('/search?q=ویتامین')->assertOk()->assertSee('جستجو موقتاً در دسترس نیست');
 
     expect(SearchLog::query()->count())->toBe(0);
+});
+
+describe('empty search box', function (): void {
+    beforeEach(function (): void {
+        $popular = ProductCollection::query()->where(ProductCollection::COLUMN_SLUG, ProductCollection::POPULAR_SLUG)->sole();
+        app(AddProductsToCollection::class)($popular, [$this->vitamin->getId()]);
+    });
+
+    it('shows «محصولات محبوب» after the first focus', function (): void {
+        livewire(InstantSearch::class)
+            ->assertDontSee('ویتامین D3 ۱۰۰۰ واحد')
+            ->set('popularRequested', true)
+            ->assertSee('محصولات محبوب')
+            ->assertSee('ویتامین D3 ۱۰۰۰ واحد')
+            ->assertSee(route('collections.show', 'popular'));
+    });
+
+    it('hides the popular products while typing', function (): void {
+        livewire(InstantSearch::class)
+            ->set('popularRequested', true)
+            ->set('value', 'شامپو')
+            ->assertDontSee('محصولات محبوب');
+    });
 });

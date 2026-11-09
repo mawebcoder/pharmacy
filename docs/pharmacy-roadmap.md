@@ -154,12 +154,12 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 |---|---|---|
 | `/` | Home | Built by the admin from widgets (D3.6 «Home widgets»): slider, collection rails, brands, categories, tags, trust; later flash deal and bundles (S33) |
 | `/collections/{slug}` | Collection PLP | Same as PLP; `popular` is the system collection «محصولات محبوب» |
-| `/c/{slug}` | Category PLP | Breadcrumb, sub-category chips, filters (brand, form, suitable-for, price, in-stock, discount %), sort, infinite scroll/pagination, quick view |
-| `/b` and `/b/{slug}` | Brands list, brand PLP | A–Z index, logo grid; brand header + PLP |
-| `/categories`, `/collections` | Categories list, collections list | Round icons / collection tiles; optional banner or slider on top (S13b) |
+| `/categories/{slug}` | Category PLP | Breadcrumb, sub-category chips, filters (brand, form, suitable-for, price, in-stock, discount %), sort, infinite scroll/pagination, quick view |
+| `/brands` and `/brands/{slug}` | Brands list, brand PLP | A–Z index, logo grid; brand header + PLP |
+| `/categories`, `/collections`, `/collections/{slug}` | Categories list, collections list, collection PLP | Round icons / collection tiles; optional banner or slider on top (S13b). Addresses use full words (decided 2026-11-07, S13b); the first short ones `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` redirect permanently (301). Tags stay at `/t/{slug}`. |
 | `/t/{slug}` | Tag PLP (need/nutrient) | Same as PLP |
 | `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper. The empty search box shows «محصولات محبوب» (D21.2) |
-| `/p/{slug}` | Product detail (PDP) | Gallery + zoom, brand, badges, price, variant picker, expiry, stock, qty, add-to-cart, sticky buy bar (mobile), tabs (description, ingredients, usage, warnings, side effects, FAQ, reviews), related, ask a pharmacist |
+| `/products/{slug}` | Product detail (PDP) | Gallery + zoom, brand, badges, price, variant picker, expiry, stock, qty, add-to-cart, sticky buy bar (mobile), tabs (description, ingredients, usage, warnings, side effects, FAQ, reviews), related, ask a pharmacist |
 | `/deals` | Deals hub | Flash deals, discount tiers, near-expiry, damaged-box |
 | `/bundles/{slug}` | Bundle | Items, saving, add bundle |
 | `/cart` | Cart | Items, coupon, free-shipping progress, summary |
@@ -413,6 +413,7 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | `laravel/telescope` | Local debugging only | Dev |
 | `laravel/scout` | Search abstraction | Search |
 | `meilisearch/meilisearch-php:^1.17` | Meilisearch client, used from the MVP (decided 2026-11-07 in S12); guzzlehttp/psr7 already provides the HTTP factories, so `http-interop/http-factory-guzzle` is not needed | Search |
+| `swiper` (npm, pinned `14.3.0`) | Home page sliders: banners and, when their items do not fit, the collection, brand, category, tag and trust rows; touch, pen and mouse swipe in every browser incl. Firefox for Android (decided 2026-11-09, S13b) | Content |
 | `openspout/openspout:^4.32` | Excel/CSV reading and writing: search synonyms import (S12), provider price import (S14) | Search, Pricing |
 | `mews/purifier` or Symfony HtmlSanitizer | Sanitize rich text | Shared |
 | `sentry/sentry-laravel` | Error tracking | System |
@@ -821,9 +822,11 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | image | medialibrary `image` (optional) | the SKU's own photo (another pack or flavour; preset `product`); falls back to the product's main photo in the admin table, cart and the S13 variant picker (decided 2026-11-07) |
 | is_active | bool | |
 
+**At least one SKU** (decided 2026-11-07, S13b): the product create form asks for the first SKU (title, SKU code, stock, box/selling/sale price) and `CreateProduct` saves both in one transaction and makes it the default; deleting a product's last SKU is refused, even for a draft.
+
 **Default SKU** (decided 2026-11-07, S12): `Product::getDefaultVariant()` is the SKU shown on cards, in quick view and in the search box, sent to Meilisearch, and added by «افزودن به سبد» (S19): the admin's choice (`default_variant_id`) while it is active and in stock; otherwise the first active, in-stock variant in `sort` order; when nothing is in stock, the admin's choice or else the first active variant (shown «ناموجود»). Only the choice is stored, so the default returns to it by itself once it is back in stock. Admin: «پیش‌فرض کن» in the variants table, drag to reorder (`SetDefaultVariant`, `ReorderProductVariants`). The struck-through price is the box price whenever the customer pays less (`compareAtPrice()`; without a box price, the price before the sale), and discount % is measured against it. The variant form shows a «قیمت‌ها چطور کار می‌کنند» guide above the price fields; S15 adds the engine paragraphs to it.
 
-**collections** (decided 2026-11-07): `name_fa`, `slug`, `description`, `is_system` (not deletable), `is_active`, `starts_at`, `ends_at`, `sort`. Pivot **collection_product** (`collection_id`, `product_id`, `sort`): hand-picked products in the admin's order. Page `/collections/{slug}` uses the PLP (Meilisearch filter `collection_ids`; changing a collection refreshes its products' documents). The system collection `popular` («محصولات محبوب») feeds the empty search box and can be a home widget.
+**collections** (decided 2026-11-07): `name_fa`, `name_en`, `slug`, `description`, optional icon (preset `category_icon`, shown at 24 px), `is_system` (not deletable), `is_active`, `starts_at`, `ends_at`, `sort`. Pivot **collection_product** (`collection_id`, `product_id`, `sort`): hand-picked products in the admin's order. Page `/collections/{slug}` uses the PLP (Meilisearch filter `collection_ids`; changing a collection refreshes its products' documents). The system collection `popular` («محصولات محبوب», created by the migration, slug fixed) feeds the empty search box and can be a home widget. The collection page's default sort is «پیشنهادی» (the admin's order): Meilisearch has no per-collection position, so the listing takes every matching id (≤ 2000), orders them by `collection_product.sort` and pages them itself; the database fallback orders the same way. Admins pick products by SKU (one option per SKU with image, name, SKU title · code · #id); the product is what gets saved.
 
 **Admin tables** show a round thumbnail first (products, brands, categories, tags, SKUs; `Media\Filament\Tables\ImageThumbnail`, decided 2026-11-07).
 
@@ -924,9 +927,9 @@ Every transition writes `order_status_histories` and may send an SMS (see `notif
 
 ### D3.6 Content, settings, search, admin
 
-- **Home widgets** (decided 2026-11-07; replaces `home_sections` and banner slots): **home_widgets**: `type` (`slider`, `collection`, `brands`, `categories`, `tags`, `trust`; S33 adds `flash_deal`, `bundles`), `title_fa`, `settings` (json: e.g. `collection_id`, ordered `brand_ids` / `category_ids`), `sort`, `is_active`, `starts_at`, `ends_at`. The admin adds, sets up, schedules and drags widgets into order on «چیدمان صفحه اصلی», with a preview link. **Every widget shows at most 6 items** (6 banners, 6 cards, 6 logos, 6 icons, 6 chips); a collection rail adds «مشاهده همه». ≤ 8 live widgets (the page warns). The rendered home is cached and cleared when a widget, banner or collection changes.
+- **Home widgets** (decided 2026-11-07; replaces `home_sections` and banner slots): **home_widgets**: `type` (`slider`, `collection`, `brands`, `categories`, `tags`, `trust`; S33 adds `flash_deal`, `bundles`), `title_fa`, `settings` (json: e.g. `collection_id`, ordered `brand_ids` / `category_ids`), `sort`, `is_active`, `starts_at`, `ends_at`. The admin adds, sets up, schedules and drags widgets into order on «چیدمان صفحه اصلی», with a preview link. **Every widget shows at most 6 items** (6 banners, 6 cards, 6 logos, 6 icons, 6 chips); a collection rail adds «مشاهده همه». ≤ 8 live widgets (the page warns). **A widget is shown only with at least one item** (owner, 2026-11-07): a slider needs a visible banner, a collection rail an in-stock product of a visible collection, brands / categories / tags an active item; the trust block is always shown (`Content\Queries\HomeWidgetItems`). The «در صفحه» column of «چیدمان صفحه اصلی» says why a widget is hidden; with no widget to show, the home page shows a short welcome. **Sliders** (owner, 2026-11-09): the banner slider swipes with an arrow on each side and no dots; the other rows become sliders with side arrows only when their items do not fit on the screen (Swiper, C2). **No rendered-HTML cache** for the home page (decided 2026-11-07, S13b): widget queries are light and cards must show live prices.
 - **banners** (decided 2026-11-07): a library («بنرها») of banners created once and reused: `title`, `link_type` (`category`, `collection`, `brand`, `tag`, `product`, `categories_list`, `collections_list`, `brands_list`, `external`), `link_id` (for an item), `external_url` (for `external`; opens in a new tab with `rel="noopener"`), `is_active`, `starts_at`, `ends_at`; images: medialibrary collections `desktop` (1920×600), `tablet` (1536×768), `mobile` (800×1000) (D14.2). The admin picks the target item rather than typing its URL, so links follow slug changes and a banner whose target is gone or inactive is hidden.
-- **banner_placements**: `banner_id`, `placeable_type` (`home_widget` for a slider, `category`, `collection`, `brand`, `tag`, `page` with `page_key` `categories_list` / `collections_list` / `brands_list`), `placeable_id` (nullable for `page`), `page_key`, `sort`. A placement shows one banner, or a slider when it has several; **at most 6 per placement**. Placed from the slider widget form and from each category, collection, brand, tag and list page in the admin (a «بنرها» tab). S13b moves the S07 category banner images into the library (one banner per category, placed on it).
+- **banner_placements** (as built in S13b): `banner_id`, `place` (`home_widget`, `category`, `collection`, `brand`, `tag`, `categories_list`, `collections_list`, `brands_list`), `place_id` (the widget, category, collection, brand or tag id; null for the list pages), `sort`. A place shows one banner, or a slider when it has several; **at most 6 per place**; a banner whose target is hidden or gone is not shown. The admin sets banners only in home slider widgets: the «جایگاه بنرها» page for the page-top places was removed at the owner's request (2026-11-07), so the storefront still renders page-top banners but nothing sets them for now. The S07 category banner images stay as the category page's banner until the owner decides to retire them (that means rewriting the S09 image tests).
 - **flash_deals**: `variant_id`, `deal_price`, `starts_at`, `ends_at`, `quantity_limit`, `sold_count`.
 - **pages**: `slug` (`about`, `terms`, `privacy`, `returns`, `shipping`, `payment-methods`, `buying-guide`, `licenses`), `title`, `body`, `seo_*`.
 - **faqs**: `group`, `question`, `answer`, `sort`.
@@ -1908,13 +1911,17 @@ public function registerMediaConversions(?Media $media = null): void
 
 | Method | URI | Handler | Name |
 |---|---|---|---|
-| GET | `/` | `Content\Livewire\HomePage` | home |
-| GET | `/c/{category:slug}` | `Catalog\Livewire\CategoryPage` | category.show |
-| GET | `/b` | `Catalog\Livewire\BrandIndex` | brands.index |
-| GET | `/b/{brand:slug}` | `Catalog\Livewire\BrandPage` | brands.show |
+| GET | `/` | `content::home-page` | home |
+| GET | `/categories` | `catalog::category-index` | categories.index |
+| GET | `/categories/{slug}` | `catalog::category-page` | category.show |
+| GET | `/brands` | `catalog::brand-index` | brands.index |
+| GET | `/brands/{slug}` | `catalog::brand-page` | brands.show |
+| GET | `/collections` | `catalog::collection-index` | collections.index |
+| GET | `/collections/{slug}` | `catalog::collection-page` | collections.show |
 | GET | `/t/{tag:slug}` | `Catalog\Livewire\TagPage` | tags.show |
 | GET | `/search` | `Search\Livewire\SearchPage` | search |
-| GET | `/p/{product:slug}` | `Catalog\Livewire\ProductPage` | products.show |
+| GET | `/products/{slug}` | `catalog::product-page` | products.show |
+| GET | `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` | 301 to the full-word addresses (S13b) | — |
 | GET | `/deals` | `Content\Livewire\DealsPage` | deals |
 | GET | `/bundles/{bundle:slug}` | `Catalog\Livewire\BundlePage` | bundles.show |
 | GET | `/cart` | `Cart\Livewire\CartPage` | cart |
@@ -1985,7 +1992,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 ---
 
 ## D17. Performance and caching
-- Redis cache for: settings, menus, home sections (tags `content`), category tree, PLP filter facets, PDP view model (tag `product:{id}`); invalidate via model events.
+- Redis cache for: settings, menus (tags `content`; the home page is not cached, S13b), category tree, PLP filter facets, PDP view model (tag `product:{id}`); invalidate via model events.
 - Eager loading everywhere (`preventLazyLoading()` in non-production).
 - `php artisan optimize` on deploy (config, route, view, event cache); OPcache + JIT on.
 - Livewire: `#[Lazy]` for below-the-fold sections, `wire:model.live.debounce.300ms` for search, avoid big public properties (pass ids, not models).
@@ -2052,7 +2059,7 @@ redirect_stderr=true
 stdout_logfile=/var/www/app/storage/logs/horizon.log
 stopwaitsecs=3600
 ```
-`config/horizon.php` supervisors: `payments` (priority, 2 processes), `shipping` (2), `notifications` (2), `media` (2, memory 512 MB, timeout 300), `default,pricing` (2).
+`config/horizon.php` supervisors: `payments` (priority, 2 processes), `shipping` (2), `notifications` (2), `media` (2, memory 512 MB, timeout 300), `default,pricing` (2). `search` (Scout indexing): **1 process**, so a product's updates reach Meilisearch in order (decided 2026-11-09, S13b: parallel workers let an older snapshot overwrite a newer one).
 
 Cron: `* * * * * www-data php /var/www/app/current/artisan schedule:run >> /dev/null 2>&1`.
 
@@ -2733,14 +2740,15 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S13 PDP
 - **Refs:** B5 (PDP), B1 (Darunet PDP), D14.3 (PDP), D13.11 (stock alert), B7–B13
-- **Build:** ProductPage with gallery/zoom, variant picker (opens on the default SKU; shows each SKU's own image when it has one), optional SKU image upload in the variant form + round thumbnail in the variants table, price, expiry, badges, tabs, related, sticky buy bar, stock alert, product questions (submit), reviews list (approved only).
+- **Build:** ProductPage with gallery/zoom, variant picker (opens on the default SKU; **no picker when the product has one SKU**, decided 2026-11-07 in S13b; shows each SKU's own image when it has one), optional SKU image upload in the variant form + round thumbnail in the variants table, price, expiry, badges, tabs, related, sticky buy bar, stock alert, product questions (submit), reviews list (approved only).
 - **Tests:** renders variant change, shows expiry, rx product shows "not available online yet", stock alert subscription.
 
 ### S13b Collections, popular products and home page builder
 - **Decisions (2026-11-07):** banners are a reusable library with a picked link target (category, collection, brand, tag, product, the categories / collections / brands list pages, or an external URL) and can be placed on the home page (slider widget) and at the top of category, collection, brand, tag and list pages; collections are hand-picked product lists; «محصولات محبوب» is a system collection; the empty search box shows its first 6 in-stock products as cards (phone: swipeable row with the next card peeking; tablet/desktop: 3 × 2 grid) with «مشاهده همه» → `/collections/popular`, the cards get «+ افزودن به سبد» in S19; the admin builds the home page from widgets (slider, collection, brands, categories, tags, trust), each showing at most 6 items.
+- **More decisions (2026-11-07 – 2026-11-09):** admin selects show round images (brands, categories, tags, collections); products are picked by SKU and the product is saved; every product has at least one SKU (asked on create; the last cannot be deleted); full-word addresses with 301s from the short ones; no home page HTML cache; widgets show only with at least one item, and the admin says why one is hidden; «جایگاه بنرها» removed from the admin (banners are set in home sliders only); Swiper sliders (banner slider always, other rows only when they overflow); `HomePageDemoSeeder` for sample data (`php artisan db:seed --class=HomePageDemoSeeder`, not in production).
 - **Refs:** D3.1 (collections), D3.6 (home widgets, banners), B5, B9.2, D14.2 (banner presets), D21.2, B7–B13
-- **Build:** banners library + banner_placements (Filament «بنرها»: images, link target picker, schedule; «بنرها» tab on categories, collections, brands, tags and the list pages; move the S07 category banners into the library), banner/slider at the top of those pages, `/categories` and `/collections` list pages; collections + collection_product, Filament «کالکشن‌ها» (product picker, drag order, schedule; system collection not deletable), `/collections/{slug}` PLP, `collection_ids` in the Meilisearch document; empty-search popular products in the search box; home_widgets + banners, Filament «چیدمان صفحه اصلی» (widget forms per type, banners tab for sliders, drag order, schedule, preview, warnings over 8 widgets), Home page rendering the widgets with the cache.
-- **Tests:** banner link resolves for each target type and follows a slug change; banner with an inactive target or outside its schedule is hidden; ≤ 6 banners per placement; collection page lists only its products in admin order; schedule hides expired collections, widgets and banners; empty search shows ≤ 6 in-stock popular products; every widget renders ≤ 6 items; widget order; cache cleared on change; system collection cannot be deleted.
+- **Build:** banners library + banner_placements (Filament «بنرها»: images, link target picker, schedule), banner/slider at the top of category, collection, brand, tag and list pages (rendered; no admin screen sets them, see D3.6), `/categories` and `/collections` list pages; collections + collection_product, Filament «کالکشن‌ها» (product picker, drag order, schedule; system collection not deletable), `/collections/{slug}` PLP, `collection_ids` in the Meilisearch document; empty-search popular products in the search box; home_widgets + banners, Filament «چیدمان صفحه اصلی» (widget forms per type, banners tab for sliders, drag order, schedule, preview, warnings over 8 widgets), Home page rendering the widgets that have items (no HTML cache).
+- **Tests:** banner link resolves for each target type and follows a slug change; banner with an inactive target or outside its schedule is hidden; ≤ 6 banners per placement; collection page lists only its products in admin order; schedule hides expired collections, widgets and banners; empty search shows ≤ 6 in-stock popular products; every widget renders ≤ 6 items; widget order; widgets without items are left out and the admin shows why; system collection cannot be deleted.
 
 ### S14 Providers and provider prices
 - **Refs:** D3.2, A1
@@ -2769,7 +2777,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S19 Cart
 - **Refs:** D13.3, D3.4, B7–B13
-- **Build:** carts/cart_items, add-to-cart action + button (on the card, quick view and the search box's product rows: a «+» that adds the default SKU, with a «تغییر» link to the product page; decided 2026-11-07, S12), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
+- **Build:** carts/cart_items, add-to-cart action + button (on the card, quick view and the search box's product rows: a «+» that adds the default SKU, with a «تغییر» link to the product page; decided 2026-11-07, S12; S13b's empty-search popular cards and home collection rows get the same «+ افزودن به سبد»), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
 - **Tests:** qty limits, rx/cold-chain blocked, price snapshot refresh, merge.
 
 ### S20 Coupons

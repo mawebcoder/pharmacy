@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Filament\Resources\Categories\Schemas;
 
+use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Http\Requests\StoreCategoryRequest;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Media\Filament\Forms\ImageUpload;
@@ -40,16 +41,14 @@ final class CategoryForm
                             ->extraInputAttributes(['dir' => 'ltr'])
                             ->maxLength(255)
                             ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_NAME_EN)),
-                        Select::make(Category::COLUMN_PARENT_ID)
+                        ImageSelect::images(Select::make(Category::COLUMN_PARENT_ID), 'category', fn (?Category $record = null): array => self::parentOptions($record))
                             ->label('دسته والد')
                             ->placeholder('سطح اول (بدون والد)')
-                            ->options(fn (?Category $record): array => self::parentOptions($record))
-                            ->searchable()
                             ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_PARENT_ID))
                             ->helperText('حداکثر '.PersianDigits::toPersian(Category::MAX_DEPTH).' سطح؛ زیردسته‌ها همراه دسته جابه‌جا می‌شوند.'),
                         TextInput::make(Category::COLUMN_SLUG)
                             ->label('نامک (آدرس)')
-                            ->prefix('/c/')
+                            ->prefix('/categories/')
                             ->extraInputAttributes(['dir' => 'ltr'])
                             ->maxLength(255)
                             ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_SLUG))

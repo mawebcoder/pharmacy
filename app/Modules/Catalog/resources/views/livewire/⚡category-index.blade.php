@@ -24,6 +24,8 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
 ?>
 
 <div class="space-y-4">
+    <x-content::banners place="categories_list" :priority="true" />
+
     <h1 class="text-2xl font-bold text-ink-900">دسته‌بندی‌ها</h1>
 
     @if ($this->roots === [])

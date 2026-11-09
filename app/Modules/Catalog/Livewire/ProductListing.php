@@ -45,6 +45,9 @@ final class ProductListing extends Component
     public ?int $tagId = null;
 
     #[Locked]
+    public ?int $collectionId = null;
+
+    #[Locked]
     public ?string $query = null;
 
     /**
@@ -158,11 +161,15 @@ final class ProductListing extends Component
 
     public function sortOrder(): ListingSort
     {
-        $sorts = ListingSort::available($this->query !== null);
+        $sorts = ListingSort::available($this->query !== null, $this->collectionId !== null);
 
         return ListingSort::tryFrom($this->sort) instanceof ListingSort && in_array(ListingSort::from($this->sort), $sorts, true)
             ? ListingSort::from($this->sort)
-            : ($this->query !== null ? ListingSort::Relevant : ListingSort::Newest);
+            : match (true) {
+                $this->query !== null => ListingSort::Relevant,
+                $this->collectionId !== null => ListingSort::Featured,
+                default => ListingSort::Newest,
+            };
     }
 
     /**
@@ -227,7 +234,7 @@ final class ProductListing extends Component
     {
         return view('catalog::livewire.product-listing', [
             'result' => $this->result,
-            'sorts' => ListingSort::available($this->query !== null),
+            'sorts' => ListingSort::available($this->query !== null, $this->collectionId !== null),
             'currentSort' => $this->sortOrder(),
         ]);
     }
@@ -273,6 +280,7 @@ final class ProductListing extends Component
             categoryId: $this->categoryId,
             brandId: $this->brandId,
             tagId: $this->tagId,
+            collectionId: $this->collectionId,
             brandIds: array_map(intval(...), $this->brands),
             attributeValueIds: $this->selectedAttributes(),
             minPrice: $this->minPrice === null ? null : Toman::toRial($this->minPrice),

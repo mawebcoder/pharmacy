@@ -38,9 +38,14 @@ final class RolesSeeder extends Seeder
             // S11 Catalog: attributes (with values) and tags.
             'ViewAny:Attribute', 'View:Attribute', 'Create:Attribute', 'Update:Attribute',
             'ViewAny:Tag', 'View:Tag', 'Create:Tag', 'Update:Tag',
+            // S13b Catalog: collections, including «محصولات محبوب».
+            'ViewAny:ProductCollection', 'View:ProductCollection', 'Create:ProductCollection', 'Update:ProductCollection',
             // S12 Search: synonyms and the search insights page.
             'ViewAny:SearchSynonym', 'View:SearchSynonym', 'Create:SearchSynonym', 'Update:SearchSynonym', 'Delete:SearchSynonym',
             'View:SearchInsights',
+            // S13b Content: home page widgets, the banner library and where banners are shown.
+            'ViewAny:HomeWidget', 'View:HomeWidget', 'Create:HomeWidget', 'Update:HomeWidget', 'Delete:HomeWidget',
+            'ViewAny:Banner', 'View:Banner', 'Create:Banner', 'Update:Banner', 'Delete:Banner',
         ],
     ];
 

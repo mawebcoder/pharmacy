@@ -1,15 +1,8 @@
 {{--
-    Site footer (roadmap B8.2, B9.2 item 8): trust block, help links, e-Namad slot.
+    Site footer (roadmap B8.2, B9.2 item 8): trust block (x-layout.trust), help links, e-Namad slot.
     Page links point at the S34 static pages; contact details and badges come from settings in S35.
 --}}
 @php
-    $trust = [
-        ['icon' => 'shield-check', 'title' => 'اصالت کالا', 'text' => 'خرید مستقیم از شرکت‌های پخش معتبر'],
-        ['icon' => 'user-circle', 'title' => 'زیر نظر داروساز', 'text' => 'پاسخ‌گویی داروساز مسئول'],
-        ['icon' => 'truck', 'title' => 'ارسال به سراسر کشور', 'text' => 'تیپاکس و پیک اختصاصی'],
-        ['icon' => 'arrow-path', 'title' => 'ضمانت بازگشت', 'text' => 'هفت روز ضمانت بازگشت کالا'],
-    ];
-
     $columns = [
         'راهنمای خرید' => [
             'شیوه‌های ارسال' => '/pages/shipping',
@@ -33,19 +26,7 @@
 
 <footer class="mt-12 border-t border-line-200 bg-white">
     <div class="mx-auto max-w-7xl px-4 md:px-6 xl:px-8">
-        <ul class="grid grid-cols-2 gap-4 border-b border-line-200 py-8 xl:grid-cols-4">
-            @foreach ($trust as $item)
-                <li class="flex items-start gap-3">
-                    <span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary-50 text-primary-700">
-                        <x-ts-icon :icon="$item['icon']" class="size-6" />
-                    </span>
-                    <span>
-                        <span class="block text-sm font-bold text-ink-900">{{ $item['title'] }}</span>
-                        <span class="block text-xs text-ink-500">{{ $item['text'] }}</span>
-                    </span>
-                </li>
-            @endforeach
-        </ul>
+        <x-layout.trust class="border-b border-line-200 py-8" />
 
         <div class="grid gap-8 py-8 md:grid-cols-4">
             @foreach ($columns as $title => $links)

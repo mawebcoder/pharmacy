@@ -15,6 +15,7 @@ enum ListingSort: string implements HasLabel
     use LabelledEnum;
 
     case Relevant = 'relevant';
+    case Featured = 'featured';
     case BestSelling = 'best_selling';
     case Newest = 'newest';
     case Cheapest = 'cheapest';
@@ -25,6 +26,7 @@ enum ListingSort: string implements HasLabel
     {
         return match ($this) {
             self::Relevant => 'مرتبط‌ترین',
+            self::Featured => 'پیشنهادی',
             self::BestSelling => 'پرفروش‌ترین',
             self::Newest => 'جدیدترین',
             self::Cheapest => 'ارزان‌ترین',
@@ -42,6 +44,8 @@ enum ListingSort: string implements HasLabel
     {
         return match ($this) {
             self::Relevant => [],
+            // The collection's own order, applied by ProductListing after the search.
+            self::Featured => [],
             // sales_30d is 0 until orders exist (S20), so newest decides.
             self::BestSelling => ['sales_30d:desc', 'created_at:desc'],
             self::Newest => ['created_at:desc'],
@@ -52,12 +56,16 @@ enum ListingSort: string implements HasLabel
     }
 
     /**
-     * The orders a list offers: relevance only when a text is searched.
+     * The orders a list offers: relevance only when a text is searched, the admin's order only on a collection.
      *
      * @return list<self>
      */
-    public static function available(bool $isSearch): array
+    public static function available(bool $isSearch, bool $isCollection = false): array
     {
-        return array_values(array_filter(self::cases(), fn (self $sort): bool => $isSearch || $sort !== self::Relevant));
+        return array_values(array_filter(self::cases(), fn (self $sort): bool => match ($sort) {
+            self::Relevant => $isSearch,
+            self::Featured => $isCollection,
+            default => true,
+        }));
     }
 }

@@ -40,6 +40,11 @@ final class ProductChangeRefused extends RuntimeException
         return new self('این تنها تنوع فعال یک محصول فعال است. ابتدا محصول را غیرفعال کنید یا تنوع فعال دیگری اضافه کنید.');
     }
 
+    public static function lastVariant(): self
+    {
+        return new self('هر محصول دست‌کم یک تنوع دارد؛ آخرین تنوع را نمی‌توان حذف کرد. به‌جای آن، تنوع را ویرایش یا غیرفعال کنید.');
+    }
+
     public static function defaultVariantNotUsable(): self
     {
         return new self('فقط یک تنوع فعال از همین محصول می‌تواند SKU پیش‌فرض باشد.');

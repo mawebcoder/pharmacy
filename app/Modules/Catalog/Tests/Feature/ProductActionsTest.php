@@ -65,7 +65,7 @@ function readyProduct(array $state = []): Product
 }
 
 describe('creating', function (): void {
-    it('creates a draft product with its extra categories and a slug from the English name', function (): void {
+    it('creates a draft product with its first SKU, its extra categories and a slug from the English name', function (): void {
         $brand = Brand::factory()->create();
         [$primary, $extra] = Category::factory()->count(2)->create();
 
@@ -76,12 +76,29 @@ describe('creating', function (): void {
             Product::COLUMN_PRIMARY_CATEGORY_ID => $primary->getId(),
             'category_ids' => [$extra->getId()],
             Product::COLUMN_PRODUCT_TYPE => 'cosmetic',
-        ]));
+        ]), variantData());
 
         expect($product)
             ->getSlug()->toBe('urearepair-plus-10-cream')
             ->getStatus()->toBe(ProductStatus::Draft)
+            ->getDefaultVariantId()->toBe($product->variants()->sole()->getId())
+            ->and($product->variants()->sole()->getPrice())->toBe(4_600_000)
             ->and($product->categories()->pluck('categories.id')->all())->toBe([$extra->getId()]);
+    });
+
+    it('creates nothing when the first SKU breaks a price rule', function (): void {
+        $data = ProductData::fromArray([
+            Product::COLUMN_NAME_FA => 'استامینوفن ۵۰۰',
+            Product::COLUMN_BRAND_ID => Brand::factory()->create()->getId(),
+            Product::COLUMN_PRIMARY_CATEGORY_ID => Category::factory()->create()->getId(),
+            Product::COLUMN_PRODUCT_TYPE => 'otc',
+        ]);
+
+        expect(fn () => app(CreateProduct::class)($data, variantData([ProductVariant::COLUMN_OFFICIAL_PRICE => null])))
+            ->toThrow(ProductChangeRefused::class);
+
+        expect(Product::withTrashed()->count())->toBe(0)
+            ->and(ProductVariant::withTrashed()->count())->toBe(0);
     });
 
     it('always needs a prescription for a prescription medicine', function (): void {
@@ -184,6 +201,16 @@ describe('variants', function (): void {
         'in 30 days' => ['30', true],
         'in 200 days' => ['200', false],
     ]);
+
+    it('keeps the last variant of a draft product', function (): void {
+        $product = Product::factory()->withVariants()->create();
+        $variant = $product->variants()->sole();
+
+        expect(fn () => app(DeleteProductVariant::class)($variant))
+            ->toThrow(ProductChangeRefused::class, 'آخرین تنوع');
+
+        expect($variant->fresh()->trashed())->toBeFalse();
+    });
 
     it('keeps the last active variant of an active product', function (): void {
         $product = readyProduct([Product::COLUMN_STATUS => ProductStatus::Active]);

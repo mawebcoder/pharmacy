@@ -31,6 +31,8 @@ new class extends Component
         </ol>
     </nav>
 
+    <x-content::banners place="tag" :place-id="$tag->getId()" :priority="true" />
+
     <header class="flex items-center gap-4">
         @if ($tag->getIcon())
             <span class="grid size-16 shrink-0 place-items-center rounded-card bg-primary-50">

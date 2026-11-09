@@ -5,7 +5,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 use Livewire\Component;
 
 /**
- * Product page (roadmap B5 /p/{slug}): a simple version so lists can link here (decided 2026-11-07 in S12) —
+ * Product page (roadmap B5 /products/{slug}): a simple version so lists can link here (decided 2026-11-07 in S12) —
  * breadcrumb, photos, brand, name, short description, variants with price and stock. S13 builds the full page
  * (gallery zoom, variant picker, tabs, FAQ, related, add to cart in S19). Only active products are shown.
  */

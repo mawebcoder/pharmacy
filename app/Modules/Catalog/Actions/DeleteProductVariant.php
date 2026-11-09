@@ -10,7 +10,8 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Search\ProductSearchIndex;
 
 /**
- * Moves a variant to the trash, unless it is the last active variant of an active product.
+ * Moves a variant to the trash, unless it is the product's last variant (every product keeps one, S13b) or the last
+ * active variant of an active product.
  */
 final class DeleteProductVariant
 {
@@ -20,6 +21,10 @@ final class DeleteProductVariant
     public function __invoke(ProductVariant $variant): void
     {
         $product = $variant->getProduct();
+
+        if ($product instanceof Product && ! $product->variants()->whereKeyNot($variant->getId())->exists()) {
+            throw ProductChangeRefused::lastVariant();
+        }
 
         if ($product instanceof Product && $variant->isActive()) {
             self::assertNotLastActive($product, $variant);

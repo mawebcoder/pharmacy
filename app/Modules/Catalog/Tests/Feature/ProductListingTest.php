@@ -230,7 +230,7 @@ it('renders a listing page in a fixed number of queries', function (int $product
     indexProductsForSearch();
 
     DB::enableQueryLog();
-    $this->get('/c/skin')->assertOk()->assertSee("محصول {$products}");
+    $this->get('/categories/skin')->assertOk()->assertSee("محصول {$products}");
     $queries = count(DB::getQueryLog());
 
     expect($queries)->toBeLessThan(40);

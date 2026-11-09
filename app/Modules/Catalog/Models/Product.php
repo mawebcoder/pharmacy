@@ -28,7 +28,7 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A product (roadmap D3.1). What customers buy are its variants; photos are the "gallery" image collection.
- * Shown on the storefront at /p/{slug} while active (S13).
+ * Shown on the storefront at /products/{slug} while active (S13).
  */
 final class Product extends Model implements HasActivityLogLabel, HasImagePresets
 {
@@ -493,6 +493,22 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function getTags(): Collection
     {
         return $this->getRelationValue('tags');
+    }
+
+    /**
+     * @return BelongsToMany<ProductCollection, $this>
+     */
+    public function collections(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductCollection::class, 'collection_product', 'product_id', 'collection_id');
+    }
+
+    /**
+     * @return Collection<int, ProductCollection>
+     */
+    public function getCollections(): Collection
+    {
+        return $this->getRelationValue('collections');
     }
 
     /**

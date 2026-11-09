@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Search;
 use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Shared\Support\SearchText;
@@ -24,7 +25,7 @@ final class ProductDocument
      * Relations a document needs; load them for many products at once (Product::makeSearchableUsing).
      */
     public const array RELATIONS = [
-        'brand', 'primaryCategory.parent.parent', 'categories.parent.parent', 'tags', 'attributeValues', 'variants',
+        'brand', 'primaryCategory.parent.parent', 'categories.parent.parent', 'tags', 'attributeValues', 'variants', 'collections',
     ];
 
     /**
@@ -56,6 +57,7 @@ final class ProductDocument
             'brand_en' => SearchText::normalize((string) $product->getBrand()?->getNameEn()),
             'category_ids' => array_values(array_unique($categoryIds)),
             'category_names' => array_values(array_unique(array_map(SearchText::forIndex(...), $categoryNames))),
+            'collection_ids' => $product->getCollections()->map(fn (ProductCollection $collection): int => $collection->getId())->values()->all(),
             'tag_ids' => $product->getTags()->map(fn (Tag $tag): int => $tag->getId())->values()->all(),
             'tags' => $product->getTags()->map(fn (Tag $tag): string => SearchText::forIndex($tag->getNameFa().' '.$tag->getNameEn()))->values()->all(),
             'attribute_value_ids' => $product->getAttributeValues()->map(fn (AttributeValue $value): int => $value->getId())->values()->all(),
@@ -112,7 +114,7 @@ final class ProductDocument
     {
         return [
             'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'category_names', 'attribute_values', 'ingredients', 'codes'],
-            'filterableAttributes' => ['category_ids', 'brand_id', 'tag_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
+            'filterableAttributes' => ['category_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
             'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
             'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [

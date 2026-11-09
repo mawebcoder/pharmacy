@@ -201,8 +201,7 @@ return [
     'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
-            // "search": Scout's Meilisearch indexing jobs (S12).
-            'queue' => ['default', 'search'],
+            'queue' => ['default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
@@ -213,6 +212,21 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
+        // "search": Scout's Meilisearch indexing jobs (S12). One process, so the updates of a product reach
+        // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S13b).
+        'supervisor-search' => [
+            'connection' => 'redis',
+            'queue' => ['search'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 60,
+            'nice' => 0,
+        ],
+
         // Image processing (roadmap D9, S09): slow jobs (AVIF encoding) on their own workers and timeout.
         'supervisor-media' => [
             'connection' => 'redis',

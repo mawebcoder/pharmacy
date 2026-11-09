@@ -7,6 +7,7 @@ use App\Modules\Catalog\Filament\Resources\Products\Pages\CreateProduct;
 use App\Modules\Catalog\Filament\Resources\Products\Pages\EditProduct;
 use App\Modules\Catalog\Filament\Resources\Products\Pages\ListProducts;
 use App\Modules\Catalog\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
+use App\Modules\Catalog\Filament\Resources\Products\Schemas\ProductForm;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
@@ -34,7 +35,7 @@ describe('as a content editor', function (): void {
         $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::ContentEditor)->create(), 'admin');
     });
 
-    it('creates a draft product and continues on its edit page', function (): void {
+    it('creates a draft product with its first SKU and continues on its edit page', function (): void {
         $brand = Brand::factory()->create();
         $category = Category::factory()->create();
 
@@ -45,12 +46,35 @@ describe('as a content editor', function (): void {
                 Product::COLUMN_BRAND_ID => $brand->getId(),
                 Product::COLUMN_PRIMARY_CATEGORY_ID => $category->getId(),
                 Product::COLUMN_PRODUCT_TYPE => 'cosmetic',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => '۵۰ میلی‌لیتر',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_PRICE => '485,000',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_STOCK_STATUS => 'available',
             ])
             ->call('create')
             ->assertHasNoFormErrors()
             ->assertRedirect(EditProduct::getUrl(['record' => 'moisturising-cream']));
 
-        expect(Product::query()->sole()->getStatus())->toBe(ProductStatus::Draft);
+        $product = Product::query()->sole();
+        expect($product->getStatus())->toBe(ProductStatus::Draft)
+            ->and($product->variants()->sole())
+            ->getTitleFa()->toBe('۵۰ میلی‌لیتر')
+            ->getPrice()->toBe(4_850_000);
+    });
+
+    it('asks for the first SKU on create', function (): void {
+        livewire(CreateProduct::class)
+            ->fillForm([
+                Product::COLUMN_NAME_FA => 'کرم مرطوب‌کننده',
+                Product::COLUMN_BRAND_ID => Brand::factory()->create()->getId(),
+                Product::COLUMN_PRIMARY_CATEGORY_ID => Category::factory()->create()->getId(),
+            ])
+            ->call('create')
+            ->assertHasFormErrors([
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => 'required',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_PRICE => 'required',
+            ]);
+
+        expect(Product::query()->count())->toBe(0);
     });
 
     it('adds two variants with prices typed in toman', function (): void {

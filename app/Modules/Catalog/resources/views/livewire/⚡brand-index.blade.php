@@ -26,6 +26,8 @@ new #[Title('برندها')] class extends Component
 @use('App\Modules\Shared\Support\PersianDigits')
 
 <div class="space-y-6">
+    <x-content::banners place="brands_list" :priority="true" />
+
     <header class="space-y-1">
         <h1 class="text-2xl font-bold text-ink-900 xl:text-3xl">برندها</h1>
         <p class="text-sm text-ink-500">

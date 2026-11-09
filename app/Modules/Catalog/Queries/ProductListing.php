@@ -14,11 +14,13 @@ use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Shared\Support\SearchText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Meilisearch\Client;
 use Meilisearch\Contracts\SearchQuery;
@@ -39,6 +41,11 @@ final readonly class ProductListing
      * Relations product cards need.
      */
     public const array CARD_RELATIONS = ['brand', 'media', 'variants'];
+
+    /**
+     * Most products a collection page can order by the collection (Meilisearch's maxTotalHits).
+     */
+    private const int COLLECTION_ORDER_LIMIT = 2000;
 
     public function __construct(private Client $meilisearch) {}
 
@@ -63,6 +70,7 @@ final readonly class ProductListing
         $text = $criteria->isSearch() ? SearchText::normalize((string) $criteria->query) : '';
         $groups = $this->filterGroups($criteria);
         $sort = $criteria->sort === ListingSort::Relevant && $text === '' ? ListingSort::Newest : $criteria->sort;
+        $collectionOrder = $sort === ListingSort::Featured && $criteria->collectionId !== null;
 
         $queries = [
             (new SearchQuery)
@@ -71,10 +79,12 @@ final readonly class ProductListing
                 ->setFilter($this->filtersExcept($criteria, $groups, null))
                 ->setFacets(['brand_id', 'attribute_value_ids', 'price', 'in_stock', 'is_near_expiry', 'is_damaged_box'])
                 ->setSort($sort->meilisearchSort())
-                ->setPage(max(1, $criteria->page))
-                ->setHitsPerPage(max(1, $criteria->perPage))
                 ->setAttributesToRetrieve(['id']),
         ];
+        // The collection's order is not in the index: take every match (collections are small) and page here.
+        $collectionOrder
+            ? $queries[0]->setLimit(self::COLLECTION_ORDER_LIMIT)->setOffset(0)
+            : $queries[0]->setPage(max(1, $criteria->page))->setHitsPerPage(max(1, $criteria->perPage));
         $facetQueryFor = [];
 
         foreach (array_keys($groups) as $group) {
@@ -87,17 +97,25 @@ final readonly class ProductListing
                 ->setLimit(0);
         }
 
-        /** @var array{results: list<array{hits: list<array{id: int}>, totalHits?: int, facetDistribution?: array<string, array<string, int>>, facetStats?: array<string, array{min: float, max: float}>}>} $response */
+        /** @var array{results: list<array{hits: list<array{id: int}>, totalHits?: int, estimatedTotalHits?: int, facetDistribution?: array<string, array<string, int>>, facetStats?: array<string, array{min: float, max: float}>}>} $response */
         $response = $this->meilisearch->multiSearch($queries);
         $results = $response['results'];
         $main = $results[0];
         $distributionFor = fn (string $group, string $facet): array => $results[$facetQueryFor[$group] ?? 0]['facetDistribution'][$facet] ?? $main['facetDistribution'][$facet] ?? [];
 
         $ids = array_map(fn (array $hit): int => (int) $hit['id'], $main['hits']);
+        $total = (int) ($main['totalHits'] ?? $main['estimatedTotalHits'] ?? count($ids));
+
+        if ($collectionOrder) {
+            $ids = $this->inCollectionOrder((int) $criteria->collectionId, $ids);
+            $total = count($ids);
+            $ids = array_slice($ids, (max(1, $criteria->page) - 1) * $criteria->perPage, $criteria->perPage);
+        }
+
         $priceStats = $results[$facetQueryFor['price'] ?? 0]['facetStats']['price'] ?? null;
 
         return new ListingResult(
-            products: $this->page($ids, (int) ($main['totalHits'] ?? count($ids)), $criteria),
+            products: $this->page($ids, $total, $criteria),
             facets: [
                 ...$this->brandFacet($criteria, $distributionFor('brand', 'brand_id')),
                 ...$this->attributeFacets($criteria, fn (string $code): array => $distributionFor('attribute:'.$code, 'attribute_value_ids')),
@@ -155,6 +173,7 @@ final readonly class ProductListing
             $criteria->categoryId === null ? null : 'category_ids = '.$criteria->categoryId,
             $criteria->brandId === null ? null : 'brand_id = '.$criteria->brandId,
             $criteria->tagId === null ? null : 'tag_ids = '.$criteria->tagId,
+            $criteria->collectionId === null ? null : 'collection_ids = '.$criteria->collectionId,
             $criteria->inStock ? 'in_stock = true' : null,
             $criteria->minDiscount === null ? null : 'discount_pct >= '.$criteria->minDiscount,
             $criteria->nearExpiry ? 'is_near_expiry = true' : null,
@@ -226,6 +245,27 @@ final readonly class ProductListing
     }
 
     /**
+     * Matching product ids in the collection's order (the admin's order, then id).
+     *
+     * @param  list<int>  $ids
+     * @return list<int>
+     */
+    private function inCollectionOrder(int $collectionId, array $ids): array
+    {
+        /** @var list<int> $ordered */
+        $ordered = DB::table('collection_product')
+            ->where('collection_id', $collectionId)
+            ->whereIn('product_id', $ids)
+            ->orderBy('sort')
+            ->orderBy('product_id')
+            ->pluck('product_id')
+            ->map(intval(...))
+            ->all();
+
+        return $ordered;
+    }
+
+    /**
      * @param  list<int>  $ids  in the order Meilisearch returned them
      * @return LengthAwarePaginator<int, Product>
      */
@@ -253,7 +293,14 @@ final readonly class ProductListing
             ->when($criteria->brandId !== null, fn (Builder $query) => $query->where(Product::COLUMN_BRAND_ID, $criteria->brandId))
             ->when($criteria->brandIds !== [], fn (Builder $query) => $query->whereIn(Product::COLUMN_BRAND_ID, $criteria->brandIds))
             ->when($criteria->tagId !== null, fn (Builder $query) => $query->whereHas('tags', fn (Builder $tags) => $tags->whereKey($criteria->tagId)))
+            ->when($criteria->collectionId !== null, fn (Builder $query) => $query->whereHas('collections', fn (Builder $collections) => $collections->whereKey($criteria->collectionId)))
             ->when($criteria->isSearch() && $degraded, fn (Builder $query) => $query->whereRaw('1 = 0'))
+            ->when($criteria->collectionId !== null && $criteria->sort === ListingSort::Featured, fn (Builder $query) => $query->orderBy(
+                DB::table('collection_product')
+                    ->select(ProductCollection::PIVOT_SORT)
+                    ->where('collection_id', $criteria->collectionId)
+                    ->whereColumn('product_id', 'products.id'),
+            ))
             ->orderByDesc(Product::COLUMN_CREATED_AT)
             ->orderByDesc(Product::COLUMN_ID);
 

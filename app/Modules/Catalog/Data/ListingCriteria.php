@@ -21,6 +21,7 @@ final readonly class ListingCriteria
         public ?int $categoryId = null,
         public ?int $brandId = null,
         public ?int $tagId = null,
+        public ?int $collectionId = null,
         public array $brandIds = [],
         public array $attributeValueIds = [],
         public ?int $minPrice = null,

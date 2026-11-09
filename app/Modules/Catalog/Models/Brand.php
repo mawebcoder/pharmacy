@@ -20,7 +20,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A product brand (roadmap D3.1). Shown on the storefront at /b/{slug} while active.
+ * A product brand (roadmap D3.1). Shown on the storefront at /brands/{slug} while active.
  */
 final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
 {

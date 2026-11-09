@@ -4,8 +4,11 @@ declare(strict_types=1);
 use App\Modules\Catalog\Filament\Resources\Attributes\AttributeResource;
 use App\Modules\Catalog\Filament\Resources\Brands\BrandResource;
 use App\Modules\Catalog\Filament\Resources\Categories\CategoryResource;
+use App\Modules\Catalog\Filament\Resources\Collections\CollectionResource;
 use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
 use App\Modules\Catalog\Filament\Resources\Tags\TagResource;
+use App\Modules\Content\Filament\Resources\Banners\BannerResource;
+use App\Modules\Content\Filament\Resources\HomeWidgets\HomeWidgetResource;
 use App\Modules\Identity\Filament\Resources\AdminUsers\AdminUserResource;
 use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
 use App\Modules\Identity\Models\AdminUser;
@@ -237,6 +240,14 @@ return [
                 'delete',
                 'restore',
             ],
+            CollectionResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
+                'restore',
+            ],
             TagResource::class => [
                 'viewAny',
                 'view',
@@ -244,6 +255,21 @@ return [
                 'update',
                 'delete',
                 'restore',
+            ],
+            BannerResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
+                'restore',
+            ],
+            HomeWidgetResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
             ],
             SearchSynonymResource::class => [
                 'viewAny',

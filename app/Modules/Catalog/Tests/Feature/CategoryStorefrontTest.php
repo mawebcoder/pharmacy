@@ -10,7 +10,7 @@ it('shows the category page with breadcrumbs and active subcategories', function
     Category::factory()->childOf($vitamins)->create([Category::COLUMN_NAME_FA => 'ویتامین D']);
     Category::factory()->childOf($vitamins)->inactive()->create([Category::COLUMN_NAME_FA => 'ویتامین غیرفعال']);
 
-    $this->get('/c/vitamins')
+    $this->get('/categories/vitamins')
         ->assertOk()
         ->assertSeeInOrder(['خانه', 'مکمل‌ها', 'ویتامین‌ها', 'ویتامین D'])
         ->assertDontSee('ویتامین غیرفعال');
@@ -19,7 +19,7 @@ it('shows the category page with breadcrumbs and active subcategories', function
 it('does not show hidden or unknown categories', function (Closure $makeCategory): void {
     $makeCategory();
 
-    $this->get('/c/vitamins')->assertNotFound();
+    $this->get('/categories/vitamins')->assertNotFound();
 })->with([
     'inactive' => [fn () => Category::factory()->inactive()->create([Category::COLUMN_SLUG => 'vitamins'])],
     'under an inactive parent' => [fn () => Category::factory()->childOf(Category::factory()->inactive()->create())->create([Category::COLUMN_SLUG => 'vitamins'])],

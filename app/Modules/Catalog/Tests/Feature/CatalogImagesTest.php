@@ -67,7 +67,7 @@ describe('storefront', function (): void {
         $logo = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 400))->fresh();
 
         $this->get(route('brands.index'))->assertOk()->assertSee($logo->url(320, 'webp'), escape: false);
-        $this->get('/b/eucerin')->assertOk()->assertSee($logo->url(320, 'webp'), escape: false)->assertSee('fetchpriority="high"', escape: false);
+        $this->get('/brands/eucerin')->assertOk()->assertSee($logo->url(320, 'webp'), escape: false)->assertSee('fetchpriority="high"', escape: false);
     });
 
     it('shows the category banner and subcategory icons on the category page', function (): void {
@@ -76,7 +76,7 @@ describe('storefront', function (): void {
         $banner = app(AttachImage::class)($category, Category::IMAGE_BANNER_DESKTOP, testImage(1920, 480, 'jpg'))->fresh();
         $icon = app(AttachImage::class)($child, Category::IMAGE_ICON, testImage(256, 256))->fresh();
 
-        $this->get('/c/supplements')
+        $this->get('/categories/supplements')
             ->assertOk()
             ->assertSee($banner->url(1920, 'jpg'), escape: false)
             ->assertSee($icon->url(96, 'webp'), escape: false);
