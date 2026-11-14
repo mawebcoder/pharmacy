@@ -9,7 +9,6 @@ use App\Modules\Locations\Actions\SetCityDelivery;
 use App\Modules\Locations\Data\CityDeliveryData;
 use App\Modules\Locations\Filament\Resources\Cities\Pages\ListCities;
 use App\Modules\Locations\Models\City;
-use App\Modules\Locations\Models\County;
 use App\Modules\Locations\Models\Province;
 use Filament\Facades\Filament;
 use Spatie\Activitylog\Models\Activity;
@@ -40,7 +39,7 @@ describe('cities admin page', function (): void {
         $city = City::factory()->create([City::COLUMN_NAME_FA => 'تجریش']);
         $this->actingAs($operator, 'admin');
 
-        $this->get('/admin/cities')->assertOk()->assertSee('تجریش')->assertSee('GeoNames');
+        $this->get('/admin/cities')->assertOk()->assertSee('تجریش')->assertSee('فهرست تیپاکس');
 
         livewire(ListCities::class)
             ->call('updateTableColumnState', City::COLUMN_IS_DELIVERY_ENABLED, (string) $city->getKey(), true);
@@ -58,17 +57,15 @@ describe('cities admin page', function (): void {
         expect(City::deliveryEnabled()->count())->toBe(3);
     });
 
-    it('finds cities by city, county or province name', function (string $search, array $expected): void {
+    it('finds cities by city name, province name or Tipax id', function (string $search, array $expected): void {
         $operator = AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::Operator)->create();
         $this->actingAs($operator, 'admin');
-        $tehranProvince = Province::factory()->create([Province::COLUMN_NAME_FA => 'تهران']);
-        $markaziProvince = Province::factory()->create([Province::COLUMN_NAME_FA => 'مرکزی']);
-        $shemiranat = County::factory()->for($tehranProvince)->create([County::COLUMN_NAME_FA => 'شمیرانات']);
-        $arak = County::factory()->for($markaziProvince)->create([County::COLUMN_NAME_FA => 'اراک']);
+        $tehran = Province::factory()->create([Province::COLUMN_NAME_FA => 'تهران']);
+        $markazi = Province::factory()->create([Province::COLUMN_NAME_FA => 'مرکزی']);
         $cities = [
-            'تجریش' => City::factory()->for($shemiranat)->create([City::COLUMN_NAME_FA => 'تجریش']),
-            'اراک' => City::factory()->for($arak)->create([City::COLUMN_NAME_FA => 'اراک']),
-            'داودآباد' => City::factory()->for($arak)->create([City::COLUMN_NAME_FA => 'داودآباد']),
+            'تجریش' => City::factory()->for($tehran)->create([City::COLUMN_ID => 112, City::COLUMN_NAME_FA => 'تجریش']),
+            'اراک' => City::factory()->for($markazi)->create([City::COLUMN_ID => 85, City::COLUMN_NAME_FA => 'اراک']),
+            'داودآباد' => City::factory()->for($markazi)->create([City::COLUMN_ID => 140, City::COLUMN_NAME_FA => 'داودآباد']),
         ];
 
         livewire(ListCities::class)
@@ -77,8 +74,8 @@ describe('cities admin page', function (): void {
             ->assertCanNotSeeTableRecords(array_values(array_diff_key($cities, array_flip($expected))));
     })->with([
         'by city' => ['تجریش', ['تجریش']],
-        'by county' => ['شمیرانات', ['تجریش']],
         'by province' => ['مرکزی', ['اراک', 'داودآباد']],
+        'by Tipax id' => ['140', ['داودآباد']],
     ]);
 
     it('forbids content editors from the cities page', function (): void {

@@ -14,7 +14,8 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * An Iranian province (استان), imported from the location dataset (roadmap D4).
+ * A province (Tipax «state»): the id is Tipax's stateId. Created by `locations:import-tipax` from Tipax's city list
+ * (roadmap D4, decided 2026-11-14 in S18).
  */
 final class Province extends Model
 {
@@ -27,15 +28,14 @@ final class Province extends Model
 
     public const string COLUMN_NAME_FA = 'name_fa';
 
-    public const string COLUMN_SLUG = 'slug';
-
-    public const string COLUMN_TEL_PREFIX = 'tel_prefix';
-
-    public const string COLUMN_SOURCE_ID = 'source_id';
-
     public const string COLUMN_CREATED_AT = 'created_at';
 
     public const string COLUMN_UPDATED_AT = 'updated_at';
+
+    /**
+     * Ids are Tipax's stateId, set on import.
+     */
+    public $incrementing = false;
 
     public function getId(): int
     {
@@ -52,38 +52,6 @@ final class Province extends Model
         return $this->setAttribute(self::COLUMN_NAME_FA, $nameFa);
     }
 
-    public function getSlug(): string
-    {
-        return (string) $this->getAttribute(self::COLUMN_SLUG);
-    }
-
-    public function setSlug(string $slug): static
-    {
-        return $this->setAttribute(self::COLUMN_SLUG, $slug);
-    }
-
-    public function getTelPrefix(): ?string
-    {
-        $value = $this->getAttribute(self::COLUMN_TEL_PREFIX);
-
-        return $value === null ? null : (string) $value;
-    }
-
-    public function setTelPrefix(?string $telPrefix): static
-    {
-        return $this->setAttribute(self::COLUMN_TEL_PREFIX, $telPrefix);
-    }
-
-    public function getSourceId(): int
-    {
-        return (int) $this->getAttribute(self::COLUMN_SOURCE_ID);
-    }
-
-    public function setSourceId(int $sourceId): static
-    {
-        return $this->setAttribute(self::COLUMN_SOURCE_ID, $sourceId);
-    }
-
     public function getCreatedAt(): ?Carbon
     {
         return $this->getAttribute(self::COLUMN_CREATED_AT);
@@ -92,22 +60,6 @@ final class Province extends Model
     public function getUpdatedAt(): ?Carbon
     {
         return $this->getAttribute(self::COLUMN_UPDATED_AT);
-    }
-
-    /**
-     * @return HasMany<County, $this>
-     */
-    public function counties(): HasMany
-    {
-        return $this->hasMany(County::class, County::COLUMN_PROVINCE_ID);
-    }
-
-    /**
-     * @return Collection<int, County>
-     */
-    public function getCounties(): Collection
-    {
-        return $this->getRelationValue('counties');
     }
 
     /**

@@ -24,7 +24,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S15b | Commission per supplier and preferred supplier | done | 2026-11-15 | 31207e0 |
 | S16 | Price import | done | 2026-11-14 | 15c24fa |
 | S17 | Customer OTP auth | done | 2026-11-14 | df4164e |
-| S18 | Addresses and account area | todo | | |
+| S18 | Addresses and account area | in progress | 2026-11-14 | |
 | S19 | Cart | todo | | |
 | S20 | Coupons | todo | | |
 | S21 | Shipping foundation | todo | | |

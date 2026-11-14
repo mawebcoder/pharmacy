@@ -72,7 +72,10 @@ new class extends Component
             @if ($product->getBrand())
                 <a href="{{ route('brands.show', $product->getBrand()) }}" wire:navigate class="text-sm text-primary-700 hover:underline">{{ $product->getBrand()->getNameFa() }}</a>
             @endif
-            <h1 class="text-xl leading-9 font-bold text-ink-900 xl:text-2xl">{{ $product->getNameFa() }}</h1>
+            <div class="flex items-start justify-between gap-3">
+                <h1 class="text-xl leading-9 font-bold text-ink-900 xl:text-2xl">{{ $product->getNameFa() }}</h1>
+                <x-catalog::wishlist-button :product-id="$product->getId()" class="shrink-0 border border-line-200 shadow-none" />
+            </div>
             @if ($product->getNameEn())
                 <p dir="ltr" class="text-end text-sm text-ink-500">{{ $product->getNameEn() }}</p>
             @endif

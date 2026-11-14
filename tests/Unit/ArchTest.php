@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Models\Wishlist;
+use App\Modules\Identity\Models\Address;
 use App\Modules\Identity\Models\OtpCode;
 use App\Modules\Media\Models\Media;
 use App\Modules\Notifications\Models\SmsLog;
@@ -64,8 +66,8 @@ foreach ($modules as $module) {
         ->toUseTrait(LogsActivity::class)
         // Log tables are records themselves; auditing them would log every log row (the price history tables of S14
         // and S15 and the import rows of S16 are such records). Media rows change on every processing step; changes to what an image belongs to
-        // are logged on the owner.
-        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class]);
+        // are logged on the owner. Addresses and wishlists are customers' own rows, written by them, not admin changes.
+        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class]);
 
     arch("{$module} enums have Persian labels")
         ->expect("App\\Modules\\{$module}\\Enums")

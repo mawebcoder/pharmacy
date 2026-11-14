@@ -7,13 +7,13 @@ namespace App\Modules\Locations\Filament\Resources\Cities\Tables;
 use App\Modules\Locations\Actions\SetCityDelivery;
 use App\Modules\Locations\Data\CityDeliveryData;
 use App\Modules\Locations\Models\City;
-use App\Modules\Locations\Models\County;
 use App\Modules\Locations\Models\Province;
 use App\Modules\Shared\Support\PersianDigits;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -27,20 +27,24 @@ final class CitiesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['province', 'county']))
-            ->description((string) config('locations.coordinates_attribution'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('province'))
+            ->description('شهرها و استان‌ها از فهرست تیپاکس می‌آیند (php artisan locations:import-tipax)؛ ارسال را برای شهرهایی که سفارش می‌گیرید فعال کنید.')
             ->columns([
                 TextColumn::make(City::COLUMN_NAME_FA)
                     ->label('شهر')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('county.'.County::COLUMN_NAME_FA)
-                    ->label('شهرستان')
-                    ->searchable(),
                 TextColumn::make('province.'.Province::COLUMN_NAME_FA)
                     ->label('استان')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make(City::COLUMN_ID)
+                    ->label('شناسه تیپاکس')
+                    ->searchable()
+                    ->sortable(),
+                IconColumn::make(City::COLUMN_HAS_TIPAX_BRANCH)
+                    ->label('شعبه تیپاکس')
+                    ->boolean(),
                 ToggleColumn::make(City::COLUMN_IS_DELIVERY_ENABLED)
                     ->label('ارسال فعال')
                     ->disabled(fn (City $record): bool => ! (auth('admin')->user()?->can('update', $record) ?? false))
@@ -56,10 +60,8 @@ final class CitiesTable
                     ->relationship('province', Province::COLUMN_NAME_FA)
                     ->searchable()
                     ->preload(),
-                SelectFilter::make(City::COLUMN_COUNTY_ID)
-                    ->label('شهرستان')
-                    ->relationship('county', County::COLUMN_NAME_FA)
-                    ->searchable(),
+                TernaryFilter::make(City::COLUMN_HAS_TIPAX_BRANCH)
+                    ->label('شعبه تیپاکس'),
                 TernaryFilter::make(City::COLUMN_IS_DELIVERY_ENABLED)
                     ->label('ارسال فعال'),
             ])

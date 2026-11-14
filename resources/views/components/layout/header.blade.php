@@ -28,7 +28,7 @@
                 مشاوره با داروساز
             </a>
             @auth('customer')
-                {{-- Signed-in customer (S17): their name and sign-out; the account area comes with S18. --}}
+                {{-- Signed-in customer (S17): their name, the account area (S18) and sign-out. --}}
                 <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
                     <button
                         type="button"
@@ -50,6 +50,17 @@
                         class="absolute end-0 top-full z-50 mt-2 w-56 rounded-card border border-line-200 bg-white py-2 shadow-lg"
                     >
                         <p class="truncate px-4 pb-2 text-sm font-bold text-ink-900">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</p>
+                        @foreach ([
+                            ['حساب من', 'squares-2x2', route('account')],
+                            ['آدرس‌ها', 'map-pin', route('account.addresses')],
+                            ['علاقه‌مندی‌ها', 'heart', route('account.wishlist')],
+                            ['اطلاعات حساب', 'user', route('account.profile')],
+                        ] as [$label, $icon, $href])
+                            <a href="{{ $href }}" wire:navigate role="menuitem" class="flex min-h-11 items-center gap-2 px-4 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700">
+                                <x-ts-icon :icon="$icon" class="size-5 text-ink-500" />
+                                {{ $label }}
+                            </a>
+                        @endforeach
                         <form method="POST" action="{{ route('logout') }}" class="border-t border-line-200 pt-1">
                             @csrf
                             <button type="submit" role="menuitem" class="flex min-h-11 w-full items-center gap-2 px-4 text-sm text-danger-600 hover:bg-surface-50">

@@ -5,20 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Locations\Models;
 
 use App\Modules\Locations\Database\Factories\CityFactory;
-use App\Modules\Locations\Enums\CityType;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A city. Coordinates are the county centre from GeoNames when known; delivery is switched on by admins (roadmap D4).
+ * A Tipax city (roadmap D4, decided 2026-11-14 in S18): the id is Tipax's city id, so addresses and shipments use it
+ * as is. Imported by `locations:import-tipax`; admins switch delivery on per city («ارسال فعال», S05).
  */
 final class City extends Model implements HasActivityLogLabel
 {
@@ -31,29 +29,38 @@ final class City extends Model implements HasActivityLogLabel
 
     public const string COLUMN_PROVINCE_ID = 'province_id';
 
-    public const string COLUMN_COUNTY_ID = 'county_id';
-
     public const string COLUMN_NAME_FA = 'name_fa';
-
-    public const string COLUMN_SLUG = 'slug';
-
-    public const string COLUMN_TYPE = 'type';
 
     public const string COLUMN_LATITUDE = 'latitude';
 
     public const string COLUMN_LONGITUDE = 'longitude';
 
+    public const string COLUMN_HAS_TIPAX_BRANCH = 'has_tipax_branch';
+
     public const string COLUMN_IS_DELIVERY_ENABLED = 'is_delivery_enabled';
 
-    public const string COLUMN_SOURCE_ID = 'source_id';
+    public const string COLUMN_TIPAX_SYNCED_AT = 'tipax_synced_at';
 
     public const string COLUMN_CREATED_AT = 'created_at';
 
     public const string COLUMN_UPDATED_AT = 'updated_at';
 
+    /**
+     * Ids are Tipax's, set on import.
+     */
+    public $incrementing = false;
+
     public function getId(): int
     {
         return (int) $this->getAttribute(self::COLUMN_ID);
+    }
+
+    /**
+     * Tipax's city id (the same as the id).
+     */
+    public function setId(int $tipaxCityId): static
+    {
+        return $this->setAttribute(self::COLUMN_ID, $tipaxCityId);
     }
 
     public function getProvinceId(): int
@@ -66,16 +73,6 @@ final class City extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_PROVINCE_ID, $provinceId);
     }
 
-    public function getCountyId(): int
-    {
-        return (int) $this->getAttribute(self::COLUMN_COUNTY_ID);
-    }
-
-    public function setCountyId(int $countyId): static
-    {
-        return $this->setAttribute(self::COLUMN_COUNTY_ID, $countyId);
-    }
-
     public function getNameFa(): string
     {
         return (string) $this->getAttribute(self::COLUMN_NAME_FA);
@@ -86,44 +83,33 @@ final class City extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_NAME_FA, $nameFa);
     }
 
-    public function getSlug(): string
-    {
-        return (string) $this->getAttribute(self::COLUMN_SLUG);
-    }
-
-    public function setSlug(string $slug): static
-    {
-        return $this->setAttribute(self::COLUMN_SLUG, $slug);
-    }
-
-    public function getType(): CityType
-    {
-        return $this->getAttribute(self::COLUMN_TYPE);
-    }
-
-    public function setType(CityType $type): static
-    {
-        return $this->setAttribute(self::COLUMN_TYPE, $type);
-    }
-
     public function getLatitude(): ?float
     {
-        return $this->getAttribute(self::COLUMN_LATITUDE);
-    }
+        $value = $this->getAttribute(self::COLUMN_LATITUDE);
 
-    public function setLatitude(?float $latitude): static
-    {
-        return $this->setAttribute(self::COLUMN_LATITUDE, $latitude);
+        return $value === null ? null : (float) $value;
     }
 
     public function getLongitude(): ?float
     {
-        return $this->getAttribute(self::COLUMN_LONGITUDE);
+        $value = $this->getAttribute(self::COLUMN_LONGITUDE);
+
+        return $value === null ? null : (float) $value;
     }
 
-    public function setLongitude(?float $longitude): static
+    public function hasTipaxBranch(): bool
     {
-        return $this->setAttribute(self::COLUMN_LONGITUDE, $longitude);
+        return (bool) $this->getAttribute(self::COLUMN_HAS_TIPAX_BRANCH);
+    }
+
+    public function getHasTipaxBranch(): bool
+    {
+        return $this->hasTipaxBranch();
+    }
+
+    public function setHasTipaxBranch(bool $hasBranch): static
+    {
+        return $this->setAttribute(self::COLUMN_HAS_TIPAX_BRANCH, $hasBranch);
     }
 
     public function isDeliveryEnabled(): bool
@@ -141,14 +127,14 @@ final class City extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_IS_DELIVERY_ENABLED, $isDeliveryEnabled);
     }
 
-    public function getSourceId(): int
+    public function getTipaxSyncedAt(): ?Carbon
     {
-        return (int) $this->getAttribute(self::COLUMN_SOURCE_ID);
+        return $this->getAttribute(self::COLUMN_TIPAX_SYNCED_AT);
     }
 
-    public function setSourceId(int $sourceId): static
+    public function setTipaxSyncedAt(?Carbon $syncedAt): static
     {
-        return $this->setAttribute(self::COLUMN_SOURCE_ID, $sourceId);
+        return $this->setAttribute(self::COLUMN_TIPAX_SYNCED_AT, $syncedAt);
     }
 
     public function getCreatedAt(): ?Carbon
@@ -172,35 +158,6 @@ final class City extends Model implements HasActivityLogLabel
     public function getProvince(): Province
     {
         return $this->getRelationValue('province');
-    }
-
-    /**
-     * @return BelongsTo<County, $this>
-     */
-    public function county(): BelongsTo
-    {
-        return $this->belongsTo(County::class, self::COLUMN_COUNTY_ID);
-    }
-
-    public function getCounty(): County
-    {
-        return $this->getRelationValue('county');
-    }
-
-    /**
-     * @return HasMany<Region, $this>
-     */
-    public function regions(): HasMany
-    {
-        return $this->hasMany(Region::class, Region::COLUMN_CITY_ID);
-    }
-
-    /**
-     * @return Collection<int, Region>
-     */
-    public function getRegions(): Collection
-    {
-        return $this->getRelationValue('regions');
     }
 
     /**
@@ -228,10 +185,11 @@ final class City extends Model implements HasActivityLogLabel
     protected function casts(): array
     {
         return [
-            self::COLUMN_TYPE => CityType::class,
-            self::COLUMN_LATITUDE => 'float',
-            self::COLUMN_LONGITUDE => 'float',
+            self::COLUMN_ID => 'integer',
+            self::COLUMN_PROVINCE_ID => 'integer',
+            self::COLUMN_HAS_TIPAX_BRANCH => 'boolean',
             self::COLUMN_IS_DELIVERY_ENABLED => 'boolean',
+            self::COLUMN_TIPAX_SYNCED_AT => 'datetime',
         ];
     }
 }

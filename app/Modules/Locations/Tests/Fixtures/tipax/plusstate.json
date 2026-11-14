@@ -1,0 +1,6 @@
+[
+    {"title": "تهران", "abbreviation": "THR", "stateId": 8, "stateTitle": "تهران", "jetId": null, "latitude": 35.6892, "longitude": 51.389, "id": 1},
+    {"title": "اراك", "abbreviation": "ARK", "stateId": 1, "stateTitle": "مركزي", "jetId": null, "latitude": 34.0954, "longitude": 49.7013, "id": 85},
+    {"title": "تجريش", "abbreviation": null, "stateId": 8, "stateTitle": "تهران", "jetId": null, "latitude": null, "longitude": null, "id": 112},
+    {"title": "داودآباد", "abbreviation": null, "stateId": 1, "stateTitle": "مركزي", "jetId": null, "latitude": 0, "longitude": 0, "id": 140}
+]

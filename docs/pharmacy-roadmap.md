@@ -879,7 +879,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 **otp_codes**: `mobile`, `code_hash`, `purpose` (`login`), `expires_at` (2 min), `attempts`, `ip`. Rate limit: 1 per 2 min per mobile, 5 per hour per IP.
 
-**addresses**: `customer_id`, `title`, `receiver_name`, `receiver_mobile`, `province_id`, `city_id`, `region_id` (nullable), `neighbourhood_id` (nullable), `full_address`, `plaque`, `unit`, `floor`, `postal_code` (10 digits), `latitude`, `longitude`, `is_default`.
+**addresses**: `customer_id`, `title`, `receiver_name`, `receiver_mobile`, `province_id`, `city_id` (Tipax ids, D4), `full_address`, `plaque`, `unit`, `floor`, `postal_code` (10 digits), `is_default`; soft deletes (orders keep `address_id` beside their snapshot). No map pin, coordinates, region or neighbourhood (owner, 2026-11-14, S18). At most 10 per customer; the first (or the one marked) is the only default; deleting the default promotes the newest remaining address. Cities offered: Tipax cities with «ارسال فعال» on.
 
 **wishlists**: `customer_id`, `product_id`.
 **reviews**: `product_id`, `customer_id`, `order_item_id` (nullable → verified buyer), `rating` 1–5, `body`, `status` (`pending`, `approved`, `rejected`).
@@ -902,18 +902,22 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | customer_id | |
 | status | see D3.5 |
 | payment_status | `unpaid`, `pending`, `paid`, `refunded`, `partially_refunded` |
-| address_snapshot | JSON copy of the address incl. city names and Tipax city id |
+| address_snapshot | JSON copy of the address: title, receiver name and mobile, province and city names with their Tipax ids, full address, plaque, unit, floor, postal code |
+| customer_snapshot | JSON: customer name and mobile at ordering |
 | subtotal, discount_total, shipping_total, total | bigint Rial |
-| coupon_id, coupon_code | |
+| coupon_id, coupon_code, coupon_snapshot | the coupon's rules at ordering (type, value, limits, caps) as JSON |
 | shipping_method | `tipax`, `own_courier` |
 | carrier_service_id | FK to `carrier_services` |
-| shipping_quote_snapshot | JSON of the chosen quote |
+| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate |
+| payment_fee | Rial; the gateway fee of that payment, for net margin |
 | shipping_cost_quoted, shipping_cost_actual | Rial; actual comes from Tipax after pickup |
 | delivery_slot_id | own courier only |
 | customer_note, admin_note | |
 | placed_at, paid_at, cancelled_at, delivered_at | |
 
 **order_items**: `order_id`, `variant_id`, `variant_price_id` (the price record it was sold at, D3.2), `name_snapshot`, `sku`, `quantity`, `unit_price`, `discount`, `total`, `provider_id`, `unit_cost` (for profit), `status` (see below).
+
+**Snapshot rule** (owner, 2026-11-14, S18): an order keeps a JSON or column copy of **everything that can change later**, so editing a product, price, supplier, commission, coupon, address, city or customer never changes a past order or its reports. Order items also copy `product_name`, `variant_title`, `sku`, `brand_name`, `image_url` (the card size), `product_type` and `requires_prescription`, besides the prices below.
 
 **Price snapshot on every order item** (owner, 2026-11-14): the commission lives on products and brands and supplier costs change, so when the customer places the order (`PlaceOrder`, S25) each item copies the values of that moment onto itself, not only the `variant_price_id`: `provider_id` and `unit_cost` (the active supplier and its cost, null when sold at the printed price), `commission_percent` and `commission_source` (one of the five levels), `provider_choice` (preferred or cheapest), `official_price` (printed), `list_price` (selling price before haraj), `sale_price` (haraj), `unit_price` (what the customer pays). Gross and net margin reports (S41, S42) read these columns, so later changes to a commission, a supplier cost or a price record never change a past order.
 
@@ -967,23 +971,19 @@ Every transition writes `order_status_logs` (and each item's change writes `orde
 
 ## D4. Locations
 
+**Locations follow Tipax** (owner, 2026-11-14, S18): provinces and cities come from the Tipax API and use Tipax's ids, so addresses, quotes and shipments need no mapping. Counties, regions, neighbourhoods and the earlier open dataset (sajaddp, GPL) are gone.
+
 ### D4.1 Source data
-- Master list: **sajaddp/list-of-cities-in-Iran** (31 provinces, 484 counties, 1,672 cities; official divisions to end of 1404; JSON/CSV/XLSX). License GPL-3.0, coordinates CC BY 4.0. **[CONFIRM]** licence fit with a lawyer before shipping a closed-source product.
-- Tehran regions and neighbourhoods (22 regions, 568 neighbourhoods): **zarbinco/laravel-iran-locations** (Laravel 11–13, MIT code, beta) or our own polygons.
+- Tipax OM API **v4** (specs `https://omtestapi.tipax.ir/swagger/v4/swagger.json` and `/swagger/v3/swagger.json`, checked 2026-11-14): `GET /api/OM/v4/Cities/plusstate` → a bare array of `OmCityListWithStateDto` `{ id, title, abbreviation, stateId, stateTitle, jetId, latitude, longitude }`; `GET /api/OM/v4/Cities/BranchCities` → `OmCityListDto` (no `stateTitle`); `GET /api/OM/v4/States` → `OmProvinceListDto` `{ id, title, … }`. All need a Bearer token; **sign-in exists only in v3**: `POST /api/OM/v3/Account/token` `{ username, password, apiKey }` → `{ accessToken, refreshToken, expiresIn }` (v4 has only `Account/RefreshToken`). No endpoint returns regions or neighbourhoods.
 
 ### D4.2 Tables
-- **provinces**: `name_fa`, `slug`, `source_id`.
-- **counties**: `province_id`, `name_fa`, `source_id`.
-- **cities**: `province_id`, `county_id`, `name_fa`, `type` (`city`, `village`), `latitude`, `longitude`, `is_delivery_enabled`, `source_id`.
-- **regions**: `city_id`, `name_fa`, `number`.
-- **neighbourhoods**: `region_id`, `city_id`, `name_fa`, `polygon` (geometry, nullable).
-- **carrier_city_mappings**: `carrier_id`, `city_id`, `carrier_city_id` (int), `carrier_city_name`, `carrier_province_name`, `has_branch` (bool), `last_synced_at`. Unique (`carrier_id`, `carrier_city_id`).
+- **provinces**: `id` (= Tipax `stateId`), `name_fa`.
+- **cities**: `id` (= Tipax city id), `province_id`, `name_fa`, `latitude`, `longitude` (Tipax's; 0 means unknown), `has_tipax_branch`, `is_delivery_enabled` (admin «ارسال فعال»), `tipax_synced_at`.
 
-### D4.3 Tipax city sync (artisan command `tipax:sync-cities`, weekly)
-1. `GET /api/OM/v4/Cities/plusstate` → all Tipax cities with province names.
-2. `GET /api/OM/v4/Cities/BranchCities` → cities with an active Tipax branch (`has_branch = true`).
-3. Match to our `cities` by normalized Persian name + province (normalize ی/ي, ک/ك, ZWNJ, spaces). Unmatched rows go to an admin review screen.
-4. Checkout only offers Tipax for cities with a mapping.
+### D4.3 Tipax city sync
+1. `php artisan tipax:sync-cities` (Shipping `TipaxClient`, built in S18): signs in, loads `Cities/plusstate` and `Cities/BranchCities`, and upserts provinces and cities by Tipax id (`Locations\Actions\ImportTipaxCities`). Names, coordinates and branch flags follow Tipax; «ارسال فعال» is kept; cities Tipax stops listing are kept (addresses may use them) and counted. One activity entry per run. Runs **on every deploy after `migrate`** and weekly (Saturday 03:00 Tehran). A failure changes nothing and exits non-zero.
+2. `php artisan locations:import-tipax {file} {--branches=}` imports the same JSON from files (offline machines, tests).
+3. The address form and checkout offer cities with «ارسال فعال» on.
 
 ---
 
@@ -1044,7 +1044,7 @@ Responses use an envelope: `{ data, isSuccess, statusCode, message, totalItemCou
 | Purpose | Method & path |
 |---|---|
 | Provinces | `GET /api/OM/v4/States` |
-| Cities (+province) | `GET /api/OM/v4/Cities/plusstate` |
+| Cities (+province) | `GET /api/OM/v4/Cities/plusstate` (D4.1) |
 | Cities with branch | `GET /api/OM/v4/Cities/BranchCities` |
 | Services between two cities | `POST /api/OM/v4/Pricing/GetServicesBetweenCities` `{ sourceCityId, destinationCityId }` → `serviceList[{ serviceId, serviceKind, serviceKindId, deliveryDay }]` |
 | All services | `POST /api/OM/v4/Pricing/GetServicesList` |
@@ -1319,7 +1319,7 @@ Use Laravel Horizon for queue monitoring.
 4. Tipax order callback payload, retry policy and signature; V3 webhook event payload.
 5. Tipax rules for shipping supplements and OTC medicines (content type "داروهای مجاز").
 6. Zarinpal refund API access after 30 minutes; Melli Payamak REST response JSON shape, credit-check method and PHP SDK package name (D11.6).
-7. Licence of the location dataset (GPL-3.0) for a closed-source product.
+7. ~~Licence of the location dataset (GPL-3.0)~~: resolved, locations come from Tipax (2026-11-14, S18).
 8. Legal: partner pharmacy before enabling OTC / prescription products. [CONFIRM] OTC selling was enabled by the owner on 2026-11-07 (S10) ahead of this check; prescription products stay blocked.
 
 ---
@@ -1458,7 +1458,7 @@ $this->app->singleton(PaymentGateway::class, fn ($app) => $app->make(ZarinpalGat
 5. Run `php artisan tipax:ping`. It calls `POST /api/OM/v3/Account/token`, then `GET /api/OM/v4/Customers`, and prints the account name. Fix credentials until it passes.
 
 **B. Reference data**
-6. `php artisan tipax:sync-cities`: loads `Cities/plusstate` and `Cities/BranchCities` into `carrier_city_mappings` and lists unmatched cities. Resolve them in **Admin → Shipping → City mapping**.
+6. `php artisan tipax:sync-cities`: loads `Cities/plusstate` and `Cities/BranchCities` into `provinces` and `cities` with Tipax ids (D4.3); no mapping step.
 7. `php artisan tipax:sync-reference`: loads services (`GetServicesList`), payment types, pack types, packings and package contents into local tables so the admin can pick them from dropdowns.
 8. In **Admin → Shipping → Boxes**, create our cartons with inner dimensions and max weight, and link each to a Tipax `packingId` (e.g. "Carton size 4, 3-layer").
 9. In **Admin → Shipping → Services**, enable the services we sell: e.g. 1 (ground one-day express), 2 (one-day), 3 (two-day), 7 (intra-city express), 12 (same day). Set display names in Persian and sort order.
@@ -1530,11 +1530,9 @@ $this->app->singleton(PaymentGateway::class, fn ($app) => $app->make(ZarinpalGat
 | −62 | Server IP not set in gateway settings (reverse only) |
 
 ### D11.5 Location data setup
-1. Download the latest release of `sajaddp/list-of-cities-in-Iran` (JSON).
-2. Place files in `database/data/locations/` and run `php artisan locations:import`: fills `provinces`, `counties`, `cities`.
-3. Optional: `composer require zarbinco/laravel-iran-locations` and run its sync to import Tehran regions and neighbourhoods, then `php artisan locations:import-tehran`.
-4. Run `php artisan tipax:sync-cities` (D11.3 step 6) after every location import.
-5. In **Admin → Locations**, enable delivery cities and draw own-courier zones.
+1. Set `TIPAX_BASE_URL`, `TIPAX_USERNAME`, `TIPAX_PASSWORD`, `TIPAX_API_KEY` in `.env` (test API until go-live).
+2. Run `php artisan tipax:sync-cities` (also part of every deploy, D12): fills `provinces` and `cities` from Tipax (D4.3).
+3. In **Admin → شهرها**, switch «ارسال فعال» on for the cities you deliver to.
 
 ### D11.6 SMS provider: Melli Payamak (ملی پیامک)
 
@@ -1713,7 +1711,6 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 | payments | unique(authority); index(order_id); index(status, created_at) |
 | shipments | index(order_id); index(status, last_synced_at); index(correlation_id) |
 | shipment_packages | unique(tracking_code) |
-| carrier_city_mappings | unique(carrier_id, carrier_city_id); index(carrier_id, city_id) |
 | cities | index(province_id); index(county_id); index(is_delivery_enabled) |
 | flash_deals | index(starts_at, ends_at) |
 | search_logs | index(normalized_query, created_at) |
@@ -2082,7 +2079,7 @@ stopwaitsecs=3600
 Cron: `* * * * * www-data php /var/www/app/current/artisan schedule:run >> /dev/null 2>&1`.
 
 ### D19.4 Deploy (zero-downtime)
-`git pull` (or release folder) → `composer install --no-dev --optimize-autoloader` → `npm ci && npm run build` (CI) → `php artisan migrate --force` → `php artisan optimize` → `php artisan filament:optimize` → `php artisan horizon:terminate` → reload PHP-FPM. Tools: Laravel Envoy or Deployer.
+`git pull` (or release folder) → `composer install --no-dev --optimize-autoloader` → `npm ci && npm run build` (CI) → `php artisan migrate --force` → `php artisan tipax:sync-cities` (provinces and cities from Tipax, D4.3) → `php artisan optimize` → `php artisan filament:optimize` → `php artisan horizon:terminate` → reload PHP-FPM. Tools: Laravel Envoy or Deployer.
 
 ### D19.5 CI (GitHub/GitLab)
 On every push: Pint (test mode), Larastan, `composer audit`, `php artisan test --parallel` (MySQL + Redis services), `npm run build`. On `main`: deploy to staging. Production deploy is manual approval.
@@ -2717,6 +2714,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S05 Locations
 - **Refs:** D4, D11.5
+- **Rebuilt in S18 (owner, 2026-11-14):** provinces and cities now come from Tipax with Tipax ids (D4); counties, regions, neighbourhoods and the sajaddp import were removed.
 - **Build:** provinces/counties/cities/regions/neighbourhoods tables + models, `locations:import` from sajaddp JSON, optional Tehran neighbourhoods, Filament read/edit (enable delivery cities).
 - **Tests:** import command with fixture creates expected counts; city belongs to province.
 
@@ -2798,8 +2796,9 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S18 Addresses and account area
 - **Refs:** D3.3, B5 (account), B7–B13
-- **Build:** addresses with map pin and Locations selects, account dashboard, profile, wishlist, my reviews; a heart button on the product card, quick view and product page adds to the wishlist (guests get the OTP login first, then the product is saved).
-- **Tests:** owner-only access (policy), default address switching.
+- **Decisions (owner, 2026-11-14):** no map pin or coordinates; **locations follow Tipax** (D4: Tipax ids, no mapping, regions and neighbourhoods dropped; `tipax:sync-cities` with a minimal `TipaxClient` built here and run on every deploy); cities offered are those with «ارسال فعال»; the account menu shows «سفارش‌ها» (S29 fills it) and «نظرات من» (S13 fills it) with empty states; the wishlist heart sits on the product card, quick view and product page; a guest's click remembers the product, sends them to `/login`, and a `CustomerLoggedIn` listener saves it before they return; profile birth date uses the Jalali picker (stored Gregorian); orders snapshot everything that can change (D3.4 «Snapshot rule»); no new package.
+- **Build:** addresses with Locations selects, account dashboard, profile, wishlist, my reviews; a heart button on the product card, quick view and product page adds to the wishlist (guests get the OTP login first, then the product is saved); read-only «آدرس‌ها» on the admin customer page.
+- **Tests:** owner-only access (policy), default address switching, delivery-city check, 10-address limit, profile validation, wishlist toggle and guest flow, Tipax sync with faked HTTP.
 
 ### S19 Cart
 - **Refs:** D13.3, D3.4, B7–B13
@@ -2818,13 +2817,14 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S24 Own courier zones
 - **Refs:** D5.1 (zones, slots, couriers)
-- **Build:** delivery zones (neighbourhoods/polygon), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
+- **Note (2026-11-14, S18):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
+- **Build:** delivery zones (city + postal-code ranges), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
 - **Tests:** address in zone, slot capacity exhausted.
 
 ### S25 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
 - **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); shipping options from the own courier (S24) and the fallback `RateTable` (S21) until Tipax quotes (S23).
-- **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content.
+- **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content (address, customer, coupon, shipping quote and every item field of the D3.4 «Snapshot rule»; editing the product, price, address or city afterwards leaves the order unchanged).
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
@@ -2896,8 +2896,9 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S22 Tipax client and reference sync
 - **Moved to phase 8** (built after S42; owner, 2026-11-09).
 - **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
-- **Build:** `TipaxClient` (token store, retry, timeouts, logging), commands `tipax:ping`, `tipax:sync-cities`, `tipax:sync-reference`, `tipax:register-origin`; carrier_city_mappings + admin mapping screen.
-- **Tests:** `Http::fake` fixtures for token, cities, services; mapping by normalised name; token refresh.
+- **Already done in S18:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
+- **Build:** extend `TipaxClient` (refresh token), commands `tipax:ping`, `tipax:sync-reference`, `tipax:register-origin`.
+- **Tests:** `Http::fake` fixtures for services and reference data; token refresh.
 
 ### S23 Tipax quotes in checkout
 - **Moved to phase 8**; until then checkout quotes the own courier (S24) and the fallback `RateTable` (S21).

@@ -19,13 +19,10 @@ final class ProvinceFactory extends Factory
      */
     public function definition(): array
     {
-        $name = 'استان '.fake()->unique()->numberBetween(1, 99_999);
-
         return [
-            Province::COLUMN_NAME_FA => $name,
-            Province::COLUMN_SLUG => $name,
-            Province::COLUMN_TEL_PREFIX => '0'.fake()->numberBetween(11, 87),
-            Province::COLUMN_SOURCE_ID => fake()->unique()->numberBetween(100, 99_999),
+            // A Tipax-like stateId.
+            Province::COLUMN_ID => fake()->unique()->numberBetween(1, 9_999_999),
+            Province::COLUMN_NAME_FA => 'استان '.fake()->unique()->numberBetween(1, 99_999),
         ];
     }
 }

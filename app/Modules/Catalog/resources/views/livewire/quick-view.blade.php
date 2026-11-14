@@ -5,8 +5,9 @@
     <x-ts-modal wire="show" size="3xl" :title="$this->product?->getNameFa() ?? ''">
         @if ($product = $this->product)
             <div class="grid gap-4 md:grid-cols-2">
-                <div class="aspect-square overflow-hidden rounded-card bg-white">
+                <div class="relative aspect-square overflow-hidden rounded-card bg-white">
                     <x-media::picture :media="$product->getMainImage()" slot-name="pdp-main" :alt="$product->getNameFa()" class="size-full object-contain" />
+                    <x-catalog::wishlist-button :product-id="$product->getId()" class="absolute end-2 top-2" />
                 </div>
 
                 <div class="space-y-3">

@@ -20,6 +20,7 @@
 
         <x-ts-toast />
         <x-ts-dialog />
+        <livewire:catalog::wishlist-toggle />
 
         <x-layout.announcement />
         <x-layout.header />

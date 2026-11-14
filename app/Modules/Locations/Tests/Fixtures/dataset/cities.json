@@ -1,6 +1,0 @@
-[
-    {"id": 1000001001101, "name": "اراک", "slug": "اراک", "province_id": 100, "county_id": 1000001, "district_id": 1000001002},
-    {"id": 1000001001102, "name": "داود آباد", "slug": "داود-آباد", "province_id": 100, "county_id": 1000001, "district_id": 1000001002},
-    {"id": 1230001001101, "name": "تهران", "slug": "تهران", "province_id": 123, "county_id": 1230001, "district_id": 1230001001},
-    {"id": 1230002001101, "name": "تجریش", "slug": "تجریش", "province_id": 123, "county_id": 1230002, "district_id": 1230002001}
-]

@@ -22,6 +22,9 @@ Route::livewire('/collections/{slug}', 'catalog::collection-page')->name('collec
 // Product page: simple until S13 builds the full page (roadmap B5).
 Route::livewire('/products/{slug}', 'catalog::product-page')->name('products.show');
 
+// The customer's saved products, inside the account area (roadmap S18).
+Route::livewire('/account/wishlist', 'catalog::account.wishlist')->middleware('auth:customer')->name('account.wishlist');
+
 // The first short addresses (/b, /c, /p) keep working: permanent redirects to the new ones.
 Route::permanentRedirect('/b', '/brands');
 Route::permanentRedirect('/b/{slug}', '/brands/{slug}');

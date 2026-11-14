@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Identity\Models;
 
 use App\Modules\Identity\Database\Factories\CustomerFactory;
+use App\Modules\Identity\Enums\Gender;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
@@ -133,14 +135,12 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_BIRTH_DATE, $birthDate);
     }
 
-    public function getGender(): ?string
+    public function getGender(): ?Gender
     {
-        $value = $this->getAttribute(self::COLUMN_GENDER);
-
-        return $value === null ? null : (string) $value;
+        return $this->getAttribute(self::COLUMN_GENDER);
     }
 
-    public function setGender(?string $gender): static
+    public function setGender(?Gender $gender): static
     {
         return $this->setAttribute(self::COLUMN_GENDER, $gender);
     }
@@ -175,6 +175,14 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
         return $this->getAttribute(self::COLUMN_CREATED_AT);
     }
 
+    /**
+     * @return HasMany<Address, $this>
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class, Address::COLUMN_CUSTOMER_ID);
+    }
+
     public function activityLogLabel(): string
     {
         return 'مشتری: '.$this->displayName();
@@ -200,6 +208,7 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
         return [
             self::COLUMN_NATIONAL_ID => 'encrypted',
             self::COLUMN_BIRTH_DATE => 'date',
+            self::COLUMN_GENDER => Gender::class,
             self::COLUMN_IS_BLOCKED => 'boolean',
             self::COLUMN_LAST_LOGIN_AT => 'datetime',
         ];

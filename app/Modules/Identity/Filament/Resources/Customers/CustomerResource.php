@@ -6,6 +6,7 @@ namespace App\Modules\Identity\Filament\Resources\Customers;
 
 use App\Modules\Identity\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Modules\Identity\Filament\Resources\Customers\Pages\ViewCustomer;
+use App\Modules\Identity\Filament\Resources\Customers\RelationManagers\AddressesRelationManager;
 use App\Modules\Identity\Filament\Resources\Customers\Schemas\CustomerInfolist;
 use App\Modules\Identity\Filament\Resources\Customers\Tables\CustomersTable;
 use App\Modules\Identity\Models\Customer;
@@ -44,6 +45,11 @@ final class CustomerResource extends Resource
     public static function table(Table $table): Table
     {
         return CustomersTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [AddressesRelationManager::class];
     }
 
     public static function canCreate(): bool

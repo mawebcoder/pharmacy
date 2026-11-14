@@ -3,103 +3,85 @@
 declare(strict_types=1);
 
 use App\Modules\Locations\Models\City;
-use App\Modules\Locations\Models\County;
 use App\Modules\Locations\Models\Province;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use Spatie\Activitylog\Models\Activity;
 
-function fixtureDataset(): string
+function tipaxFixture(string $name): string
 {
-    return __DIR__.'/../Fixtures/dataset';
+    return __DIR__."/../Fixtures/tipax/{$name}.json";
 }
 
-it('imports provinces, counties and cities from a dataset directory', function (): void {
-    $this->artisan('locations:import', ['--path' => fixtureDataset()])
-        ->expectsOutputToContain('شهرها: 4')
+it('imports provinces and cities with Tipax ids from Tipax\'s city list', function (): void {
+    $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate')])
+        ->expectsOutputToContain('شهرها: ۴')
         ->assertSuccessful();
 
-    expect(Province::count())->toBe(2)
-        ->and(County::count())->toBe(3)
-        ->and(City::count())->toBe(4);
+    $tajrish = City::query()->findOrFail(112);
 
-    $tajrish = City::query()->where(City::COLUMN_NAME_FA, 'تجریش')->firstOrFail();
-    expect($tajrish->getProvince()->getNameFa())->toBe('تهران')
-        ->and($tajrish->getCounty()->getNameFa())->toBe('شمیرانات')
+    expect(Province::query()->pluck(Province::COLUMN_NAME_FA, Province::COLUMN_ID)->all())->toEqualCanonicalizing([8 => 'تهران', 1 => 'مرکزی'])
+        ->and(City::count())->toBe(4)
+        ->and($tajrish->getNameFa())->toBe('تجریش')
+        ->and($tajrish->getProvince()->getId())->toBe(8)
         ->and($tajrish->isDeliveryEnabled())->toBeFalse();
 });
 
-it('gives county centres their coordinates and leaves other cities without', function (): void {
-    $this->artisan('locations:import', ['--path' => fixtureDataset()])->assertSuccessful();
+it('keeps Tipax coordinates and treats 0 or null as unknown', function (): void {
+    $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate')])->assertSuccessful();
 
-    $tehran = City::query()->where(City::COLUMN_NAME_FA, 'تهران')->firstOrFail();
-    $tajrish = City::query()->where(City::COLUMN_NAME_FA, 'تجریش')->firstOrFail();
-
-    expect($tehran->getLatitude())->toBe(35.75)
-        ->and($tehran->getLongitude())->toBe(51.5148)
-        ->and($tajrish->getLatitude())->toBeNull();
+    expect(City::query()->findOrFail(1)->getLatitude())->toBe(35.6892)
+        ->and(City::query()->findOrFail(112)->getLatitude())->toBeNull()
+        ->and(City::query()->findOrFail(140)->getLongitude())->toBeNull();
 });
 
-it('updates existing rows on a re-run and keeps the delivery switches', function (): void {
-    $this->artisan('locations:import', ['--path' => fixtureDataset()])->assertSuccessful();
-    City::query()->where(City::COLUMN_NAME_FA, 'اراک')->firstOrFail()->setIsDeliveryEnabled(true)->save();
+it('marks the cities that have a Tipax branch', function (): void {
+    $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate'), '--branches' => tipaxFixture('branches')])->assertSuccessful();
 
-    $this->artisan('locations:import', ['--path' => fixtureDataset()])->assertSuccessful();
+    expect(City::query()->where(City::COLUMN_HAS_TIPAX_BRANCH, true)->pluck(City::COLUMN_ID)->all())->toEqualCanonicalizing([1, 85]);
+});
 
-    expect(City::count())->toBe(4)
-        ->and(City::query()->where(City::COLUMN_NAME_FA, 'اراک')->firstOrFail()->isDeliveryEnabled())->toBeTrue();
+it('updates names on a re-run, keeps the delivery switches and keeps cities Tipax no longer lists', function (): void {
+    $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate')])->assertSuccessful();
+    City::query()->findOrFail(85)->setIsDeliveryEnabled(true)->setNameFa('نام قدیمی')->save();
+    $shorter = storage_path('framework/testing/plusstate-'.uniqid().'.json');
+    File::put($shorter, json_encode(array_slice(json_decode((string) File::get(tipaxFixture('plusstate')), true), 0, 3)));
+
+    $this->artisan('locations:import-tipax', ['file' => $shorter])
+        ->expectsOutputToContain('در تیپاکس نیستند: ۱')
+        ->assertSuccessful();
+
+    $arak = City::query()->findOrFail(85);
+    expect($arak->getNameFa())->toBe('اراک')
+        ->and($arak->isDeliveryEnabled())->toBeTrue()
+        ->and(City::query()->find(140))->not->toBeNull();
+    File::delete($shorter);
 });
 
 it('records one activity entry per import instead of one per row', function (): void {
-    $this->artisan('locations:import', ['--path' => fixtureDataset()])->assertSuccessful();
+    $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate')])->assertSuccessful();
 
     $activities = Activity::query()->where('log_name', 'locations')->get();
     expect($activities)->toHaveCount(1)
-        ->and($activities->first()->event)->toBe('locations_imported')
+        ->and($activities->first()->event)->toBe('tipax_cities_imported')
         ->and($activities->first()->properties->get('cities'))->toBe(4);
 });
 
-it('refuses a dataset with a missing file, a broken row or an unknown parent', function (string $file, string $contents, string $message): void {
-    $directory = storage_path('framework/testing/locations-'.uniqid());
-    File::copyDirectory(fixtureDataset(), $directory);
-    $contents === '' ? File::delete("{$directory}/{$file}") : File::put("{$directory}/{$file}", $contents);
+it('refuses a missing file, a file that is not a list or a broken row, and saves nothing', function (?string $contents, string $message): void {
+    $path = storage_path('framework/testing/plusstate-'.uniqid().'.json');
 
-    $this->artisan('locations:import', ['--path' => $directory])
+    if ($contents !== null) {
+        File::put($path, $contents);
+    }
+
+    $this->artisan('locations:import-tipax', ['file' => $path])
         ->expectsOutputToContain($message)
         ->assertFailed();
 
     expect(City::count())->toBe(0);
-    File::deleteDirectory($directory);
+    File::delete($path);
 })->with([
-    'missing file' => ['cities.json', '', 'not found'],
-    'not a list' => ['provinces.json', '{"id": 1}', 'not a JSON list'],
-    'row without a name' => ['counties.json', '[{"id": 1, "slug": "x", "province_id": 100}]', 'missing or wrong "name"'],
-    'unknown county' => ['cities.json', '[{"id": 1, "name": "x", "slug": "x", "province_id": 100, "county_id": 999}]', 'county_id 999 does not exist'],
+    'missing file' => [null, 'not found'],
+    'not a list' => ['{"id": 1}', 'not a JSON list'],
+    'row without a name' => ['[{"id": 1, "stateId": 8, "stateTitle": "تهران"}]', 'missing or wrong "title"'],
+    'row without a province' => ['[{"id": 1, "title": "تهران"}]', 'missing or wrong "stateId"'],
 ]);
-
-it('downloads the pinned dataset when no path is given', function (): void {
-    $storage = storage_path('framework/testing/locations-download-'.uniqid());
-    config(['locations.dataset.storage_path' => $storage, 'locations.dataset.commit' => 'abc123']);
-    Http::fake([
-        '*/abc123/dist/json/provinces.json' => Http::response(File::get(fixtureDataset().'/provinces.json')),
-        '*/abc123/dist/json/counties.json' => Http::response(File::get(fixtureDataset().'/counties.json')),
-        '*/abc123/dist/json/cities-filtered.json' => Http::response(File::get(fixtureDataset().'/cities.json')),
-        '*/abc123/dist/json/county-centers.json' => Http::response(File::get(fixtureDataset().'/county-centers.json')),
-    ]);
-
-    $this->artisan('locations:import')->assertSuccessful();
-
-    expect(City::count())->toBe(4)
-        ->and(File::exists("{$storage}/abc123/cities.json"))->toBeTrue();
-    Http::assertSentCount(4);
-    File::deleteDirectory($storage);
-});
-
-it('reports a failed download', function (): void {
-    config(['locations.dataset.storage_path' => storage_path('framework/testing/locations-fail-'.uniqid())]);
-    Http::fake(['*' => Http::response('', 404)]);
-
-    $this->artisan('locations:import')
-        ->expectsOutputToContain('HTTP 404')
-        ->assertFailed();
-});

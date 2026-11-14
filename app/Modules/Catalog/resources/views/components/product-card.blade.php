@@ -32,6 +32,8 @@
             <span @class(['absolute start-2 top-2 rounded-full px-2 text-xs leading-6 font-bold', $badgeClasses[$card->badgeTone] ?? ''])>{{ $card->badge }}</span>
         @endif
 
+        <x-catalog::wishlist-button :product-id="$product->getId()" class="absolute end-2 top-2" />
+
         @if ($quickView)
             <button
                 type="button"
