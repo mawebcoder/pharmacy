@@ -11,6 +11,7 @@ use App\Modules\Content\Filament\Resources\Banners\Pages\CreateBanner;
 use App\Modules\Content\Filament\Resources\Banners\Pages\EditBanner;
 use App\Modules\Content\Filament\Resources\Banners\Pages\ListBanners;
 use App\Modules\Content\Models\Banner;
+use App\Modules\Content\Queries\PageLinks;
 use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use App\Modules\Shared\Support\PersianDigits;
 use BackedEnum;
@@ -116,7 +117,8 @@ final class BannerResource extends Resource
 
         return match (true) {
             $type === BannerLinkType::External => $banner->getExternalUrl(),
-            $type->needsItem() && $banner->getLinkId() !== null => app(CatalogLinks::class)->label($type->value, $banner->getLinkId()) ?? 'حذف‌شده',
+            $type === BannerLinkType::Page && $banner->getLinkId() !== null => app(PageLinks::class)->label($banner->getLinkId()) ?? 'حذف‌شده',
+            $type->isCatalogItem() && $banner->getLinkId() !== null => app(CatalogLinks::class)->label($type->value, $banner->getLinkId()) ?? 'حذف‌شده',
             default => null,
         };
     }

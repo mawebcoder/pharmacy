@@ -76,3 +76,22 @@
         display: none;
     }
 }
+
+/* Static page bodies from the admin's rich editor (roadmap S34): readable Persian text, B3 tokens only. */
+@layer components {
+    .page-content {
+        @apply space-y-4 text-base leading-8 text-ink-900;
+
+        & h2 { @apply mt-8 text-xl font-bold; }
+        & h3 { @apply mt-6 text-lg font-bold; }
+        & a { @apply text-primary-700 underline underline-offset-4 hover:text-primary-800; }
+        & ul { @apply list-disc space-y-1 ps-6; }
+        & ol { @apply list-decimal space-y-1 ps-6; }
+        & blockquote { @apply border-s-4 border-primary-200 bg-primary-50 px-4 py-3 text-ink-900; }
+        & hr { @apply my-6 border-line-200; }
+        & img { @apply my-4 h-auto max-w-full rounded-card; }
+        & table { @apply block w-full overflow-x-auto border-collapse text-sm md:table; }
+        & th { @apply border border-line-200 bg-surface-50 px-3 py-2 text-start font-bold; }
+        & td { @apply border border-line-200 px-3 py-2; }
+    }
+}

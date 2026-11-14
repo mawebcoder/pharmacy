@@ -7,6 +7,7 @@ namespace App\Modules\Content\Models;
 use App\Modules\Catalog\Queries\CatalogLinks;
 use App\Modules\Content\Database\Factories\BannerFactory;
 use App\Modules\Content\Enums\BannerLinkType;
+use App\Modules\Content\Queries\PageLinks;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
@@ -155,6 +156,7 @@ final class Banner extends Model implements HasActivityLogLabel, HasImagePresets
             BannerLinkType::CollectionsList => route('collections.index'),
             BannerLinkType::BrandsList => route('brands.index'),
             BannerLinkType::External => $this->getExternalUrl(),
+            BannerLinkType::Page => $this->getLinkId() === null ? null : app(PageLinks::class)->url($this->getLinkId()),
             default => $this->getLinkId() === null ? null : app(CatalogLinks::class)->url($type->value, $this->getLinkId()),
         };
     }

@@ -8,6 +8,7 @@ use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Queries\AdminOptions;
 use App\Modules\Content\Enums\BannerLinkType;
 use App\Modules\Content\Models\Banner;
+use App\Modules\Content\Queries\PageLinks;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -32,6 +33,7 @@ final class BannerForm
         'brand' => 'link_brand_id',
         'tag' => 'link_tag_id',
         'product' => 'link_sku_id',
+        'page' => 'link_page_id',
     ];
 
     public static function configure(Schema $schema): Schema
@@ -40,6 +42,18 @@ final class BannerForm
         $pickers = [];
 
         foreach (self::PICKERS as $type => $field) {
+            if ($type === BannerLinkType::Page->value) {
+                $pickers[] = Select::make($field)
+                    ->label('صفحه')
+                    ->options(fn (): array => app(PageLinks::class)->options())
+                    ->searchable()
+                    ->required()
+                    ->helperText('صفحه پیش‌نویس تا وقتی منتشر نشود، بنرش نمایش داده نمی‌شود.')
+                    ->visible(fn (Get $get): bool => self::linkType($get) === BannerLinkType::Page);
+
+                continue;
+            }
+
             $select = Select::make($field)
                 ->label('مقصد')
                 ->required()

@@ -33,7 +33,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S31 | Packing | todo | | |
 | S32 | Returns | todo | | |
 | S33 | Home, banners, deals | todo | | |
-| S34 | Static pages, FAQ, contact, menus | todo | | |
+| S34 | Static pages, FAQ, contact, menus | in progress (pages done) | | |
 | S35 | Settings and trust | todo | | |
 | S36 | SEO | todo | | |
 | S37 | Security hardening | todo | | |

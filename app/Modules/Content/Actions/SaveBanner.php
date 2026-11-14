@@ -9,13 +9,17 @@ use App\Modules\Content\Data\BannerData;
 use App\Modules\Content\Enums\BannerLinkType;
 use App\Modules\Content\Exceptions\BannerChangeRefused;
 use App\Modules\Content\Models\Banner;
+use App\Modules\Content\Queries\PageLinks;
 
 /**
  * Creates or updates a banner: a picked catalog item must exist, an external link must be https.
  */
 final readonly class SaveBanner
 {
-    public function __construct(private CatalogLinks $catalogLinks) {}
+    public function __construct(
+        private CatalogLinks $catalogLinks,
+        private PageLinks $pageLinks,
+    ) {}
 
     /**
      * @throws BannerChangeRefused
@@ -23,7 +27,7 @@ final readonly class SaveBanner
     #[\NoDiscard]
     public function __invoke(BannerData $data, ?Banner $banner = null): Banner
     {
-        if ($data->linkType->needsItem() && ($data->linkId === null || $this->catalogLinks->label($data->linkType->value, $data->linkId) === null)) {
+        if ($data->linkType->needsItem() && ($data->linkId === null || $this->targetLabel($data->linkType, $data->linkId) === null)) {
             throw BannerChangeRefused::linkItemMissing();
         }
 
@@ -42,5 +46,10 @@ final readonly class SaveBanner
             ->save();
 
         return $banner;
+    }
+
+    private function targetLabel(BannerLinkType $type, int $linkId): ?string
+    {
+        return $type === BannerLinkType::Page ? $this->pageLinks->label($linkId) : $this->catalogLinks->label($type->value, $linkId);
     }
 }

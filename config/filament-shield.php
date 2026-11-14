@@ -9,6 +9,7 @@ use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
 use App\Modules\Catalog\Filament\Resources\Tags\TagResource;
 use App\Modules\Content\Filament\Resources\Banners\BannerResource;
 use App\Modules\Content\Filament\Resources\HomeWidgets\HomeWidgetResource;
+use App\Modules\Content\Filament\Resources\Pages\PageResource;
 use App\Modules\Identity\Filament\Resources\AdminUsers\AdminUserResource;
 use App\Modules\Identity\Filament\Resources\Customers\CustomerResource;
 use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
@@ -253,6 +254,14 @@ return [
                 'restore',
             ],
             TagResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
+                'restore',
+            ],
+            PageResource::class => [
                 'viewAny',
                 'view',
                 'create',

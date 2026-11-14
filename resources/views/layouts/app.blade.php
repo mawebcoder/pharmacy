@@ -6,6 +6,9 @@
         <meta name="theme-color" content="#0f766e">
 
         <title>{{ filled($title ?? null) ? $title.' | '.config('app.display_name') : config('app.display_name') }}</title>
+        @if (filled($description ?? null))
+            <meta name="description" content="{{ $description }}">
+        @endif
 
         @fonts
         <tallstackui:script />

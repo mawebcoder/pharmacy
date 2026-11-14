@@ -49,6 +49,8 @@ final class RolesSeeder extends Seeder
             // S13b Content: home page widgets and the banner library.
             'ViewAny:HomeWidget', 'View:HomeWidget', 'Create:HomeWidget', 'Update:HomeWidget', 'Delete:HomeWidget',
             'ViewAny:Banner', 'View:Banner', 'Create:Banner', 'Update:Banner', 'Delete:Banner',
+            // S34 Content: static pages («صفحه‌های ثابت»).
+            'ViewAny:Page', 'View:Page', 'Create:Page', 'Update:Page', 'Delete:Page', 'Restore:Page',
         ],
     ];
 
