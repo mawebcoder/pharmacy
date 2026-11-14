@@ -14,9 +14,10 @@ it('renders the home page right-to-left in Persian inside the storefront layout'
 });
 
 it('shows the five bottom navigation items and marks the current page', function (): void {
+    // Guests see «ورود» in place of «حساب من» (S17).
     $this->get('/')
         ->assertOk()
-        ->assertSeeInOrder(['خانه', 'دسته‌ها', 'جستجو', 'سبد خرید', 'حساب من'])
+        ->assertSeeInOrder(['خانه', 'دسته‌ها', 'جستجو', 'سبد خرید', 'ورود'])
         ->assertSee('aria-current="page"', false);
 });
 

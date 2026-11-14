@@ -255,6 +255,20 @@ return [
             'nice' => 0,
         ],
 
+        // "sms": SMS sends (roadmap D11.6, S17): short jobs, own workers so sign-in codes never wait behind other work.
+        'supervisor-sms' => [
+            'connection' => 'redis',
+            'queue' => ['sms'],
+            'balance' => 'simple',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 30,
+            'nice' => 0,
+        ],
+
         // Image processing (roadmap D9, S09): slow jobs (AVIF encoding) on their own workers and timeout.
         'supervisor-media' => [
             'connection' => 'redis',

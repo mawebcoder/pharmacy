@@ -27,9 +27,44 @@
                 <x-ts-icon icon="chat-bubble-left-right" class="size-5 text-primary-700" />
                 مشاوره با داروساز
             </a>
-            <a href="/account" class="grid size-11 place-items-center rounded-full text-ink-900 hover:bg-surface-50" aria-label="حساب من">
-                <x-ts-icon icon="user" class="size-6" />
-            </a>
+            @auth('customer')
+                {{-- Signed-in customer (S17): their name and sign-out; the account area comes with S18. --}}
+                <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
+                    <button
+                        type="button"
+                        class="flex h-11 items-center gap-2 rounded-full px-2 text-ink-900 hover:bg-surface-50 xl:px-3"
+                        aria-label="حساب من"
+                        aria-haspopup="menu"
+                        x-bind:aria-expanded="open"
+                        x-on:click="open = ! open"
+                    >
+                        <x-ts-icon icon="user-circle" class="size-6 text-primary-700" />
+                        <span class="hidden max-w-32 truncate text-sm xl:inline">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</span>
+                        <x-ts-icon icon="chevron-down" class="hidden size-4 xl:block" />
+                    </button>
+                    <div
+                        x-show="open"
+                        x-cloak
+                        x-transition.origin.top
+                        role="menu"
+                        class="absolute end-0 top-full z-50 mt-2 w-56 rounded-card border border-line-200 bg-white py-2 shadow-lg"
+                    >
+                        <p class="truncate px-4 pb-2 text-sm font-bold text-ink-900">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</p>
+                        <form method="POST" action="{{ route('logout') }}" class="border-t border-line-200 pt-1">
+                            @csrf
+                            <button type="submit" role="menuitem" class="flex min-h-11 w-full items-center gap-2 px-4 text-sm text-danger-600 hover:bg-surface-50">
+                                <x-ts-icon icon="arrow-right-start-on-rectangle" class="size-5" />
+                                خروج
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @else
+                <a href="{{ route('login') }}" class="flex h-11 items-center gap-2 rounded-full px-2 text-ink-900 hover:bg-surface-50 xl:px-3" aria-label="ورود یا ثبت‌نام">
+                    <x-ts-icon icon="user" class="size-6" />
+                    <span class="hidden text-sm xl:inline">ورود | ثبت‌نام</span>
+                </a>
+            @endauth
             <a href="/cart" class="flex h-11 items-center gap-2 rounded-full px-3 text-ink-900 hover:bg-surface-50" aria-label="سبد خرید">
                 <x-ts-icon icon="shopping-bag" class="size-6" />
                 <span class="hidden text-sm xl:inline">سبد خرید</span>

@@ -5,7 +5,10 @@
         ['label' => 'دسته‌ها', 'icon' => 'squares-2x2', 'href' => '/categories', 'active' => request()->is('c/*', 'categories')],
         ['label' => 'جستجو', 'icon' => 'magnifying-glass', 'href' => '/search', 'active' => request()->is('search')],
         ['label' => 'سبد خرید', 'icon' => 'shopping-bag', 'href' => '/cart', 'active' => request()->is('cart')],
-        ['label' => 'حساب من', 'icon' => 'user', 'href' => '/account', 'active' => request()->is('account', 'account/*')],
+        // Guests sign in first (S17); the account area itself comes with S18.
+        auth('customer')->check()
+            ? ['label' => 'حساب من', 'icon' => 'user', 'href' => '/account', 'active' => request()->is('account', 'account/*')]
+            : ['label' => 'ورود', 'icon' => 'user', 'href' => route('login'), 'active' => request()->routeIs('login')],
     ];
 @endphp
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Shared\Exceptions\BaseException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,7 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Customer-facing refusals render themselves as {message, code} (BaseException::render) and are not errors.
+        $exceptions->dontReport(BaseException::class);
+
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();

@@ -2793,8 +2793,8 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S17 Customer OTP auth
 - **Refs:** D13.1, D3.3, D16, D11.6, B7–B13
-- **Build:** `laravel/sanctum` (storefront customer authentication, D16), customers, otp_codes, SMS sender interface (`log` driver until S28 adds Melli Payamak), OtpLogin Livewire (TallStackUI pin), rate limits, profile completion.
-- **Tests:** rate limits, expiry, attempts, login + session regeneration, guest cart merge hook.
+- **Build:** `laravel/sanctum` (storefront customer authentication, D16), customers, otp_codes, OtpLogin Livewire, rate limits, profile completion. Decided 2026-11-14: Melli Payamak is built here, not in S28. SMS providers are a strategy: `SmsProvider` enum (only `Melipayamak` today) → `SmsManager` picks the `SmsSender`; `SMS_PRETEND` (on by default) logs instead of sending; base URL, path, username, API key, pattern ids, connect/request timeouts and retries come from config/.env. Every SMS goes through `SendSmsJob` on its own `sms` queue (encrypted payload, 3 HTTP retries on connection errors/5xx, 3 job tries with backoff 10 s/30 s for retryable failures, expires 60 s after dispatch) and writes `sms_logs` (provider, template, masked mobile, non-secret variables, pretend flag, result) with an admin «گزارش پیامک‌ها» list. Codes: 5 digits from `random_int`, unique among unexpired codes, stored as an HMAC, valid 2 minutes, 5 tries; while a code is live no new one is sent and the page shows the server message with the seconds left; 10 codes/day per mobile, 5/hour per IP. Mobiles must match Iranian operator prefixes (`IranianMobile` rule). Local only: bypass code `OTP_BYPASS_CODE` (flag `OTP_BYPASS_ENABLED`, on by default; never outside APP_ENV=local). Customer-facing errors extend `Shared\Exceptions\BaseException` and render `{"message", "code"}` as JSON. Admin «مشتریان»: list, clickable rows to a customer page, block/unblock (orders relation manager: S29).
+- **Tests:** rate limits, live-code refusal, expiry, attempts, bypass (local only), login + session regeneration, `CustomerLoggedIn` event for the guest cart merge (S19), Melli Payamak `Http::fake()` success/errors/retries/redaction, job retry rules, admin list/view/block.
 
 ### S18 Addresses and account area
 - **Refs:** D3.3, B5 (account), B7–B13
@@ -2828,8 +2828,8 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
-- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions (shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, order and order item status logs (two timelines), customer OrderList/OrderDetail with tracking timeline, guest tracking.
-- **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders.
+- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions (shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, order and order item status logs (two timelines), customer OrderList/OrderDetail with tracking timeline, guest tracking. On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
+- **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders, the customer page lists only that customer's orders and each row links to its order view (new tab).
 
 ### S30 Provider purchases (sourcing)
 - **Refs:** D13.6, D3.4 (provider_purchases)
@@ -2918,9 +2918,9 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
 
 ### S28 Notifications (SMS via Melli Payamak)
-- **Moved to phase 8**; until then the `SmsSender` contract from S17 runs on `LogSmsSender`.
+- **Moved to phase 8.** The Melli Payamak sender, `SmsManager`, `SendSmsJob`, `sms_logs` and `sms:test` were built in S17 (2026-11-14); this step adds the order templates.
 - **Refs:** D11.6, D3.6 (templates), D13.1
-- **Build:** `SmsSender` contract, `LogSmsSender` + `MelipayamakSmsSender` (REST BaseServiceNumber with pattern bodyIds), templates ↔ bodyIds, notification logs (masked mobile, recId, code), `SendSmsJob` with retry rules, low-credit alert, `sms:test` command; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
+- **Build:** order templates ↔ pattern ids (config/sms.php), low-credit alert; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
 - **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
 ### S40 Launch

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Identity\Models\AdminUser;
+use App\Modules\Identity\Models\Customer;
 
 return [
 
@@ -51,6 +52,12 @@ return [
             'driver' => 'session',
             'provider' => 'admin_users',
         ],
+        // Storefront customers, signed in with a one-time SMS code (roadmap D16, S17); Sanctum uses this guard.
+        'customer' => [
+            'driver' => 'session',
+            'provider' => 'customers',
+            'remember' => 60 * 24 * 30,
+        ],
     ],
 
     /*
@@ -74,6 +81,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => Customer::class,
         ],
 
         'admin_users' => [
@@ -125,6 +137,23 @@ return [
     | confirmation screen. By default, the timeout lasts for three hours.
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Customer sign-in codes (S17)
+    |--------------------------------------------------------------------------
+    |
+    | On the local environment only, the bypass code signs in any number that has just requested a code, so
+    | developers need no SMS. It never works outside APP_ENV=local, whatever the flag says.
+    |
+    */
+
+    'otp' => [
+        'bypass' => [
+            'enabled' => (bool) env('OTP_BYPASS_ENABLED', true),
+            'code' => (string) env('OTP_BYPASS_CODE', '11111'),
+        ],
+    ],
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 

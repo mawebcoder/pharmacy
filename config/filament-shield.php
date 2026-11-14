@@ -10,9 +10,11 @@ use App\Modules\Catalog\Filament\Resources\Tags\TagResource;
 use App\Modules\Content\Filament\Resources\Banners\BannerResource;
 use App\Modules\Content\Filament\Resources\HomeWidgets\HomeWidgetResource;
 use App\Modules\Identity\Filament\Resources\AdminUsers\AdminUserResource;
+use App\Modules\Identity\Filament\Resources\Customers\CustomerResource;
 use App\Modules\Identity\Filament\Resources\Roles\RoleResource;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Locations\Filament\Resources\Cities\CityResource;
+use App\Modules\Notifications\Filament\Resources\SmsLogs\SmsLogResource;
 use App\Modules\Pricing\Filament\Resources\PriceImports\PriceImportResource;
 use App\Modules\Pricing\Filament\Resources\Providers\ProviderResource;
 use App\Modules\Search\Filament\Resources\SearchSynonyms\SearchSynonymResource;
@@ -298,6 +300,15 @@ return [
                 'update',
             ],
             IntegrationLogResource::class => [
+                'viewAny',
+                'view',
+            ],
+            CustomerResource::class => [
+                'viewAny',
+                'view',
+                'update',
+            ],
+            SmsLogResource::class => [
                 'viewAny',
                 'view',
             ],
