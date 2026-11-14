@@ -134,6 +134,19 @@ describe('adding', function (): void {
             ->assertDispatched('cart-updated', count: 0);
     });
 
+    it('tells the buttons to stop their spinner whether the change was made or refused', function (): void {
+        $sku = buyable();
+        $gone = buyable([ProductVariant::COLUMN_IS_ACTIVE => false]);
+
+        livewire(CartState::class)
+            ->dispatch('cart-add', variantId: $sku->getId())
+            ->assertDispatched('cart-settled', variantId: $sku->getId());
+        livewire(CartState::class)
+            ->dispatch('cart-add', variantId: $gone->getId())
+            ->assertDispatched('cart-settled', variantId: $gone->getId())
+            ->assertNotDispatched('cart-updated');
+    });
+
     it('shows the free-shipping progress after an add only when 40 % or less is left', function (int $price, bool $shown): void {
         app(SaveStoreSettings::class)([StoreSettings::FREE_SHIPPING_THRESHOLD => 5_000_000]);
         $sku = buyable([ProductVariant::COLUMN_PRICE => $price]);

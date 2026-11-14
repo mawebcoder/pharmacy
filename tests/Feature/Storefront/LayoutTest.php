@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Identity\Models\Customer;
+
 it('renders the home page right-to-left in Persian inside the storefront layout', function (): void {
     $response = $this->get('/');
 
@@ -30,4 +32,12 @@ it('gives the desktop and mobile search fields their own labels', function (): v
 
 it('does not serve the design-system gallery outside the local environment', function (): void {
     $this->get('/dev/ui')->assertNotFound();
+});
+
+it('lists the account pages, orders included, in the signed-in header menu', function (): void {
+    $this->actingAs(Customer::factory()->create(), 'customer')
+        ->get('/')
+        ->assertOk()
+        ->assertSee('href="'.route('account.orders').'" wire:navigate role="menuitem"', false)
+        ->assertSeeInOrder(['حساب من', 'سفارش‌ها', 'آدرس‌ها', 'علاقه‌مندی‌ها', 'اطلاعات حساب', 'خروج']);
 });

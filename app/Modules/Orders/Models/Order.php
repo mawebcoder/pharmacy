@@ -64,6 +64,8 @@ final class Order extends Model implements HasActivityLogLabel
 
     public const string COLUMN_CUSTOMER_NOTE = 'customer_note';
 
+    public const string COLUMN_ADMIN_NOTE = 'admin_note';
+
     public const string COLUMN_PLACED_AT = 'placed_at';
 
     public const string COLUMN_EXPIRES_AT = 'expires_at';
@@ -283,6 +285,18 @@ final class Order extends Model implements HasActivityLogLabel
     public function setCustomerNote(?string $value): static
     {
         return $this->setAttribute(self::COLUMN_CUSTOMER_NOTE, $value);
+    }
+
+    public function getAdminNote(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_ADMIN_NOTE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setAdminNote(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_ADMIN_NOTE, $value);
     }
 
     public function getPlacedAt(): Carbon

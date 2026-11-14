@@ -115,6 +115,20 @@
         --header-height: 7.5rem;
     }
 
+    /*
+    | Page loading bar while wire:navigate fetches the next page (owner, 2026-11-14): brand colour (follows dark
+    | mode), 3 px so it is noticed, and mirrored so it fills from right to left like every progress bar here.
+    | `scale` composes with the inline transform Livewire animates.
+    */
+    :root {
+        --livewire-progress-bar-color: var(--color-primary-700);
+    }
+
+    #nprogress .bar {
+        height: 3px !important;
+        scale: -1 1;
+    }
+
     /* Alpine: hide x-cloak elements until Alpine starts. */
     [x-cloak] {
         display: none !important;

@@ -46,6 +46,8 @@ final class CartState extends Component
             $this->toast()->warning($refused->getMessage())->send();
 
             return;
+        } finally {
+            $this->settle($variantId);
         }
 
         $this->publish($carts, $quantity);
@@ -59,6 +61,8 @@ final class CartState extends Component
             $quantity = $setQuantity(CartOwnerData::current(), $variantId, $quantity);
         } catch (CartRefused $refused) {
             $this->toast()->warning($refused->getMessage())->send();
+        } finally {
+            $this->settle($variantId);
         }
 
         $this->publish($carts, $quantity);
@@ -67,6 +71,14 @@ final class CartState extends Component
     public function render(): View
     {
         return view('cart::livewire.cart-state');
+    }
+
+    /**
+     * Tells the SKU's add-to-cart buttons the change is done, accepted or refused, so they stop their spinner.
+     */
+    private function settle(int $variantId): void
+    {
+        $this->dispatch('cart-settled', variantId: $variantId);
     }
 
     /**

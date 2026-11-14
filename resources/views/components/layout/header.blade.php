@@ -50,6 +50,7 @@
                         <p class="truncate px-4 pb-2 text-sm font-bold text-ink-900">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</p>
                         @foreach ([
                             ['حساب من', 'squares-2x2', route('account')],
+                            ['سفارش‌ها', 'shopping-bag', route('account.orders')],
                             ['آدرس‌ها', 'map-pin', route('account.addresses')],
                             ['علاقه‌مندی‌ها', 'heart', route('account.wishlist')],
                             ['اطلاعات حساب', 'user', route('account.profile')],
