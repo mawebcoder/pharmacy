@@ -888,14 +888,16 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.4 Cart, checkout and orders
 
-**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `coupon_id` (S20), `address_id` (S25), `shipping_quote_id` (S21), `expires_at` (guests, 30 days).
+**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `address_id` (S25), `shipping_quote_id` (S21), `expires_at` (guests, 30 days).
 **cart_items**: `cart_id`, `variant_id`, `quantity`, `unit_price_snapshot` (the price last shown, only to tell the shopper it changed; the cart always uses the current price). Unique (`cart_id`, `variant_id`).
 
 **Cart rules** (owner, 2026-11-14, S19): the **guest cart cookie** `cart_token` holds a 40-character random token (never the cart id), encrypted and signed (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days; created on the first add. **Limit per order** per SKU: the SKU's `max_per_order`, else `products.max_per_order`, else the store setting «حداکثر تعداد هر کالا در یک سفارش» (default 10); «+» greys out at the limit. **On sign-in**: without a cart of their own the guest cart becomes the customer's and its token hash is cleared; with one, the guest lines are added to it (quantities summed, capped at the limit) and the guest cart is deleted; the cookie is removed. **Unavailable lines** (no active supplier so out of stock, switched off, prescription, cold chain): greyed with the reason, left out of the total; «ادامه خرید» stays disabled until «به‌روزرسانی سبد» removes them. **Price change**: shown once on the line («قیمت این کالا از … به … کاهش/افزایش یافت»), then taken as seen. **Feedback**: no toast on add/remove (the stepper and header count show it); after an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar; refusals show as warnings. **Product cards**: «+» on every in-stock card, then a «− n +» stepper on its own line under a fixed two-line price area (same layout with or without haraj); cards lift slightly with a shadow on hover. A deleted account's leftover session counts as a guest. `GET /cart/quantities` returns `{ data: { items: { <variant id>: <qty> }, count } }` (lightweight, `no-store`, 120/min) for the cards. Expired guest carts are deleted daily (04:00).
 **settings** (started in S19): key/value, read through `Settings\Queries\StoreSettings` (cached); admin «تنظیمات فروشگاه» (super admin): `cart.max_quantity_per_order` (10), `cart.free_shipping_threshold` (5,000,000 rial = 500,000 toman; 0 = off; shown in the cart and the announcement bar). S35 adds the rest.
 
-**coupons**: `code` (unique, case-insensitive), `type` (`percent`, `fixed`, `free_shipping`), `value`, `max_discount`, `min_order_amount`, `starts_at`, `ends_at`, `usage_limit_total`, `usage_limit_per_customer`, `first_order_only`, `is_active`. Pivots **coupon_categories**, **coupon_brands**, **coupon_products** (include lists).
-**coupon_usages**: `coupon_id`, `customer_id`, `order_id`, `discount_amount`.
+**coupons**: `code` (unique, case-insensitive; stored upper-case with Latin digits), `type` (`percent`, `fixed`, `free_shipping`), `value` (percent 1–100, or rial), `max_discount` (percent only), `min_order_amount`, `applies_to_sale_items`, `starts_at`, `ends_at`, `usage_limit_total`, `usage_limit_per_customer`, `first_order_only`, `is_active`, soft deletes. Pivots **coupon_categories**, **coupon_brands**, **coupon_products** (include lists).
+**coupon_usages**: `coupon_id`, `customer_id`, `order_id` (foreign key added with the orders table, S25), `discount_amount`, `status` (`CouponUsageStatus`: `checkout`, `reserved`, `used`, `released`), `reserved_until`, `used_at`, `released_at`, timestamps.
+
+**Coupon rules** (owner, 2026-11-14, S20): **one coupon per order**. The include lists are optional: **all empty = the whole cart**; when filled, an item is covered if its product is listed, its brand is listed, or it sits in a listed category **or below it** (any list may match); a listed product covers **all its SKUs**; no exclude lists. **The coupon is applied at checkout, not in the cart** (owner, 2026-11-14: the cart may belong to a guest; checkout always has a signed-in customer), and carts store no coupon. **Haraj (sale-priced) items** are covered only when the coupon's «شامل کالاهای حراج» switch is on. The **minimum order counts only the covered items**, and the discount applies only to them: percent of the covered amount (capped by `max_discount`), a fixed amount never above the covered amount, rounded down to whole toman; free shipping gives no item discount. **Checkout works the discount out on the fly** (`Cart\Actions\QuoteCoupon` → `ValidateCoupon`, which only reads). **Usage lifecycle** (owner, 2026-11-14), one `coupon_usages` row per customer and coupon: (1) the customer applies the code at checkout → `checkout` (a log only; applying again refreshes it; `ApplyCouponAtCheckout`); (2) the payment link is created and the customer goes to the gateway → `reserved` until `config('payments.pending_expiry_minutes')` (`PAYMENT_PENDING_EXPIRY_MINUTES`, the gateway's pending-order expiry; `ReserveCoupon` locks the coupon row and re-checks the limits); (3) the payment is verified → `used` (`MarkCouponUsed`, S26); (4) the payment fails, is cancelled or the order expires → `released` (`ReleaseCoupon`; `ReleaseExpiredCouponReservations` runs every 5 minutes). **Limits count `used` and unexpired `reserved` uses**, never `checkout` or `released`; «first order only» asks `Cart\Contracts\CustomerOrderHistory` (S25 binds the Orders implementation). **The coupon discount comes out of the store's margin** in reports (net margin formula), not the suppliers'.
 
 **orders**
 
@@ -1812,10 +1814,10 @@ Casts: enums (`ProductType`, `ProductStatus`, `StockStatus`, `OrderStatus`, `Pay
 1. Step 1 Address: select/create (map pin, city from Locations; Tipax only if city mapped).
 2. Step 2 Shipping: `Shipping\Actions\QuoteCart` packs items into boxes (D5), calls carriers: Tipax (`GetServicesBetweenCities` + `Pricing`) and own courier (zone price + slots). Shows options with delivery days and price. Quote stored 20 min.
 3. Step 3 Review: totals recalculated server-side; coupon re-validated.
-4. Step 4 Pay: `Orders\Actions\PlaceOrder` (transaction): create order `pending_payment` with snapshots, lock coupon usage, then `Payments\Actions\StartPayment` → Zarinpal request → redirect.
+4. Step 4 Pay: `Orders\Actions\PlaceOrder` (transaction): create order `pending_payment` with snapshots, reserve the coupon (`Cart\Actions\ReserveCoupon`, S20), then `Payments\Actions\StartPayment` → Zarinpal request → redirect.
 
 ### D13.5 Payment
-See D7.2. On verify success: `OrderPaid` event → (a) Orders: status `paid`; (b) Pricing: create provider purchase draft; (c) Notifications: SMS `order_paid`; (d) Coupons: confirm usage. On NOK/timeout: `payment_failed`, release coupon.
+See D7.2. On verify success: `OrderPaid` event → (a) Orders: status `paid`; (b) Pricing: create provider purchase draft; (c) Notifications: SMS `order_paid`; (d) Coupons: mark the reserved use used (`MarkCouponUsed`). On NOK/timeout/expiry: `payment_failed`, release the coupon (`ReleaseCoupon`).
 
 ### D13.6 Sourcing (buying from provider)
 1. Admin → Provider purchases: system groups paid orders' items by cheapest available provider into a draft purchase.
@@ -2811,7 +2813,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S20 Coupons
 - **Refs:** D3.4 (coupons)
-- **Build:** coupons, usages, include lists, validation action, Filament resource, apply/remove in cart.
+- **Build:** coupons, usages, include lists, validation action, Filament resource, apply/remove in cart. Rules decided 2026-11-14: see D3.4 «Coupon rules».
 - **Tests:** each coupon type, limits per customer/total, date window, first-order-only, concurrency (lock).
 
 ### S25 Checkout wizard

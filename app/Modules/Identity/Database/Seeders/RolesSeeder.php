@@ -28,6 +28,8 @@ final class RolesSeeder extends Seeder
             'ViewAny:City', 'View:City', 'Update:City',
             // S10 Catalog: look up products (stock comes from providers in S14).
             'ViewAny:Product', 'View:Product',
+            // S20 Cart: look up coupons (creating and editing them is left to super admins).
+            'ViewAny:Coupon', 'View:Coupon',
             // S17 Identity: look up customers and block or unblock them.
             'ViewAny:Customer', 'View:Customer', 'Update:Customer',
         ],

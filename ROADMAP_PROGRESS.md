@@ -26,7 +26,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S17 | Customer OTP auth | done | 2026-11-14 | df4164e |
 | S18 | Addresses and account area | done | 2026-11-14 | 13ad476 |
 | S19 | Cart | done | 2026-11-14 | ff08e15 |
-| S20 | Coupons | todo | | |
+| S20 | Coupons | in progress | | |
 | S25 | Checkout wizard | todo | | |
 | S29 | Order admin and state machine | todo | | |
 | S30 | Provider purchases (sourcing) | todo | | |

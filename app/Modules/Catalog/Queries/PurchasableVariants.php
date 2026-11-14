@@ -56,6 +56,7 @@ final readonly class PurchasableVariants
                 maxPerOrder: max(1, $variant->getMaxPerOrder() ?? $product->getMaxPerOrder() ?? $storeLimit),
                 refusal: $this->refusal($product, $variant),
                 image: $product->getMainImage(),
+                isOnSale: $variant->getSalePrice() !== null,
             );
         }
 

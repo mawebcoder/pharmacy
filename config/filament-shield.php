@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Modules\Cart\Filament\Resources\Coupons\CouponResource;
 use App\Modules\Catalog\Filament\Resources\Attributes\AttributeResource;
 use App\Modules\Catalog\Filament\Resources\Brands\BrandResource;
 use App\Modules\Catalog\Filament\Resources\Categories\CategoryResource;
@@ -254,6 +255,14 @@ return [
                 'restore',
             ],
             TagResource::class => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'delete',
+                'restore',
+            ],
+            CouponResource::class => [
                 'viewAny',
                 'view',
                 'create',

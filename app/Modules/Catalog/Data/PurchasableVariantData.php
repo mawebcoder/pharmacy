@@ -34,6 +34,7 @@ final readonly class PurchasableVariantData
         public int $maxPerOrder,
         public ?string $refusal,
         public ?StoredImage $image,
+        public bool $isOnSale = false,
     ) {}
 
     public function canBuy(): bool
