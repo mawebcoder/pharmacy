@@ -2679,11 +2679,11 @@ Never: commit or push without explicit approval; call real Tipax/Zarinpal produc
 | 1 Catalog & media | S06–S13 |
 | 2 Pricing & providers | S14–S16 |
 | 3 Customers & cart | S17–S20 |
-| 4 Checkout & shipping (stand-ins for external services) | S21, S24, S25 |
+| 4 Checkout (stand-ins for shipping and payments) | S25 |
 | 5 Orders operations | S29–S32 |
 | 6 Content, SEO, trust | S33–S36 |
 | 7 Hardening & reporting | S37–S39, S41–S42 |
-| 8 External integrations, then launch | S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09), then S40 |
+| 8 Shipping and external integrations, then launch | S21, S24 (shipping foundation and own courier zones; owner 2026-11-14), S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09), then S40 |
 
 ## E3. Steps
 
@@ -2814,20 +2814,9 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:** coupons, usages, include lists, validation action, Filament resource, apply/remove in cart.
 - **Tests:** each coupon type, limits per customer/total, date window, first-order-only, concurrency (lock).
 
-### S21 Shipping foundation
-- **Refs:** D5, D5.1, D6.8
-- **Build:** carriers, carrier_services, shipping_boxes, origins, shipping_rules, `ShippingCarrier` contract, DTOs, `BoxPacker`, fallback `RateTable`, Filament resources.
-- **Tests:** box packing cases (single, many small, ship_separately, overweight), fallback rate.
-
-### S24 Own courier zones
-- **Refs:** D5.1 (zones, slots, couriers)
-- **Note (2026-11-14, S18):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
-- **Build:** delivery zones (city + postal-code ranges), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
-- **Tests:** address in zone, slot capacity exhausted.
-
 ### S25 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
-- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); shipping options from the own courier (S24) and the fallback `RateTable` (S21) until Tipax quotes (S23).
+- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S19 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S21), own courier zones (S24) and Tipax quotes (S23) in phase 8 (owner, 2026-11-14).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content (address, customer, coupon, shipping quote and every item field of the D3.4 «Snapshot rule»; editing the product, price, address or city afterwards leaves the order unchanged).
 
 ### S29 Order admin and state machine
@@ -2842,7 +2831,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S31 Packing
 - **Refs:** D13.7
-- **Build:** packing screen (suggested boxes, confirm weight), packing slip print, triggers shipment registration.
+- **Build:** packing screen (confirm weight; suggested boxes come with the S21 box packer in phase 8, owner 2026-11-14), packing slip print, triggers shipment registration.
 - **Tests:** packed transition requires weights; triggers job.
 
 ### S32 Returns
@@ -2895,7 +2884,20 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:** **SKU sales on the SKU page** (owner, 2026-11-09): widgets and charts inside each SKU's suppliers page showing how much was sold (quantity and money), how much was bought from each supplier and sold per supplier, and the SKU's total gross and net margin (from order items' `variant_price_id` records and the reporting facts; filters by date range / Jalali month); **supplier sales on the supplier view page** (owner, 2026-11-09): widgets and charts showing how many products were sold that were bought from this supplier, which products and SKUs, at which prices (selling, haraj, supplier cost from each order item's price record), how much money was sold from this supplier, and its other sales reports (gross/net margin, top SKUs, sales over time; same filters); dashboard widgets (KPIs R1/R2, sales & margin chart, live R8/R10/R26), report pages per group with filters (date range, Jalali month, category, brand, provider) and CSV/XLSX export; ★ reports in MVP, others behind a feature flag until data exists; role-based visibility.
 - **Tests:** SKU page widgets: quantity, revenue, per-supplier split and gross/net margin match seeded order items; supplier page widgets: quantity, products sold, prices and revenue from this supplier match seeded order items; widgets render from seeded `rpt_*` data; live widgets query counts bounded; access by role; export matches filters.
 
-> **Phase 8: External integrations, built last (owner, 2026-11-09).** Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28) are implemented after reporting, right before launch (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping through the own courier and the fallback rate table (S25), shipment status set by hand (S29).
+> **Phase 8: Shipping and external integrations, built last (owner, 2026-11-09; shipping added 2026-11-14).** The shipping foundation (S21) and own courier zones (S24) come first, then Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28), all after reporting and right before launch (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S25), shipment status and own-courier deliveries set by hand (S29).
+
+### S21 Shipping foundation
+- **Moved to phase 8** (built after S42, before the Tipax steps; owner, 2026-11-14); until then checkout charges the S25 flat rate.
+- **Refs:** D5, D5.1, D6.8
+- **Build:** carriers, carrier_services, shipping_boxes, origins, shipping_rules, `ShippingCarrier` contract, DTOs, `BoxPacker`, fallback `RateTable`, Filament resources.
+- **Tests:** box packing cases (single, many small, ship_separately, overweight), fallback rate.
+
+### S24 Own courier zones
+- **Moved to phase 8** (built after S21; owner, 2026-11-14); until then own-courier deliveries are arranged by hand in the order admin (S29).
+- **Refs:** D5.1 (zones, slots, couriers)
+- **Note (2026-11-14, S18):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
+- **Build:** delivery zones (city + postal-code ranges), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
+- **Tests:** address in zone, slot capacity exhausted.
 
 ### S22 Tipax client and reference sync
 - **Moved to phase 8** (built after S42; owner, 2026-11-09).
@@ -2905,7 +2907,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** `Http::fake` fixtures for services and reference data; token refresh.
 
 ### S23 Tipax quotes in checkout
-- **Moved to phase 8**; until then checkout quotes the own courier (S24) and the fallback `RateTable` (S21).
+- **Moved to phase 8**; built after S21 and S24. Until then checkout charges the S25 flat rate.
 - **Refs:** D6.4, D13.4 step 2
 - **Build:** `TipaxCarrier::quote()` (unit conversion g→kg, mm→cm), `GetServicesBetweenCities`, shipping_quotes cache (20 min), shipping rules (free over X), fallback flag.
 - **Tests:** quote mapping from fixture, cache hit, timeout → fallback estimate.

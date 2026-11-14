@@ -1,6 +1,6 @@
 # Roadmap progress
 
-Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Rows follow the build order: Tipax, Zarinpal and SMS (S22, S23, S26, S27, S28) come last, before launch (owner, 2026-11-09).
+Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Rows follow the build order: the shipping foundation and own courier zones (S21, S24; owner, 2026-11-14), then Tipax, Zarinpal and SMS (S22, S23, S26, S27, S28; owner, 2026-11-09) come last, before launch.
 
 | Step | Title | Status | Date | Commit |
 |---|---|---|---|---|
@@ -27,8 +27,6 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S18 | Addresses and account area | done | 2026-11-14 | 13ad476 |
 | S19 | Cart | done | 2026-11-14 | ff08e15 |
 | S20 | Coupons | todo | | |
-| S21 | Shipping foundation | todo | | |
-| S24 | Own courier zones | todo | | |
 | S25 | Checkout wizard | todo | | |
 | S29 | Order admin and state machine | todo | | |
 | S30 | Provider purchases (sourcing) | todo | | |
@@ -43,6 +41,8 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S39 | Observability, backups, ops | todo | | |
 | S41 | Reporting warehouse (before S40) | todo | | |
 | S42 | Dashboard and report pages (before S40) | todo | | |
+| S21 | Shipping foundation | todo | | |
+| S24 | Own courier zones | todo | | |
 | S22 | Tipax client and reference sync | todo | | |
 | S23 | Tipax quotes in checkout | todo | | |
 | S26 | Zarinpal payments | todo | | |
