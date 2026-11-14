@@ -5,20 +5,27 @@ declare(strict_types=1);
 namespace App\Modules\Pricing\Filament\Resources\Providers;
 
 use App\Modules\Locations\Queries\CitySearch;
+use App\Modules\Pricing\Actions\StartPriceImport;
+use App\Modules\Pricing\Actions\WritePriceTemplate;
+use App\Modules\Pricing\Filament\Resources\PriceImports\PriceImportResource;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\CreateProvider;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\EditProvider;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\ListProviders;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\ViewProvider;
 use App\Modules\Pricing\Filament\Resources\Providers\RelationManagers\ProviderPricesRelationManager;
 use App\Modules\Pricing\Http\Requests\StoreProviderRequest;
+use App\Modules\Pricing\Models\PriceImport;
 use App\Modules\Pricing\Models\Provider;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -26,11 +33,13 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use UnitEnum;
 
 /**
  * Suppliers («تأمین‌کنندگان», roadmap D3.2, S14): who we buy from. What each one charges per SKU is set on each SKU's
- * suppliers page and on the supplier's view page (its SKUs table). Switching a supplier off ignores all its prices (the SKUs are re-priced). Suppliers are
+ * suppliers page, on the supplier's view page (its SKUs table), or for many at once from Excel (the template and
+ * import buttons above the table, roadmap S16). Switching a supplier off ignores all its prices (the SKUs are re-priced). Suppliers are
  * switched off rather than deleted, so price records keep them.
  */
 final class ProviderResource extends Resource
@@ -91,6 +100,47 @@ final class ProviderResource extends Resource
                 TextColumn::make(Provider::COLUMN_PHONE)->label('تلفن')->placeholder('—'),
                 TextColumn::make('prices_count')->label('تعداد SKU')->sortable(),
                 IconColumn::make(Provider::COLUMN_IS_ACTIVE)->label('فعال')->boolean(),
+            ])
+            ->headerActions([
+                Action::make('priceTemplate')
+                    ->label('دانلود قالب اکسل')
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->color('gray')
+                    ->visible(fn (): bool => auth('admin')->user()?->can('create', PriceImport::class) ?? false)
+                    ->action(function (WritePriceTemplate $writeTemplate): BinaryFileResponse {
+                        $path = tempnam(sys_get_temp_dir(), 'prices-').'.xlsx';
+                        $writeTemplate($path);
+
+                        return response()->download($path, 'supplier-prices.xlsx')->deleteFileAfterSend();
+                    }),
+                Action::make('priceImport')
+                    ->label('ورود قیمت از اکسل')
+                    ->icon(Heroicon::OutlinedArrowUpTray)
+                    ->visible(fn (): bool => auth('admin')->user()?->can('create', PriceImport::class) ?? false)
+                    ->modalHeading('ورود قیمت تأمین‌کنندگان از اکسل')
+                    ->modalDescription('قالب را دانلود کنید (قیمت‌های فعلی در آن هست)، قیمت خرید (تومان)، «موجود» و «فروش» را ویرایش یا ردیف تازه اضافه کنید و همین‌جا بارگذاری کنید. فایل اول بررسی می‌شود و تا در صفحه پیش‌نمایش «اعمال» را نزنید چیزی تغییر نمی‌کند.')
+                    ->schema([
+                        FileUpload::make('file')
+                            ->label('فایل اکسل یا CSV')
+                            ->disk('local')
+                            ->directory('imports/prices')
+                            ->storeFileNamesIn('original_name')
+                            ->acceptedFileTypes([
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'text/csv',
+                                'text/plain',
+                                'application/csv',
+                            ])
+                            ->maxSize(5120)
+                            ->required(),
+                    ])
+                    ->action(function (array $data, StartPriceImport $start): void {
+                        $adminId = auth('admin')->id();
+                        $import = $start((string) $data['file'], (string) ($data['original_name'] ?? basename((string) $data['file'])), $adminId === null ? null : (int) $adminId);
+
+                        Notification::make()->success()->title('فایل بارگذاری شد و در حال بررسی است.')->send();
+                        redirect(PriceImportResource::getUrl('view', ['record' => $import->getId()]));
+                    }),
             ])
             ->recordActions([ViewAction::make(), EditAction::make()]);
     }

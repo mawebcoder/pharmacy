@@ -759,7 +759,7 @@ We sell cosmetics, personal-care products, supplements and (later, via a license
 | Pricing & Providers | providers, provider prices, commission, price records, pricing engine, price imports |
 | Customers | accounts, OTP login, addresses, wishlist, reviews, questions, stock alerts |
 | Cart & Checkout | cart, coupons, shipping quotes, payment start |
-| Orders | orders, items, status history, provider purchases, returns |
+| Orders | orders, items (with price snapshots), order and order item status logs, provider purchases, returns |
 | Shipping | carriers, services, boxes, quotes, shipments, packages, zones, couriers, carrier city mapping |
 | Payments | payments, payment attempts, refunds, reconciliation |
 | Locations | provinces, counties, cities, regions, neighbourhoods |
@@ -869,7 +869,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 **Background work** (owner, 2026-11-09): every price calculation runs in a job on the **`pricing`** queue (`RecalculateVariantPrice`, `RecalculatePrices` for a brand, a product or everything); Excel imports run on their own **`price-import`** queue. The admin form shows the expected selling price live while typing; the saved record is written by the job.
 
-**price_imports**: `provider_id`, `file_path`, `status` (`pending`, `processing`, `previewed`, `applying`, `done`, `failed`), `rows_total`, `rows_matched`, `rows_updated`, `rows_failed`, `error_report_path`, `admin_id`.
+**price_imports** (as built in S16): `file_path`, `original_name`, `status` (`pending`, `processing`, `previewed`, `applying`, `done`, `failed`), `rows_total`, `rows_matched`, `rows_updated`, `rows_failed`, `error` (file could not be read), `admin_id`, `applied_at`; each row names its own supplier, so there is no `provider_id`. **price_import_rows**: the checked rows for the preview (supplier, matched SKU and how, new and old cost and switches, lead time, the selling price the new cost gives with the commission, whether it changes anything, or the reason it cannot be imported, and the raw cells). The error report is generated from these rows when downloaded.
 
 ### D3.3 Customers
 
@@ -911,9 +911,13 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | customer_note, admin_note | |
 | placed_at, paid_at, cancelled_at, delivered_at | |
 
-**order_items**: `order_id`, `variant_id`, `variant_price_id` (the price record it was sold at, D3.2), `name_snapshot`, `sku`, `quantity`, `unit_price`, `discount`, `total`, `provider_id`, `unit_cost` (for profit).
+**order_items**: `order_id`, `variant_id`, `variant_price_id` (the price record it was sold at, D3.2), `name_snapshot`, `sku`, `quantity`, `unit_price`, `discount`, `total`, `provider_id`, `unit_cost` (for profit), `status` (see below).
 
-**order_status_histories**: `order_id`, `from_status`, `to_status`, `actor_type` (`system`, `admin`, `customer`, `carrier`), `actor_id`, `note`.
+**Price snapshot on every order item** (owner, 2026-11-14): the commission lives on products and brands and supplier costs change, so when the customer places the order (`PlaceOrder`, S25) each item copies the values of that moment onto itself, not only the `variant_price_id`: `provider_id` and `unit_cost` (the active supplier and its cost, null when sold at the printed price), `commission_percent` and `commission_source` (`product`/`brand`), `official_price` (printed), `list_price` (selling price before haraj), `sale_price` (haraj), `unit_price` (what the customer pays). Gross and net margin reports (S41, S42) read these columns, so later changes to a commission, a supplier cost or a price record never change a past order.
+
+**order_status_logs** (owner, 2026-11-14; was `order_status_histories`): `order_id`, `from_status`, `to_status`, `actor_type` (`system`, `admin`, `customer`, `carrier`), `actor_id`, `note`, `created_at`. One row for every change of an order's status; never updated.
+
+**order_item_status_logs** (owner, 2026-11-14): `order_item_id`, `from_status`, `to_status`, `actor_type`, `actor_id`, `note`, `created_at`. Each item has its own status, because items are bought, received, packed, cancelled or returned one by one (`pending`, `sourcing`, `purchased`, `received`, `packed`, `shipped`, `delivered`, `cancelled`, `returned`); every change writes a row, and the order admin (S29) shows both logs as timelines.
 
 **provider_purchases**: `provider_id`, `status` (`requested`, `confirmed`, `received`, `partially_received`, `cancelled`), `total_cost`, `requested_at`, `received_at`; **provider_purchase_items**: `provider_purchase_id`, `order_item_id`, `variant_id`, `quantity`, `unit_cost`, `received_quantity`.
 
@@ -933,7 +937,7 @@ any before packed ──▶ cancelled (refund if paid)
 delivered ──▶ returned (via return_requests)
 pending_payment ──(30 min timeout / NOK)──▶ payment_failed
 ```
-Every transition writes `order_status_histories` and may send an SMS (see `notification_templates`).
+Every transition writes `order_status_logs` (and each item's change writes `order_item_status_logs`) and may send an SMS (see `notification_templates`).
 
 ### D3.6 Content, settings, search, admin
 
@@ -1702,7 +1706,8 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 | coupon_usages | index(coupon_id, customer_id) |
 | orders | unique(number); index(customer_id, placed_at); index(status, placed_at); index(payment_status) |
 | order_items | index(order_id); index(variant_id); index(provider_id) |
-| order_status_histories | index(order_id, created_at) |
+| order_status_logs | index(order_id, created_at) |
+| order_item_status_logs | index(order_item_id, created_at) |
 | payments | unique(authority); index(order_id); index(status, created_at) |
 | shipments | index(order_id); index(status, last_synced_at); index(correlation_id) |
 | shipment_packages | unique(tracking_code) |
@@ -2775,6 +2780,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S16 Price import
 - **Refs:** D13.9, D3.2
+- **As built (2026-11-14):** «دانلود قالب اکسل» and «ورود قیمت از اکسل» above the suppliers table (owner, 2026-11-10); the template is filled with every current supplier price (columns: supplier id, supplier name for reference, SKU code, barcode, product name for reference, cost in toman, «موجود نزد تأمین‌کننده», «فروش از این تأمین‌کننده», lead time) plus a guide sheet; rows are matched by our SKU code, then barcode (no name matching: a wrong match would set a wrong cost); blank switch or lead-time cells keep the current value (a new row starts «بله»); rows missing from the file are left unchanged; «ورودهای قیمت» lists every import, and its page shows the preview with «اعمال» and the error report download; super admins only by default.
 - **Build:** upload a supplier Excel/CSV (each row names its supplier by `provider_id`, owner 2026-11-09, so one file may cover several suppliers) → `ParsePriceImport` job (OpenSpout) on the **`price-import`** queue matches rows (barcode → SKU code → name similarity, flagged) → preview page (old cost, new cost, new selling price, change %) → apply → `ApplyPriceImport` job (same queue) updates provider_prices and availability, then the S15 engine reprices on `pricing`; error report download; its own Horizon supervisor for `price-import`.
 - **Tests:** fixture file with matched/unmatched rows; preview changes nothing; apply updates provider prices and creates price records; jobs on the right queues.
 
@@ -2810,12 +2816,12 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S25 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
-- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots, order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); shipping options from the own courier (S24) and the fallback `RateTable` (S21) until Tipax quotes (S23).
+- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); shipping options from the own courier (S24) and the fallback `RateTable` (S21) until Tipax quotes (S23).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content.
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
-- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions (shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, status histories, customer OrderList/OrderDetail with tracking timeline, guest tracking.
+- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions (shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, order and order item status logs (two timelines), customer OrderList/OrderDetail with tracking timeline, guest tracking.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders.
 
 ### S30 Provider purchases (sourcing)
@@ -2957,7 +2963,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Payments, payment refunds, Zarinpal | S26 | Payments |
 | Shipments, shipment packages, shipment events, Tipax webhooks | S27 | Shipping |
 | Notification templates, notification logs, SMS (Melli Payamak), OTP delivery | S28 | Notifications |
-| Order admin, order status histories, cancellations, customer order pages | S29 | Orders |
+| Order admin, order and order item status logs, cancellations, customer order pages | S29 | Orders |
 | Provider purchases (sourcing) | S30 | Orders / Pricing |
 | Packing | S31 | Orders / Shipping |
 | Return requests | S32 | Orders |

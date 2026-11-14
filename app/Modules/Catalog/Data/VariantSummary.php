@@ -19,6 +19,7 @@ final readonly class VariantSummary
         public string $productRouteKey,
         public string $title,
         public string $sku,
+        public ?string $barcode,
         public ?int $officialPrice,
         public int $price,
         public ?int $salePrice,

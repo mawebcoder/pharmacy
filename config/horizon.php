@@ -226,6 +226,20 @@ return [
             'nice' => 0,
         ],
 
+        // "price-import": supplier price Excel imports (roadmap D9, S16): reading and applying big files, one at a time.
+        'supervisor-price-import' => [
+            'connection' => 'redis',
+            'queue' => ['price-import'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 512,
+            'tries' => 1,
+            'timeout' => 1800,
+            'nice' => 0,
+        ],
+
         // "search": Scout's Meilisearch indexing jobs (S12). One process, so the updates of a product reach
         // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S13b).
         'supervisor-search' => [

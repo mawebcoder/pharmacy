@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Media\Models\Media;
+use App\Modules\Pricing\Models\PriceImportRow;
 use App\Modules\Pricing\Models\ProviderPriceChange;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Search\Models\SearchLog;
@@ -60,9 +61,9 @@ foreach ($modules as $module) {
         ->expect("App\\Modules\\{$module}\\Models")
         ->toUseTrait(LogsActivity::class)
         // Log tables are records themselves; auditing them would log every log row (the price history tables of S14
-        // and S15 are such records). Media rows change on every processing step; changes to what an image belongs to
+        // and S15 and the import rows of S16 are such records). Media rows change on every processing step; changes to what an image belongs to
         // are logged on the owner.
-        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class]);
+        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class]);
 
     arch("{$module} enums have Persian labels")
         ->expect("App\\Modules\\{$module}\\Enums")

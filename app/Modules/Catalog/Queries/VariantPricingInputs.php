@@ -92,6 +92,7 @@ final readonly class VariantPricingInputs
                 productRouteKey: (string) $product->getRouteKey(),
                 title: $variant->getTitleFa(),
                 sku: $variant->getSku(),
+                barcode: $variant->getBarcode(),
                 officialPrice: $variant->getOfficialPrice(),
                 price: $variant->getPrice(),
                 salePrice: $variant->getSalePrice(),
