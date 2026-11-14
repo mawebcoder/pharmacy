@@ -76,10 +76,7 @@
                     <span class="hidden text-sm xl:inline">ورود | ثبت‌نام</span>
                 </a>
             @endauth
-            <a href="/cart" class="flex h-11 items-center gap-2 rounded-full px-3 text-ink-900 hover:bg-surface-50" aria-label="سبد خرید">
-                <x-ts-icon icon="shopping-bag" class="size-6" />
-                <span class="hidden text-sm xl:inline">سبد خرید</span>
-            </a>
+            <livewire:cart::mini-cart />
         </nav>
     </div>
 

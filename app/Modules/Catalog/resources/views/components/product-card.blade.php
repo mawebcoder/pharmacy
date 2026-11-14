@@ -18,7 +18,7 @@
     ];
 @endphp
 
-<article {{ $attributes->class('group relative flex h-full flex-col overflow-hidden rounded-card border border-line-200 bg-white transition xl:hover:shadow-card') }}>
+<article {{ $attributes->class('group relative flex h-full flex-col overflow-hidden rounded-card border border-line-200 bg-white transition duration-200 ease-out hover:-translate-y-1 hover:border-primary-200 hover:shadow-card-hover motion-reduce:transition-none motion-reduce:hover:translate-y-0') }}>
     <div class="relative aspect-square bg-white">
         @if ($product->getMainImage())
             <x-media::picture :media="$product->getMainImage()" slot-name="product-card" :alt="$product->getNameFa()" class="size-full object-contain" />
@@ -54,11 +54,20 @@
             </a>
         </h3>
 
-        <div class="mt-auto pt-2">
-            @if ($card->price !== null && $card->inStock)
-                <x-ui.price :price="$card->price" :old="$card->oldPrice" />
-            @else
-                <span class="text-sm text-ink-500">ناموجود</span>
+        {{-- Same layout with or without a haraj: a two-line price area (old price + badge, then the price), then the
+             add-to-cart line, so neighbouring cards line up. --}}
+        <div class="mt-auto space-y-2 pt-2">
+            <div class="flex min-h-12 flex-col justify-end">
+                @if ($card->price !== null && $card->inStock)
+                    <x-ui.price :price="$card->price" :old="$card->oldPrice" />
+                @else
+                    <span class="text-sm text-ink-500">ناموجود</span>
+                @endif
+            </div>
+            @if ($card->price !== null && $card->inStock && $card->variantId !== null && $product->isSellableType() && ! $product->requiresPrescription())
+                <div class="flex justify-end">
+                    <x-cart::add-button :variant-id="$card->variantId" :label="$product->getNameFa()" stack />
+                </div>
             @endif
         </div>
     </div>

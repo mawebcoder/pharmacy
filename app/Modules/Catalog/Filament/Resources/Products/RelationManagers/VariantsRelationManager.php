@@ -160,6 +160,7 @@ final class VariantsRelationManager extends RelationManager
                         TextInput::make(ProductVariant::COLUMN_MAX_PER_ORDER)
                             ->label('حداکثر تعداد در هر سفارش')
                             ->numeric()
+                            ->helperText('خالی یعنی عدد محصول، و اگر آن هم خالی باشد تنظیم کلی فروشگاه.')
                             ->rules(fn (?ProductVariant $record): array => $rules($record, ProductVariant::COLUMN_MAX_PER_ORDER)),
                         Toggle::make(ProductVariant::COLUMN_IS_ACTIVE)
                             ->label('فعال')

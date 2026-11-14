@@ -888,8 +888,11 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.4 Cart, checkout and orders
 
-**carts**: `customer_id` (nullable), `session_token` (guest), `coupon_id`, `address_id`, `shipping_quote_id`, `expires_at`.
-**cart_items**: `cart_id`, `variant_id`, `quantity`, `unit_price_snapshot`.
+**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `coupon_id` (S20), `address_id` (S25), `shipping_quote_id` (S21), `expires_at` (guests, 30 days).
+**cart_items**: `cart_id`, `variant_id`, `quantity`, `unit_price_snapshot` (the price last shown, only to tell the shopper it changed; the cart always uses the current price). Unique (`cart_id`, `variant_id`).
+
+**Cart rules** (owner, 2026-11-14, S19): the **guest cart cookie** `cart_token` holds a 40-character random token (never the cart id), encrypted and signed (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days; created on the first add. **Limit per order** per SKU: the SKU's `max_per_order`, else `products.max_per_order`, else the store setting «حداکثر تعداد هر کالا در یک سفارش» (default 10); «+» greys out at the limit. **On sign-in**: without a cart of their own the guest cart becomes the customer's and its token hash is cleared; with one, the guest lines are added to it (quantities summed, capped at the limit) and the guest cart is deleted; the cookie is removed. **Unavailable lines** (no active supplier so out of stock, switched off, prescription, cold chain): greyed with the reason, left out of the total; «ادامه خرید» stays disabled until «به‌روزرسانی سبد» removes them. **Price change**: shown once on the line («قیمت این کالا از … به … کاهش/افزایش یافت»), then taken as seen. **Feedback**: no toast on add/remove (the stepper and header count show it); after an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar; refusals show as warnings. **Product cards**: «+» on every in-stock card, then a «− n +» stepper on its own line under a fixed two-line price area (same layout with or without haraj); cards lift slightly with a shadow on hover. A deleted account's leftover session counts as a guest. `GET /cart/quantities` returns `{ data: { items: { <variant id>: <qty> }, count } }` (lightweight, `no-store`, 120/min) for the cards. Expired guest carts are deleted daily (04:00).
+**settings** (started in S19): key/value, read through `Settings\Queries\StoreSettings` (cached); admin «تنظیمات فروشگاه» (super admin): `cart.max_quantity_per_order` (10), `cart.free_shipping_threshold` (5,000,000 rial = 500,000 toman; 0 = off; shown in the cart and the announcement bar). S35 adds the rest.
 
 **coupons**: `code` (unique, case-insensitive), `type` (`percent`, `fixed`, `free_shipping`), `value`, `max_discount`, `min_order_amount`, `starts_at`, `ends_at`, `usage_limit_total`, `usage_limit_per_customer`, `first_order_only`, `is_active`. Pivots **coupon_categories**, **coupon_brands**, **coupon_products** (include lists).
 **coupon_usages**: `coupon_id`, `customer_id`, `order_id`, `discount_amount`.
@@ -2802,6 +2805,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S19 Cart
 - **Refs:** D13.3, D3.4, B7–B13
+- **Decisions (owner, 2026-11-14):** see D3.4 «Cart rules»: quantity stepper on cards, toast only for the free-shipping nudge and refusals, limit per order SKU → product → store setting, guest cart by an encrypted random-token cookie (hash in the database), merge on sign-in (assign or merge-and-delete), unavailable lines block checkout until «به‌روزرسانی سبد», price-change alert once, `GET /cart/quantities`; a product with one SKU shows no SKU list on the product page, just «افزودن به سبد» (it adds the default SKU everywhere); minimal «تنظیمات فروشگاه».
 - **Build:** carts/cart_items, add-to-cart action + button (on the card, quick view and the search box's product rows: a «+» that adds the default SKU, with a «تغییر» link to the product page; decided 2026-11-07, S12; S13b's empty-search popular cards and home collection rows get the same «+ افزودن به سبد»), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
 - **Tests:** qty limits, rx/cold-chain blocked, price snapshot refresh, merge.
 

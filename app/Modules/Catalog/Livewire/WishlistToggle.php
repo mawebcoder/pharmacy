@@ -26,7 +26,7 @@ final class WishlistToggle extends Component
 
     public function mount(CustomerWishlist $wishlist): void
     {
-        $customerId = auth('customer')->id();
+        $customerId = auth('customer')->user()?->getAuthIdentifier();
         $this->productIds = $customerId === null ? [] : $wishlist->productIds((int) $customerId);
 
         if (session()->pull(PendingWishlist::SAVED_FLASH) === true) {
@@ -37,7 +37,7 @@ final class WishlistToggle extends Component
     #[On('wishlist-toggle')]
     public function toggle(int $productId, ToggleWishlist $toggleWishlist): void
     {
-        $customerId = auth('customer')->id();
+        $customerId = auth('customer')->user()?->getAuthIdentifier();
 
         if ($customerId === null) {
             PendingWishlist::remember($productId);

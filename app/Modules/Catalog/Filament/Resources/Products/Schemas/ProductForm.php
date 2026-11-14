@@ -116,6 +116,12 @@ final class ProductForm
                                     ->extraInputAttributes(['dir' => 'ltr'])
                                     ->maxLength(32)
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_IRC_CODE)),
+                                TextInput::make(Product::COLUMN_MAX_PER_ORDER)
+                                    ->label('حداکثر تعداد در هر سفارش')
+                                    ->numeric()
+                                    ->integer()
+                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_MAX_PER_ORDER))
+                                    ->helperText('برای هر تنوع این محصول؛ اگر تنوع عدد خودش را داشته باشد همان اعمال می‌شود. خالی یعنی تنظیم کلی فروشگاه.'),
                                 Toggle::make(Product::COLUMN_REQUIRES_PRESCRIPTION)
                                     ->label('نیاز به نسخه')
                                     ->helperText('محصول نیازمند نسخه قابل فعال‌سازی برای فروش نیست.'),

@@ -48,6 +48,7 @@ final class StoreProductRequest extends FormRequest
             Product::COLUMN_PRODUCT_TYPE => ['required', Rule::enum(ProductType::class)],
             Product::COLUMN_REQUIRES_PRESCRIPTION => ['boolean'],
             Product::COLUMN_IRC_CODE => ['nullable', 'string', 'max:32'],
+            Product::COLUMN_MAX_PER_ORDER => ['nullable', 'integer', 'min:1', 'max:999'],
             Product::COLUMN_SHORT_DESCRIPTION => ['nullable', 'string', 'max:1000'],
             Product::COLUMN_DESCRIPTION => $text,
             Product::COLUMN_INGREDIENTS => $text,

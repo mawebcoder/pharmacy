@@ -83,22 +83,49 @@ new class extends Component
                 <p class="leading-8 text-ink-900">{{ $product->getShortDescription() }}</p>
             @endif
 
-            <ul class="divide-y divide-line-200 rounded-card border border-line-200 bg-white">
-                @foreach ($product->getVariants() as $variant)
-                    <li class="flex items-center justify-between gap-3 p-4">
-                        <div class="space-y-1">
-                            <p class="font-bold text-ink-900">{{ $variant->getTitleFa() }}</p>
-                            <p @class(['text-sm', 'text-success-600' => $variant->getStockStatus() === StockStatus::Available, 'text-ink-500' => $variant->getStockStatus() !== StockStatus::Available])>
-                                {{ $variant->getStockStatus()->label() }}
-                                @if ($variant->isNearExpiry() && $variant->getExpiryDate())
-                                    · زودمصرف (انقضا @jalali($variant->getExpiryDate()))
+            @php($variants = $product->getVariants())
+            @if ($variants->count() === 1)
+                {{-- One SKU: no SKU list, just its price and «افزودن به سبد» (owner, 2026-11-14). --}}
+                @php($variant = $variants->first()->setRelation('product', $product))
+                <div class="space-y-3 rounded-card border border-line-200 bg-white p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <p @class(['text-sm', 'text-success-600' => $variant->getStockStatus() === StockStatus::Available, 'text-ink-500' => $variant->getStockStatus() !== StockStatus::Available])>
+                            {{ $variant->getStockStatus()->label() }}
+                            @if ($variant->isNearExpiry() && $variant->getExpiryDate())
+                                · زودمصرف (انقضا @jalali($variant->getExpiryDate()))
+                            @endif
+                        </p>
+                        <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="lg" />
+                    </div>
+                    @if ($variant->canAddToCart())
+                        <x-cart::add-button :variant-id="$variant->getId()" :label="$product->getNameFa()" wide />
+                    @elseif ($product->requiresPrescription() || ! $product->isSellableType())
+                        <p class="text-sm text-ink-500">این دارو نسخه‌ای است و فروش آنلاین ندارد.</p>
+                    @endif
+                </div>
+            @else
+                <ul class="divide-y divide-line-200 rounded-card border border-line-200 bg-white">
+                    @foreach ($variants as $variant)
+                        <li class="flex items-center justify-between gap-3 p-4">
+                            <div class="space-y-1">
+                                <p class="font-bold text-ink-900">{{ $variant->getTitleFa() }}</p>
+                                <p @class(['text-sm', 'text-success-600' => $variant->getStockStatus() === StockStatus::Available, 'text-ink-500' => $variant->getStockStatus() !== StockStatus::Available])>
+                                    {{ $variant->getStockStatus()->label() }}
+                                    @if ($variant->isNearExpiry() && $variant->getExpiryDate())
+                                        · زودمصرف (انقضا @jalali($variant->getExpiryDate()))
+                                    @endif
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" />
+                                @if ($variant->setRelation('product', $product)->canAddToCart())
+                                    <x-cart::add-button :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" />
                                 @endif
-                            </p>
-                        </div>
-                        <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" />
-                    </li>
-                @endforeach
-            </ul>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
 
             @if ($product->getIrcCode())
                 <p class="text-sm text-ink-500">کد IRC: <span dir="ltr">{{ $product->getIrcCode() }}</span></p>

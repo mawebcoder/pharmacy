@@ -25,14 +25,19 @@
                                         {{ $variant->getStockStatus()->label() }}
                                     </p>
                                 </div>
-                                <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="sm" />
+                                <div class="flex items-center gap-3">
+                                    <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="sm" />
+                                    @if ($variant->setRelation('product', $product)->canAddToCart())
+                                        <x-cart::add-button :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" />
+                                    @endif
+                                </div>
                             </li>
                         @endforeach
                     </ul>
 
-                    <x-ts-button color="primary" class="w-full" :href="route('products.show', $product)" wire:navigate>
-                        مشاهده و خرید
-                    </x-ts-button>
+                    <a href="{{ route('products.show', $product) }}" wire:navigate class="flex h-11 w-full items-center justify-center rounded-card border border-primary-700 text-sm font-bold text-primary-700 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-primary-700">
+                        مشاهده جزئیات محصول
+                    </a>
                 </div>
             </div>
         @elseif ($productId !== null)

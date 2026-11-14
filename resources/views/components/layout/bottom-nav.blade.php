@@ -4,7 +4,7 @@
         ['label' => 'خانه', 'icon' => 'home', 'href' => route('home'), 'active' => request()->routeIs('home')],
         ['label' => 'دسته‌ها', 'icon' => 'squares-2x2', 'href' => '/categories', 'active' => request()->is('c/*', 'categories')],
         ['label' => 'جستجو', 'icon' => 'magnifying-glass', 'href' => '/search', 'active' => request()->is('search')],
-        ['label' => 'سبد خرید', 'icon' => 'shopping-bag', 'href' => '/cart', 'active' => request()->is('cart')],
+        ['label' => 'سبد خرید', 'icon' => 'shopping-bag', 'href' => '/cart', 'active' => request()->is('cart'), 'badge' => true],
         // Guests sign in first (S17); the account area itself comes with S18.
         auth('customer')->check()
             ? ['label' => 'حساب من', 'icon' => 'user', 'href' => '/account', 'active' => request()->is('account', 'account/*')]
@@ -25,7 +25,12 @@
                         'text-ink-500' => ! $item['active'],
                     ])
                 >
-                    <x-ts-icon :icon="$item['icon']" class="size-6" />
+                    <span class="relative">
+                        <x-ts-icon :icon="$item['icon']" class="size-6" />
+                        @if ($item['badge'] ?? false)
+                            <x-cart::count-badge />
+                        @endif
+                    </span>
                     {{ $item['label'] }}
                 </a>
             </li>

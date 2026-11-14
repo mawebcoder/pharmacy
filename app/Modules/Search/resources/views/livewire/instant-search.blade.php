@@ -1,5 +1,5 @@
 {{-- Search box with suggestions (roadmap D21.2 item 6): see App\Modules\Search\Livewire\InstantSearch.
-     Product rows show the default SKU's price; the add-to-cart button joins them in S19. --}}
+     Product rows show the default SKU's price and a small «+» that adds it (S19). --}}
 @use('App\Modules\Catalog\Support\ProductCardData')
 @php
     $hasText = mb_strlen(trim($value)) >= $minLength;
@@ -100,8 +100,8 @@
                 <ul>
                     @foreach ($suggestions->products as $product)
                         @php($card = ProductCardData::for($product))
-                        <li wire:key="suggest-product-{{ $product->getId() }}">
-                            <a role="option" href="{{ route('products.show', $product) }}" wire:navigate class="flex min-h-14 items-center gap-3 rounded-md px-3 py-1 hover:bg-surface-50 focus:bg-primary-50 focus:outline-none">
+                        <li wire:key="suggest-product-{{ $product->getId() }}" class="flex items-center gap-1">
+                            <a role="option" href="{{ route('products.show', $product) }}" wire:navigate class="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-1 hover:bg-surface-50 focus:bg-primary-50 focus:outline-none">
                                 <span class="size-11 shrink-0 overflow-hidden rounded-md bg-white">
                                     <x-media::picture :media="$product->getMainImage()" slot-name="cart-thumb" alt="" class="size-full object-contain" />
                                 </span>
@@ -115,6 +115,9 @@
                                     <span class="shrink-0 text-xs text-ink-500">ناموجود</span>
                                 @endif
                             </a>
+                            @if ($card->variantId !== null && $card->inStock && $product->isSellableType() && ! $product->requiresPrescription())
+                                <x-cart::add-button :variant-id="$card->variantId" :label="$product->getNameFa()" size="sm" class="me-1" />
+                            @endif
                         </li>
                     @endforeach
                 </ul>

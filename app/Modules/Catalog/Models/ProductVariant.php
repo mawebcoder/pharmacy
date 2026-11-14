@@ -409,6 +409,23 @@ final class ProductVariant extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_EXPIRY_DATE, $date);
     }
 
+    /**
+     * Whether the cart may take this SKU now (S19): active product of a type sold online, no prescription, no cold
+     * chain, active and in stock. Needs the product loaded. The cart itself checks through PurchasableVariants.
+     */
+    public function canAddToCart(): bool
+    {
+        $product = $this->getProduct();
+
+        return $product instanceof Product
+            && $product->isActive()
+            && $product->isSellableType()
+            && ! $product->requiresPrescription()
+            && $this->isActive()
+            && ! $this->requiresColdChain()
+            && $this->isInStock();
+    }
+
     public function isInStock(): bool
     {
         return $this->getStockStatus() !== StockStatus::OutOfStock;

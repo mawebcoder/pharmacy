@@ -21,6 +21,7 @@
         <x-ts-toast />
         <x-ts-dialog />
         <livewire:catalog::wishlist-toggle />
+        <livewire:cart::cart-state />
 
         <x-layout.announcement />
         <x-layout.header />

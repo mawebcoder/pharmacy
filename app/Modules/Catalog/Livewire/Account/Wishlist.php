@@ -36,6 +36,6 @@ final class Wishlist extends Component
 
     private function customerId(): int
     {
-        return (int) (auth('customer')->id() ?? abort(401));
+        return (int) (auth('customer')->user()?->getAuthIdentifier() ?? abort(401));
     }
 }

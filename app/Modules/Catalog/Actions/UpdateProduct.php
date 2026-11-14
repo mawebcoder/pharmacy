@@ -82,6 +82,7 @@ final class UpdateProduct
             // Prescription medicines always need a prescription.
             ->setRequiresPrescription($data->requiresPrescription || $data->productType === ProductType::Rx)
             ->setIrcCode($data->ircCode)
+            ->setMaxPerOrder($data->maxPerOrder)
             ->setShortDescription($data->shortDescription)
             ->setDescription($data->description)
             ->setIngredients($data->ingredients)

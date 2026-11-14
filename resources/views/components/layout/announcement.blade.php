@@ -1,5 +1,13 @@
-{{-- One dismissible announcement line (roadmap B9.1, B8.2). Text comes from settings in S35. --}}
-@props(['text' => 'ارسال رایگان برای سفارش‌های بالای ۵۰۰٬۰۰۰ تومان'])
+{{-- One dismissible announcement line (roadmap B9.1, B8.2): the free-shipping amount from «تنظیمات فروشگاه» (S19);
+     other texts come from settings in S35. Hidden when there is no text. --}}
+@props(['text' => null])
+
+@php
+    $threshold = app(\App\Modules\Settings\Queries\StoreSettings::class)->freeShippingThreshold();
+    $text ??= $threshold > 0 ? 'ارسال رایگان برای سفارش‌های بالای '.\App\Modules\Shared\Support\Toman::format($threshold) : null;
+@endphp
+
+@if ($text)
 
 <div x-data="{ open: true }" x-show="open" class="bg-primary-800 text-white">
     <div class="mx-auto flex h-8 max-w-7xl items-center justify-center gap-2 px-4 text-xs md:px-6 xl:px-8">
@@ -9,3 +17,4 @@
         </button>
     </div>
 </div>
+@endif

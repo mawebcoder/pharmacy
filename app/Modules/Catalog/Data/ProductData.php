@@ -42,6 +42,7 @@ final readonly class ProductData
         public ?string $seoDescription,
         public array $attributeValueIds = [],
         public array $tagIds = [],
+        public ?int $maxPerOrder = null,
     ) {}
 
     /**
@@ -78,6 +79,7 @@ final readonly class ProductData
             seoDescription: self::text($data[Product::COLUMN_SEO_DESCRIPTION] ?? null),
             attributeValueIds: self::ids($data['attribute_value_ids'] ?? []),
             tagIds: self::ids($data['tag_ids'] ?? []),
+            maxPerOrder: blank($data[Product::COLUMN_MAX_PER_ORDER] ?? null) ? null : (int) PersianNormalizer::digits((string) $data[Product::COLUMN_MAX_PER_ORDER]),
         );
     }
 
