@@ -8,4 +8,5 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:customer')->group(function (): void {
     Route::livewire('/checkout/result/{order}', 'orders::payment-result')->whereNumber('order')->name('checkout.result');
     Route::livewire('/account/orders', 'orders::account.order-list')->name('account.orders');
+    Route::livewire('/account/orders/{order}', 'orders::account.order-detail')->whereNumber('order')->name('account.orders.show');
 });

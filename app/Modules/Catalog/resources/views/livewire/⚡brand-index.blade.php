@@ -60,9 +60,14 @@ new #[Title('برندها')] class extends Component
                     @foreach ($brands as $brand)
                         <li wire:key="brand-{{ $brand->getId() }}">
                             <a href="{{ route('brands.show', $brand) }}" wire:navigate class="flex h-full min-h-24 flex-col justify-center gap-1 rounded-card border border-line-200 bg-card p-4 shadow-card transition hover:border-primary-300 focus-visible:outline-2 focus-visible:outline-primary-700">
-                                @if ($brand->getLogo())
-                                    <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="mb-2 h-12 w-24 object-contain md:h-15 md:w-30" />
-                                @endif
+                                {{-- The logo on a white well in both themes (owner, 2026-11-14); the initial without a logo. --}}
+                                <span class="mb-2 grid h-16 w-full place-items-center overflow-hidden rounded-md border border-line-200 bg-media p-2 md:h-20">
+                                    @if ($brand->getLogo())
+                                        <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="h-full w-auto max-w-full object-contain" />
+                                    @else
+                                        <span class="text-2xl font-bold text-ink-500" aria-hidden="true">{{ mb_substr($brand->getNameFa(), 0, 1) }}</span>
+                                    @endif
+                                </span>
                                 <span class="line-clamp-2 font-bold text-ink-900">{{ $brand->getNameFa() }}</span>
                                 @if ($brand->getNameEn())
                                     <span dir="ltr" class="truncate text-end text-sm text-ink-500">{{ $brand->getNameEn() }}</span>

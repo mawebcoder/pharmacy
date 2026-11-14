@@ -45,7 +45,7 @@
                     @enderror
                 </div>
 
-                <button type="submit" wire:loading.attr="disabled" wire:target="sendCode" class="flex h-12 w-full items-center justify-center gap-2 rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
+                <button type="submit" wire:loading.attr="disabled" wire:target="sendCode" data-own-loading class="flex h-12 w-full items-center justify-center gap-2 rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
                     <x-ts-icon icon="arrow-path" class="size-5 animate-spin" wire:loading wire:target="sendCode" />
                     دریافت کد تأیید
                 </button>
@@ -169,7 +169,7 @@
                     @enderror
                 </fieldset>
 
-                <button type="submit" wire:loading.attr="disabled" wire:target="verify" x-bind:disabled="digits.join('').length !== 5" class="flex h-12 w-full items-center justify-center gap-2 rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
+                <button type="submit" wire:loading.attr="disabled" wire:target="verify" data-own-loading x-bind:disabled="digits.join('').length !== 5" class="flex h-12 w-full items-center justify-center gap-2 rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
                     <x-ts-icon icon="arrow-path" class="size-5 animate-spin" wire:loading wire:target="verify" />
                     ورود
                 </button>
@@ -204,7 +204,7 @@
                 <x-ts-input id="login-last-name" label="نام خانوادگی" wire:model="lastName" autocomplete="family-name" maxlength="60" />
 
                 <div class="flex gap-3">
-                    <button type="submit" wire:loading.attr="disabled" wire:target="saveName" class="flex h-12 flex-1 items-center justify-center gap-2 rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    <button type="submit" wire:loading.attr="disabled" wire:target="saveName" data-own-loading class="flex h-12 flex-1 items-center justify-center gap-2 rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:opacity-60">
                     <x-ts-icon icon="arrow-path" class="size-5 animate-spin" wire:loading wire:target="saveName" />
                     ذخیره
                 </button>

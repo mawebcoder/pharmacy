@@ -164,7 +164,7 @@
                     <div class="fixed inset-x-0 bottom-16 z-30 border-t border-line-200 bg-card p-3 md:static md:border-0 md:p-0">
                         <button
                             type="button"
-                            wire:click="pay"
+                            wire:click="pay" data-own-loading
                             wire:loading.attr="disabled"
                             wire:target="pay"
                             @disabled($quote->unavailableNames() !== [] || ! $quote->address?->isDeliveryEnabled)

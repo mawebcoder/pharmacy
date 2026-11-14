@@ -64,6 +64,18 @@ final class SearchLog extends Model
         return $this->setAttribute(self::COLUMN_RESULTS_COUNT, $count);
     }
 
+    public function getCustomerId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_CUSTOMER_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setCustomerId(?int $customerId): static
+    {
+        return $this->setAttribute(self::COLUMN_CUSTOMER_ID, $customerId);
+    }
+
     public function getClickedProductId(): ?int
     {
         $value = $this->getAttribute(self::COLUMN_CLICKED_PRODUCT_ID);
@@ -88,6 +100,7 @@ final class SearchLog extends Model
     {
         return [
             self::COLUMN_RESULTS_COUNT => 'integer',
+            self::COLUMN_CUSTOMER_ID => 'integer',
             self::COLUMN_CLICKED_PRODUCT_ID => 'integer',
             self::COLUMN_CREATED_AT => 'datetime',
         ];

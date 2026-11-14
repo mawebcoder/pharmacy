@@ -8,17 +8,19 @@ use App\Modules\Search\Models\SearchLog;
 use App\Modules\Shared\Support\SearchText;
 
 /**
- * Records a search from the search page (roadmap D21.4.4 step 6) for the insights page.
+ * Records a search from the search page (roadmap D21.4.4 step 6) for the insights page. With a signed-in customer
+ * the same row is their search history (owner, 2026-11-14), so history costs no extra query.
  */
 final class LogSearch
 {
     #[\NoDiscard]
-    public function __invoke(string $query, int $resultsCount): SearchLog
+    public function __invoke(string $query, int $resultsCount, ?int $customerId = null): SearchLog
     {
         $log = (new SearchLog)
             ->setQuery(trim($query))
             ->setNormalizedQuery(SearchText::normalize($query))
-            ->setResultsCount($resultsCount);
+            ->setResultsCount($resultsCount)
+            ->setCustomerId($customerId);
         $log->save();
 
         return $log;

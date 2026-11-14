@@ -42,7 +42,8 @@ final class SearchPage extends Component
         $this->available = ! $result->degraded;
 
         if ($this->available) {
-            $this->searchLogId = $logSearch($this->q, $this->total)->getId();
+            $customerId = auth('customer')->id();
+            $this->searchLogId = $logSearch($this->q, $this->total, $customerId === null ? null : (int) $customerId)->getId();
         }
     }
 

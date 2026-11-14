@@ -10,9 +10,10 @@
         <ul class="space-y-3">
             @foreach ($orders as $order)
                 @php($status = $order->getStatus())
-                <li wire:key="order-{{ $order->getId() }}" class="rounded-card border border-line-200 bg-card p-4">
+                <li wire:key="order-{{ $order->getId() }}" class="relative rounded-card border border-line-200 bg-card p-4 transition-colors hover:border-primary-700">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <p class="font-bold text-ink-900" dir="ltr">{{ $order->getNumber() }}</p>
+                        {{-- The whole card opens the order; the action buttons sit above the link. --}}
+                        <a href="{{ route('account.orders.show', $order->getId()) }}" wire:navigate class="font-bold text-ink-900 after:absolute after:inset-0 after:rounded-card focus-visible:outline-none after:focus-visible:outline-2 after:focus-visible:outline-primary-700" dir="ltr">{{ $order->getNumber() }}<span class="sr-only"> — جزئیات سفارش</span></a>
                         <x-orders::status-badge :status="$status" />
                     </div>
                     <p class="mt-1 text-sm text-ink-500">{{ JalaliDate::display($order->getPlacedAt(), 'j F Y، H:i') }}</p>
@@ -33,7 +34,7 @@
                         <p class="text-base font-bold text-ink-900">@toman($order->getTotal())</p>
                     </div>
 
-                    <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-line-200 pt-3">
+                    <div class="relative z-10 mt-3 flex flex-wrap items-center gap-2 border-t border-line-200 pt-3">
                         @if ($order->canBePaid())
                             <button type="button" wire:click="pay({{ $order->getId() }})" wire:loading.attr="disabled" wire:target="pay({{ $order->getId() }})" class="inline-flex min-h-11 items-center gap-2 rounded-card bg-primary-700 px-4 text-sm font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700">
                                 <x-ts-icon icon="credit-card" class="size-5" />

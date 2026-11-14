@@ -36,6 +36,7 @@
             پرش به محتوای اصلی
         </a>
 
+        <x-layout.page-loading />
         <x-ts-toast />
         <x-ts-dialog />
         <livewire:catalog::wishlist-toggle />

@@ -45,7 +45,7 @@
             @error('form.'.Customer::COLUMN_GENDER) <p class="text-sm text-danger-600">{{ $message }}</p> @enderror
         </fieldset>
 
-        <button type="submit" wire:loading.attr="disabled" wire:target="save" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-card bg-primary-700 px-6 text-sm font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:opacity-60">
+        <button type="submit" wire:loading.attr="disabled" wire:target="save" data-own-loading class="inline-flex min-h-11 items-center justify-center gap-2 rounded-card bg-primary-700 px-6 text-sm font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:opacity-60">
             <x-ts-icon icon="arrow-path" class="size-4 animate-spin" wire:loading wire:target="save" />
             ذخیره تغییرات
         </button>

@@ -28,6 +28,7 @@ use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Exceptions\CheckoutRefused;
 use App\Modules\Orders\Jobs\ExpirePendingOrders;
+use App\Modules\Orders\Livewire\Account\OrderDetail;
 use App\Modules\Orders\Livewire\Account\OrderList;
 use App\Modules\Orders\Livewire\PaymentResult;
 use App\Modules\Orders\Models\Order;
@@ -440,6 +441,27 @@ describe('the customer\'s orders', function (): void {
         expect($theirs->fresh()->getStatus())->toBe(OrderStatus::Paid)
             ->and(CartItem::query()->count())->toBe(0);
     })->with(['pay', 'cancel', 'reorder']);
+
+    it('opens an order from the list and shows it from its own copies', function (): void {
+        $this->actingAs($this->customer, 'customer');
+        $order = Order::factory()->paid()->create([
+            Order::COLUMN_CUSTOMER_ID => $this->customer->getId(),
+            Order::COLUMN_NUMBER => 'PH-140508-000777',
+            Order::COLUMN_ADDRESS_SNAPSHOT => ['title' => 'خانه', 'province' => 'تهران', 'city' => 'تهران', 'main_street' => 'ولیعصر', 'plaque' => '12', 'receiver_name' => 'سارا رضایی', 'receiver_mobile' => '09123456789', 'postal_code' => '1415934571'],
+        ]);
+        (new OrderItem)->setOrderId($order->getId())->setProductName('کرم اوره قدیمی')->setSku('SKU-1')->setQuantity(2)
+            ->setListPrice(500_000)->setUnitPrice(500_000)->setTotal(1_000_000)->setProductSnapshot([])->save();
+
+        livewire(OrderList::class)->assertSee(route('account.orders.show', $order->getId()), false);
+        livewire(OrderDetail::class, ['order' => $order->getId()])
+            ->assertSee(['PH-140508-000777', 'کرم اوره قدیمی', 'تهران، تهران، خیابان ولیعصر، پلاک ۱۲', 'سارا رضایی', 'لغو سفارش']);
+    });
+
+    it('never opens another customer\'s order', function (): void {
+        $this->actingAs($this->customer, 'customer');
+
+        livewire(OrderDetail::class, ['order' => Order::factory()->create()->getId()])->assertNotFound();
+    });
 
     it('lists only the customer\'s own orders', function (): void {
         $this->actingAs($this->customer, 'customer');

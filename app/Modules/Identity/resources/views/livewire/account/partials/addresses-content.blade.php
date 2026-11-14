@@ -169,7 +169,7 @@
 
         <x-slot:footer>
             <div class="flex w-full gap-2">
-                <button type="submit" form="address-form" wire:loading.attr="disabled" wire:target="save" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-card bg-primary-700 px-5 text-sm font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:opacity-60 md:flex-none">
+                <button type="submit" form="address-form" wire:loading.attr="disabled" wire:target="save" data-own-loading class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-card bg-primary-700 px-5 text-sm font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:opacity-60 md:flex-none">
                     <x-ts-icon icon="arrow-path" class="size-4 animate-spin" wire:loading wire:target="save" />
                     ذخیره آدرس
                 </button>

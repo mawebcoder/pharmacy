@@ -23,6 +23,7 @@ export default (count = 0) => ({
             modules: [Keyboard],
             speed: reducedMotion ? 0 : 300,
             watchOverflow: true,
+            touchStartPreventDefault: false,
             keyboard: { enabled: true, onlyInViewport: true },
             on: { slideChange: (swiper) => (this.active = swiper.activeIndex) },
         });

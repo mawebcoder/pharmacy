@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Catalog\Data\CategoryNode;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Queries\CategoryTree;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -8,7 +9,8 @@ use Livewire\Component;
 
 /**
  * All categories (roadmap B9.1): the full-screen list behind the mobile "دسته‌ها" tab, two levels deep.
- * Tablet and desktop reach the same categories through the header bar and mega-menu.
+ * Tablet and desktop reach the same categories through the header bar and mega-menu. Each top-level row shows the
+ * category's icon (owner, 2026-11-14), loaded in one query beside the cached tree.
  */
 new #[Title('دسته‌بندی‌ها')] class extends Component
 {
@@ -19,6 +21,17 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
     public function roots(): array
     {
         return app(CategoryTree::class)->roots();
+    }
+
+    /**
+     * Top-level categories with their icon media, keyed by id.
+     *
+     * @return array<int, Category>
+     */
+    #[Computed]
+    public function withIcons(): array
+    {
+        return Category::query()->with('media')->whereKey(array_map(fn (CategoryNode $root): int => $root->id, $this->roots))->get()->keyBy(Category::COLUMN_ID)->all();
     }
 };
 ?>
@@ -36,9 +49,13 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
         <ul class="divide-y divide-line-200 overflow-hidden rounded-card border border-line-200 bg-card">
             @foreach ($this->roots as $root)
                 <li wire:key="category-{{ $root->id }}" x-data="{ open: false }">
+                    @php($icon = ($this->withIcons[$root->id] ?? null)?->getIcon())
                     @if ($root->children === [])
                         <a href="{{ $root->url() }}" wire:navigate class="flex min-h-14 items-center px-4 font-bold text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700">
-                            {{ $root->nameFa }}
+                            <span class="flex items-center gap-3">
+                                <x-catalog::category-icon :icon="$icon" />
+                                {{ $root->nameFa }}
+                            </span>
                         </a>
                     @else
                         <button
@@ -48,7 +65,10 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
                             aria-controls="category-panel-{{ $root->id }}"
                             class="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-start font-bold text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700"
                         >
-                            {{ $root->nameFa }}
+                            <span class="flex items-center gap-3">
+                                <x-catalog::category-icon :icon="$icon" />
+                                {{ $root->nameFa }}
+                            </span>
                             <x-ts-icon icon="chevron-down" class="size-5 text-ink-500 transition motion-reduce:transition-none" x-bind:class="open && 'rotate-180'" />
                         </button>
                         <ul id="category-panel-{{ $root->id }}" x-show="open" x-cloak class="bg-surface-50 pb-2">

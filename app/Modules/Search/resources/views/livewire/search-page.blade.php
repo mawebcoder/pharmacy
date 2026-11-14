@@ -9,6 +9,11 @@
             @endif
         </h1>
 
+        {{-- Remember this search in the browser's recent searches (latest 6; owner, 2026-11-14). --}}
+        @if ($q !== '' && $available)
+            <span hidden x-data x-init="$store.searchHistory.add(@js($q))"></span>
+        @endif
+
         {{-- The header box is hidden on phones below the header; this one is always here. --}}
         <livewire:search::instant-search input-id="search-page-box" :value="$q" class="max-w-xl" />
     </header>

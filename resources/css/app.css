@@ -124,6 +124,53 @@
         --livewire-progress-bar-color: var(--color-primary-700);
     }
 
+    /*
+    | Loading on every server call (owner, 2026-11-14): Livewire marks the button that started an action, or the form
+    | that submitted, with data-loading. Its content turns invisible (keeping its size), a spinner in the button's own
+    | colour turns in the middle, and it cannot be pressed again. Buttons with their own spinner opt out with
+    | data-own-loading.
+    */
+    :is(button, a, [role='button'])[data-loading]:not([data-own-loading]),
+    form[data-loading] :is(button[type='submit'], button:not([type])):not([data-own-loading]) {
+        position: relative;
+        pointer-events: none;
+        cursor: progress;
+        -webkit-text-fill-color: transparent;
+
+        & > * {
+            visibility: hidden;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            width: 1.125rem;
+            height: 1.125rem;
+            border-radius: 9999px;
+            border: 2px solid currentColor;
+            border-inline-end-color: transparent;
+            animation: ui-spin 0.7s linear infinite;
+        }
+    }
+
+    @keyframes ui-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Swiper lets presses through (for wire:navigate links), so stop photos and text from being dragged or selected. */
+    .swiper img {
+        -webkit-user-drag: none;
+        user-select: none;
+    }
+
+    .swiper-wrapper {
+        user-select: none;
+    }
+
     #nprogress .bar {
         height: 3px !important;
         scale: -1 1;

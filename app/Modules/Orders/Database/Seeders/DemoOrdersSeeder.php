@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Local demo orders (owner, 2026-11-14): one order in each of the seven statuses (roadmap D3.5) for the demo customer
  * DEMO_MOBILE, so «سفارش‌ها» can be seen in every state. Sign in with that mobile (the local OTP bypass code works).
+ * forMobile() seeds them for another customer instead (created when missing; an existing one is left as it is):
+ * app(DemoOrdersSeeder::class)->forMobile('09…')->setContainer(app())->__invoke()
  * Items come from the first buyable SKUs of the catalog with real snapshots; every status is reached through
  * ChangeOrderStatus, so the status logs read like real ones. Running it again replaces the demo orders.
  * Refuses to run in production. php artisan db:seed --class="App\Modules\Orders\Database\Seeders\DemoOrdersSeeder"
@@ -32,6 +34,11 @@ final class DemoOrdersSeeder extends Seeder
     public const string DEMO_MOBILE = '09121234567';
 
     public const string DEMO_NOTE = 'demo-orders-seeder';
+
+    private string $mobile = self::DEMO_MOBILE;
+
+    /** The customer's name for the order snapshots, set in run(). */
+    private string $customerName = 'مشتری نمایشی';
 
     /**
      * Status => the moves that reach it from pending, how many days ago it was placed.
@@ -47,6 +54,13 @@ final class DemoOrdersSeeder extends Seeder
         'delivered' => ['moves' => [[OrderStatus::Paid, OrderActor::System], [OrderStatus::Processing, OrderActor::Admin], [OrderStatus::OnTheWay, OrderActor::Admin], [OrderStatus::Delivered, OrderActor::Admin]], 'days_ago' => 6],
         'cancelled' => ['moves' => [[OrderStatus::Paid, OrderActor::System], [OrderStatus::Cancelled, OrderActor::Customer]], 'days_ago' => 4],
     ];
+
+    public function forMobile(string $mobile): static
+    {
+        $this->mobile = $mobile;
+
+        return $this;
+    }
 
     public function run(PurchasableVariants $variants, OrderItemSnapshots $snapshots, ChangeOrderStatus $changeStatus, StoreSettings $settings): void
     {
@@ -100,7 +114,7 @@ final class DemoOrdersSeeder extends Seeder
             $order->save();
         }
 
-        $this->command?->info('Seeded '.count(self::PATHS).' demo orders for '.self::DEMO_MOBILE.'.');
+        $this->command?->info('Seeded '.count(self::PATHS).' demo orders for '.$this->mobile.'.');
     }
 
     /**
@@ -108,10 +122,17 @@ final class DemoOrdersSeeder extends Seeder
      */
     private function demoCustomerId(): int
     {
-        $id = DB::table('customers')->where('mobile', self::DEMO_MOBILE)->value('id');
+        $customer = DB::table('customers')->where('mobile', $this->mobile)->first(['id', 'first_name', 'last_name']);
 
-        return $id !== null ? (int) $id : DB::table('customers')->insertGetId([
-            'mobile' => self::DEMO_MOBILE,
+        if ($customer !== null) {
+            $name = trim(((string) ($customer->first_name ?? '')).' '.((string) ($customer->last_name ?? '')));
+            $this->customerName = $name === '' ? $this->mobile : $name;
+
+            return (int) $customer->id;
+        }
+
+        return DB::table('customers')->insertGetId([
+            'mobile' => $this->mobile,
             'first_name' => 'مشتری',
             'last_name' => 'نمایشی',
             'theme' => 'system',
@@ -144,12 +165,12 @@ final class DemoOrdersSeeder extends Seeder
             ->setStatus(OrderStatus::Pending)
             ->setPaymentStatus(PaymentStatus::Pending)
             ->setAddressSnapshot([
-                'address_id' => null, 'title' => 'خانه', 'receiver_name' => 'مشتری نمایشی', 'receiver_mobile' => self::DEMO_MOBILE,
+                'address_id' => null, 'title' => 'خانه', 'receiver_name' => $this->customerName, 'receiver_mobile' => $this->mobile,
                 'province_id' => 8, 'province' => 'تهران', 'city_id' => 1, 'city' => 'تهران', 'main_street' => 'ولیعصر',
                 'side_street' => 'فاطمی', 'alley' => 'نسترن', 'block' => null, 'details' => null, 'plaque' => '12', 'unit' => '3',
                 'floor' => '2', 'postal_code' => '1415934571',
             ])
-            ->setCustomerSnapshot(['name' => 'مشتری نمایشی', 'mobile' => self::DEMO_MOBILE])
+            ->setCustomerSnapshot(['name' => $this->customerName, 'mobile' => $this->mobile])
             ->setSubtotal($subtotal)
             ->setShippingTotal($shipping)
             ->setTotal($subtotal + $shipping)

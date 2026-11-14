@@ -14,7 +14,7 @@ use TallStackUi\Traits\Interactions;
 /**
  * «سفارش‌ها» (roadmap B9.9, S25): the customer's orders, newest first, as cards (number, date, status, total, items).
  * A pending order offers «پرداخت» (its open payment link is reused) until it expires; a paid one «لغو سفارش»; the
- * others «سفارش دوباره». The order page with its timeline comes with S29.
+ * others «سفارش دوباره». Each card opens its order (OrderDetail); the full tracking page comes with S29.
  */
 final class OrderList extends Component
 {

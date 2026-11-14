@@ -7,6 +7,8 @@ namespace App\Modules\Search\Livewire;
 use App\Modules\Catalog\Data\SearchSuggestions;
 use App\Modules\Catalog\Queries\CollectionProducts;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
+use App\Modules\Search\Actions\ForgetRecentSearches;
+use App\Modules\Search\Queries\RecentSearches;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +19,9 @@ use Livewire\Component;
 /**
  * The search box (roadmap B2 rule 2, D21.2 item 6): suggestions while typing (300 ms pause, from 2 letters) —
  * up to 6 products, 3 brands, 3 categories, 3 tags — with keyboard navigation; Enter opens /search?q=….
- * Without JavaScript it is a plain form to the search page. Opened empty, it shows «محصولات محبوب» (S13b).
+ * Without JavaScript it is a plain form to the search page. Opened empty, it shows «جستجوهای اخیر» and
+ * «محصولات محبوب» (S13b). Recent searches live in the browser (latest 6); a signed-in customer's come from their
+ * search logs too, loaded with popular products in the same request and merged in the browser (owner, 2026-11-14).
  */
 final class InstantSearch extends Component
 {
@@ -32,6 +36,14 @@ final class InstantSearch extends Component
      * Set on the first focus, so popular products load only when someone opens the box.
      */
     public bool $popularRequested = false;
+
+    /**
+     * The signed-in customer's recent searches, filled with popular products on the first focus.
+     *
+     * @var list<array{q: string, at: int}>
+     */
+    #[Locked]
+    public array $serverRecent = [];
 
     public function mount(string $value = '', string $inputId = 'site-search', string $class = ''): void
     {
@@ -64,10 +76,38 @@ final class InstantSearch extends Component
         return $products;
     }
 
+    public function updatedPopularRequested(RecentSearches $recentSearches): void
+    {
+        $customerId = $this->customerId();
+        $this->serverRecent = $this->popularRequested && $customerId !== null ? $recentSearches->for($customerId) : [];
+    }
+
+    /**
+     * «پاک کردن»: the browser clears its own list; this unlinks a signed-in customer's searches.
+     */
+    public function clearRecent(ForgetRecentSearches $forget): void
+    {
+        $customerId = $this->customerId();
+
+        if ($customerId !== null) {
+            $forget($customerId);
+        }
+
+        $this->serverRecent = [];
+        $this->skipRender();
+    }
+
     public function render(): View
     {
         return view('search::livewire.instant-search', [
             'minLength' => SearchSuggestionsQuery::MIN_LENGTH,
         ]);
+    }
+
+    private function customerId(): ?int
+    {
+        $id = auth('customer')->id();
+
+        return $id === null ? null : (int) $id;
     }
 }

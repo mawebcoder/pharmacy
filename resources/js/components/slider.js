@@ -19,6 +19,8 @@ export default (options = {}) => ({
             speed: reducedMotion ? 0 : 400,
             grabCursor: true,
             watchOverflow: true,
+            // Let the press through: wire:navigate opens links on mousedown + mouseup, which Swiper would cancel.
+            touchStartPreventDefault: false,
             keyboard: { enabled: true, onlyInViewport: true },
             navigation: { prevEl: this.$refs.previous, nextEl: this.$refs.next },
             ...options,

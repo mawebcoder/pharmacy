@@ -13,6 +13,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
+use App\Modules\Identity\Models\Customer;
 use App\Modules\Search\Actions\SaveSearchSynonym;
 use App\Modules\Search\Livewire\InstantSearch;
 use App\Modules\Search\Models\SearchLog;
@@ -46,6 +47,15 @@ it('shows results on the search page and logs the search once', function (): voi
     expect(SearchLog::query()->sole())
         ->getNormalizedQuery()->toBe('ویتامین')
         ->getResultsCount()->toBe(1);
+});
+
+it('puts a signed-in customer on their search log, so it becomes their history', function (): void {
+    $customer = Customer::factory()->create();
+
+    $this->get('/search?q=ویتامین')->assertOk();
+    $this->actingAs($customer, 'customer')->get('/search?q=ویتامین')->assertOk();
+
+    expect(SearchLog::query()->orderBy(SearchLog::COLUMN_ID)->get()->map->getCustomerId()->all())->toBe([null, $customer->getId()]);
 });
 
 it('logs searches without results and suggests other ways', function (): void {
