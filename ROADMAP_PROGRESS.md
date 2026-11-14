@@ -27,7 +27,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S18 | Addresses and account area | done | 2026-11-14 | 13ad476 |
 | S19 | Cart | done | 2026-11-14 | ff08e15 |
 | S20 | Coupons | done | 2026-11-14 | 8472cda |
-| S25 | Checkout wizard | in progress | | |
+| S25 | Checkout wizard | done | 2026-11-14 | e8afe2a |
 | S29 | Order admin and state machine | todo | | |
 | S30 | Provider purchases (sourcing) | todo | | |
 | S31 | Packing | todo | | |
