@@ -7,8 +7,40 @@
 @source '../../app/Modules/**/*.blade.php';
 
 /*
-| Design tokens (docs/pharmacy-roadmap.md B3). Templates use only these names; no raw hex values.
-| The primary scale is complete because TallStackUI uses every shade; 50, 700 and 800 are the B3 values.
+| Design system (roadmap B3; owner, 2026-11-14). Templates use only these token names, never raw hex values, so light
+| and dark (the `.dark` block below) change in one place.
+|
+| Colour roles
+|   primary-*   brand teal. 700 = buttons, links, focus rings, selected states; 800 = hover; 50 = tinted background.
+|               The whole scale exists because TallStackUI uses every shade.
+|   accent-*    discount badges and sale prices only.
+|   ink-900     main text and headings · ink-500 secondary text, helper text, placeholders.
+|   surface-50  page background · card = cards, panels, inputs, menus · media = the white well behind product photos
+|               (white in both themes, because product photos are shot on white).
+|   line-200    default border of cards, dividers and tables (visible on white: owner, 2026-11-14)
+|   line-300    strong border: inputs, selects, checkboxes, chips and outlined buttons.
+|   success / warning / danger / rx  stock and status, near-expiry, errors, prescription items.
+|
+| Shape and depth
+|   radius-card 12 px for cards, inputs and buttons; rounded-full for chips, badges and icon buttons; rounded-md for
+|   thumbnails. shadow-card on raised elements only (menus, popovers, sticky bars); cards rely on their border.
+|
+| Type: Vazirmatn; 12 / 14 / 16 / 18 / 20 / 24 px (text-xs … text-2xl) with line-height 1.7 for Persian body text
+|   (headings leading-9 / leading-10). Emphasis with weight (medium, bold), never italics.
+|
+| Spacing: the 4 px Tailwind scale. Page gutter 16 px (px-4) on phones, 24 px on tablets, 32 px on desktop; content
+|   max width 1280 px (max-w-7xl). Touch targets at least 44 × 44 px (size-11, min-h-11).
+|
+| Right to left (the page is dir="rtl")
+|   - Logical utilities only: ms-/me-, ps-/pe-, start-/end-, text-start/text-end, rounded-s/e, border-s/e.
+|     Never ml-/mr-/pl-/pr-/left-/right-/text-left/text-right.
+|   - Flex and grid rows already run right to left: never add flex-row-reverse to "fix" direction.
+|   - Start (right) is the leading edge: logo, primary navigation, titles. Previous / back points right (chevron-right),
+|     next / forward points left (chevron-left). Carousels and progress bars move from right to left.
+|   - No letter-spacing (tracking-*) on Persian text; only on Latin or digit-only LTR fields such as codes.
+|   - Persian digits in everything shown (PersianDigits::toPersian, @toman, @jalali), including prefilled inputs.
+|   - Mobile numbers, postal codes, emails, URLs and codes: dir="ltr" inputs and <bdi dir="ltr"> / dir="ltr" spans.
+|   - Labels, helper text and errors align to the start, under the field.
 */
 @theme {
     --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
@@ -28,10 +60,17 @@
 
     --color-accent-500: #f97362;
     --color-accent-600: #e85d4c;
+
     --color-ink-900: #1e293b;
     --color-ink-500: #64748b;
-    --color-line-200: #e2e8f0;
+
     --color-surface-50: #f8fafc;
+    --color-card: #ffffff;
+    --color-media: #ffffff;
+
+    --color-line-200: #d0d7de;
+    --color-line-300: #afb8c1;
+
     --color-success-600: #16a34a;
     --color-warning-500: #f59e0b;
     --color-danger-600: #dc2626;
@@ -43,6 +82,29 @@
 }
 
 @layer base {
+    /*
+    | Dark theme (owner, 2026-11-14): the customer picks it on «اطلاعات حساب»; the layout puts `dark` on <html>.
+    | Only the tokens change, so templates need no dark: variants. primary-700 is lighter so links and white-text
+    | buttons both stay readable on dark backgrounds.
+    */
+    .dark {
+        color-scheme: dark;
+        --color-primary-50: #10302d;
+        --color-primary-700: #0d9488;
+        --color-primary-800: #0f766e;
+        --color-ink-900: #e2e8f0;
+        --color-ink-500: #94a3b8;
+        --color-line-200: #334155;
+        --color-line-300: #475569;
+        --color-surface-50: #0f172a;
+        --color-card: #1e293b;
+        --color-danger-600: #f87171;
+        --color-warning-500: #fbbf24;
+        --color-success-600: #4ade80;
+        --color-rx-600: #a78bfa;
+        --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    }
+
     /* B3: line-height 1.7 for Persian body text. */
     body {
         line-height: 1.7;

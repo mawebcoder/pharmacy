@@ -29,11 +29,11 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
     <h1 class="text-2xl font-bold text-ink-900">دسته‌بندی‌ها</h1>
 
     @if ($this->roots === [])
-        <div class="rounded-card border border-line-200 bg-white px-6 py-12 text-center text-ink-500">
+        <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center text-ink-500">
             هنوز دسته‌ای ثبت نشده است.
         </div>
     @else
-        <ul class="divide-y divide-line-200 overflow-hidden rounded-card border border-line-200 bg-white">
+        <ul class="divide-y divide-line-200 overflow-hidden rounded-card border border-line-200 bg-card">
             @foreach ($this->roots as $root)
                 <li wire:key="category-{{ $root->id }}" x-data="{ open: false }">
                     @if ($root->children === [])

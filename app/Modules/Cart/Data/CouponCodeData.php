@@ -18,6 +18,14 @@ final readonly class CouponCodeData
     ) {}
 
     /**
+     * Codes are compared upper-case with Latin digits (for other modules, which do not use the Coupon model).
+     */
+    public static function normalize(string $code): string
+    {
+        return Coupon::normalizeCode($code);
+    }
+
+    /**
      * @param  array{cart_id: int|string, code: string, customer_id: int|string}  $data
      */
     public static function fromArray(array $data): self

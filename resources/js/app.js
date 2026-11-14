@@ -1,9 +1,11 @@
 import jalaliDate from './components/jalali-date';
+import productGallery from './components/product-gallery';
 import slider from './components/slider';
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('jalaliDate', jalaliDate);
     window.Alpine.data('slider', slider);
+    window.Alpine.data('productGallery', productGallery);
 
     // The shopper's cart for the add-to-cart buttons and the header (roadmap S19), seeded and updated by cart-state.
     window.Alpine.store('cart', {

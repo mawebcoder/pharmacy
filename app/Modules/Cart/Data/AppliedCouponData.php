@@ -10,6 +10,9 @@ namespace App\Modules\Cart\Data;
  */
 final readonly class AppliedCouponData
 {
+    /**
+     * @param  list<int>  $coveredVariantIds  the SKUs the discount applies to (an order shares it out over them)
+     */
     public function __construct(
         public int $couponId,
         public string $code,
@@ -18,6 +21,7 @@ final readonly class AppliedCouponData
         public int $coveredSubtotal,
         public ?string $problem = null,
         public ?string $problemCode = null,
+        public array $coveredVariantIds = [],
     ) {}
 
     public static function refused(int $couponId, string $code, string $problem, string $problemCode): self

@@ -28,6 +28,8 @@ final class Cart extends Model
 
     public const string COLUMN_EXPIRES_AT = 'expires_at';
 
+    public const string COLUMN_ADDRESS_ID = 'address_id';
+
     public const string COLUMN_UPDATED_AT = 'updated_at';
 
     public function getId(): int
@@ -67,6 +69,21 @@ final class Cart extends Model
     public function setExpiresAt(?Carbon $expiresAt): static
     {
         return $this->setAttribute(self::COLUMN_EXPIRES_AT, $expiresAt);
+    }
+
+    /**
+     * The address picked on the checkout address step (S25); null means the customer's default.
+     */
+    public function getAddressId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_ADDRESS_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setAddressId(?int $addressId): static
+    {
+        return $this->setAttribute(self::COLUMN_ADDRESS_ID, $addressId);
     }
 
     /**

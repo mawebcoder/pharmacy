@@ -25,7 +25,7 @@
             :key="'search-'.md5($q)"
         />
     @elseif ($q !== '')
-        <div class="rounded-card border border-line-200 bg-white px-6 py-10 text-center">
+        <div class="rounded-card border border-line-200 bg-card px-6 py-10 text-center">
             <x-ts-icon icon="magnifying-glass" class="mx-auto size-10 text-ink-500" />
             <p class="mt-3 font-bold text-ink-900">کالایی برای «{{ $q }}» پیدا نشد.</p>
             <p class="mt-1 text-sm text-ink-500">املای کلمه را بررسی کنید، از کلمه‌های کوتاه‌تر استفاده کنید یا از پیشنهادهای زیر کمک بگیرید.</p>
@@ -40,7 +40,7 @@
                 <ul class="flex flex-wrap gap-2">
                     @foreach ($categories as $category)
                         <li>
-                            <a href="{{ $category->url() }}" wire:navigate class="flex h-11 items-center rounded-full border border-line-200 bg-white px-4 text-sm text-ink-900 hover:border-primary-300 hover:text-primary-700">{{ $category->nameFa }}</a>
+                            <a href="{{ $category->url() }}" wire:navigate class="flex h-11 items-center rounded-full border border-line-200 bg-card px-4 text-sm text-ink-900 hover:border-primary-300 hover:text-primary-700">{{ $category->nameFa }}</a>
                         </li>
                     @endforeach
                 </ul>

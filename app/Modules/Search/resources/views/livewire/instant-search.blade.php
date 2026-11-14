@@ -44,7 +44,7 @@
         aria-autocomplete="list"
         aria-controls="{{ $listId }}"
         x-bind:aria-expanded="open && {{ $hasText || ($popular?->isNotEmpty() ?? false) ? 'true' : 'false' }}"
-        class="h-11 w-full rounded-full border-0 bg-surface-50 ps-10 pe-4 text-sm text-ink-900 ring-1 ring-line-200 placeholder:text-ink-500 focus:bg-white focus:ring-2 focus:ring-primary-700"
+        class="h-11 w-full rounded-full border-0 bg-surface-50 ps-10 pe-4 text-sm text-ink-900 ring-1 ring-line-300 placeholder:text-ink-500 focus:bg-card focus:ring-2 focus:ring-primary-700"
     >
 
     @if ($popular !== null && $popular->isNotEmpty())
@@ -54,7 +54,7 @@
             x-ref="list"
             x-show="open"
             x-cloak
-            class="absolute inset-x-0 top-full z-50 mt-2 max-h-[75vh] overflow-y-auto rounded-card border border-line-200 bg-white p-3 shadow-card"
+            class="absolute inset-x-0 top-full z-50 mt-2 max-h-[75vh] overflow-y-auto rounded-card border border-line-200 bg-card p-3 shadow-card"
         >
             <div class="mb-2 flex items-center justify-between gap-2">
                 <p class="text-sm font-bold text-ink-900">محصولات محبوب</p>
@@ -83,7 +83,7 @@
             x-on:keydown.up.prevent="move(-1)"
             role="listbox"
             aria-label="پیشنهادهای جستجو"
-            class="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-card border border-line-200 bg-white p-2 shadow-card"
+            class="absolute inset-x-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto rounded-card border border-line-200 bg-card p-2 shadow-card"
         >
             @if ($suggestions->isEmpty())
                 <p class="px-3 py-4 text-sm text-ink-500">
@@ -102,7 +102,7 @@
                         @php($card = ProductCardData::for($product))
                         <li wire:key="suggest-product-{{ $product->getId() }}" class="flex items-center gap-1">
                             <a role="option" href="{{ route('products.show', $product) }}" wire:navigate class="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-1 hover:bg-surface-50 focus:bg-primary-50 focus:outline-none">
-                                <span class="size-11 shrink-0 overflow-hidden rounded-md bg-white">
+                                <span class="size-11 shrink-0 overflow-hidden rounded-md bg-media">
                                     <x-media::picture :media="$product->getMainImage()" slot-name="cart-thumb" alt="" class="size-full object-contain" />
                                 </span>
                                 <span class="min-w-0 flex-1">

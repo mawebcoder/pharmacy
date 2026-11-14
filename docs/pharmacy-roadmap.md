@@ -107,15 +107,19 @@ Medicines have government-set consumer prices: `selling_price ≤ official_price
 | `accent-600` | `#E85D4C` | Accent hover |
 | `ink-900` | `#1E293B` | Main text |
 | `ink-500` | `#64748B` | Secondary text |
-| `line-200` | `#E2E8F0` | Borders, dividers |
+| `line-200` | `#D0D7DE` | Borders of cards, dividers, tables (darker than first planned so borders show on white; owner, 2026-11-14) |
+| `line-300` | `#AFB8C1` | Strong borders: inputs, selects, checkboxes, chips, outlined buttons (owner, 2026-11-14) |
 | `surface-50` | `#F8FAFC` | Page background |
-| `white` | `#FFFFFF` | Cards |
+| `card` | `#FFFFFF` | Cards, panels, inputs, menus (was `white`; a token so dark mode can change it) |
+| `media` | `#FFFFFF` | The well behind product photos: white in both themes, because product photos are shot on white |
 | `success-600` | `#16A34A` | In stock, success |
 | `warning-500` | `#F59E0B` | Near expiry, warnings |
 | `danger-600` | `#DC2626` | Errors, out of stock |
 | `rx-600` | `#7C3AED` | Prescription badge |
 
-Dark mode: not in MVP (admin uses Filament's built-in dark mode).
+**Dark mode** (owner, 2026-11-14; replaces «not in MVP»): the customer picks «مطابق دستگاه» (default), «روشن» or «تیره» on «اطلاعات حساب» (`customers.theme`, `Identity\Enums\ThemePreference`, saved at once); the header has a sun/moon switch that flips light ↔ dark, saved on the account when signed in and in an encrypted `theme` cookie (1 year) for guests (`Identity\Support\StorefrontTheme`). The layout renders `class="dark"` on `<html>` from the server (no flash) and a small script follows the device for «مطابق دستگاه» and keeps the class across `wire:navigate`. Only the tokens change in `.dark` (no `dark:` variants in templates); TallStackUI follows the same class. Admin keeps Filament's own dark mode.
+
+**Design system** (owner, 2026-11-14): the token block at the top of `resources/css/app.css` documents colour roles, shape (12 px radius; borders instead of shadows on cards), type (Vazirmatn 12–24 px, line-height 1.7, weight for emphasis, never italics), spacing (16/24/32 px gutters, max width 1280 px, touch targets ≥ 44 px) and the **RTL rules**: logical utilities only (`ms-/me-`, `ps-/pe-`, `start-/end-`, `text-start`); never `flex-row-reverse` to fix direction (rows already run right to left); previous points right, next points left; carousels and progress run right to left; no letter-spacing on Persian; Persian digits in everything shown, including prefilled inputs; mobiles, postal codes, emails, URLs and codes in `dir="ltr"` / `<bdi>`; labels, help and errors at the start, under the field.
 
 Tailwind v4 tokens (`resources/css/app.css`):
 ```css
@@ -281,7 +285,7 @@ Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop
 4. Rating stars + count (only if ≥ 1 review).
 5. Price block: old price struck (`ink-500`, 13 px) above new price (bold, 16 px), "تومان" suffix.
 6. Action: "افزودن به سبد" icon button (44×44); becomes − qty + stepper after adding.
-Card: white, radius 12 px, border `line-200`, hover shadow on desktop; whole card clickable except the action.
+Card: `card` background, radius 12 px, border `line-200`; on hover only the border turns `primary-700` (no lift, no shadow; owner, 2026-11-14); the photo sits on the white `media` well in both themes; whole card clickable except the action.
 
 ### B9.5 Product detail page (PDP)
 
@@ -292,19 +296,21 @@ Card: white, radius 12 px, border `line-200`, hover shadow on desktop; whole car
 | Info | brand, name (H1), rating, badges (original, IRC code, rx/near-expiry), short description, key attributes (form, count, suitable for) | same | same |
 | Buy box | price, variant picker, expiry date, stock, qty, delivery estimate for user's city, instalment line, add-to-cart | same | sticky card |
 | Sticky buy bar | bottom bar: price + add-to-cart (appears after scrolling past buy box) | same | not needed (sticky buy box) |
-| Tabs | segmented control, sticky under header: توضیحات، ترکیبات، نحوه مصرف، هشدارها، پرسش‌ها، نظرات | same | same |
-| Below | ask a pharmacist, related products rail, recently viewed | same | same |
+| Tabs | real tabs, **one section shown at a time** (owner, 2026-11-14), sticky under the header; the tab bar scrolls sideways on phones and the picked tab scrolls into view: توضیحات، ترکیبات، نحوه مصرف، **عوارض جانبی**، **تداخلات دارویی**، هشدارها، پرسش‌ها، نظرات (only tabs with content) | same | same |
+| Ask a pharmacist | «سؤال خود را اینجا بپرسید» in the buy box (owner, 2026-11-14): WhatsApp and/or Telegram from «تنظیمات فروشگاه», after a confirmation (bottom sheet on phones, dialog from tablets up), with the admin's draft message filled in; no separate «ask a pharmacist» card | same | same |
+| Below | related products rail, recently viewed | same | same |
 | Rx product (MVP) | add-to-cart replaced by info box "فروش آنلاین این دارو به‌زودی" (violet) | same | same |
+
+Built ahead of S13 (owner, 2026-11-14): layout, gallery (swipe with dots and «۱ / ۳» counter, thumbnails that switch the photo, hover zoom on desktop, full screen with tap-to-zoom), buy box with SKU picker, sticky bar, tabs, the WhatsApp/Telegram question button and related products. S13 still adds rating, stock alerts, question submission, reviews, SKU images and recently viewed.
 
 ### B9.6 Cart
 Mobile: item list (image 64, name, variant, price, qty stepper, remove), coupon field (collapsible), free-shipping progress bar, summary card, sticky "ادامه خرید" button. Desktop: items 8/12, summary 4/12 sticky. Empty state: illustration + "سبد خرید شما خالی است" + popular categories.
 
-### B9.7 Checkout (3 steps + pay)
-- Stepper on top: آدرس ← ارسال ← بازبینی و پرداخت.
-- Step 1 Address: saved addresses as radio cards; "new address" opens form with map pin (slide on mobile, modal on desktop).
-- Step 2 Shipping: options as radio cards: icon, service name (e.g. "تیپاکس، ارسال یک‌روزه"), delivery estimate, price ("رایگان" in success colour if free). Own-courier option shows time-slot chips.
-- Step 3 Review: items summary (collapsed on mobile), address, shipping, coupon, totals, terms checkbox, "پرداخت" primary button → Zarinpal.
-- Desktop: form 8/12, sticky order summary 4/12. Mobile: summary collapsed at top, sticky pay button.
+### B9.7 Checkout (as built in S25; owner, 2026-11-14)
+- **Flow**: cart «ادامه خرید» → `/checkout/address` **always** → `/checkout` («بازبینی و پرداخت») → gateway → `/checkout/result/{order}`. Guests sign in first and come back to the address step. Stepper on top: آدرس ارسال ← بازبینی و پرداخت (a shipping step returns with real shipping options in phase 8).
+- **Address step**: the customer's address cards (the same list as «آدرس‌ها»: add, edit, make default, delete) with «ارسال به این آدرس» on each; the add/edit form opens in a right-to-left modal; no map pin.
+- **Review**: address with «تغییر آدرس», «ارسال» (one flat «هزینه ارسال», «رایگان» over the threshold or with a free-shipping coupon), items (collapsed on mobile), order note, coupon field (collapsible), totals, terms checkbox, «پرداخت <total>». Items that can no longer be bought are named in a warning and the button reads «ابتدا سبد خرید را اصلاح کنید».
+- Desktop: content with the summary column on the end side; mobile: sticky pay button.
 - Never show fees for the first time at the last step.
 
 ### B9.8 Payment result and order tracking
@@ -759,7 +765,7 @@ We sell cosmetics, personal-care products, supplements and (later, via a license
 | Pricing & Providers | providers, provider prices, commission, price records, pricing engine, price imports |
 | Customers | accounts, OTP login, addresses, wishlist, reviews, questions, stock alerts |
 | Cart & Checkout | cart, coupons, shipping quotes, payment start |
-| Orders | orders, items (with price snapshots), order and order item status logs, provider purchases, returns |
+| Orders | orders, items (with price snapshots), order status logs, provider purchases, returns |
 | Shipping | carriers, services, boxes, quotes, shipments, packages, zones, couriers, carrier city mapping |
 | Payments | payments, payment attempts, refunds, reconciliation |
 | Locations | provinces, counties, cities, regions, neighbourhoods |
@@ -875,11 +881,11 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.3 Customers
 
-**customers**: `mobile` (unique, `09xxxxxxxxx`), `first_name`, `last_name`, `national_id` (nullable), `email` (nullable), `birth_date`, `gender`, `is_blocked`, `last_login_at`.
+**customers**: `mobile` (unique, `09xxxxxxxxx`), `first_name`, `last_name`, `national_id` (nullable), `email` (nullable), `birth_date`, `gender`, `theme` (`system` default, `light`, `dark`; owner, 2026-11-14, see B3), `is_blocked`, `last_login_at`.
 
 **otp_codes**: `mobile`, `code_hash`, `purpose` (`login`), `expires_at` (2 min), `attempts`, `ip`. Rate limit: 1 per 2 min per mobile, 5 per hour per IP.
 
-**addresses**: `customer_id`, `title`, `receiver_name`, `receiver_mobile`, `province_id`, `city_id` (Tipax ids, D4), `full_address`, `plaque`, `unit`, `floor`, `postal_code` (10 digits), `is_default`; soft deletes (orders keep `address_id` beside their snapshot). No map pin, coordinates, region or neighbourhood (owner, 2026-11-14, S18). At most 10 per customer; the first (or the one marked) is the only default; deleting the default promotes the newest remaining address. Cities offered: Tipax cities with «ارسال فعال» on.
+**addresses**: `customer_id`, `title`, `receiver_name`, `receiver_mobile`, `province_id`, `city_id` (Tipax ids, D4), `main_street` (required in the form), `side_street`, `alley`, `block`, `plaque`, `unit`, `floor`, `full_address` (now optional «توضیحات تکمیلی»; owner, 2026-11-14), `postal_code`, `is_default`; **one generator, `Identity\Support\AddressText`** (`line()`, `sections()`), builds the address text everywhere (address cards in the account and checkout, checkout summary, orders) in the Iran Post order: province، city، main street، side street، alley، block، plaque، floor، unit، extra directions. **Postal code** (owner, 2026-11-14): 10 digits, the first five never 0 or 2, not one digit repeated (`Shared\Rules\IranianPostalCode`). **Receiver mobile**: real operator prefixes only (`IranMobile`; 0900 added, owner 2026-11-14); soft deletes (orders keep `address_id` beside their snapshot). No map pin, coordinates, region or neighbourhood (owner, 2026-11-14, S18). At most 10 per customer; the first (or the one marked) is the only default; deleting the default promotes the newest remaining address. Cities offered: Tipax cities with «ارسال فعال» on.
 
 **wishlists**: `customer_id`, `product_id`.
 **reviews**: `product_id`, `customer_id`, `order_item_id` (nullable → verified buyer), `rating` 1–5, `body`, `status` (`pending`, `approved`, `rejected`).
@@ -888,11 +894,11 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.4 Cart, checkout and orders
 
-**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `address_id` (S25), `shipping_quote_id` (S21), `expires_at` (guests, 30 days).
+**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `address_id` (S25: the address picked for this order; without a pick, or when it was deleted, checkout uses the customer's **default** address; picking for an order never changes the default; owner, 2026-11-14), `shipping_quote_id` (S21), `expires_at` (guests, 30 days).
 **cart_items**: `cart_id`, `variant_id`, `quantity`, `unit_price_snapshot` (the price last shown, only to tell the shopper it changed; the cart always uses the current price). Unique (`cart_id`, `variant_id`).
 
-**Cart rules** (owner, 2026-11-14, S19): the **guest cart cookie** `cart_token` holds a 40-character random token (never the cart id), encrypted and signed (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days; created on the first add. **Limit per order** per SKU: the SKU's `max_per_order`, else `products.max_per_order`, else the store setting «حداکثر تعداد هر کالا در یک سفارش» (default 10); «+» greys out at the limit. **On sign-in**: without a cart of their own the guest cart becomes the customer's and its token hash is cleared; with one, the guest lines are added to it (quantities summed, capped at the limit) and the guest cart is deleted; the cookie is removed. **Unavailable lines** (no active supplier so out of stock, switched off, prescription, cold chain): greyed with the reason, left out of the total; «ادامه خرید» stays disabled until «به‌روزرسانی سبد» removes them. **Price change**: shown once on the line («قیمت این کالا از … به … کاهش/افزایش یافت»), then taken as seen. **Feedback**: no toast on add/remove (the stepper and header count show it); after an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar; refusals show as warnings. **Product cards**: «+» on every in-stock card, then a «− n +» stepper on its own line under a fixed two-line price area (same layout with or without haraj); cards lift slightly with a shadow on hover. A deleted account's leftover session counts as a guest. `GET /cart/quantities` returns `{ data: { items: { <variant id>: <qty> }, count } }` (lightweight, `no-store`, 120/min) for the cards. Expired guest carts are deleted daily (04:00).
-**settings** (started in S19): key/value, read through `Settings\Queries\StoreSettings` (cached); admin «تنظیمات فروشگاه» (super admin): `cart.max_quantity_per_order` (10), `cart.free_shipping_threshold` (5,000,000 rial = 500,000 toman; 0 = off; shown in the cart and the announcement bar). S35 adds the rest.
+**Cart rules** (owner, 2026-11-14, S19): the **guest cart cookie** `cart_token` holds a 40-character random token (never the cart id), encrypted and signed (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days; created on the first add. **Limit per order** per SKU: the SKU's `max_per_order`, else `products.max_per_order`, else the store setting «حداکثر تعداد هر کالا در یک سفارش» (default 10); «+» greys out at the limit. **On sign-in**: without a cart of their own the guest cart becomes the customer's and its token hash is cleared; with one, the guest lines are added to it (quantities summed, capped at the limit) and the guest cart is deleted; the cookie is removed. **Unavailable lines** (no active supplier so out of stock, switched off, prescription, cold chain): greyed with the reason, left out of the total; «ادامه خرید» stays disabled until «به‌روزرسانی سبد» removes them. **Price change**: shown once on the line («قیمت این کالا از … به … کاهش/افزایش یافت»), then taken as seen. **Feedback**: no toast on add/remove (the stepper and header count show it); after an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar; refusals show as warnings. **Product cards**: «+» on every in-stock card, then a «− n +» stepper on its own line under a fixed two-line price area (same layout with or without haraj); on hover only the card border changes colour (owner, 2026-11-14; was a lift with a shadow). A deleted account's leftover session counts as a guest. `GET /cart/quantities` returns `{ data: { items: { <variant id>: <qty> }, count } }` (lightweight, `no-store`, 120/min) for the cards. Expired guest carts are deleted daily (04:00).
+**settings** (started in S19): key/value, read through `Settings\Queries\StoreSettings` (cached); admin «تنظیمات فروشگاه» (super admin): `cart.max_quantity_per_order` (10), `cart.free_shipping_threshold` (5,000,000 rial = 500,000 toman; 0 = off; shown in the cart and the announcement bar), `shipping.flat_rate` («هزینه ارسال», 500,000 rial, S25), and «تماس» (owner, 2026-11-14): `contact.whatsapp_number` (normalised `09…`, links `wa.me/98…`), `contact.telegram_username` (5–32 letters, digits or `_`, accepts `@name` or a `t.me` link; links `t.me/<name>`), `contact.chat_message_product` (draft with `{product}`, `{variant}` in brackets when a SKU was picked, `{link}`) and `contact.chat_message_general` (header). «مشاوره با داروساز» (header, WhatsApp icon, icon-only below desktop) and «سؤال خود را اینجا بپرسید» (product page) open a confirmation, then the chat with the draft; with both apps set the sheet offers both; with neither, the buttons are hidden. S35 adds the rest.
 
 **coupons**: `code` (unique, case-insensitive; stored upper-case with Latin digits), `type` (`percent`, `fixed`, `free_shipping`), `value` (percent 1–100, or rial), `max_discount` (percent only), `min_order_amount`, `applies_to_sale_items`, `starts_at`, `ends_at`, `usage_limit_total`, `usage_limit_per_customer`, `first_order_only`, `is_active`, soft deletes. Pivots **coupon_categories**, **coupon_brands**, **coupon_products** (include lists).
 **coupon_usages**: `coupon_id`, `customer_id`, `order_id` (foreign key added with the orders table, S25), `discount_amount`, `status` (`CouponUsageStatus`: `checkout`, `reserved`, `used`, `released`), `reserved_until`, `used_at`, `released_at`, timestamps.
@@ -906,21 +912,23 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | number | human-readable, e.g. `PH-140508-000123` |
 | customer_id | |
 | status | see D3.5 |
-| payment_status | `unpaid`, `pending`, `paid`, `refunded`, `partially_refunded` |
-| address_snapshot | JSON copy of the address: title, receiver name and mobile, province and city names with their Tipax ids, full address, plaque, unit, floor, postal code |
+| payment_status | `pending`, `paid`, `unpaid` (expired unpaid), `refund_pending` (cancelled after payment), `refunded` (as built in S25) |
+| address_id | the address used (null when deleted); the snapshot is what counts |
+| address_snapshot | JSON copy of the address: title, receiver name and mobile, province and city names with their Tipax ids, every street part, plaque, unit, floor, extra directions, postal code |
 | customer_snapshot | JSON: customer name and mobile at ordering |
 | subtotal, discount_total, shipping_total, total | bigint Rial |
 | coupon_id, coupon_code, coupon_snapshot | the coupon's rules at ordering (type, value, limits, caps) as JSON |
 | shipping_method | `tipax`, `own_courier` |
 | carrier_service_id | FK to `carrier_services` |
-| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate |
+| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate. Until phase 8 (S25): price, whether free and why (threshold or coupon), and the flat rate and threshold in force |
 | payment_fee | Rial; the gateway fee of that payment, for net margin |
 | shipping_cost_quoted, shipping_cost_actual | Rial; actual comes from Tipax after pickup |
 | delivery_slot_id | own courier only |
 | customer_note, admin_note | |
 | placed_at, paid_at, cancelled_at, delivered_at | |
+| expires_at | when an unpaid order expires (`config('payments.pending_expiry_minutes')`, S25) |
 
-**order_items**: `order_id`, `variant_id`, `variant_price_id` (the price record it was sold at, D3.2), `name_snapshot`, `sku`, `quantity`, `unit_price`, `discount`, `total`, `provider_id`, `unit_cost` (for profit), `status` (see below).
+**order_items** (as built in S25): `order_id`, `variant_id`, `product_id`, `variant_price_id` (the price record it was sold at, D3.2), `product_name`, `variant_title`, `sku`, `brand_name`, `image_url`, `product_type`, `requires_prescription`, `quantity`, `product_snapshot` (JSON: product and SKU details), `provider_id`, `provider_name`, `unit_cost`, `commission_percent`, `commission_source`, `provider_choice`, `official_price`, `list_price`, `sale_price`, `unit_price`, `discount` (the item's share of the coupon discount), `total`. **Order items have no status** (owner, 2026-11-14). **Item discounts add up to the order's `discount_total`.**
 
 **Snapshot rule** (owner, 2026-11-14, S18): an order keeps a JSON or column copy of **everything that can change later**, so editing a product, price, supplier, commission, coupon, address, city or customer never changes a past order or its reports. Order items also copy `product_name`, `variant_title`, `sku`, `brand_name`, `image_url` (the card size), `product_type` and `requires_prescription`, besides the prices below.
 
@@ -928,7 +936,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 **order_status_logs** (owner, 2026-11-14; was `order_status_histories`): `order_id`, `from_status`, `to_status`, `actor_type` (`system`, `admin`, `customer`, `carrier`), `actor_id`, `note`, `created_at`. One row for every change of an order's status; never updated.
 
-**order_item_status_logs** (owner, 2026-11-14): `order_item_id`, `from_status`, `to_status`, `actor_type`, `actor_id`, `note`, `created_at`. Each item has its own status, because items are bought, received, packed, cancelled or returned one by one (`pending`, `sourcing`, `purchased`, `received`, `packed`, `shipped`, `delivered`, `cancelled`, `returned`); every change writes a row, and the order admin (S29) shows both logs as timelines.
+**Order pages read only these copies** (owner, 2026-11-14): the profile order list and detail (S29) and the admin order pages render from the order's snapshots, never from the live product, address, coupon or customer.
 
 **provider_purchases**: `provider_id`, `status` (`requested`, `confirmed`, `received`, `partially_received`, `cancelled`), `total_cost`, `requested_at`, `received_at`; **provider_purchase_items**: `provider_purchase_id`, `order_item_id`, `variant_id`, `quantity`, `unit_cost`, `received_quantity`.
 
@@ -936,19 +944,19 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.5 Order state machine
 
-```
-pending_payment ──(Zarinpal verify OK)──▶ paid
-paid ──▶ sourcing            (provider purchase requested)
-sourcing ──▶ ready_to_pack   (all items received)
-ready_to_pack ──▶ packed
-packed ──▶ awaiting_pickup   (Tipax order registered) │ out_for_delivery (own courier)
-awaiting_pickup ──▶ in_transit (Tipax picked up)
-in_transit ──▶ delivered
-any before packed ──▶ cancelled (refund if paid)
-delivered ──▶ returned (via return_requests)
-pending_payment ──(30 min timeout / NOK)──▶ payment_failed
-```
-Every transition writes `order_status_logs` (and each item's change writes `order_item_status_logs`) and may send an SMS (see `notification_templates`).
+Seven statuses (owner, 2026-11-14; replaces the longer machine), `Orders\Enums\OrderStatus`:
+
+| Status | Meaning | Who moves it there |
+|---|---|---|
+| `pending` | created at «پرداخت», on its way to the gateway; payable from «سفارش‌ها» until it expires | system (PlaceOrder) |
+| `expired` | not paid in time (coupon released) | system (`ExpirePendingOrders`, every minute) |
+| `paid` | payment verified (also from `expired` when a payment is verified late) | system |
+| `processing` | the store is preparing it | admin only |
+| `on_the_way` | handed to the carrier | admin; Tipax from S27 (actor `carrier`) |
+| `delivered` | received | admin; Tipax from S27 (actor `carrier`) |
+| `cancelled` | cancelled (payment marked for refund) | customer while `paid`; admin while `paid` or `processing` |
+
+Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_status_logs` (actor `system`, `admin`, `customer` or `carrier`); it may send an SMS (S28). A failed payment leaves the order `pending` until it expires.
 
 ### D3.6 Content, settings, search, admin
 
@@ -1254,7 +1262,7 @@ Headers: `Content-Type: application/json`, `Accept: application/json`. Sandbox: 
 | 100 / 101 | Success / already verified |
 
 ### D7.4 Payment tables
-- **payments**: `order_id`, `gateway` (`zarinpal`), `amount` (Rial), `currency`, `authority` (unique), `status` (`pending`, `verified`, `failed`, `cancelled`, `reversed`, `refunded`), `ref_id`, `card_pan`, `card_hash`, `fee_type`, `fee`, `callback_status`, `verified_at`, `raw_request`, `raw_response`.
+- **payments** (as built in S25; owner, 2026-11-14): one row per payment attempt (link): `order_id`, `gateway` (`fake` until S26), `amount` (Rial), `authority` (unique), `url` (the gateway page), `status` (`pending`, `paid`, `failed`, `expired`; `PaymentAttemptStatus`), `expires_at`, `ref_id`, `card_pan`, `failure_reason`, `verified_at`, `failed_at`. **At most one open link per order**: «پرداخت» reuses the open (pending, unexpired) link; a new one only after a failed attempt; none after the order expired (`OpenPaymentLink` locks the order's attempts). `HandlePaymentCallback` locks, verifies and sends `PaymentSucceeded` once; `ExpireStalePayments` runs every minute. S26 adds Zarinpal's fields (`card_hash`, `fee_type`, `fee`, raw request/response).
 - **payment_refunds**: `payment_id`, `amount`, `method` (`reverse`, `panel`, `manual_transfer`), `status`, `reference`, `admin_id`.
 
 ### D7.5 Security rules
@@ -1302,7 +1310,7 @@ BNPL (Snapp Pay, Torob Pay, Digipay) is phase 2 behind the same `PaymentGateway`
 | Job | Schedule | Queue |
 |---|---|---|
 | ReconcileZarinpalPayments | every 10 min | `payments` |
-| ExpirePendingPayments (30 min → payment_failed) | every 5 min | `payments` |
+| ExpireStalePayments (payment links past `expires_at` → `expired`) and ExpirePendingOrders (unpaid orders → `expired`, coupon released) (S25) | every minute | `payments`, `orders` |
 | PollTipaxTracking | every 30 min | `shipping` |
 | TipaxSyncCities | weekly | `shipping` |
 | RecalculateVariantPrice / RecalculatePrices (after supplier price, printed price, haraj, commission or import changes) | on demand + nightly | `pricing` |
@@ -1712,7 +1720,6 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 | orders | unique(number); index(customer_id, placed_at); index(status, placed_at); index(payment_status) |
 | order_items | index(order_id); index(variant_id); index(provider_id) |
 | order_status_logs | index(order_id, created_at) |
-| order_item_status_logs | index(order_item_id, created_at) |
 | payments | unique(authority); index(order_id); index(status, created_at) |
 | shipments | index(order_id); index(status, last_synced_at); index(correlation_id) |
 | shipment_packages | unique(tracking_code) |
@@ -1811,13 +1818,15 @@ Casts: enums (`ProductType`, `ProductStatus`, `StockStatus`, `OrderStatus`, `Pay
 3. Guest cart keyed by `session_token` cookie (30 days); merged on login.
 
 ### D13.4 Checkout
-1. Step 1 Address: select/create (map pin, city from Locations; Tipax only if city mapped).
-2. Step 2 Shipping: `Shipping\Actions\QuoteCart` packs items into boxes (D5), calls carriers: Tipax (`GetServicesBetweenCities` + `Pricing`) and own courier (zone price + slots). Shows options with delivery days and price. Quote stored 20 min.
-3. Step 3 Review: totals recalculated server-side; coupon re-validated.
-4. Step 4 Pay: `Orders\Actions\PlaceOrder` (transaction): create order `pending_payment` with snapshots, reserve the coupon (`Cart\Actions\ReserveCoupon`, S20), then `Payments\Actions\StartPayment` → Zarinpal request → redirect.
+As built in S25 (owner, 2026-11-14):
+1. Address step (always): pick or add an address (no map pin; only cities with delivery on). The pick is stored on the cart (`PickCartAddress`).
+2. Review (`/checkout`): `Cart\Queries\CheckoutQuote` works out the cart, the coupon on the fly, the flat shipping and the address snapshot.
+3. «پرداخت»: `Orders\Actions\PlaceOrder` (cache lock per customer, transaction) **creates the order only now**, after checking everything again: items buyable and within limits, current prices against the total shown, coupon still valid (then reserved), address theirs and its city deliverable. If anything changed, no order; the page reloads with the reason. Then it copies the snapshots, shares the coupon discount over the items, **empties the cart** and opens the payment link (`Payments\Actions\OpenPaymentLink`) → gateway.
+4. A failed payment is retried from the order («تلاش دوباره» on the result page, «پرداخت» in «سفارش‌ها») until it expires.
+5. Phase 8 adds the shipping step: `Shipping\Actions\QuoteCart` packs items into boxes (D5) and quotes Tipax and own courier.
 
 ### D13.5 Payment
-See D7.2. On verify success: `OrderPaid` event → (a) Orders: status `paid`; (b) Pricing: create provider purchase draft; (c) Notifications: SMS `order_paid`; (d) Coupons: mark the reserved use used (`MarkCouponUsed`). On NOK/timeout/expiry: `payment_failed`, release the coupon (`ReleaseCoupon`).
+See D7.2. On verify success: `Payments\Events\PaymentSucceeded` (sent once) → (a) Orders: `MarkOrderPaid` moves the order to `paid` (also from `expired` when verified late) and marks the coupon used (`SettleOrderCoupon`, S25); (b) Pricing: create provider purchase draft (S30); (c) Notifications: SMS `order_paid` (S28). On NOK or cancel: the attempt is `failed` and the order stays `pending`, payable again until it expires; on expiry the order becomes `expired` and the coupon is released (owner, 2026-11-14).
 
 ### D13.6 Sourcing (buying from provider)
 1. Admin → Provider purchases: system groups paid orders' items by cheapest available provider into a draft purchase.
@@ -2818,17 +2827,18 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S25 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
-- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering, status `pending_payment`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S19 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S21), own courier zones (S24) and Tipax quotes (S23) in phase 8 (owner, 2026-11-14).
+- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering (`PH-{Jalali Ym}-{id, 6 digits}`), status `pending`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S19 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S21), own courier zones (S24) and Tipax quotes (S23) in phase 8 (owner, 2026-11-14).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content (address, customer, coupon, shipping quote and every item field of the D3.4 «Snapshot rule»; editing the product, price, address or city afterwards leaves the order unchanged).
+- **Built (owner, 2026-11-14):** the address step and review page (B9.7, D13.4), `PlaceOrder` with re-checks and snapshots, the seven statuses and `ChangeOrderStatus` (D3.5), payments with one link per order and the fake gateway (`config('payments.gateway') = 'fake'`, refused unless `payments.fake_enabled`, so production can never take fake payments), `/checkout/result/{order}` (paid, failed-but-payable, expired), «سفارش‌ها» with «پرداخت», «لغو سفارش» and «سفارش دوباره» (`ReorderItems`: still-buyable items back into the cart at today's price, added and capped; the rest reported), addresses in parts with `AddressText`, the flat shipping setting, owner-only checks on every account action. Also in this step at the owner's request: dark mode and the design system (B3), Iranian postal-code rules and the 0900 prefix (D3.3), the product page layout ahead of S13 (B9.5) and the WhatsApp/Telegram contact settings (D3.4 settings).
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
-- **Build:** OrderResource view (timeline, items with cost/margin), guarded transitions as Filament actions (shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, order and order item status logs (two timelines), customer OrderList/OrderDetail with tracking timeline, guest tracking. On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
+- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders, the customer page lists only that customer's orders and each row links to its order view (new tab).
 
 ### S30 Provider purchases (sourcing)
 - **Refs:** D13.6, D3.4 (provider_purchases)
-- **Build:** auto-draft purchases from paid orders grouped by provider, print/Excel export, receive quantities, missing-item handling.
+- **Build:** auto-draft purchases from paid orders grouped by provider, print/Excel export, receive quantities, missing-item handling. **What we actually pay the supplier is recorded on the purchase, never overwriting `order_items.unit_cost`** (owner, 2026-11-14).
 - **Tests:** grouping, partial receive → order stays sourcing, full receive → ready_to_pack.
 
 ### S31 Packing
@@ -2917,13 +2927,13 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S26 Zarinpal payments
 - **Moved to phase 8**; until then checkout pays through the S25 fake gateway.
 - **Refs:** D7 (all), D11.4, D16 (payments)
-- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing the S25 `PaymentGateway` contract (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
+- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing `Payments\Contracts\PaymentGateway` (S25); `config/payments.php` gets the gateway block (merchant id, sandbox, callback) (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
 - **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
 
 ### S27 Tipax shipment registration and tracking
 - **Moved to phase 8**; until then shipment status is set by hand in the order admin (S29).
 - **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
-- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job, status mapping → order status, label link, cancel action.
+- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job; webhooks and tracking poll may move orders to `on_the_way` and `delivered` through `ChangeOrderStatus` (actor `carrier`; owner, 2026-11-14); label link, cancel action.
 - **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
 
 ### S28 Notifications (SMS via Melli Payamak)
@@ -2979,7 +2989,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Payments, payment refunds, Zarinpal | S26 | Payments |
 | Shipments, shipment packages, shipment events, Tipax webhooks | S27 | Shipping |
 | Notification templates, notification logs, SMS (Melli Payamak), OTP delivery | S28 | Notifications |
-| Order admin, order and order item status logs, cancellations, customer order pages | S29 | Orders |
+| Order admin, order status logs, cancellations, customer order pages | S29 | Orders |
 | Provider purchases (sourcing) | S30 | Orders / Pricing |
 | Packing | S31 | Orders / Shipping |
 | Return requests | S32 | Orders |

@@ -26,7 +26,7 @@ final class Dashboard extends Component
         return view('identity::livewire.account.dashboard', [
             'customer' => $customer,
             'defaultAddress' => $defaultAddress,
-            'cityLabel' => $defaultAddress === null ? null : ($locations->cityLabels([$defaultAddress->getCityId()])[$defaultAddress->getCityId()] ?? null),
+            'place' => $defaultAddress === null ? null : ($locations->placeNames([$defaultAddress->getCityId()])[$defaultAddress->getCityId()] ?? null),
             'addressCount' => Address::query()->ownedBy($customer->getId())->count(),
             'wishlistCount' => $wishlist->count($customer->getId()),
         ])->title('حساب من');

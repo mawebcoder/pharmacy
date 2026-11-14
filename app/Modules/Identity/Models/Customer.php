@@ -6,6 +6,7 @@ namespace App\Modules\Identity\Models;
 
 use App\Modules\Identity\Database\Factories\CustomerFactory;
 use App\Modules\Identity\Enums\Gender;
+use App\Modules\Identity\Enums\ThemePreference;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,6 +46,8 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
     public const string COLUMN_BIRTH_DATE = 'birth_date';
 
     public const string COLUMN_GENDER = 'gender';
+
+    public const string COLUMN_THEME = 'theme';
 
     public const string COLUMN_IS_BLOCKED = 'is_blocked';
 
@@ -145,6 +148,16 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_GENDER, $gender);
     }
 
+    public function getTheme(): ThemePreference
+    {
+        return $this->getAttribute(self::COLUMN_THEME) ?? ThemePreference::System;
+    }
+
+    public function setTheme(ThemePreference $theme): static
+    {
+        return $this->setAttribute(self::COLUMN_THEME, $theme);
+    }
+
     public function isBlocked(): bool
     {
         return (bool) $this->getAttribute(self::COLUMN_IS_BLOCKED);
@@ -209,6 +222,7 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
             self::COLUMN_NATIONAL_ID => 'encrypted',
             self::COLUMN_BIRTH_DATE => 'date',
             self::COLUMN_GENDER => Gender::class,
+            self::COLUMN_THEME => ThemePreference::class,
             self::COLUMN_IS_BLOCKED => 'boolean',
             self::COLUMN_LAST_LOGIN_AT => 'datetime',
         ];

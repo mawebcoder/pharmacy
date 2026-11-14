@@ -14,12 +14,12 @@
     $badgeClasses = [
         'near-expiry' => 'bg-warning-500 text-ink-900',
         'damaged-box' => 'bg-line-200 text-ink-900',
-        'new' => 'bg-ink-900 text-white',
+        'new' => 'bg-ink-900 text-card',
     ];
 @endphp
 
-<article {{ $attributes->class('group relative flex h-full flex-col overflow-hidden rounded-card border border-line-200 bg-white transition duration-200 ease-out hover:-translate-y-1 hover:border-primary-200 hover:shadow-card-hover motion-reduce:transition-none motion-reduce:hover:translate-y-0') }}>
-    <div class="relative aspect-square bg-white">
+<article {{ $attributes->class('group relative flex h-full flex-col overflow-hidden rounded-card border border-line-200 bg-card transition-colors duration-200 ease-out hover:border-primary-700 motion-reduce:transition-none') }}>
+    <div class="relative aspect-square bg-media">
         @if ($product->getMainImage())
             <x-media::picture :media="$product->getMainImage()" slot-name="product-card" :alt="$product->getNameFa()" class="size-full object-contain" />
         @else
@@ -38,7 +38,7 @@
             <button
                 type="button"
                 wire:click="$dispatch('quick-view', { productId: {{ $product->getId() }} })"
-                class="absolute end-2 bottom-2 z-10 grid size-11 place-items-center rounded-full bg-white/90 text-ink-500 shadow-sm hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700"
+                class="absolute end-2 bottom-2 z-10 grid size-11 place-items-center rounded-full bg-card/90 text-ink-500 shadow-sm hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700"
                 aria-label="نمایش سریع {{ $product->getNameFa() }}"
             >
                 <x-ts-icon icon="eye" class="size-5" />

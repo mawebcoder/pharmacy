@@ -4,7 +4,7 @@
 --}}
 {{-- Publishes the header's current height as --header-height for sticky bars below it (e.g. the brand letter bar). --}}
 <header
-    class="sticky top-0 z-40 border-b border-line-200 bg-white"
+    class="sticky top-0 z-40 border-b border-line-200 bg-card"
     x-data
     x-init="
         const publishHeight = () => document.documentElement.style.setProperty('--header-height', $el.offsetHeight + 'px');
@@ -23,10 +23,8 @@
         <livewire:search::instant-search class="hidden flex-1 md:block xl:max-w-xl" />
 
         <nav class="ms-auto flex items-center gap-1" aria-label="حساب و سبد خرید">
-            <a href="/pharmacist" class="hidden h-11 items-center gap-2 rounded-full px-3 text-sm text-ink-900 hover:bg-surface-50 xl:flex">
-                <x-ts-icon icon="chat-bubble-left-right" class="size-5 text-primary-700" />
-                مشاوره با داروساز
-            </a>
+            <x-ui.pharmacist-chat label="مشاوره با داروساز" class="flex h-11 min-w-11 items-center justify-center gap-2 rounded-full px-2.5 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 xl:px-3" icon-class="size-6 text-primary-700 xl:size-5" label-class="sr-only xl:not-sr-only" />
+            <livewire:identity::theme-toggle />
             @auth('customer')
                 {{-- Signed-in customer (S17): their name, the account area (S18) and sign-out. --}}
                 <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
@@ -47,7 +45,7 @@
                         x-cloak
                         x-transition.origin.top
                         role="menu"
-                        class="absolute end-0 top-full z-50 mt-2 w-56 rounded-card border border-line-200 bg-white py-2 shadow-lg"
+                        class="absolute end-0 top-full z-50 mt-2 w-56 rounded-card border border-line-200 bg-card py-2 shadow-lg"
                     >
                         <p class="truncate px-4 pb-2 text-sm font-bold text-ink-900">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</p>
                         @foreach ([

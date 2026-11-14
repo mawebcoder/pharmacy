@@ -1,0 +1,386 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Orders\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * One line of an order (roadmap D3.4 «Snapshot rule», «Price snapshot»): the product's names, SKU, brand and card
+ * image, and the price record of that moment (supplier and cost, commission and its source, printed, list, haraj
+ * and paid price), plus its share of the coupon discount. Items have no status of their own (owner, 2026-11-14): the
+ * order's status covers them. An order line, not an admin record: not in the audit log.
+ */
+final class OrderItem extends Model
+{
+    public const string COLUMN_ID = 'id';
+
+    public const string COLUMN_ORDER_ID = 'order_id';
+
+    public const string COLUMN_VARIANT_ID = 'variant_id';
+
+    public const string COLUMN_PRODUCT_ID = 'product_id';
+
+    public const string COLUMN_VARIANT_PRICE_ID = 'variant_price_id';
+
+    public const string COLUMN_PRODUCT_NAME = 'product_name';
+
+    public const string COLUMN_VARIANT_TITLE = 'variant_title';
+
+    public const string COLUMN_SKU = 'sku';
+
+    public const string COLUMN_BRAND_NAME = 'brand_name';
+
+    public const string COLUMN_IMAGE_URL = 'image_url';
+
+    public const string COLUMN_PRODUCT_TYPE = 'product_type';
+
+    public const string COLUMN_REQUIRES_PRESCRIPTION = 'requires_prescription';
+
+    public const string COLUMN_QUANTITY = 'quantity';
+
+    public const string COLUMN_PRODUCT_SNAPSHOT = 'product_snapshot';
+
+    public const string COLUMN_PROVIDER_ID = 'provider_id';
+
+    public const string COLUMN_PROVIDER_NAME = 'provider_name';
+
+    public const string COLUMN_UNIT_COST = 'unit_cost';
+
+    public const string COLUMN_COMMISSION_PERCENT = 'commission_percent';
+
+    public const string COLUMN_COMMISSION_SOURCE = 'commission_source';
+
+    public const string COLUMN_PROVIDER_CHOICE = 'provider_choice';
+
+    public const string COLUMN_OFFICIAL_PRICE = 'official_price';
+
+    public const string COLUMN_LIST_PRICE = 'list_price';
+
+    public const string COLUMN_SALE_PRICE = 'sale_price';
+
+    public const string COLUMN_UNIT_PRICE = 'unit_price';
+
+    public const string COLUMN_DISCOUNT = 'discount';
+
+    public const string COLUMN_TOTAL = 'total';
+
+    public function getId(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_ID);
+    }
+
+    public function getOrderId(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_ORDER_ID);
+    }
+
+    public function setOrderId(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_ORDER_ID, $value);
+    }
+
+    public function getVariantId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_VARIANT_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setVariantId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_VARIANT_ID, $value);
+    }
+
+    public function getProductId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_PRODUCT_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setProductId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PRODUCT_ID, $value);
+    }
+
+    public function getVariantPriceId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_VARIANT_PRICE_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setVariantPriceId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_VARIANT_PRICE_ID, $value);
+    }
+
+    public function getProductName(): string
+    {
+        return (string) $this->getAttribute(self::COLUMN_PRODUCT_NAME);
+    }
+
+    public function setProductName(string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PRODUCT_NAME, $value);
+    }
+
+    public function getVariantTitle(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_VARIANT_TITLE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setVariantTitle(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_VARIANT_TITLE, $value);
+    }
+
+    public function getSku(): string
+    {
+        return (string) $this->getAttribute(self::COLUMN_SKU);
+    }
+
+    public function setSku(string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SKU, $value);
+    }
+
+    public function getBrandName(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_BRAND_NAME);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setBrandName(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_BRAND_NAME, $value);
+    }
+
+    public function getImageUrl(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_IMAGE_URL);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setImageUrl(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_IMAGE_URL, $value);
+    }
+
+    public function getProductType(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_PRODUCT_TYPE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setProductType(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PRODUCT_TYPE, $value);
+    }
+
+    public function requiresPrescription(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_REQUIRES_PRESCRIPTION);
+    }
+
+    public function setRequiresPrescription(bool $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REQUIRES_PRESCRIPTION, $value);
+    }
+
+    public function getQuantity(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_QUANTITY);
+    }
+
+    public function setQuantity(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_QUANTITY, $value);
+    }
+
+    /**
+     * The product and SKU as they were when the order was placed (Catalog's OrderItemSnapshots).
+     *
+     * @return array{product?: array<string, mixed>, sku?: array<string, mixed>}
+     */
+    public function getProductSnapshot(): array
+    {
+        return (array) $this->getAttribute(self::COLUMN_PRODUCT_SNAPSHOT);
+    }
+
+    /**
+     * @param  array<string, mixed>  $value
+     */
+    public function setProductSnapshot(array $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PRODUCT_SNAPSHOT, $value);
+    }
+
+    public function getProviderName(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_PROVIDER_NAME);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setProviderName(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PROVIDER_NAME, $value);
+    }
+
+    public function getProviderId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_PROVIDER_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setProviderId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PROVIDER_ID, $value);
+    }
+
+    public function getUnitCost(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_UNIT_COST);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setUnitCost(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_UNIT_COST, $value);
+    }
+
+    public function getCommissionPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_COMMISSION_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setCommissionPercent(?float $value): static
+    {
+        return $this->setAttribute(self::COLUMN_COMMISSION_PERCENT, $value);
+    }
+
+    public function getCommissionSource(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_COMMISSION_SOURCE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setCommissionSource(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_COMMISSION_SOURCE, $value);
+    }
+
+    public function getProviderChoice(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_PROVIDER_CHOICE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setProviderChoice(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PROVIDER_CHOICE, $value);
+    }
+
+    public function getOfficialPrice(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_OFFICIAL_PRICE);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setOfficialPrice(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_OFFICIAL_PRICE, $value);
+    }
+
+    public function getListPrice(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_LIST_PRICE);
+    }
+
+    public function setListPrice(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_LIST_PRICE, $value);
+    }
+
+    public function getSalePrice(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_SALE_PRICE);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setSalePrice(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SALE_PRICE, $value);
+    }
+
+    public function getUnitPrice(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_UNIT_PRICE);
+    }
+
+    public function setUnitPrice(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_UNIT_PRICE, $value);
+    }
+
+    public function getDiscount(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_DISCOUNT);
+    }
+
+    public function setDiscount(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_DISCOUNT, $value);
+    }
+
+    public function getTotal(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_TOTAL);
+    }
+
+    public function setTotal(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TOTAL, $value);
+    }
+
+    /**
+     * @return BelongsTo<Order, $this>
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            self::COLUMN_REQUIRES_PRESCRIPTION => 'boolean',
+            self::COLUMN_PRODUCT_SNAPSHOT => 'array',
+            self::COLUMN_QUANTITY => 'integer',
+            self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
+            self::COLUMN_UNIT_PRICE => 'integer',
+            self::COLUMN_DISCOUNT => 'integer',
+            self::COLUMN_TOTAL => 'integer',
+        ];
+    }
+}

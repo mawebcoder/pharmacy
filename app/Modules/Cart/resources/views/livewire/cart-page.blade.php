@@ -5,8 +5,15 @@
 <div class="space-y-4">
     <h1 class="text-xl font-bold text-ink-900 xl:text-2xl">سبد خرید</h1>
 
+    @if (session('reorder.message'))
+        <p role="status" class="flex items-start gap-2 rounded-card bg-primary-50 px-4 py-3 text-sm text-primary-800">
+            <x-ts-icon icon="information-circle" class="mt-0.5 size-5 shrink-0" />
+            {{ session('reorder.message') }}
+        </p>
+    @endif
+
     @if ($summary->isEmpty())
-        <div class="rounded-card border border-line-200 bg-white px-6 py-12 text-center">
+        <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center">
             <span class="mx-auto grid size-14 place-items-center rounded-full bg-primary-50 text-primary-700">
                 <x-ts-icon icon="shopping-bag" class="size-7" />
             </span>
@@ -24,7 +31,7 @@
         <div class="grid gap-4 xl:grid-cols-12 xl:items-start xl:gap-6">
             <section class="space-y-3 xl:col-span-8" aria-label="کالاهای سبد">
                 @if ($summary->hasUnavailable())
-                    <div class="flex flex-col gap-3 rounded-card border border-danger-600 bg-white p-4 md:flex-row md:items-center md:justify-between" role="alert">
+                    <div class="flex flex-col gap-3 rounded-card border border-danger-600 bg-card p-4 md:flex-row md:items-center md:justify-between" role="alert">
                         <p class="flex items-start gap-2 text-sm leading-7 text-ink-900">
                             <x-ts-icon icon="exclamation-triangle" class="mt-1 size-5 shrink-0 text-danger-600" />
                             برخی کالاهای سبد شما دیگر قابل فروش نیستند. برای ادامه، سبد را به‌روزرسانی کنید تا حذف شوند.
@@ -36,13 +43,13 @@
                     </div>
                 @endif
 
-                <ul class="divide-y divide-line-200 rounded-card border border-line-200 bg-white">
+                <ul class="divide-y divide-line-200 rounded-card border border-line-200 bg-card">
                     @foreach ($summary->lines as $line)
                         @php($variant = $line->variant)
                         @php($before = $priceChanges[$variant->variantId] ?? null)
                         <li wire:key="cart-line-{{ $variant->variantId }}" class="p-4">
                             <div @class(['flex gap-3', 'opacity-60' => ! $line->isAvailable()])>
-                                <a href="{{ route('products.show', $variant->productSlug) }}" wire:navigate class="size-16 shrink-0 overflow-hidden rounded-md border border-line-200 bg-white" tabindex="-1" aria-hidden="true">
+                                <a href="{{ route('products.show', $variant->productSlug) }}" wire:navigate class="size-16 shrink-0 overflow-hidden rounded-md border border-line-200 bg-media" tabindex="-1" aria-hidden="true">
                                     <x-media::picture :media="$variant->image" slot-name="cart-thumb" alt="" class="size-full object-contain" />
                                 </a>
                                 <div class="min-w-0 flex-1 space-y-1">
@@ -88,7 +95,7 @@
 
             <aside class="space-y-3 xl:sticky xl:top-[calc(var(--header-height,72px)+1rem)] xl:col-span-4" aria-label="خلاصه سبد">
                 @if ($summary->freeShippingThreshold > 0)
-                    <div class="rounded-card border border-line-200 bg-white p-4">
+                    <div class="rounded-card border border-line-200 bg-card p-4">
                         <p class="text-sm text-ink-900">
                             @if ($summary->hasFreeShipping())
                                 <x-ts-icon icon="truck" class="inline size-5 text-success-600" /> ارسال این سفارش رایگان است.
@@ -103,7 +110,7 @@
                     </div>
                 @endif
 
-                <div class="space-y-3 rounded-card border border-line-200 bg-white p-4">
+                <div class="space-y-3 rounded-card border border-line-200 bg-card p-4">
                     <dl class="space-y-2 text-sm">
                         <div class="flex justify-between"><dt class="text-ink-500">قیمت کالاها ({{ PersianDigits::toPersian($summary->itemCount) }})</dt><dd class="text-ink-900">@toman($summary->compareAtTotal)</dd></div>
                         @if ($summary->savings() > 0)
@@ -112,7 +119,7 @@
                         <div class="flex justify-between"><dt class="text-ink-500">هزینه ارسال</dt><dd class="text-ink-500">در مرحله بعد</dd></div>
                         <div class="flex justify-between border-t border-line-200 pt-2 text-base"><dt class="font-bold text-ink-900">جمع سبد</dt><dd class="font-bold text-ink-900">@toman($summary->subtotal)</dd></div>
                     </dl>
-                    <div class="fixed inset-x-0 bottom-16 z-30 border-t border-line-200 bg-white p-3 md:static md:border-0 md:p-0">
+                    <div class="fixed inset-x-0 bottom-16 z-30 border-t border-line-200 bg-card p-3 md:static md:border-0 md:p-0">
                         <button
                             type="button"
                             wire:click="proceed"

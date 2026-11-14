@@ -38,7 +38,7 @@ new class extends Component
         </ol>
     </nav>
 
-    <div class="rounded-card border border-line-200 bg-white px-4 py-6 md:px-8 md:py-8">
+    <div class="rounded-card border border-line-200 bg-card px-4 py-6 md:px-8 md:py-8">
         <h1 class="text-2xl font-bold text-ink-900 xl:text-3xl">{{ $page->getTitle() }}</h1>
 
         @if ($html !== '')

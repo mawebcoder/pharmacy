@@ -12,7 +12,7 @@
     ];
 @endphp
 
-<nav class="fixed inset-x-0 bottom-0 z-40 border-t border-line-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="منوی اصلی">
+<nav class="fixed inset-x-0 bottom-0 z-40 border-t border-line-200 bg-card pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="منوی اصلی">
     <ul class="grid h-16 grid-cols-5">
         @foreach ($items as $item)
             <li>

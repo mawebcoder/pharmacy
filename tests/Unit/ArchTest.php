@@ -10,6 +10,9 @@ use App\Modules\Identity\Models\Address;
 use App\Modules\Identity\Models\OtpCode;
 use App\Modules\Media\Models\Media;
 use App\Modules\Notifications\Models\SmsLog;
+use App\Modules\Orders\Models\OrderItem;
+use App\Modules\Orders\Models\OrderStatusLog;
+use App\Modules\Payments\Models\Payment;
 use App\Modules\Pricing\Models\PriceImportRow;
 use App\Modules\Pricing\Models\ProviderPriceChange;
 use App\Modules\Pricing\Models\VariantPrice;
@@ -70,7 +73,7 @@ foreach ($modules as $module) {
         // Log tables are records themselves; auditing them would log every log row (the price history tables of S14
         // and S15 and the import rows of S16 are such records). Media rows change on every processing step; changes to what an image belongs to
         // are logged on the owner. Addresses, wishlists and carts are customers' own rows, written by them, not admin changes.
-        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class, Cart::class, CartItem::class, CouponUsage::class]);
+        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class, Cart::class, CartItem::class, CouponUsage::class, OrderItem::class, OrderStatusLog::class, Payment::class]);
 
     arch("{$module} enums have Persian labels")
         ->expect("App\\Modules\\{$module}\\Enums")

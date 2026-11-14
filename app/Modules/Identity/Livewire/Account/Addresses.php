@@ -13,20 +13,23 @@ use App\Modules\Identity\Http\Requests\SaveAddressRequest;
 use App\Modules\Identity\Livewire\Concerns\InteractsWithCustomer;
 use App\Modules\Identity\Models\Address;
 use App\Modules\Locations\Queries\DeliveryLocations;
+use App\Modules\Shared\Support\PersianDigits;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
  * «آدرس‌ها» (roadmap B9.9, D3.3, S18): the customer's addresses as cards (at most 10) with add / edit in a modal,
  * «پیش‌فرض شود» and delete. Provinces and cities are Tipax's, limited to cities with delivery on (admin «شهرها»).
- * Writes go through the address actions.
+ * Writes go through the address actions. With forCheckout it is the checkout address step (S25): each card offers
+ * «ارسال به این آدرس», which tells the page through the «address-picked» event.
  *
  * @property-read Collection<int, Address> $addresses
- * @property-read array<int, string> $cityLabels
+ * @property-read array<int, array{province: string, city: string}> $places
  */
 final class Addresses extends Component
 {
@@ -34,6 +37,13 @@ final class Addresses extends Component
     use InteractsWithCustomer;
 
     public bool $showForm = false;
+
+    /** Shown inside the checkout address step (S25): no account frame, «ارسال به این آدرس» on each card. */
+    #[Locked]
+    public bool $forCheckout = false;
+
+    /** The address chosen for the order (checkout only): picked, else the default. */
+    public ?int $selectedId = null;
 
     public ?int $editingId = null;
 
@@ -58,12 +68,14 @@ final class Addresses extends Component
     }
 
     /**
-     * @return array<int, string>
+     * Province and city names of the listed addresses, keyed by city id.
+     *
+     * @return array<int, array{province: string, city: string}>
      */
     #[Computed]
-    public function cityLabels(): array
+    public function places(): array
     {
-        return app(DeliveryLocations::class)->cityLabels(array_values($this->addresses->map(fn (Address $address): int => $address->getCityId())->all()));
+        return app(DeliveryLocations::class)->placeNames(array_values($this->addresses->map(fn (Address $address): int => $address->getCityId())->all()));
     }
 
     public function create(): void
@@ -74,9 +86,13 @@ final class Addresses extends Component
         $this->form = [
             Address::COLUMN_TITLE => $this->addresses->isEmpty() ? 'خانه' : '',
             Address::COLUMN_RECEIVER_NAME => trim(($customer->getFirstName() ?? '').' '.($customer->getLastName() ?? '')),
-            Address::COLUMN_RECEIVER_MOBILE => $customer->getMobile(),
+            Address::COLUMN_RECEIVER_MOBILE => PersianDigits::toPersian($customer->getMobile()),
             Address::COLUMN_PROVINCE_ID => null,
             Address::COLUMN_CITY_ID => null,
+            Address::COLUMN_MAIN_STREET => '',
+            Address::COLUMN_SIDE_STREET => '',
+            Address::COLUMN_ALLEY => '',
+            Address::COLUMN_BLOCK => '',
             Address::COLUMN_FULL_ADDRESS => '',
             Address::COLUMN_PLAQUE => '',
             Address::COLUMN_UNIT => '',
@@ -95,14 +111,18 @@ final class Addresses extends Component
         $this->form = [
             Address::COLUMN_TITLE => $address->getTitle(),
             Address::COLUMN_RECEIVER_NAME => $address->getReceiverName(),
-            Address::COLUMN_RECEIVER_MOBILE => $address->getReceiverMobile(),
+            Address::COLUMN_RECEIVER_MOBILE => PersianDigits::toPersian($address->getReceiverMobile()),
             Address::COLUMN_PROVINCE_ID => $address->getProvinceId(),
             Address::COLUMN_CITY_ID => $address->getCityId(),
-            Address::COLUMN_FULL_ADDRESS => $address->getFullAddress(),
-            Address::COLUMN_PLAQUE => $address->getPlaque(),
-            Address::COLUMN_UNIT => $address->getUnit() ?? '',
-            Address::COLUMN_FLOOR => $address->getFloor() ?? '',
-            Address::COLUMN_POSTAL_CODE => $address->getPostalCode(),
+            Address::COLUMN_MAIN_STREET => $address->getMainStreet() ?? '',
+            Address::COLUMN_SIDE_STREET => $address->getSideStreet() ?? '',
+            Address::COLUMN_ALLEY => $address->getAlley() ?? '',
+            Address::COLUMN_BLOCK => PersianDigits::toPersian($address->getBlock() ?? ''),
+            Address::COLUMN_FULL_ADDRESS => $address->getFullAddress() ?? '',
+            Address::COLUMN_PLAQUE => PersianDigits::toPersian($address->getPlaque()),
+            Address::COLUMN_UNIT => PersianDigits::toPersian($address->getUnit() ?? ''),
+            Address::COLUMN_FLOOR => PersianDigits::toPersian($address->getFloor() ?? ''),
+            Address::COLUMN_POSTAL_CODE => PersianDigits::toPersian($address->getPostalCode()),
             Address::COLUMN_IS_DEFAULT => $address->isDefault(),
         ];
         $this->showForm = true;
@@ -141,7 +161,7 @@ final class Addresses extends Component
         }
 
         $this->showForm = false;
-        unset($this->addresses, $this->cityLabels);
+        unset($this->addresses, $this->places);
         $this->toast()->success($this->editingId === null ? 'آدرس اضافه شد' : 'آدرس ذخیره شد', $saved->getTitle())->send();
     }
 
@@ -155,8 +175,21 @@ final class Addresses extends Component
     public function delete(int $addressId, DeleteAddress $deleteAddress): void
     {
         $deleteAddress($this->customer(), $this->ownAddress($addressId));
-        unset($this->addresses, $this->cityLabels);
+        unset($this->addresses, $this->places);
         $this->toast()->success('آدرس حذف شد')->send();
+    }
+
+    /**
+     * Checkout: the customer sends this order to one of their addresses (the page saves it on the cart).
+     */
+    public function pick(int $addressId): void
+    {
+        if (! $this->forCheckout || ! Address::query()->ownedBy($this->customer()->getId())->whereKey($addressId)->exists()) {
+            return;
+        }
+
+        $this->selectedId = $addressId;
+        $this->dispatch('address-picked', addressId: $addressId);
     }
 
     public function render(DeliveryLocations $locations): View

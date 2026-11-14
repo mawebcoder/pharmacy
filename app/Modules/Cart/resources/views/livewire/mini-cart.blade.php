@@ -27,7 +27,7 @@
         x-transition.origin.top
         role="dialog"
         aria-label="سبد خرید"
-        class="absolute end-0 top-full z-50 mt-2 hidden w-96 rounded-card border border-line-200 bg-white shadow-lg xl:block"
+        class="absolute end-0 top-full z-50 mt-2 hidden w-96 rounded-card border border-line-200 bg-card shadow-lg xl:block"
     >
         @if ($summary === null)
             <p class="p-6 text-center text-sm text-ink-500">در حال بارگذاری…</p>
@@ -37,7 +37,7 @@
             <ul class="max-h-80 divide-y divide-line-200 overflow-y-auto">
                 @foreach ($summary->lines as $line)
                     <li wire:key="mini-line-{{ $line->variant->variantId }}" @class(['flex items-center gap-3 p-3', 'opacity-60' => ! $line->isAvailable()])>
-                        <span class="size-14 shrink-0 overflow-hidden rounded-md bg-white">
+                        <span class="size-14 shrink-0 overflow-hidden rounded-md bg-media">
                             <x-media::picture :media="$line->variant->image" slot-name="cart-thumb" alt="" class="size-full object-contain" />
                         </span>
                         <span class="min-w-0 flex-1">

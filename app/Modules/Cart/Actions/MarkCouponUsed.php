@@ -8,8 +8,8 @@ use App\Modules\Cart\Enums\CouponUsageStatus;
 use App\Modules\Cart\Models\CouponUsage;
 
 /**
- * The payment was verified (roadmap D13.5, called by S26): the reserved use becomes used. A verified payment is
- * honoured even when the reservation had just expired.
+ * The payment was verified (roadmap D13.5): the reserved use becomes used. A verified payment is honoured even when
+ * the reservation had just expired or been released.
  */
 final class MarkCouponUsed
 {

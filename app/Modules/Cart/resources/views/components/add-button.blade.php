@@ -20,9 +20,9 @@
         x-show="quantity === 0"
         x-on:click.prevent.stop="$dispatch('cart-add', { variantId: id })"
         @class([
-            'grid place-items-center rounded-full bg-primary-700 text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700',
-            $box => ! $wide,
-            'h-11 w-full gap-2 !flex items-center justify-center rounded-card px-4 text-sm font-bold' => $wide,
+            'place-items-center rounded-full bg-primary-700 text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700',
+            'grid '.$box => ! $wide,
+            'flex h-11 w-full items-center justify-center gap-2 rounded-card px-4 text-sm font-bold' => $wide,
         ])
         aria-label="افزودن {{ $label }} به سبد خرید"
     >
@@ -35,7 +35,7 @@
     <div
         x-show="quantity > 0"
         x-cloak
-        @class(['flex items-center justify-between gap-1 rounded-full border border-primary-700 bg-white text-primary-700', 'w-full rounded-card' => $wide || $stack])
+        @class(['flex items-center justify-between gap-1 rounded-full border border-primary-700 bg-card text-primary-700', 'w-full rounded-card' => $wide || $stack])
         role="group"
         aria-label="تعداد {{ $label }} در سبد"
     >

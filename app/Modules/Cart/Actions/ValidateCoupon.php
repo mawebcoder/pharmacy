@@ -42,7 +42,8 @@ final readonly class ValidateCoupon
     {
         $this->checkRules($coupon, $customerId);
 
-        $covered = $this->coveredSubtotal($coupon, $lines);
+        $coveredLines = $this->coveredLines($coupon, $lines);
+        $covered = array_sum(array_map(fn (CartLineData $line): int => $line->lineTotal, $coveredLines));
         $isLimited = $this->hasIncludeLists($coupon);
 
         if ($covered === 0) {
@@ -59,6 +60,7 @@ final readonly class ValidateCoupon
             discount: $this->discount($coupon, $covered),
             freeShipping: $coupon->getType() === CouponType::FreeShipping,
             coveredSubtotal: $covered,
+            coveredVariantIds: array_map(fn (CartLineData $line): int => $line->variant->variantId, $coveredLines),
         );
     }
 
@@ -101,27 +103,24 @@ final readonly class ValidateCoupon
 
     /**
      * @param  list<CartLineData>  $lines
+     * @return list<CartLineData>
      */
-    private function coveredSubtotal(Coupon $coupon, array $lines): int
+    private function coveredLines(Coupon $coupon, array $lines): array
     {
         $lines = array_values(array_filter(
             $lines,
             fn (CartLineData $line): bool => $line->isAvailable() && ($coupon->appliesToSaleItems() || ! $line->variant->isOnSale),
         ));
 
-        if ($lines === []) {
-            return 0;
-        }
-
-        if (! $this->hasIncludeLists($coupon)) {
-            return array_sum(array_map(fn (CartLineData $line): int => $line->lineTotal, $lines));
+        if ($lines === [] || ! $this->hasIncludeLists($coupon)) {
+            return $lines;
         }
 
         $productIds = $coupon->includedIds('coupon_products');
         $brandIds = $coupon->includedIds('coupon_brands');
         $categoryIds = $this->catalog->withSubcategories($coupon->includedIds('coupon_categories'));
         $groups = $this->catalog->productGroups(array_map(fn (CartLineData $line): int => $line->variant->productId, $lines));
-        $covered = 0;
+        $covered = [];
 
         foreach ($lines as $line) {
             $productId = $line->variant->productId;
@@ -130,7 +129,7 @@ final readonly class ValidateCoupon
             if (in_array($productId, $productIds, true)
                 || in_array($group['brandId'], $brandIds, true)
                 || array_intersect($group['categoryIds'], $categoryIds) !== []) {
-                $covered += $line->lineTotal;
+                $covered[] = $line;
             }
         }
 

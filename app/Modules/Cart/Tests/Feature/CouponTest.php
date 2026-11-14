@@ -27,6 +27,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Identity\Models\Customer;
+use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -299,16 +300,18 @@ describe('through checkout and payment', function (): void {
     });
 
     it('turns the checkout log into a reservation that lasts as long as a pending payment', function (): void {
+        $this->freezeTime();
         config(['payments.pending_expiry_minutes' => 45]);
         $customer = Customer::factory()->create();
         $cart = couponCart($customer, [couponSku(2_000_000)]);
         $coupon = Coupon::factory()->create([Coupon::COLUMN_CODE => 'GATEWAY']);
         $applied = app(ApplyCouponAtCheckout::class)(CouponCodeData::fromArray(['cart_id' => $cart->getId(), 'code' => 'GATEWAY', 'customer_id' => $customer->getId()]));
 
-        $usage = app(ReserveCoupon::class)($coupon->getId(), $customer->getId(), $applied->discount, orderId: 77);
+        $order = Order::factory()->create([Order::COLUMN_CUSTOMER_ID => $customer->getId()]);
+        $usage = app(ReserveCoupon::class)($coupon->getId(), $customer->getId(), $applied->discount, orderId: $order->getId());
 
         expect(usageStatuses($coupon))->toBe(['reserved'])
-            ->and($usage->getOrderId())->toBe(77)
+            ->and($usage->getOrderId())->toBe($order->getId())
             ->and($usage->getDiscountAmount())->toBe(200_000)
             ->and($usage->getReservedUntil()?->timestamp)->toBe(now()->addMinutes(45)->timestamp);
     });

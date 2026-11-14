@@ -12,7 +12,7 @@
     x-bind:aria-label="$store.wishlist.has(id) ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'"
     aria-label="افزودن به علاقه‌مندی‌ها"
     aria-pressed="false"
-    {{ $attributes->class('z-10 grid size-11 place-items-center rounded-full bg-white/90 text-ink-500 shadow-sm hover:text-accent-600 focus-visible:outline-2 focus-visible:outline-primary-700') }}
+    {{ $attributes->class('z-10 grid size-11 place-items-center rounded-full bg-card/90 text-ink-500 shadow-sm hover:text-accent-600 focus-visible:outline-2 focus-visible:outline-primary-700') }}
 >
     <x-heroicon-o-heart class="size-5" x-show="! $store.wishlist.has(id)" aria-hidden="true" />
     <x-heroicon-s-heart class="size-5 text-accent-600" x-show="$store.wishlist.has(id)" x-cloak aria-hidden="true" />

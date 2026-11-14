@@ -3,7 +3,7 @@
 @use('App\Modules\Shared\Support\PersianDigits')
 
 @php
-    $inputClass = fn (string $key): string => 'h-11 w-full rounded-card border bg-white px-3 text-sm text-ink-900 focus:outline-2 focus:outline-primary-700 '.($errors->has('form.'.$key) ? 'border-danger-600' : 'border-line-200');
+    $inputClass = fn (string $key): string => 'h-11 w-full rounded-card border bg-card px-3 text-sm text-ink-900 focus:outline-2 focus:outline-primary-700 '.($errors->has('form.'.$key) ? 'border-danger-600' : 'border-line-300');
     $text = [
         [Customer::COLUMN_FIRST_NAME, 'نام', ['autocomplete' => 'given-name', 'maxlength' => 60]],
         [Customer::COLUMN_LAST_NAME, 'نام خانوادگی', ['autocomplete' => 'family-name', 'maxlength' => 60]],
@@ -13,7 +13,7 @@
 @endphp
 
 <x-identity::account-shell active="profile" title="اطلاعات حساب">
-    <form wire:submit="save" class="space-y-5 rounded-card border border-line-200 bg-white p-4 md:p-6" novalidate>
+    <form wire:submit="save" class="space-y-5 rounded-card border border-line-200 bg-card p-4 md:p-6" novalidate>
         <div class="grid gap-4 md:grid-cols-2">
             @foreach ($text as [$key, $label, $attributes])
                 <div class="space-y-1.5">
@@ -50,4 +50,23 @@
             ذخیره تغییرات
         </button>
     </form>
+
+    <fieldset class="mt-4 rounded-card border border-line-200 bg-card p-4 md:p-6">
+        <legend class="sr-only">ظاهر سایت</legend>
+        <p class="font-bold text-ink-900" aria-hidden="true">ظاهر سایت</p>
+        <p class="mt-1 text-sm text-ink-500">رنگ‌بندی فروشگاه را انتخاب کنید؛ بلافاصله ذخیره می‌شود.</p>
+        <div class="mt-3 grid grid-cols-3 gap-2 sm:max-w-md">
+            @foreach ($themes as $value => $label)
+                <label @class([
+                    'flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-card border px-3 text-sm has-focus-visible:outline-2 has-focus-visible:outline-primary-700',
+                    'border-2 border-primary-700 bg-primary-50 font-bold text-primary-700' => $theme === $value,
+                    'border-line-300 text-ink-900 hover:bg-surface-50' => $theme !== $value,
+                ])>
+                    <input type="radio" name="theme" value="{{ $value }}" wire:model.live="theme" class="sr-only">
+                    <x-ts-icon :icon="match ($value) { 'light' => 'sun', 'dark' => 'moon', default => 'computer-desktop' }" class="size-5" />
+                    {{ $label }}
+                </label>
+            @endforeach
+        </div>
+    </fieldset>
 </x-identity::account-shell>

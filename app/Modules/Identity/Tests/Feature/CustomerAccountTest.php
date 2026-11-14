@@ -8,17 +8,21 @@ use App\Modules\Identity\Data\AddressData;
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Enums\Gender;
+use App\Modules\Identity\Enums\ThemePreference;
 use App\Modules\Identity\Exceptions\AddressRefused;
 use App\Modules\Identity\Filament\Resources\Customers\Pages\ViewCustomer;
 use App\Modules\Identity\Filament\Resources\Customers\RelationManagers\AddressesRelationManager;
 use App\Modules\Identity\Livewire\Account\Addresses;
 use App\Modules\Identity\Livewire\Account\Profile;
+use App\Modules\Identity\Livewire\ThemeToggle;
 use App\Modules\Identity\Models\Address;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Identity\Models\Customer;
+use App\Modules\Identity\Support\StorefrontTheme;
 use App\Modules\Locations\Models\City;
 use App\Modules\Locations\Models\Province;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 
 use function Pest\Livewire\livewire;
@@ -42,11 +46,12 @@ function addressForm(array $overrides = []): array
         Address::COLUMN_RECEIVER_MOBILE => '۰۹۱۲۳۴۵۶۷۸۹',
         Address::COLUMN_PROVINCE_ID => 8,
         Address::COLUMN_CITY_ID => 1,
-        Address::COLUMN_FULL_ADDRESS => 'خیابان ولیعصر، کوچه نسترن',
+        Address::COLUMN_MAIN_STREET => 'ولیعصر',
+        Address::COLUMN_ALLEY => 'نسترن',
         Address::COLUMN_PLAQUE => '۱۲',
         Address::COLUMN_UNIT => '',
         Address::COLUMN_FLOOR => '',
-        Address::COLUMN_POSTAL_CODE => '1234567890',
+        Address::COLUMN_POSTAL_CODE => '1316954781',
         Address::COLUMN_IS_DEFAULT => false,
         ...$overrides,
     ];
@@ -65,6 +70,12 @@ it('shows the account pages to a signed-in customer, with empty states', functio
     'reviews' => ['/account/reviews', 'نظرات من'],
     'wishlist' => ['/account/wishlist', 'هنوز محصولی را ذخیره نکرده‌اید.'],
 ]);
+
+it('shows the default address on the dashboard when it has no extra directions', function (): void {
+    Address::factory()->for($this->customer)->default()->create([Address::COLUMN_MAIN_STREET => 'ولیعصر', Address::COLUMN_FULL_ADDRESS => null]);
+
+    $this->actingAs($this->customer, 'customer')->get('/account')->assertOk()->assertSee('خیابان ولیعصر');
+});
 
 describe('addresses', function (): void {
     beforeEach(function (): void {
@@ -96,7 +107,9 @@ describe('addresses', function (): void {
     })->with([
         'delivery off' => [[Address::COLUMN_CITY_ID => 'off'], Address::COLUMN_CITY_ID],
         'other province' => [[Address::COLUMN_CITY_ID => 'other'], Address::COLUMN_CITY_ID],
-        'postal code' => [[Address::COLUMN_POSTAL_CODE => '0123456789'], Address::COLUMN_POSTAL_CODE],
+        'postal code too short' => [[Address::COLUMN_POSTAL_CODE => '131695478'], Address::COLUMN_POSTAL_CODE],
+        'postal code with 0 or 2 in the first five' => [[Address::COLUMN_POSTAL_CODE => '1234567890'], Address::COLUMN_POSTAL_CODE],
+        'postal code of one repeated digit' => [[Address::COLUMN_POSTAL_CODE => '1111111111'], Address::COLUMN_POSTAL_CODE],
         'mobile' => [[Address::COLUMN_RECEIVER_MOBILE => '021445566'], Address::COLUMN_RECEIVER_MOBILE],
     ]);
 
@@ -165,6 +178,40 @@ describe('profile', function (): void {
         'national id checksum' => ['national_id', '1234567890'],
         'future birth date' => ['birth_date', now()->addYear()->toDateString()],
     ]);
+
+    it('saves the picked theme at once and tells the page, falling back to the device setting for unknown values', function (string $picked, ThemePreference $saved): void {
+        livewire(Profile::class)
+            ->set('theme', $picked)
+            ->assertSet('theme', $saved->value)
+            ->assertDispatched('theme-changed', theme: $saved->value);
+
+        expect($this->customer->fresh()->getTheme())->toBe($saved);
+    })->with([
+        'dark' => ['dark', ThemePreference::Dark],
+        'unknown' => ['purple', ThemePreference::System],
+    ]);
+
+    it('saves the header switch on the account and in a cookie, and ignores anything but light or dark', function (): void {
+        livewire(ThemeToggle::class)->call('choose', 'dark')->assertDispatched('theme-changed', theme: 'dark');
+        livewire(ThemeToggle::class)->call('choose', 'system')->assertNotDispatched('theme-changed');
+
+        expect($this->customer->fresh()->getTheme())->toBe(ThemePreference::Dark)
+            ->and(Cookie::queued(StorefrontTheme::COOKIE)?->getValue())->toBe('dark');
+    });
+
+    it('renders the storefront with the customer\'s theme', function (): void {
+        $this->get('/account/profile')->assertSee('data-theme="system"', false)->assertDontSee('class="dark"', false);
+
+        $this->customer->setTheme(ThemePreference::Dark)->save();
+
+        $this->get('/account/profile')->assertSee('data-theme="dark" class="dark"', false);
+    });
+});
+
+it('keeps a guest\'s header theme in the cookie and follows the device without one', function (): void {
+    $this->get('/')->assertSee('data-theme="system"', false);
+
+    $this->withCookie(StorefrontTheme::COOKIE, 'dark')->get('/')->assertSee('data-theme="dark" class="dark"', false);
 });
 
 it('shows a customer\'s addresses read-only on their admin page', function (): void {

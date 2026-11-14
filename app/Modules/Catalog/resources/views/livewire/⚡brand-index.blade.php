@@ -36,11 +36,11 @@ new #[Title('برندها')] class extends Component
     </header>
 
     @if ($this->groups->isEmpty())
-        <div class="rounded-card border border-line-200 bg-white px-6 py-12 text-center text-ink-500">
+        <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center text-ink-500">
             هنوز برندی ثبت نشده است.
         </div>
     @else
-        <nav aria-label="فهرست حروف" class="scrollbar-none sticky top-(--header-height) z-30 -mx-4 overflow-x-auto border-y border-line-200 bg-surface-50/95 px-4 py-2 backdrop-blur md:mx-0 md:rounded-card md:border md:bg-white">
+        <nav aria-label="فهرست حروف" class="scrollbar-none sticky top-(--header-height) z-30 -mx-4 overflow-x-auto border-y border-line-200 bg-surface-50/95 px-4 py-2 backdrop-blur md:mx-0 md:rounded-card md:border md:bg-card">
             <ul class="flex gap-1 md:flex-wrap">
                 @foreach ($this->groups->keys() as $letter)
                     <li>
@@ -59,7 +59,7 @@ new #[Title('برندها')] class extends Component
                 <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
                     @foreach ($brands as $brand)
                         <li wire:key="brand-{{ $brand->getId() }}">
-                            <a href="{{ route('brands.show', $brand) }}" wire:navigate class="flex h-full min-h-24 flex-col justify-center gap-1 rounded-card border border-line-200 bg-white p-4 shadow-card transition hover:border-primary-300 focus-visible:outline-2 focus-visible:outline-primary-700">
+                            <a href="{{ route('brands.show', $brand) }}" wire:navigate class="flex h-full min-h-24 flex-col justify-center gap-1 rounded-card border border-line-200 bg-card p-4 shadow-card transition hover:border-primary-300 focus-visible:outline-2 focus-visible:outline-primary-700">
                                 @if ($brand->getLogo())
                                     <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="mb-2 h-12 w-24 object-contain md:h-15 md:w-30" />
                                 @endif

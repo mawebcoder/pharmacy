@@ -56,7 +56,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
             'tokens' => [
                 'primary-700' => 'bg-primary-700', 'primary-800' => 'bg-primary-800', 'primary-50' => 'bg-primary-50',
                 'accent-500' => 'bg-accent-500', 'ink-900' => 'bg-ink-900', 'ink-500' => 'bg-ink-500',
-                'line-200' => 'bg-line-200', 'surface-50' => 'bg-surface-50', 'success-600' => 'bg-success-600',
+                'line-200' => 'bg-line-200', 'line-300' => 'bg-line-300', 'surface-50' => 'bg-surface-50', 'card' => 'bg-card', 'media' => 'bg-media', 'success-600' => 'bg-success-600',
                 'warning-500' => 'bg-warning-500', 'danger-600' => 'bg-danger-600', 'rx-600' => 'bg-rx-600',
             ],
         ];
@@ -72,7 +72,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
         </p>
     </header>
 
-    <section class="space-y-3 rounded-card border border-line-200 bg-white p-4 md:p-6">
+    <section class="space-y-3 rounded-card border border-line-200 bg-card p-4 md:p-6">
         <h2 class="font-bold">رنگ‌ها (B3)</h2>
         <ul class="grid grid-cols-3 gap-3 md:grid-cols-6">
             @foreach ($tokens as $name => $class)
@@ -84,7 +84,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
         </ul>
     </section>
 
-    <section class="space-y-4 rounded-card border border-line-200 bg-white p-4 md:p-6">
+    <section class="space-y-4 rounded-card border border-line-200 bg-card p-4 md:p-6">
         <h2 class="font-bold">قیمت (B9.4)</h2>
         <div class="flex flex-wrap items-end gap-8">
             <x-ui.price :price="4_850_000" />
@@ -94,7 +94,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
         </div>
     </section>
 
-    <section class="space-y-4 rounded-card border border-line-200 bg-white p-4 md:p-6">
+    <section class="space-y-4 rounded-card border border-line-200 bg-card p-4 md:p-6">
         <h2 class="font-bold">نشان‌ها و دکمه‌ها (B10)</h2>
         <div class="flex flex-wrap gap-2">
             <x-ts-badge text="۲۰٪ تخفیف" color="red" />
@@ -112,7 +112,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
         <x-ts-rating :rate="4" static text="۴ از ۵ (۱۲۸ نظر)" />
     </section>
 
-    <section class="space-y-4 rounded-card border border-line-200 bg-white p-4 md:p-6">
+    <section class="space-y-4 rounded-card border border-line-200 bg-card p-4 md:p-6">
         <h2 class="font-bold">ورودی‌ها</h2>
         <div class="grid gap-4 md:grid-cols-2">
             <x-ts-input label="جستجو" hint="نام محصول، برند یا ماده مؤثره" icon="magnifying-glass" wire:model.live="search" clearable />
@@ -123,7 +123,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
         <x-ts-toggle label="یادآوری خرید مجدد" wire:model.live="isSubscribed" />
     </section>
 
-    <section class="space-y-3 rounded-card border border-line-200 bg-white p-4 md:p-6">
+    <section class="space-y-3 rounded-card border border-line-200 bg-card p-4 md:p-6">
         <h2 class="font-bold">پیشرفت (تا ارسال رایگان)</h2>
         <x-ts-progress percent="70" without-text />
         <p class="text-sm text-ink-500">@toman(1_500_000) تا ارسال رایگان</p>

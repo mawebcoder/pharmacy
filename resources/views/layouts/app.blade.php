@@ -1,7 +1,22 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+@php($theme = \App\Modules\Identity\Support\StorefrontTheme::current()->value)
+<html lang="fa" dir="rtl" data-theme="{{ $theme }}"@if ($theme === 'dark') class="dark"@endif>
     <head>
         <meta charset="utf-8">
+        {{-- Applies the customer's theme before the page paints (system follows the device) and when «اطلاعات حساب» changes it. --}}
+        <script>
+            (() => {
+                const root = document.documentElement;
+                const media = window.matchMedia('(prefers-color-scheme: dark)');
+                const apply = () => root.classList.toggle('dark', root.dataset.theme === 'dark' || (root.dataset.theme === 'system' && media.matches));
+                apply();
+                media.addEventListener('change', apply);
+                window.addEventListener('theme-changed', (event) => { root.dataset.theme = event.detail.theme; apply(); });
+                // wire:navigate copies the server's <html> attributes, which cannot know the device setting.
+                document.addEventListener('livewire:navigating', (event) => event.detail?.onSwap?.(apply));
+                document.addEventListener('livewire:navigated', apply);
+            })();
+        </script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
         <meta name="theme-color" content="#0f766e">
 
@@ -17,7 +32,7 @@
         @livewireStyles
     </head>
     <body class="min-h-screen bg-surface-50 font-sans text-ink-900 antialiased">
-        <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:shadow-card">
+        <a href="#content" class="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-card focus:px-4 focus:py-2 focus:shadow-card">
             پرش به محتوای اصلی
         </a>
 

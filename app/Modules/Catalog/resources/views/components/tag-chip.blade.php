@@ -15,7 +15,7 @@
     {{ $attributes->class([
         'flex h-11 items-center gap-2 rounded-full border px-4 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-primary-700',
         'border-primary-700 bg-primary-700 text-white' => $current,
-        'border-line-200 bg-white text-ink-900 hover:border-primary-300 hover:text-primary-700' => ! $current,
+        'border-line-200 bg-card text-ink-900 hover:border-primary-300 hover:text-primary-700' => ! $current,
     ]) }}
 >
     <x-media::picture :media="$tag->getIcon()" slot-name="category-chip" alt="" class="size-6 object-contain" />

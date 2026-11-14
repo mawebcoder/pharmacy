@@ -47,7 +47,7 @@
     @endif
 
     <div @class([
-        'flex items-center rounded-md bg-white ring-1 focus-within:ring-2',
+        'flex items-center rounded-md bg-card ring-1 focus-within:ring-2',
         'ring-gray-200 focus-within:ring-primary-600' => ! $invalid,
         'ring-red-300 focus-within:ring-red-500' => $invalid,
         'bg-gray-100!' => $disabled,
@@ -89,7 +89,7 @@
         x-transition.origin.top
         role="dialog"
         aria-label="تقویم"
-        class="absolute start-0 z-50 mt-2 w-72 rounded-xl bg-white p-3 shadow-lg ring-1 ring-gray-200"
+        class="absolute start-0 z-50 mt-2 w-72 rounded-xl bg-card p-3 shadow-lg ring-1 ring-gray-200"
     >
         {{-- Header: in RTL the first button sits on the right, so "previous" points right. --}}
         <div class="mb-3 flex items-center justify-between">

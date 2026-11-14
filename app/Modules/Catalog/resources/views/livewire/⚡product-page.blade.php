@@ -1,30 +1,93 @@
 <?php
 
+use App\Modules\Catalog\Enums\ProductRelationType;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductRelation;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Queries\ProductListing;
+use App\Modules\Settings\Queries\StoreSettings;
+use Illuminate\Database\Eloquent\Collection;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /**
- * Product page (roadmap B5 /products/{slug}): a simple version so lists can link here (decided 2026-11-07 in S12) —
- * breadcrumb, photos, brand, name, short description, variants with price and stock. S13 builds the full page
- * (gallery zoom, variant picker, tabs, FAQ, related, add to cart in S19). Only active products are shown.
+ * Product page (roadmap B5 /products/{slug}, B9.5; layout built ahead of S13 by the owner, 2026-11-14): gallery with
+ * swipe, thumbnails, hover and full-screen zoom; info (brand, name, badges, key attributes); a buy box with the SKU
+ * picker (only when there is more than one SKU), price, expiry, stock, shipping and add to cart, sticky on desktop
+ * and repeated as a bottom bar on phones and tablets once scrolled past; tabs that show one section at a time
+ * (description, ingredients, usage, side effects, drug interactions, warnings, questions); «سؤال خود را اینجا
+ * بپرسید» in the buy box (WhatsApp or Telegram from «تنظیمات فروشگاه», after a confirmation); related products. Stock alerts, question submission
+ * and reviews stay in S13. Only active products and SKUs are shown.
  */
 new class extends Component
 {
     public Product $product;
 
+    public int $variantId = 0;
+
     public function mount(string $slug): void
     {
         $this->product = Product::query()
             ->active()
-            ->with(['brand', 'primaryCategory', 'media', 'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true)])
+            ->with(['brand', 'primaryCategory', 'media', 'faqs', 'attributeValues.attribute', 'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true)])
             ->where(Product::COLUMN_SLUG, $slug)
             ->firstOrFail();
+        $this->variantId = $this->product->getDefaultVariant()?->getId() ?? 0;
     }
 
-    public function render(): \Illuminate\Contracts\View\View
+    /**
+     * Only the product's own active SKUs can be picked; anything else returns to the default.
+     */
+    public function updatedVariantId(): void
     {
-        return $this->view()->title($this->product->getSeoTitle() ?? $this->product->getNameFa());
+        if ($this->selectedVariant()?->getId() !== $this->variantId) {
+            $this->variantId = $this->product->getDefaultVariant()?->getId() ?? 0;
+        }
+
+        unset($this->selectedVariant);
+    }
+
+    #[Computed]
+    public function selectedVariant(): ?ProductVariant
+    {
+        $variant = $this->product->getVariants()->first(fn (ProductVariant $variant): bool => $variant->getId() === $this->variantId)
+            ?? $this->product->getDefaultVariant();
+
+        return $variant?->setRelation('product', $this->product);
+    }
+
+    /**
+     * The admin's «مرتبط» products that are active, in the admin's order (at most 12).
+     *
+     * @return Collection<int, Product>
+     */
+    #[Computed]
+    public function relatedProducts(): Collection
+    {
+        $ids = ProductRelation::query()
+            ->where(ProductRelation::COLUMN_PRODUCT_ID, $this->product->getId())
+            ->where(ProductRelation::COLUMN_TYPE, ProductRelationType::Related)
+            ->orderBy(ProductRelation::COLUMN_ID)
+            ->limit(12)
+            ->pluck(ProductRelation::COLUMN_RELATED_PRODUCT_ID)
+            ->all();
+
+        return Product::query()->active()->with(ProductListing::CARD_RELATIONS)->whereKey($ids)->get()
+            ->sortBy(fn (Product $product): int|false => array_search($product->getId(), $ids, true))
+            ->values();
+    }
+
+    public function render(StoreSettings $settings): \Illuminate\Contracts\View\View
+    {
+        return $this->view([
+            'shippingRate' => $settings->shippingFlatRate(),
+            'freeShippingThreshold' => $settings->freeShippingThreshold(),
+            'chatMessage' => $settings->productChatMessage(
+                $this->product->getNameFa(),
+                $this->product->getVariants()->count() > 1 ? $this->selectedVariant?->getTitleFa() : null,
+                route('products.show', $this->product->getSlug()),
+            ),
+        ])->title($this->product->getSeoTitle() ?? $this->product->getNameFa());
     }
 };
 ?>
@@ -35,9 +98,26 @@ new class extends Component
     $category = $product->getPrimaryCategory();
     $trail = $category ? [...$category->ancestors(), $category] : [];
     $images = $product->images($product::IMAGE_GALLERY);
+    $variants = $product->getVariants();
+    $variant = $this->selectedVariant;
+    $isRx = $product->requiresPrescription() || ! $product->isSellableType();
+    $keyAttributes = $product->getAttributeValues()
+        ->groupBy(fn ($value): string => $value->getAttributeModel()?->getNameFa() ?? '')
+        ->filter(fn ($values, string $name): bool => $name !== '')
+        ->map(fn ($values): string => $values->map->getValueFa()->join('، '));
+    $texts = array_filter([
+        'description' => ['توضیحات', $product->getDescription()],
+        'ingredients' => ['ترکیبات', $product->getIngredients()],
+        'usage' => ['نحوه مصرف', $product->getUsage()],
+        'side-effects' => ['عوارض جانبی', $product->getSideEffects()],
+        'interactions' => ['تداخلات دارویی', $product->getInteractions()],
+        'warnings' => ['هشدارها', $product->getWarnings()],
+    ], fn (array $tab): bool => filled($tab[1]));
+    $tabs = array_map(fn (array $tab): string => $tab[0], $texts) + ($product->getFaqs()->isNotEmpty() ? ['questions' => 'پرسش‌ها'] : []);
+    $firstTab = array_key_first($tabs);
 @endphp
 
-<div class="space-y-6">
+<div class="space-y-6 pb-20 xl:pb-0" x-data="{ pastBuyBox: false }">
     <nav aria-label="مسیر صفحه" class="text-sm text-ink-500">
         <ol class="flex flex-wrap items-center gap-1">
             <li><a href="{{ route('home') }}" wire:navigate class="hover:text-primary-700">خانه</a></li>
@@ -50,93 +130,293 @@ new class extends Component
         </ol>
     </nav>
 
-    <div class="grid gap-6 md:grid-cols-2 xl:gap-10">
-        <div class="space-y-3">
-            <div class="aspect-square overflow-hidden rounded-card border border-line-200 bg-white">
-                @if ($images !== [])
-                    <x-media::picture :media="$images[0]" slot-name="pdp-main" :alt="$product->getNameFa()" :priority="true" class="size-full object-contain" />
-                @endif
-            </div>
-            @if (count($images) > 1)
-                <ul class="scrollbar-none flex gap-2 overflow-x-auto">
-                    @foreach (array_slice($images, 1) as $image)
-                        <li class="size-20 shrink-0 overflow-hidden rounded-md border border-line-200 bg-white">
-                            <x-media::picture :media="$image" slot-name="cart-thumb" :alt="$product->getNameFa()" class="size-full object-contain" />
-                        </li>
-                    @endforeach
-                </ul>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-12 xl:gap-8">
+        {{-- Gallery: swipe with dots on phones, thumbnails below on tablets, beside (start side) on desktop. --}}
+        <div class="min-w-0 xl:col-span-5" wire:ignore x-data="productGallery({{ count($images) }})">
+            @if ($images === [])
+                <div class="grid aspect-square place-items-center rounded-card border border-line-200 bg-media text-ink-500">
+                    <x-ts-icon icon="photo" class="size-12" />
+                </div>
+            @else
+                <div class="flex flex-col gap-3 xl:flex-row-reverse">
+                    <div class="min-w-0 flex-1">
+                        <div class="relative">
+                        <div x-ref="slider" class="swiper overflow-hidden rounded-card border border-line-200 bg-media" tabindex="0" aria-roledescription="گالری" aria-label="تصاویر {{ $product->getNameFa() }}">
+                            <ul class="swiper-wrapper">
+                                @foreach ($images as $index => $image)
+                                    <li class="swiper-slide">
+                                        <button type="button" x-on:click="open()" x-on:mousemove="lens($event)" x-on:mouseleave="unlens($event)" class="block aspect-square w-full cursor-zoom-in overflow-hidden" aria-label="نمایش تمام‌صفحه تصویر {{ $index + 1 }}">
+                                            <x-media::picture :media="$image" slot-name="pdp-main" :alt="$product->getNameFa()" :priority="$index === 0" class="size-full object-contain transition-transform duration-150 motion-reduce:transition-none" />
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @if (count($images) > 1)
+                            <span class="pointer-events-none absolute end-3 bottom-3 z-10 rounded-full bg-black/60 px-2 text-xs leading-6 text-white" x-text="counter()" aria-hidden="true"></span>
+                        @endif
+                        </div>
+                        @if (count($images) > 1)
+                            <div class="mt-3 flex justify-center gap-2 md:hidden">
+                                @foreach ($images as $index => $image)
+                                    <button type="button" x-on:click="show({{ $index }})" class="grid size-6 place-items-center" aria-label="تصویر {{ $index + 1 }}" x-bind:aria-current="active === {{ $index }}">
+                                        <span class="h-2 rounded-full transition-all" x-bind:class="active === {{ $index }} ? 'w-5 bg-primary-700' : 'w-2 bg-line-300'"></span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    @if (count($images) > 1)
+                        <ul class="scrollbar-none hidden gap-2 overflow-x-auto md:flex xl:max-h-[34rem] xl:flex-col xl:overflow-x-visible xl:overflow-y-auto">
+                            @foreach ($images as $index => $image)
+                                <li class="shrink-0">
+                                    <button type="button" x-on:click="show({{ $index }})" class="block size-16 overflow-hidden rounded-md border-2 bg-media xl:size-20" x-bind:class="active === {{ $index }} ? 'border-primary-700' : 'border-line-200 hover:border-line-300'" aria-label="تصویر {{ $index + 1 }}" x-bind:aria-current="active === {{ $index }}">
+                                        <x-media::picture :media="$image" slot-name="cart-thumb" alt="" class="size-full object-contain" />
+                                    </button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+
+                {{-- Full-screen view: arrows, Escape, tap to zoom. Its large photos load only once it opens. --}}
+                <template x-teleport="body">
+                    <div x-show="fullscreen" x-cloak x-trap.noscroll="fullscreen" x-on:keydown.escape.window="fullscreen && close()" x-on:keydown.left.window="fullscreen && step(1)" x-on:keydown.right.window="fullscreen && step(-1)" class="fixed inset-0 z-[60] flex flex-col bg-black/95" role="dialog" aria-modal="true" aria-label="تصاویر {{ $product->getNameFa() }}" dir="rtl">
+                        <div class="flex items-center justify-between p-3 text-white">
+                            <span class="text-sm" x-text="counter()"></span>
+                            <button type="button" x-on:click="close()" class="grid size-11 place-items-center rounded-full hover:bg-white/10" aria-label="بستن">
+                                <x-ts-icon icon="x-mark" class="size-6" />
+                            </button>
+                        </div>
+                        <div class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+                            <template x-if="fullscreen">
+                                <div class="size-full">
+                                    @foreach ($images as $index => $image)
+                                        <div x-show="active === {{ $index }}" class="grid size-full place-items-center bg-media">
+                                            <button type="button" x-on:click="toggleZoom($event)" class="size-full transition-transform duration-200 motion-reduce:transition-none" x-bind:class="zoomed ? 'scale-200 cursor-zoom-out' : 'cursor-zoom-in'" aria-label="بزرگ‌نمایی">
+                                                <x-media::picture :media="$image" slot-name="pdp-zoom" :alt="$product->getNameFa()" class="size-full object-contain" />
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </template>
+                            @if (count($images) > 1)
+                                <button type="button" x-on:click="step(-1)" class="absolute start-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80" aria-label="تصویر قبلی">
+                                    <x-ts-icon icon="chevron-right" class="size-6" />
+                                </button>
+                                <button type="button" x-on:click="step(1)" class="absolute end-3 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80" aria-label="تصویر بعدی">
+                                    <x-ts-icon icon="chevron-left" class="size-6" />
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </template>
             @endif
         </div>
 
-        <div class="space-y-4">
+        {{-- Info --}}
+        <div class="min-w-0 space-y-4 xl:col-span-4">
             @if ($product->getBrand())
-                <a href="{{ route('brands.show', $product->getBrand()) }}" wire:navigate class="text-sm text-primary-700 hover:underline">{{ $product->getBrand()->getNameFa() }}</a>
+                <a href="{{ route('brands.show', $product->getBrand()) }}" wire:navigate class="text-sm font-medium text-primary-700 hover:underline">{{ $product->getBrand()->getNameFa() }}</a>
             @endif
             <div class="flex items-start justify-between gap-3">
-                <h1 class="text-xl leading-9 font-bold text-ink-900 xl:text-2xl">{{ $product->getNameFa() }}</h1>
+                <h1 class="text-xl leading-9 font-bold text-ink-900 xl:text-2xl xl:leading-10">{{ $product->getNameFa() }}</h1>
                 <x-catalog::wishlist-button :product-id="$product->getId()" class="shrink-0 border border-line-200 shadow-none" />
             </div>
             @if ($product->getNameEn())
                 <p dir="ltr" class="text-end text-sm text-ink-500">{{ $product->getNameEn() }}</p>
             @endif
+
+            <ul class="flex flex-wrap gap-2 text-xs font-medium">
+                <li class="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 leading-7 text-primary-700"><x-ts-icon icon="shield-check" class="size-4" />اصالت کالا</li>
+                @if ($isRx)
+                    <li class="inline-flex items-center gap-1 rounded-full border border-rx-600 px-2.5 leading-6 text-rx-600"><x-ts-icon icon="document-text" class="size-4" />نسخه‌ای</li>
+                @endif
+                @if ($variant?->isNearExpiry())
+                    <li class="inline-flex items-center gap-1 rounded-full bg-warning-500 px-2.5 leading-7 text-ink-900">زودمصرف</li>
+                @endif
+                @if ($product->getIrcCode())
+                    <li class="inline-flex items-center gap-1 rounded-full border border-line-300 px-2.5 leading-6 text-ink-500">IRC <bdi dir="ltr">{{ $product->getIrcCode() }}</bdi></li>
+                @endif
+            </ul>
+
             @if ($product->getShortDescription())
                 <p class="leading-8 text-ink-900">{{ $product->getShortDescription() }}</p>
             @endif
 
-            @php($variants = $product->getVariants())
-            @if ($variants->count() === 1)
-                {{-- One SKU: no SKU list, just its price and «افزودن به سبد» (owner, 2026-11-14). --}}
-                @php($variant = $variants->first()->setRelation('product', $product))
-                <div class="space-y-3 rounded-card border border-line-200 bg-white p-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <p @class(['text-sm', 'text-success-600' => $variant->getStockStatus() === StockStatus::Available, 'text-ink-500' => $variant->getStockStatus() !== StockStatus::Available])>
+            @if ($keyAttributes->isNotEmpty())
+                <section aria-labelledby="key-attributes">
+                    <h2 id="key-attributes" class="mb-2 text-sm font-bold text-ink-900">ویژگی‌های اصلی</h2>
+                    <dl class="divide-y divide-line-200 rounded-card border border-line-200 bg-card text-sm">
+                        @foreach ($keyAttributes->take(6) as $name => $value)
+                            <div class="flex gap-3 px-3 py-2">
+                                <dt class="w-28 shrink-0 text-ink-500">{{ $name }}</dt>
+                                <dd class="text-ink-900">{{ $value }}</dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                </section>
+            @endif
+        </div>
+
+        {{-- Buy box: sticky on desktop. --}}
+        <div class="min-w-0 md:col-span-2 xl:col-span-3">
+            <div class="space-y-4 rounded-card border border-line-200 bg-card p-4 xl:sticky xl:top-[calc(var(--header-height)+1rem)]" x-intersect:leave="pastBuyBox = $el.getBoundingClientRect().top < 0" x-intersect:enter="pastBuyBox = false">
+                @if ($variants->count() > 1)
+                    <fieldset>
+                        <legend class="mb-2 text-sm font-bold text-ink-900">انتخاب نوع</legend>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($variants as $option)
+                                <label wire:key="variant-{{ $option->getId() }}" @class([
+                                    'flex min-h-11 cursor-pointer items-center rounded-card border px-3 text-sm has-focus-visible:outline-2 has-focus-visible:outline-primary-700',
+                                    'border-2 border-primary-700 bg-primary-50 font-bold text-primary-700' => $option->getId() === $variant?->getId(),
+                                    'border-line-300 text-ink-900 hover:border-primary-700' => $option->getId() !== $variant?->getId(),
+                                    'opacity-60' => $option->getStockStatus() !== StockStatus::Available,
+                                ])>
+                                    <input type="radio" name="variant" value="{{ $option->getId() }}" wire:model.live="variantId" class="sr-only">
+                                    {{ $option->getTitleFa() }}
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                @endif
+
+                @if ($variant)
+                    <div class="flex items-end justify-between gap-3">
+                        <p @class(['text-sm font-medium', 'text-success-600' => $variant->getStockStatus() === StockStatus::Available, 'text-ink-500' => $variant->getStockStatus() !== StockStatus::Available])>
                             {{ $variant->getStockStatus()->label() }}
-                            @if ($variant->isNearExpiry() && $variant->getExpiryDate())
-                                · زودمصرف (انقضا @jalali($variant->getExpiryDate()))
-                            @endif
                         </p>
                         <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="lg" />
                     </div>
-                    @if ($variant->canAddToCart())
-                        <x-cart::add-button :variant-id="$variant->getId()" :label="$product->getNameFa()" wide />
-                    @elseif ($product->requiresPrescription() || ! $product->isSellableType())
-                        <p class="text-sm text-ink-500">این دارو نسخه‌ای است و فروش آنلاین ندارد.</p>
+                    @if ($variant->getExpiryDate())
+                        <p class="text-sm text-ink-500">تاریخ انقضا: <span class="text-ink-900">@jalali($variant->getExpiryDate())</span></p>
                     @endif
-                </div>
-            @else
-                <ul class="divide-y divide-line-200 rounded-card border border-line-200 bg-white">
-                    @foreach ($variants as $variant)
-                        <li class="flex items-center justify-between gap-3 p-4">
-                            <div class="space-y-1">
-                                <p class="font-bold text-ink-900">{{ $variant->getTitleFa() }}</p>
-                                <p @class(['text-sm', 'text-success-600' => $variant->getStockStatus() === StockStatus::Available, 'text-ink-500' => $variant->getStockStatus() !== StockStatus::Available])>
-                                    {{ $variant->getStockStatus()->label() }}
-                                    @if ($variant->isNearExpiry() && $variant->getExpiryDate())
-                                        · زودمصرف (انقضا @jalali($variant->getExpiryDate()))
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" />
-                                @if ($variant->setRelation('product', $product)->canAddToCart())
-                                    <x-cart::add-button :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" />
-                                @endif
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
 
-            @if ($product->getIrcCode())
-                <p class="text-sm text-ink-500">کد IRC: <span dir="ltr">{{ $product->getIrcCode() }}</span></p>
-            @endif
+                    @if ($isRx)
+                        <p class="rounded-card border border-rx-600 bg-card p-3 text-sm leading-7 text-rx-600" role="note">فروش آنلاین این دارو به‌زودی</p>
+                    @elseif ($variant->canAddToCart())
+                        <x-cart::add-button wire:key="buy-{{ $variant->getId() }}" :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" wide />
+                    @endif
+                @endif
+
+                <ul class="space-y-2 border-t border-line-200 pt-3 text-sm text-ink-500">
+                    <li class="flex gap-2"><x-ts-icon icon="truck" class="size-5 shrink-0 text-primary-700" /><span>هزینه ارسال @toman($shippingRate)؛ رایگان برای خرید بالای @toman($freeShippingThreshold)</span></li>
+                    <li class="flex gap-2"><x-ts-icon icon="shield-check" class="size-5 shrink-0 text-primary-700" /><span>خرید مستقیم از شرکت‌های پخش معتبر</span></li>
+                </ul>
+                <x-ui.pharmacist-chat wire:key="chat-{{ $variant?->getId() }}" :text="$chatMessage" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-card border border-primary-700 px-4 text-sm font-bold text-primary-700 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700" />
+            </div>
         </div>
     </div>
 
-    @if ($product->getDescription())
-        <section aria-labelledby="product-description" class="rounded-card border border-line-200 bg-white p-4 md:p-6">
-            <h2 id="product-description" class="mb-3 text-lg font-bold text-ink-900">معرفی محصول</h2>
-            <p class="max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $product->getDescription() }}</p>
+    @if ($tabs !== [])
+        {{--
+            Tabs (roadmap B9.5): one section at a time. On phones the tab bar scrolls sideways and sticks under the
+            header; the picked tab scrolls into view; arrow keys move between tabs (left = next in RTL).
+        --}}
+        <section
+            x-data="{
+                tab: @js($firstTab),
+                pick(id) {
+                    this.tab = id;
+                    this.$nextTick(() => {
+                        this.$refs['tab-' + id].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                        if (this.$refs.tabbar.getBoundingClientRect().top <= document.querySelector('header').offsetHeight + 1) {
+                            this.$root.scrollIntoView({ block: 'start' });
+                        }
+                    });
+                },
+                move(by) {
+                    const ids = @js(array_keys($tabs));
+                    const next = ids[(ids.indexOf(this.tab) + by + ids.length) % ids.length];
+                    this.pick(next);
+                    this.$refs['tab-' + next].focus();
+                },
+            }"
+            class="scroll-mt-[var(--header-height)]"
+            aria-label="اطلاعات محصول"
+        >
+            <div x-ref="tabbar" class="sticky top-[var(--header-height)] z-20 -mx-4 border-b border-line-200 bg-surface-50 px-4 md:-mx-6 md:px-6 xl:-mx-8 xl:px-8">
+                <div role="tablist" aria-label="بخش‌های اطلاعات محصول" class="scrollbar-none -mb-px flex gap-1 overflow-x-auto" x-on:keydown.left.prevent="move(1)" x-on:keydown.right.prevent="move(-1)">
+                    @foreach ($tabs as $id => $label)
+                        <button
+                            type="button"
+                            role="tab"
+                            id="tab-{{ $id }}"
+                            x-ref="tab-{{ $id }}"
+                            aria-controls="panel-{{ $id }}"
+                            x-bind:aria-selected="tab === @js($id)"
+                            x-bind:tabindex="tab === @js($id) ? 0 : -1"
+                            x-on:click="pick(@js($id))"
+                            @class(['min-h-12 shrink-0 border-b-2 px-4 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700', 'border-primary-700 font-bold text-primary-700' => $id === $firstTab, 'border-transparent text-ink-500' => $id !== $firstTab])
+                            x-bind:class="tab === @js($id) ? 'border-primary-700 font-bold text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-900'"
+                        >{{ $label }}</button>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="mt-4 rounded-card border border-line-200 bg-card p-4 md:p-6">
+                @foreach ($texts as $id => [$label, $text])
+                    <div id="panel-{{ $id }}" role="tabpanel" aria-labelledby="tab-{{ $id }}" tabindex="0" x-show="tab === @js($id)" @if ($id !== $firstTab) x-cloak @endif>
+                        <h2 class="mb-3 text-lg font-bold text-ink-900">{{ $label }}</h2>
+                        <p class="max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $text }}</p>
+                    </div>
+                @endforeach
+
+                @if ($product->getFaqs()->isNotEmpty())
+                    <div id="panel-questions" role="tabpanel" aria-labelledby="tab-questions" tabindex="0" x-show="tab === 'questions'" @if ($firstTab !== 'questions') x-cloak @endif>
+                        <h2 class="mb-3 text-lg font-bold text-ink-900">پرسش‌های متداول</h2>
+                        <div class="max-w-3xl divide-y divide-line-200">
+                            @foreach ($product->getFaqs() as $faq)
+                                <details class="group py-1">
+                                    <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 font-medium text-ink-900">
+                                        {{ $faq->getQuestion() }}
+                                        <x-ts-icon icon="chevron-down" class="size-5 shrink-0 text-ink-500 transition-transform group-open:rotate-180" />
+                                    </summary>
+                                    <p class="pb-3 leading-8 whitespace-pre-line text-ink-500">{{ $faq->getAnswer() }}</p>
+                                </details>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
         </section>
+    @endif
+
+
+    @if ($this->relatedProducts->isNotEmpty())
+        <section aria-labelledby="related-products">
+            <h2 id="related-products" class="mb-3 text-lg font-bold text-ink-900">محصولات مرتبط</h2>
+            <div class="relative" wire:ignore x-data="slider({ slidesPerView: 2.3, spaceBetween: 12, breakpoints: { 768: { slidesPerView: 3, spaceBetween: 16 }, 1280: { slidesPerView: 5, spaceBetween: 16 } } })">
+                <div x-ref="slider" class="swiper">
+                    <ul class="swiper-wrapper">
+                        @foreach ($this->relatedProducts as $related)
+                            <li wire:key="related-{{ $related->getId() }}" class="swiper-slide h-auto! w-[42%] md:w-[calc((100%-32px)/3)] xl:w-[calc((100%-64px)/5)]">
+                                <x-catalog::product-card :product="$related" :quick-view="false" />
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+                <x-content::slider-arrows previous="محصولات قبلی" next="محصولات بعدی" />
+            </div>
+        </section>
+    @endif
+
+    {{-- Bottom buy bar on phones and tablets, once the buy box has scrolled out of view (above the mobile nav). --}}
+    @if ($variant)
+        <div x-show="pastBuyBox" x-cloak x-transition.opacity class="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line-200 bg-card px-4 py-2 shadow-card md:bottom-0 xl:hidden">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="truncate text-sm text-ink-900">{{ $product->getNameFa() }}</p>
+                    <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="sm" />
+                </div>
+                @if ($isRx)
+                    <p class="shrink-0 text-sm font-medium text-rx-600">فروش آنلاین به‌زودی</p>
+                @elseif ($variant->canAddToCart())
+                    <div class="w-40 shrink-0">
+                        <x-cart::add-button wire:key="bar-{{ $variant->getId() }}" :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" wide />
+                    </div>
+                @endif
+            </div>
+        </div>
     @endif
 </div>

@@ -24,7 +24,7 @@
     ];
 @endphp
 
-<footer class="mt-12 border-t border-line-200 bg-white">
+<footer class="mt-12 border-t border-line-200 bg-card">
     <div class="mx-auto max-w-7xl px-4 md:px-6 xl:px-8">
         <x-layout.trust class="border-b border-line-200 py-8" />
 

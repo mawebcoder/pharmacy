@@ -30,7 +30,7 @@
         @endif
 
         <label class="sr-only" for="listing-sort">مرتب‌سازی</label>
-        <select id="listing-sort" wire:model.live="sort" class="h-11 rounded-md border-0 bg-white px-3 text-sm ring-1 ring-line-200 focus:ring-2 focus:ring-primary-700 xl:hidden @unless ($hasFilters) ms-auto @endunless">
+        <select id="listing-sort" wire:model.live="sort" class="h-11 rounded-md border-0 bg-card px-3 text-sm ring-1 ring-line-300 focus:ring-2 focus:ring-primary-700 xl:hidden @unless ($hasFilters) ms-auto @endunless">
             @foreach ($sorts as $option)
                 <option value="{{ $option->value }}" @selected($option === $currentSort)>{{ $option->label() }}</option>
             @endforeach
@@ -66,14 +66,14 @@
 
     <div class="flex items-start gap-6">
         @if ($hasFilters)
-            <aside aria-label="فیلترها" class="sticky top-[calc(var(--header-height)+1rem)] hidden max-h-[calc(100vh-var(--header-height)-2rem)] w-70 shrink-0 overflow-y-auto rounded-card border border-line-200 bg-white px-4 xl:block">
+            <aside aria-label="فیلترها" class="sticky top-[calc(var(--header-height)+1rem)] hidden max-h-[calc(100vh-var(--header-height)-2rem)] w-70 shrink-0 overflow-y-auto rounded-card border border-line-200 bg-card px-4 xl:block">
                 @include('catalog::partials.filters', ['result' => $result, 'idPrefix' => 'sidebar'])
             </aside>
         @endif
 
         <div class="min-w-0 flex-1 space-y-6">
             @if ($products->isEmpty())
-                <div class="rounded-card border border-line-200 bg-white px-6 py-12 text-center">
+                <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center">
                     <x-ts-icon icon="magnifying-glass" class="mx-auto size-10 text-ink-500" />
                     <p class="mt-3 font-bold text-ink-900">کالایی با این مشخصات پیدا نشد.</p>
                     @if ($applied !== [])

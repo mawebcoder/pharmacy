@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Identity\Models;
 
 use App\Modules\Identity\Database\Factories\AddressFactory;
+use App\Modules\Identity\Support\AddressText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,15 @@ final class Address extends Model
 
     public const string COLUMN_CITY_ID = 'city_id';
 
+    public const string COLUMN_MAIN_STREET = 'main_street';
+
+    public const string COLUMN_SIDE_STREET = 'side_street';
+
+    public const string COLUMN_ALLEY = 'alley';
+
+    public const string COLUMN_BLOCK = 'block';
+
+    /** Extra directions («توضیحات تکمیلی»); before the street parts (S25) it held the whole street address. */
     public const string COLUMN_FULL_ADDRESS = 'full_address';
 
     public const string COLUMN_PLAQUE = 'plaque';
@@ -119,12 +129,62 @@ final class Address extends Model
         return $this->setAttribute(self::COLUMN_CITY_ID, $cityId);
     }
 
-    public function getFullAddress(): string
+    public function getMainStreet(): ?string
     {
-        return (string) $this->getAttribute(self::COLUMN_FULL_ADDRESS);
+        $value = $this->getAttribute(self::COLUMN_MAIN_STREET);
+
+        return $value === null ? null : (string) $value;
     }
 
-    public function setFullAddress(string $fullAddress): static
+    public function setMainStreet(?string $mainStreet): static
+    {
+        return $this->setAttribute(self::COLUMN_MAIN_STREET, $mainStreet);
+    }
+
+    public function getSideStreet(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_SIDE_STREET);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setSideStreet(?string $sideStreet): static
+    {
+        return $this->setAttribute(self::COLUMN_SIDE_STREET, $sideStreet);
+    }
+
+    public function getAlley(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_ALLEY);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setAlley(?string $alley): static
+    {
+        return $this->setAttribute(self::COLUMN_ALLEY, $alley);
+    }
+
+    public function getBlock(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_BLOCK);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setBlock(?string $block): static
+    {
+        return $this->setAttribute(self::COLUMN_BLOCK, $block);
+    }
+
+    public function getFullAddress(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_FULL_ADDRESS);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setFullAddress(?string $fullAddress): static
     {
         return $this->setAttribute(self::COLUMN_FULL_ADDRESS, $fullAddress);
     }
@@ -181,6 +241,28 @@ final class Address extends Model
     public function setIsDefault(bool $isDefault): static
     {
         return $this->setAttribute(self::COLUMN_IS_DEFAULT, $isDefault);
+    }
+
+    /**
+     * The address text from its parts (AddressText), with the province and city names given by the caller.
+     */
+    public function text(?string $province = null, ?string $city = null): AddressText
+    {
+        return AddressText::from([
+            'province' => $province,
+            'city' => $city,
+            'main_street' => $this->getMainStreet(),
+            'side_street' => $this->getSideStreet(),
+            'alley' => $this->getAlley(),
+            'block' => $this->getBlock(),
+            'plaque' => $this->getPlaque(),
+            'floor' => $this->getFloor(),
+            'unit' => $this->getUnit(),
+            'details' => $this->getFullAddress(),
+            'postal_code' => $this->getPostalCode(),
+            'receiver_name' => $this->getReceiverName(),
+            'receiver_mobile' => $this->getReceiverMobile(),
+        ]);
     }
 
     public function getCreatedAt(): ?Carbon

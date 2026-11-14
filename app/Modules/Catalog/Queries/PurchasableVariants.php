@@ -57,6 +57,8 @@ final readonly class PurchasableVariants
                 refusal: $this->refusal($product, $variant),
                 image: $product->getMainImage(),
                 isOnSale: $variant->getSalePrice() !== null,
+                productType: $product->getProductType()->value,
+                requiresPrescription: $product->requiresPrescription(),
             );
         }
 

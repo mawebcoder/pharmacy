@@ -9,7 +9,8 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
 /**
- * An Iranian postal code: 10 digits, not starting with 0 (Persian or Latin digits, spaces and dashes ignored).
+ * An Iranian postal code (Persian or Latin digits, spaces and dashes ignored): 10 digits, the first five never 0 or 2
+ * (the national post's format), and not one digit repeated.
  */
 final class IranianPostalCode implements ValidationRule
 {
@@ -20,8 +21,16 @@ final class IranianPostalCode implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (! is_string($value) || preg_match('/^[1-9]\d{9}$/', self::normalize($value)) !== 1) {
+        $postalCode = is_string($value) ? self::normalize($value) : '';
+
+        if (preg_match('/^\d{10}$/', $postalCode) !== 1) {
             $fail('کد پستی باید ۱۰ رقم باشد.');
+
+            return;
+        }
+
+        if (preg_match('/^[13-9]{5}\d{5}$/', $postalCode) !== 1 || preg_match('/^(\d)\1{9}$/', $postalCode) === 1) {
+            $fail('کد پستی معتبر نیست.');
         }
     }
 }

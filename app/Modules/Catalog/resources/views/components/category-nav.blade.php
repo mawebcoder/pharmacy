@@ -53,7 +53,7 @@
                             x-show="open === {{ $root->id }}"
                             x-cloak
                             x-transition.opacity.duration.150ms
-                            class="absolute inset-x-0 top-full z-40 hidden border-t border-line-200 bg-white shadow-card xl:block"
+                            class="absolute inset-x-0 top-full z-40 hidden border-t border-line-200 bg-card shadow-card xl:block"
                         >
                             <div class="mx-auto max-w-7xl space-y-4 px-8 py-6">
                                 <a href="{{ $root->url() }}" wire:navigate class="inline-flex min-h-11 items-center gap-1 font-bold text-primary-700 hover:underline">

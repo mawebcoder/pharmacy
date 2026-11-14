@@ -32,11 +32,13 @@ final class AddressFactory extends Factory
             Address::COLUMN_RECEIVER_MOBILE => '0912'.fake()->numerify('#######'),
             Address::COLUMN_PROVINCE_ID => fn (): int => $this->firstCity()['province_id'],
             Address::COLUMN_CITY_ID => fn (): int => $this->firstCity()['id'],
-            Address::COLUMN_FULL_ADDRESS => 'خیابان ولیعصر، کوچه نسترن',
+            Address::COLUMN_MAIN_STREET => 'ولیعصر',
+            Address::COLUMN_ALLEY => 'نسترن',
+            Address::COLUMN_FULL_ADDRESS => null,
             Address::COLUMN_PLAQUE => (string) fake()->numberBetween(1, 200),
             Address::COLUMN_UNIT => (string) fake()->numberBetween(1, 20),
             Address::COLUMN_FLOOR => (string) fake()->numberBetween(1, 10),
-            Address::COLUMN_POSTAL_CODE => fake()->numerify('1#########'),
+            Address::COLUMN_POSTAL_CODE => fake()->regexify('[13-9]{5}[0-9]{5}'),
             Address::COLUMN_IS_DEFAULT => false,
         ];
     }

@@ -1,0 +1,30 @@
+{{-- Checkout step 1 «آدرس ارسال» (roadmap B9.7): see App\Modules\Checkout\Livewire\AddressStep. --}}
+<div class="mx-auto max-w-4xl space-y-4">
+    <x-checkout::stepper current="address" />
+
+    <div class="flex flex-wrap items-end justify-between gap-2">
+        <div>
+            <h1 class="text-xl font-bold text-ink-900 xl:text-2xl">سفارش به کجا ارسال شود؟</h1>
+            <p class="mt-1 text-sm text-ink-500">یکی از آدرس‌ها را برای این سفارش انتخاب کنید یا آدرس تازه‌ای اضافه کنید.</p>
+        </div>
+    </div>
+
+    @livewire('identity::account.addresses', ['forCheckout' => true, 'selectedId' => $chosenId])
+
+    @error('address')
+        <p role="alert" class="text-sm text-danger-600">{{ $message }}</p>
+    @enderror
+
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line-200 pt-4">
+        <a href="{{ route('cart') }}" wire:navigate class="inline-flex min-h-11 items-center gap-1 text-sm text-primary-700 hover:underline">
+            <x-ts-icon icon="chevron-right" class="size-4" />
+            بازگشت به سبد
+        </a>
+        @if ($chosenId)
+            <button type="button" wire:click="proceed" class="inline-flex h-12 items-center justify-center gap-2 rounded-card bg-primary-700 px-6 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700">
+                ادامه با آدرس انتخاب‌شده
+                <x-ts-icon icon="chevron-left" class="size-4" />
+            </button>
+        @endif
+    </div>
+</div>

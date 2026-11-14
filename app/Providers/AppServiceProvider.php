@@ -33,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
         // The dialog's cancel action is a neutral secondary button, not a red one (one strong CTA per view).
         TallStackUi::customize()
             ->dialog()
-            ->block('buttons.cancel.base', 'w-full text-sm focus:ring-0! focus:ring-offset-0! bg-white! text-ink-900! ring-1 ring-line-200! hover:bg-surface-50!');
+            ->block('buttons.cancel.base', 'w-full text-sm focus:ring-0! focus:ring-offset-0! bg-card! text-ink-900! ring-1 ring-line-200! hover:bg-surface-50!');
+
+        // The modal panel ships with `text-left`; the storefront is RTL, so align to the start side instead.
+        TallStackUi::customize()
+            ->modal()
+            ->block('wrapper.fourth', 'relative flex w-full transform flex-col rounded-t-xl sm:rounded-xl bg-card text-start shadow-xl transition-all');
     }
 }

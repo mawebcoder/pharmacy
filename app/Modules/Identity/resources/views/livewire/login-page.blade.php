@@ -1,6 +1,6 @@
 {{-- Sign in or sign up with an SMS code (roadmap B9.10): see App\Modules\Identity\Livewire\LoginPage. --}}
 <div class="flex justify-center py-6 md:py-12">
-    <div class="w-full max-w-[400px] rounded-card border border-line-200 bg-white p-6 md:p-8">
+    <div class="w-full max-w-[400px] rounded-card border border-line-200 bg-card p-6 md:p-8">
         <div class="flex flex-col items-center gap-3 text-center">
             <span class="grid size-12 place-items-center rounded-card bg-primary-700 text-white">
                 <x-ts-icon icon="plus" class="size-6" />
@@ -32,8 +32,8 @@
                         autofocus
                         @error('mobile') aria-invalid="true" aria-describedby="login-mobile-error" @enderror
                         @class([
-                            'h-12 w-full rounded-card border bg-white px-4 text-center text-lg tracking-wider text-ink-900 placeholder:text-ink-500/60 focus:outline-2 focus:outline-primary-700',
-                            'border-line-200' => ! $errors->has('mobile'),
+                            'h-12 w-full rounded-card border bg-card px-4 text-center text-lg tracking-wider text-ink-900 placeholder:text-ink-500/60 focus:outline-2 focus:outline-primary-700',
+                            'border-line-300' => ! $errors->has('mobile'),
                             'border-danger-600' => $errors->has('mobile'),
                         ])
                     >
@@ -154,8 +154,8 @@
                                 wire:loading.attr="disabled"
                                 wire:target="verify"
                                 @class([
-                                    'size-12 rounded-card border bg-white text-center text-xl font-bold text-ink-900 focus:outline-2 focus:outline-primary-700 disabled:opacity-60 md:size-14',
-                                    'border-line-200' => ! $errors->has('code'),
+                                    'size-12 rounded-card border bg-card text-center text-xl font-bold text-ink-900 focus:outline-2 focus:outline-primary-700 disabled:opacity-60 md:size-14',
+                                    'border-line-300' => ! $errors->has('code'),
                                     'border-danger-600' => $errors->has('code'),
                                 ])
                             >

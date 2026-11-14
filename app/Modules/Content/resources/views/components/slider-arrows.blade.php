@@ -9,7 +9,7 @@
     'next',
 ])
 
-@php($arrow = 'absolute top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-ink-900 shadow-card hover:bg-white focus-visible:outline-2 focus-visible:outline-primary-700 [&.swiper-button-disabled]:hidden [&.swiper-button-lock]:hidden')
+@php($arrow = 'absolute top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-card/90 text-ink-900 shadow-card hover:bg-card focus-visible:outline-2 focus-visible:outline-primary-700 [&.swiper-button-disabled]:hidden [&.swiper-button-lock]:hidden')
 
 <button type="button" x-ref="previous" class="{{ $arrow }} start-2 md:start-3" aria-label="{{ $previous }}">
     <x-ts-icon icon="chevron-right" class="size-5" />

@@ -35,6 +35,8 @@ final readonly class PurchasableVariantData
         public ?string $refusal,
         public ?StoredImage $image,
         public bool $isOnSale = false,
+        public ?string $productType = null,
+        public bool $requiresPrescription = false,
     ) {}
 
     public function canBuy(): bool

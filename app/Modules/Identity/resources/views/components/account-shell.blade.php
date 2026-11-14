@@ -18,7 +18,7 @@
 
 <div class="grid gap-6 xl:grid-cols-12">
     <aside class="hidden xl:col-span-3 xl:block" aria-label="منوی حساب">
-        <div class="sticky top-[calc(var(--header-height,72px)+1rem)] rounded-card border border-line-200 bg-white">
+        <div class="sticky top-[calc(var(--header-height,72px)+1rem)] rounded-card border border-line-200 bg-card">
             <div class="flex items-center gap-3 border-b border-line-200 p-4">
                 <span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary-50 text-primary-700">
                     <x-ts-icon icon="user" class="size-6" />
@@ -34,7 +34,7 @@
 
     <section class="space-y-4 xl:col-span-9">
         @if ($active === 'dashboard')
-            <div class="rounded-card border border-line-200 bg-white xl:hidden">
+            <div class="rounded-card border border-line-200 bg-card xl:hidden">
                 <x-identity::account-menu :items="array_slice($items, 1)" :active="$active" />
             </div>
         @else

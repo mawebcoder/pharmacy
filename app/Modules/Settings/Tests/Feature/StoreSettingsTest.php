@@ -31,6 +31,33 @@ it('uses the defaults until the admin saves, then the saved values, typed in tom
         ->and([$settings->maxQuantityPerOrder(), $settings->freeShippingThreshold()])->toBe([4, 7_500_000]);
 });
 
+it('saves the WhatsApp number normalised, refuses one that is not a mobile and builds the chat link', function (): void {
+    $settings = app(StoreSettings::class);
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+
+    livewire(StoreSettingsPage::class)->fillForm(['whatsapp_number' => '021445566'])->call('save')->assertHasFormErrors(['whatsapp_number']);
+    $before = $settings->whatsAppChatUrl('سلام');
+    livewire(StoreSettingsPage::class)->fillForm(['whatsapp_number' => '۰۹۱۲ ۳۴۵ ۶۷۸۹'])->call('save')->assertHasNoFormErrors();
+
+    expect($before)->toBeNull()
+        ->and($settings->whatsAppNumber())->toBe('09123456789')
+        ->and($settings->whatsAppChatUrl('سلام'))->toBe('https://wa.me/989123456789?text='.rawurlencode('سلام'));
+});
+
+it('saves the Telegram username from «@name» or a t.me link and refuses an invalid one', function (string $typed, ?string $saved): void {
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+
+    $page = livewire(StoreSettingsPage::class)->fillForm(['telegram_username' => $typed])->call('save');
+
+    $saved === null ? $page->assertHasFormErrors(['telegram_username']) : $page->assertHasNoFormErrors();
+    expect(app(StoreSettings::class)->telegramUsername())->toBe($saved);
+})->with([
+    'at sign' => ['@pharmacy_support', 'pharmacy_support'],
+    'link' => ['https://t.me/pharmacy_support', 'pharmacy_support'],
+    'too short' => ['abc', null],
+    'persian' => ['داروخانه', null],
+]);
+
 it('shows the free-shipping amount in the announcement bar, and nothing when it is 0', function (): void {
     $this->get('/')->assertSee('ارسال رایگان برای سفارش‌های بالای ۵۰۰٬۰۰۰ تومان');
 

@@ -26,7 +26,7 @@
                         type="search"
                         x-model="search"
                         placeholder="جستجو در {{ $group->label }}"
-                        class="mb-2 h-10 w-full rounded-md border-0 bg-surface-50 px-3 text-sm ring-1 ring-line-200 focus:ring-2 focus:ring-primary-700"
+                        class="mb-2 h-10 w-full rounded-md border-0 bg-surface-50 px-3 text-sm ring-1 ring-line-300 focus:ring-2 focus:ring-primary-700"
                     >
                 @endif
 
@@ -40,7 +40,7 @@
                                     type="checkbox"
                                     value="{{ $option->id }}"
                                     @if ($isBrand) wire:model.live="brands" @else wire:click="toggleAttributeValue(@js($group->key), {{ $option->id }})" @checked($isChecked) @endif
-                                    class="size-5 rounded border-line-200 text-primary-700 focus:ring-primary-700"
+                                    class="size-5 rounded border-line-300 text-primary-700 focus:ring-primary-700"
                                 >
                                 <span class="flex-1">{{ $option->label }}</span>
                                 <span class="text-xs text-ink-500">{{ $count($option->count) }}</span>
@@ -62,13 +62,13 @@
                 از
                 <input type="number" min="0" inputmode="numeric" wire:model.live.debounce.700ms="minPrice"
                     placeholder="{{ $result->priceFloor === null ? '' : PersianDigits::toPersian(number_format(intdiv($result->priceFloor, 10))) }}"
-                    class="h-10 w-full rounded-md border-0 bg-surface-50 px-3 text-sm text-ink-900 ring-1 ring-line-200 focus:ring-2 focus:ring-primary-700">
+                    class="h-10 w-full rounded-md border-0 bg-surface-50 px-3 text-sm text-ink-900 ring-1 ring-line-300 focus:ring-2 focus:ring-primary-700">
             </label>
             <label class="space-y-1 text-xs text-ink-500">
                 تا
                 <input type="number" min="0" inputmode="numeric" wire:model.live.debounce.700ms="maxPrice"
                     placeholder="{{ $result->priceCeiling === null ? '' : PersianDigits::toPersian(number_format(intdiv($result->priceCeiling, 10))) }}"
-                    class="h-10 w-full rounded-md border-0 bg-surface-50 px-3 text-sm text-ink-900 ring-1 ring-line-200 focus:ring-2 focus:ring-primary-700">
+                    class="h-10 w-full rounded-md border-0 bg-surface-50 px-3 text-sm text-ink-900 ring-1 ring-line-300 focus:ring-2 focus:ring-primary-700">
             </label>
         </div>
     </details>
@@ -94,7 +94,7 @@
         @foreach (['inStock' => ['فقط کالاهای موجود', 'in_stock'], 'nearExpiry' => ['زودمصرف', 'near_expiry'], 'damagedBox' => ['کج‌جعبه', 'damaged_box']] as $property => [$label, $countKey])
             <label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm text-ink-900">
                 <span>{{ $label }} @unless ($result->degraded)<span class="text-xs text-ink-500">({{ $count($result->flagCounts[$countKey]) }})</span>@endunless</span>
-                <input type="checkbox" wire:model.live="{{ $property }}" class="size-5 rounded border-line-200 text-primary-700 focus:ring-primary-700">
+                <input type="checkbox" wire:model.live="{{ $property }}" class="size-5 rounded border-line-300 text-primary-700 focus:ring-primary-700">
             </label>
         @endforeach
     </div>

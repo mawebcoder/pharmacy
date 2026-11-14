@@ -39,14 +39,14 @@ new #[Title('کالکشن‌ها')] class extends Component
     <h1 class="text-2xl font-bold text-ink-900">کالکشن‌ها</h1>
 
     @if ($this->collections->isEmpty())
-        <div class="rounded-card border border-line-200 bg-white px-6 py-12 text-center text-ink-500">
+        <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center text-ink-500">
             هنوز کالکشنی ثبت نشده است.
         </div>
     @else
         <ul class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             @foreach ($this->collections as $collection)
                 <li wire:key="collection-{{ $collection->getId() }}">
-                    <a href="{{ route('collections.show', $collection) }}" wire:navigate class="flex min-h-16 items-center gap-3 rounded-card border border-line-200 bg-white px-4 py-3 hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                    <a href="{{ route('collections.show', $collection) }}" wire:navigate class="flex min-h-16 items-center gap-3 rounded-card border border-line-200 bg-card px-4 py-3 hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
                         <span class="grid size-10 shrink-0 place-items-center rounded-full bg-primary-50">
                             @if ($collection->getIcon())
                                 <x-media::picture :media="$collection->getIcon()" slot-name="category-chip" alt="" class="size-6 object-contain" />

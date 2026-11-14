@@ -71,7 +71,7 @@ new class extends Component
             <ul class="flex gap-2 md:flex-wrap">
                 @foreach ($subcategories as $subcategory)
                     <li wire:key="subcategory-{{ $subcategory->getId() }}" class="shrink-0">
-                        <a href="{{ route('category.show', $subcategory) }}" wire:navigate class="flex h-11 items-center gap-2 rounded-full border border-line-200 bg-white px-4 text-sm text-ink-900 hover:border-primary-300 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                        <a href="{{ route('category.show', $subcategory) }}" wire:navigate class="flex h-11 items-center gap-2 rounded-full border border-line-200 bg-card px-4 text-sm text-ink-900 hover:border-primary-300 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
                             <x-media::picture :media="$subcategory->getIcon()" slot-name="category-chip" alt="" class="size-6 object-contain" />
                             {{ $subcategory->getNameFa() }}
                         </a>

@@ -13,7 +13,6 @@ use App\Modules\Catalog\Queries\CategoryTree;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use TallStackUi\Traits\Interactions;
 
 /**
  * «سبد خرید» (roadmap B9.6, D13.3, S19). Every visit reads current prices and stock: a changed price is shown on its
@@ -22,8 +21,6 @@ use TallStackUi\Traits\Interactions;
  */
 final class CartPage extends Component
 {
-    use Interactions;
-
     /**
      * Price changes to show on this visit: variant id => price before (rial). Kept while the page is open.
      *
@@ -53,14 +50,14 @@ final class CartPage extends Component
         }
 
         if (auth('customer')->guest()) {
-            session()->put('url.intended', route('cart'));
+            session()->put('url.intended', route('checkout.address'));
             $this->redirectRoute('login', navigate: true);
 
             return;
         }
 
-        // Checkout (address → shipping → payment) arrives with S25.
-        $this->toast()->info('مرحله انتخاب آدرس و پرداخت به‌زودی فعال می‌شود.')->send();
+        // Checkout starts with the address step (owner, 2026-11-14).
+        $this->redirectRoute('checkout.address', navigate: true);
     }
 
     public function render(CurrentCart $carts, AcknowledgeCartPrices $acknowledgePrices, CategoryTree $categories): View

@@ -6,7 +6,7 @@ it('renders the home page right-to-left in Persian inside the storefront layout'
     $response = $this->get('/');
 
     $response->assertOk()
-        ->assertSee('<html lang="fa" dir="rtl">', false)
+        ->assertSee('<html lang="fa" dir="rtl"', false)
         ->assertSee('<title>خانه | داروخانه آنلاین</title>', false)
         ->assertSee('پرش به محتوای اصلی')
         ->assertSee('role="search"', false)

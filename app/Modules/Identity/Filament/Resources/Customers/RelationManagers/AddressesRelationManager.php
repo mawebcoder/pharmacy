@@ -49,9 +49,9 @@ final class AddressesRelationManager extends RelationManager
                 TextColumn::make(Address::COLUMN_CITY_ID)
                     ->label('شهر')
                     ->formatStateUsing(fn (Address $record): string => $this->cityLabel($record->getCityId())),
-                TextColumn::make(Address::COLUMN_FULL_ADDRESS)
+                TextColumn::make(Address::COLUMN_MAIN_STREET)
                     ->label('نشانی')
-                    ->formatStateUsing(fn (Address $record): string => PersianDigits::toPersian($record->getFullAddress().'، پلاک '.$record->getPlaque()))
+                    ->state(fn (Address $record): string => $record->text()->line())
                     ->wrap(),
                 TextColumn::make(Address::COLUMN_RECEIVER_NAME)
                     ->label('گیرنده')
