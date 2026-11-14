@@ -21,7 +21,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S13b | Collections, popular products and home page builder | done | 2026-11-09 | 670e8d9 |
 | S14 | Providers and provider prices | done | 2026-11-09 | 0dd663b |
 | S15 | Pricing engine and price records | done | 2026-11-09 | 0dd663b |
-| S16 | Price import | todo | | |
+| S16 | Price import | done | 2026-11-14 | 15c24fa |
 | S17 | Customer OTP auth | todo | | |
 | S18 | Addresses and account area | todo | | |
 | S19 | Cart | todo | | |
