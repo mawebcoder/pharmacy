@@ -10,8 +10,8 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Suppliers' prices of SKUs (roadmap D3.2): the active supplier of each SKU is the cheapest row that is enabled,
- * available and whose supplier is active. Our costs: for the admin and the pricing engine only.
+ * Suppliers' prices of SKUs (roadmap D3.2): the rows and which SKUs have any. Which supplier the website sells from
+ * is ActiveSuppliers (S15b). Our costs: for the admin and the pricing engine only.
  */
 final readonly class SupplierPrices
 {
@@ -28,52 +28,6 @@ final readonly class SupplierPrices
             ->orderBy(ProviderPrice::COLUMN_COST)
             ->orderBy(ProviderPrice::COLUMN_ID)
             ->get();
-    }
-
-    /**
-     * The active supplier row of each SKU, or null when none can be sold from.
-     *
-     * @param  list<int>  $variantIds
-     * @return array<int, ProviderPrice|null> keyed by variant id
-     */
-    public function activeFor(array $variantIds): array
-    {
-        $active = array_fill_keys($variantIds, null);
-
-        $rows = ProviderPrice::query()
-            ->with('provider')
-            ->usable()
-            ->whereIn(ProviderPrice::COLUMN_VARIANT_ID, $variantIds)
-            ->orderBy(ProviderPrice::COLUMN_COST)
-            ->orderBy(ProviderPrice::COLUMN_ID)
-            ->get();
-
-        foreach ($rows as $row) {
-            $active[$row->getVariantId()] ??= $row;
-        }
-
-        return $active;
-    }
-
-    /**
-     * The active supplier's name of each SKU that has one, for admin tables.
-     *
-     * @param  list<int>  $variantIds
-     * @return array<int, string> variant id => supplier name
-     */
-    public function activeNames(array $variantIds): array
-    {
-        $names = [];
-
-        foreach ($this->activeFor($variantIds) as $variantId => $price) {
-            $name = $price?->getProvider()?->getName();
-
-            if ($name !== null) {
-                $names[$variantId] = $name;
-            }
-        }
-
-        return $names;
     }
 
     /**

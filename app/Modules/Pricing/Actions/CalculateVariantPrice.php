@@ -6,13 +6,14 @@ namespace App\Modules\Pricing\Actions;
 
 use App\Modules\Catalog\Data\VariantPricingInput;
 use App\Modules\Pricing\Data\CalculatedPrice;
+use App\Modules\Pricing\Data\ChosenSupplier;
 use App\Modules\Pricing\Enums\CommissionSource;
-use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\VariantPrice;
 
 /**
- * The pricing engine (roadmap D3.2): selling price = active supplier's cost × (1 + commission %), rounded up to
- * 1,000 toman, never above the printed price; the haraj is kept only while it is below the selling price.
+ * The pricing engine (roadmap D3.2): selling price = the chosen supplier's cost × (1 + its commission %), rounded up
+ * to 1,000 toman, never above the printed price (ActiveSuppliers picks the supplier and its commission level, S15b);
+ * the haraj is kept only while it is below the selling price.
  *
  * Example: cost 850,000 toman, commission 10 % → 935,000 toman; printed 900,000 → 900,000 (capped, flagged).
  *
@@ -32,30 +33,34 @@ final class CalculateVariantPrice
      */
     public const float FLAG_CHANGE_SHARE = 0.15;
 
-    public function __invoke(VariantPricingInput $input, ?ProviderPrice $activeSupplier, ?VariantPrice $latest): CalculatedPrice
+    public function __invoke(VariantPricingInput $input, ?ChosenSupplier $chosen, ?VariantPrice $latest): CalculatedPrice
     {
         $flags = [];
-        $commission = $input->commissionPercent;
-        $source = $input->commissionSource === null ? null : CommissionSource::from($input->commissionSource);
+        $providerChoice = null;
 
-        if ($activeSupplier instanceof ProviderPrice && $commission !== null) {
-            $providerId = $activeSupplier->getProviderId();
-            $providerCost = $activeSupplier->getCost();
-            $price = self::sellingPrice($providerCost, $commission);
+        if ($chosen instanceof ChosenSupplier && $chosen->offer->sellingPrice !== null) {
+            $providerId = $chosen->offer->price->getProviderId();
+            $providerCost = $chosen->offer->price->getCost();
+            $providerChoice = $chosen->choice;
+            $commission = $chosen->offer->commissionPercent;
+            $source = $chosen->offer->commissionSource;
+            $price = $chosen->offer->sellingPrice;
 
-            if ($input->officialPrice !== null && $input->officialPrice > 0 && $price > $input->officialPrice) {
-                $price = $input->officialPrice;
+            if ($chosen->offer->cappedByPrinted) {
                 $flags[] = VariantPrice::FLAG_CAPPED_BY_PRINTED;
             }
-        } elseif ($input->officialPrice !== null && $input->officialPrice > 0) {
-            $providerId = null;
-            $providerCost = null;
-            $price = $input->officialPrice;
-            $flags[] = VariantPrice::FLAG_SOLD_AT_PRINTED;
         } else {
             $providerId = null;
             $providerCost = null;
-            $price = $input->price;
+            $commission = $input->commissionPercent;
+            $source = $input->commissionSource === null ? null : CommissionSource::from($input->commissionSource);
+
+            if ($input->officialPrice !== null && $input->officialPrice > 0) {
+                $price = $input->officialPrice;
+                $flags[] = VariantPrice::FLAG_SOLD_AT_PRINTED;
+            } else {
+                $price = $input->price;
+            }
         }
 
         $salePrice = $input->salePrice;
@@ -75,6 +80,7 @@ final class CalculateVariantPrice
             officialPrice: $input->officialPrice,
             providerId: $providerId,
             providerCost: $providerCost,
+            providerChoice: $providerChoice,
             commissionPercent: $commission,
             commissionSource: $source,
             price: $price,
@@ -110,6 +116,7 @@ final class CalculateVariantPrice
             || $latest->getOfficialPrice() !== $calculated->officialPrice
             || $latest->getProviderId() !== $calculated->providerId
             || $latest->getProviderCost() !== $calculated->providerCost
+            || $latest->getProviderChoice() !== $calculated->providerChoice
             || $latest->getCommissionPercent() !== $calculated->commissionPercent
             || $latest->getCommissionSource() !== $calculated->commissionSource
             || $latest->getPrice() !== $calculated->price

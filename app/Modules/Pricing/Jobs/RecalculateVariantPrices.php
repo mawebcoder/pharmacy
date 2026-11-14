@@ -11,15 +11,15 @@ use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Pricing\Actions\CalculateVariantPrice;
 use App\Modules\Pricing\Enums\PriceChangeReason;
-use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\VariantPrice;
-use App\Modules\Pricing\Queries\SupplierPrices;
+use App\Modules\Pricing\Queries\ActiveSuppliers;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Re-prices SKUs in the background on the «pricing» queue (roadmap D3.2, D9): picks each SKU's active supplier,
+ * Re-prices SKUs in the background on the «pricing» queue (roadmap D3.2, D9): picks each SKU's supplier and its
+ * commission (ActiveSuppliers),
  * runs the engine, writes a new price record when something changed, and copies the result onto the SKU with the
  * stock that follows: in stock when sold from an active supplier or at the printed price, out of stock when there
  * is neither. The pricing supervisor runs one process, so a SKU's records stay in order.
@@ -45,20 +45,20 @@ final class RecalculateVariantPrices implements ShouldQueue
         $this->onQueue(self::QUEUE);
     }
 
-    public function handle(VariantPricingInputs $inputs, SupplierPrices $supplierPrices, CalculateVariantPrice $calculate, ApplyVariantPrices $apply): void
+    public function handle(VariantPricingInputs $inputs, ActiveSuppliers $activeSuppliers, CalculateVariantPrice $calculate, ApplyVariantPrices $apply): void
     {
         foreach (array_chunk(array_values(array_unique($this->variantIds)), self::CHUNK) as $variantIds) {
-            $this->recalculate($variantIds, $inputs, $supplierPrices, $calculate, $apply);
+            $this->recalculate($variantIds, $inputs, $activeSuppliers, $calculate, $apply);
         }
     }
 
     /**
      * @param  list<int>  $variantIds
      */
-    private function recalculate(array $variantIds, VariantPricingInputs $inputs, SupplierPrices $supplierPrices, CalculateVariantPrice $calculate, ApplyVariantPrices $apply): void
+    private function recalculate(array $variantIds, VariantPricingInputs $inputs, ActiveSuppliers $activeSuppliers, CalculateVariantPrice $calculate, ApplyVariantPrices $apply): void
     {
         $pricingInputs = $inputs->for($variantIds);
-        $active = $supplierPrices->activeFor($variantIds);
+        $active = $activeSuppliers->for($pricingInputs);
         $latest = VariantPrice::query()
             ->whereKey(array_filter(array_map(fn (VariantPricingInput $input): ?int => $input->currentPriceId, $pricingInputs)))
             ->get()
@@ -71,7 +71,7 @@ final class RecalculateVariantPrices implements ShouldQueue
                 $previous = $input->currentPriceId === null ? null : $latest->get($input->currentPriceId);
                 $previous = $previous instanceof VariantPrice ? $previous : null;
                 $supplier = $active[$variantId] ?? null;
-                $calculated = $calculate($input, $supplier instanceof ProviderPrice ? $supplier : null, $previous);
+                $calculated = $calculate($input, $supplier, $previous);
 
                 $stock = CalculateVariantPrice::isSellable($calculated) ? StockStatus::Available : StockStatus::OutOfStock;
                 $stockChanges = $stock !== $input->stockStatus;
@@ -89,6 +89,7 @@ final class RecalculateVariantPrices implements ShouldQueue
                     ->setOfficialPrice($calculated->officialPrice)
                     ->setProviderId($calculated->providerId)
                     ->setProviderCost($calculated->providerCost)
+                    ->setProviderChoice($calculated->providerChoice)
                     ->setCommissionPercent($calculated->commissionPercent)
                     ->setCommissionSource($calculated->commissionSource)
                     ->setPrice($calculated->price)

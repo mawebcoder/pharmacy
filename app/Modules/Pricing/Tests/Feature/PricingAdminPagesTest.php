@@ -11,10 +11,12 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
+use App\Modules\Pricing\Filament\Pages\PricingGuidePage;
 use App\Modules\Pricing\Filament\Pages\SkuSuppliers;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\CreateProvider;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\ListProviders;
 use App\Modules\Pricing\Filament\Resources\Providers\Pages\ViewProvider;
+use App\Modules\Pricing\Filament\Resources\Providers\ProviderResource;
 use App\Modules\Pricing\Filament\Resources\Providers\RelationManagers\ProviderPricesRelationManager;
 use App\Modules\Pricing\Livewire\PriceHistoryTable;
 use App\Modules\Pricing\Models\Provider;
@@ -69,7 +71,7 @@ describe('as a super admin', function (): void {
                 ProviderPrice::COLUMN_IS_ENABLED => true,
             ])
             ->assertHasNoFormErrors()
-            ->assertSee('فعال: فروش از این تأمین‌کننده')
+            ->assertSee('فعال: خودکار: کمترین قیمت فروش')
             ->assertSee('۹۳۵٬۰۰۰ تومان');
 
         expect($sku->fresh()->getPrice())->toBe(9_350_000);
@@ -155,3 +157,16 @@ it('hides the active supplier column from a content editor', function (): void {
     livewire(VariantsRelationManager::class, ['ownerRecord' => $sku->getProduct(), 'pageClass' => EditProduct::class])
         ->assertTableColumnHidden('active_supplier');
 });
+
+it('shows the pricing guide to every admin, with links only to pages they can open', function (AdminRole $role, bool $seesSupplierLinks): void {
+    signInAs($role);
+
+    $page = livewire(PricingGuidePage::class)->assertOk()->assertSee('کمیسیون و سطح‌های آن')->assertSee('کمترین قیمت فروش');
+
+    $seesSupplierLinks
+        ? $page->assertSee(ProviderResource::getUrl())
+        : $page->assertDontSee(ProviderResource::getUrl());
+})->with([
+    'super admin' => [AdminRole::SuperAdmin, true],
+    'content editor' => [AdminRole::ContentEditor, false],
+]);

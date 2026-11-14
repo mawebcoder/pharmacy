@@ -89,7 +89,7 @@ final class PriceHistoryTable extends Component implements HasActions, HasSchema
 
     public function render(): View
     {
-        return view('pricing::livewire.price-history-table');
+        return view('pricing::livewire.table');
     }
 
     private function flagLabel(string $flag): string

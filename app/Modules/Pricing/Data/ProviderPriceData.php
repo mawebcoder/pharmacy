@@ -19,6 +19,8 @@ final readonly class ProviderPriceData
         public bool $isAvailable,
         public bool $isEnabled,
         public ?int $leadTimeHours,
+        public ?float $commissionPercent = null,
+        public bool $isPreferred = false,
     ) {}
 
     /**
@@ -35,6 +37,8 @@ final readonly class ProviderPriceData
             isAvailable: (bool) ($data[ProviderPrice::COLUMN_IS_AVAILABLE] ?? true),
             isEnabled: (bool) ($data[ProviderPrice::COLUMN_IS_ENABLED] ?? true),
             leadTimeHours: blank($lead) ? null : (int) PersianNormalizer::digits((string) $lead),
+            commissionPercent: blank($commission = $data[ProviderPrice::COLUMN_COMMISSION_PERCENT] ?? null) ? null : (float) PersianNormalizer::digits((string) $commission),
+            isPreferred: (bool) ($data[ProviderPrice::COLUMN_IS_PREFERRED] ?? false),
         );
     }
 }

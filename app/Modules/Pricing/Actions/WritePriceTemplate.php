@@ -24,7 +24,7 @@ final readonly class WritePriceTemplate
     }
 
     /**
-     * @return \Generator<list<string|int>>
+     * @return \Generator<list<string|int|float>>
      */
     private function rows(): \Generator
     {
@@ -50,6 +50,8 @@ final readonly class WritePriceTemplate
                     $price->isAvailable() ? 'بله' : 'خیر',
                     $price->isEnabled() ? 'بله' : 'خیر',
                     $price->getLeadTimeHours() ?? '',
+                    $price->getCommissionPercent() ?? '',
+                    $price->isPreferred() ? 'بله' : 'خیر',
                 ];
             }
         }

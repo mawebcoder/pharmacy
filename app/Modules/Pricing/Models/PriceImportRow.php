@@ -34,11 +34,19 @@ final class PriceImportRow extends Model
 
     public const string COLUMN_LEAD_TIME_HOURS = 'lead_time_hours';
 
+    public const string COLUMN_COMMISSION_PERCENT = 'commission_percent';
+
+    public const string COLUMN_IS_PREFERRED = 'is_preferred';
+
     public const string COLUMN_OLD_COST = 'old_cost';
 
     public const string COLUMN_OLD_IS_AVAILABLE = 'old_is_available';
 
     public const string COLUMN_OLD_IS_ENABLED = 'old_is_enabled';
+
+    public const string COLUMN_OLD_COMMISSION_PERCENT = 'old_commission_percent';
+
+    public const string COLUMN_OLD_IS_PREFERRED = 'old_is_preferred';
 
     public const string COLUMN_SELLING_PRICE = 'selling_price';
 
@@ -163,6 +171,54 @@ final class PriceImportRow extends Model
     public function setLeadTimeHours(?int $leadTimeHours): static
     {
         return $this->setAttribute(self::COLUMN_LEAD_TIME_HOURS, $leadTimeHours);
+    }
+
+    public function getCommissionPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_COMMISSION_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setCommissionPercent(?float $value): static
+    {
+        return $this->setAttribute(self::COLUMN_COMMISSION_PERCENT, $value);
+    }
+
+    public function getIsPreferred(): ?bool
+    {
+        $value = $this->getAttribute(self::COLUMN_IS_PREFERRED);
+
+        return $value === null ? null : (bool) $value;
+    }
+
+    public function setIsPreferred(?bool $value): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_PREFERRED, $value);
+    }
+
+    public function getOldCommissionPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_OLD_COMMISSION_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setOldCommissionPercent(?float $value): static
+    {
+        return $this->setAttribute(self::COLUMN_OLD_COMMISSION_PERCENT, $value);
+    }
+
+    public function getOldIsPreferred(): ?bool
+    {
+        $value = $this->getAttribute(self::COLUMN_OLD_IS_PREFERRED);
+
+        return $value === null ? null : (bool) $value;
+    }
+
+    public function setOldIsPreferred(?bool $value): static
+    {
+        return $this->setAttribute(self::COLUMN_OLD_IS_PREFERRED, $value);
     }
 
     public function getOldCost(): ?int
@@ -313,6 +369,10 @@ final class PriceImportRow extends Model
             self::COLUMN_OLD_COST => 'integer',
             self::COLUMN_OLD_IS_AVAILABLE => 'boolean',
             self::COLUMN_OLD_IS_ENABLED => 'boolean',
+            self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
+            self::COLUMN_IS_PREFERRED => 'boolean',
+            self::COLUMN_OLD_COMMISSION_PERCENT => 'decimal:2',
+            self::COLUMN_OLD_IS_PREFERRED => 'boolean',
             self::COLUMN_SELLING_PRICE => 'integer',
             self::COLUMN_IS_NEW => 'boolean',
             self::COLUMN_CHANGES => 'boolean',

@@ -14,10 +14,10 @@ use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
-use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Pricing\Actions\CalculateVariantPrice;
 use App\Modules\Pricing\Filament\Pages\SkuSuppliers;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
+use App\Modules\Pricing\Queries\ActiveSuppliers;
 use App\Modules\Pricing\Queries\SupplierPrices;
 use App\Modules\Shared\Support\Toman;
 use Filament\Actions\Action;
@@ -268,21 +268,15 @@ final class VariantsRelationManager extends RelationManager
      */
     private function expectedPrice(?ProductVariant $variant, ?int $officialPrice): string
     {
-        $commission = app(VariantPricingInputs::class)->commissionOf($this->product());
+        $chosen = $variant instanceof ProductVariant ? (app(ActiveSuppliers::class)->forVariants([$variant->getId()])[$variant->getId()] ?? null) : null;
 
-        $active = $variant instanceof ProductVariant ? (app(SupplierPrices::class)->activeFor([$variant->getId()])[$variant->getId()] ?? null) : null;
-
-        if ($active === null) {
+        if ($chosen === null) {
             return $officialPrice !== null && $officialPrice > 0
                 ? Toman::format($officialPrice).' (بدون تأمین‌کننده فعال: قیمت روی جعبه)'
                 : 'بدون تأمین‌کننده فعال و قیمت روی جعبه، تنوع ناموجود است';
         }
 
-        if ($commission === null) {
-            return 'کمیسیون محصول یا برند تعیین نشده است';
-        }
-
-        $price = CalculateVariantPrice::sellingPrice($active->getCost(), $commission);
+        $price = CalculateVariantPrice::sellingPrice($chosen->offer->price->getCost(), (float) $chosen->offer->commissionPercent);
         $capped = $officialPrice !== null && $officialPrice > 0 && $price > $officialPrice;
 
         return Toman::format($capped ? $officialPrice : $price).($capped ? ' (سقف روی جعبه)' : '');
@@ -298,10 +292,7 @@ final class VariantsRelationManager extends RelationManager
      */
     private function activeSuppliers(): array
     {
-        // Without a commission the SKUs are sold at their printed price, not from a supplier.
-        return $this->activeSupplierNames ??= app(VariantPricingInputs::class)->commissionOf($this->product()) === null
-            ? []
-            : app(SupplierPrices::class)->activeNames($this->variantIds());
+        return $this->activeSupplierNames ??= app(ActiveSuppliers::class)->names($this->variantIds());
     }
 
     /**

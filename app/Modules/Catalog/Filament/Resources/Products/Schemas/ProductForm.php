@@ -18,11 +18,13 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
+use App\Modules\Pricing\Livewire\ProductProvidersTable;
 use App\Modules\Shared\Support\PersianDigits;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -80,6 +82,10 @@ final class ProductForm
                                     ->placeholder(fn (Get $get): string => self::brandCommissionHint($get(Product::COLUMN_BRAND_ID)))
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_COMMISSION_PERCENT)),
                                 PricingGuide::productCommission()->columnSpanFull(),
+                                Livewire::make(ProductProvidersTable::class, fn (?Product $record): array => ['product' => $record?->getId()])
+                                    ->key('product-providers')
+                                    ->visible(fn (?Product $record): bool => $record instanceof Product && (auth('admin')->user()?->can('ViewAny:Provider') ?? false))
+                                    ->columnSpanFull(),
                                 TextInput::make(Product::COLUMN_SLUG)
                                     ->label('نامک (آدرس)')
                                     ->prefix('/products/')

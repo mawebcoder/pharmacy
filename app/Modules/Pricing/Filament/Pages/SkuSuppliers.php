@@ -8,7 +8,9 @@ use App\Modules\Catalog\Data\VariantSummary;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Pricing\Actions\DeleteProviderPrice;
 use App\Modules\Pricing\Actions\SaveProviderPrice;
+use App\Modules\Pricing\Data\ChosenSupplier;
 use App\Modules\Pricing\Data\ProviderPriceData;
+use App\Modules\Pricing\Data\SupplierOffer;
 use App\Modules\Pricing\Filament\Resources\Providers\ProviderResource;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Filament\Support\ProviderPriceColumns;
@@ -16,7 +18,7 @@ use App\Modules\Pricing\Http\Requests\StoreProviderPriceRequest;
 use App\Modules\Pricing\Livewire\PriceHistoryTable;
 use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
-use App\Modules\Pricing\Queries\SupplierPrices;
+use App\Modules\Pricing\Queries\ActiveSuppliers;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -116,14 +118,11 @@ final class SkuSuppliers extends Page implements HasTable
                     ->url(fn (ProviderPrice $record): string => ProviderResource::getUrl('view', ['record' => $record->getProviderId()]))
                     ->description(fn (ProviderPrice $record): ?string => $record->getProvider()?->isActive() === false ? 'تأمین‌کننده غیرفعال است' : null),
                 TextColumn::make(ProviderPrice::COLUMN_COST)->label('قیمت خرید')->toman(), // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                TextColumn::make('selling_with_commission')
-                    ->label('قیمت فروش با کمیسیون')
-                    ->state(fn (ProviderPrice $record): string => ProviderPriceColumns::sellingWithCommission($record->getCost(), $this->summary()))
-                    ->alignEnd(),
+                ...ProviderPriceColumns::offerColumns(fn (ProviderPrice $record): ?SupplierOffer => $this->offers()[$record->getId()] ?? null),
                 TextColumn::make('active')
                     ->label('سایت')
                     ->badge()
-                    ->state(fn (ProviderPrice $record): ?string => $this->activeSupplier()?->getId() === $record->getId() ? 'فعال: فروش از این تأمین‌کننده' : null)
+                    ->state(fn (ProviderPrice $record): ?string => $this->activeSupplier()?->offer->price->getId() === $record->getId() ? 'فعال: '.$this->activeSupplier()->choice->label() : null)
                     ->color('success'),
                 ...ProviderPriceColumns::columns(),
             ])
@@ -160,12 +159,27 @@ final class SkuSuppliers extends Page implements HasTable
     }
 
     /**
-     * The supplier the website sells from: the active one, as long as there is a commission (without one the SKU is
-     * sold at its printed price).
+     * The supplier the website sells from and how it was chosen (ActiveSuppliers), or null (printed price).
      */
-    private function activeSupplier(): ?ProviderPrice
+    private function activeSupplier(): ?ChosenSupplier
     {
-        return $this->summary()?->commissionPercent === null ? null : (app(SupplierPrices::class)->activeFor([$this->variant])[$this->variant] ?? null);
+        return app(ActiveSuppliers::class)->forVariants([$this->variant])[$this->variant] ?? null;
+    }
+
+    /**
+     * Each supplier row's offer (commission, level, selling price), keyed by row id.
+     *
+     * @return array<int, SupplierOffer>
+     */
+    private function offers(): array
+    {
+        $offers = [];
+
+        foreach (app(ActiveSuppliers::class)->offers(app(VariantPricingInputs::class)->for([$this->variant]))[$this->variant] ?? [] as $offer) {
+            $offers[$offer->price->getId()] = $offer;
+        }
+
+        return $offers;
     }
 
     /**

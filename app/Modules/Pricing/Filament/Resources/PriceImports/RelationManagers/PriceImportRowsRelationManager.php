@@ -7,6 +7,7 @@ namespace App\Modules\Pricing\Filament\Resources\PriceImports\RelationManagers;
 use App\Modules\Catalog\Data\VariantSummary;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Pricing\Actions\CalculateVariantPrice;
+use App\Modules\Pricing\Filament\Support\ProviderPriceColumns;
 use App\Modules\Pricing\Models\PriceImport;
 use App\Modules\Pricing\Models\PriceImportRow;
 use App\Modules\Shared\Support\PersianDigits;
@@ -91,6 +92,12 @@ final class PriceImportRowsRelationManager extends RelationManager
                 TextColumn::make(PriceImportRow::COLUMN_IS_ENABLED)
                     ->label('فروش از این تأمین‌کننده')
                     ->state(fn (PriceImportRow $record): string => $this->switchChange($yesNo($record->getOldIsEnabled()), $yesNo($record->getIsEnabled()), $record)),
+                TextColumn::make(PriceImportRow::COLUMN_COMMISSION_PERCENT)
+                    ->label('کمیسیون SKU و تأمین‌کننده')
+                    ->state(fn (PriceImportRow $record): string => $record->getError() !== null ? '—' : $this->change(ProviderPriceColumns::percent($record->getOldCommissionPercent()) ?? '—', ProviderPriceColumns::percent($record->getCommissionPercent()) ?? '—', $record)),
+                TextColumn::make(PriceImportRow::COLUMN_IS_PREFERRED)
+                    ->label('تأمین‌کننده انتخابی')
+                    ->state(fn (PriceImportRow $record): string => $this->switchChange($yesNo($record->getOldIsPreferred()), $yesNo($record->getIsPreferred()), $record)),
                 TextColumn::make(PriceImportRow::COLUMN_ERROR)->label('مشکل')->color('danger')->wrap()->placeholder('—'),
             ])
             ->filters([
@@ -120,6 +127,11 @@ final class PriceImportRowsRelationManager extends RelationManager
         $label = ($share > 0 ? '+' : '−').$percent;
 
         return abs($share) > CalculateVariantPrice::FLAG_CHANGE_SHARE ? $label.' (بیش از ۱۵٪)' : $label;
+    }
+
+    private function change(string $old, string $new, PriceImportRow $row): string
+    {
+        return $row->isNew() || $old === $new ? $new : $old.' ← '.$new;
     }
 
     private function switchChange(string $old, string $new, PriceImportRow $row): string

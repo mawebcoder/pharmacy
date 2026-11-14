@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Pricing\Data;
 
 use App\Modules\Pricing\Enums\CommissionSource;
+use App\Modules\Pricing\Enums\ProviderChoice;
 
 /**
  * The result of pricing one SKU (roadmap D3.2): what a new price record would hold. Money in Rial.
@@ -18,6 +19,7 @@ final readonly class CalculatedPrice
         public ?int $officialPrice,
         public ?int $providerId,
         public ?int $providerCost,
+        public ?ProviderChoice $providerChoice,
         public ?float $commissionPercent,
         public ?CommissionSource $commissionSource,
         public int $price,

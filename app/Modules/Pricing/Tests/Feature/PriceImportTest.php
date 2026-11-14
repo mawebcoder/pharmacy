@@ -81,7 +81,7 @@ describe('template', function (): void {
         app(WritePriceTemplate::class)($path);
 
         expect(array_values(PriceSpreadsheet::read($path, 'xlsx')))->toBe([
-            [(string) $price->getProviderId(), $price->getProvider()->getName(), 'EUC-0001-01', '6260001', $sku->getProduct()->getNameFa().' · '.$sku->getTitleFa(), '850000', 'بله', 'خیر', '24'],
+            [(string) $price->getProviderId(), $price->getProvider()->getName(), 'EUC-0001-01', '6260001', $sku->getProduct()->getNameFa().' · '.$sku->getTitleFa(), '850000', 'بله', 'خیر', '24', '', 'خیر'],
         ]);
     });
 });

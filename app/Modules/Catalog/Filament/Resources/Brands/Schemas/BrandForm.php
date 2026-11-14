@@ -8,11 +8,13 @@ use App\Modules\Catalog\Http\Requests\StoreBrandRequest;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
+use App\Modules\Pricing\Livewire\BrandProvidersTable;
 use App\Modules\Shared\Support\Countries;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -69,6 +71,10 @@ final class BrandForm
                             ->suffix('٪')
                             ->rules(fn (?Brand $record): array => $rules($record, Brand::COLUMN_COMMISSION_PERCENT)),
                         PricingGuide::brandCommission()->columnSpanFull(),
+                        Livewire::make(BrandProvidersTable::class, fn (?Brand $record): array => ['brand' => $record?->getId()])
+                            ->key('brand-providers')
+                            ->visible(fn (?Brand $record): bool => $record instanceof Brand && (auth('admin')->user()?->can('ViewAny:Provider') ?? false))
+                            ->columnSpanFull(),
                     ]),
                 Section::make('معرفی')
                     ->schema([

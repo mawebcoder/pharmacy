@@ -19,6 +19,11 @@ final class PriceSpreadsheet
 {
     public const int MAX_ROWS = 10_000;
 
+    /**
+     * «-» in the commission column: remove the SKU × supplier commission.
+     */
+    public const string PERCENT_CLEAR = '-';
+
     public const int PROVIDER_ID = 0;
 
     public const int PROVIDER_NAME = 1;
@@ -37,6 +42,10 @@ final class PriceSpreadsheet
 
     public const int LEAD_TIME = 8;
 
+    public const int COMMISSION = 9;
+
+    public const int IS_PREFERRED = 10;
+
     public const array HEADER = [
         'شناسه تأمین‌کننده',
         'نام تأمین‌کننده (فقط برای راهنما)',
@@ -47,6 +56,8 @@ final class PriceSpreadsheet
         'موجود نزد تأمین‌کننده',
         'فروش از این تأمین‌کننده',
         'زمان تحویل (ساعت)',
+        'کمیسیون (٪)',
+        'تأمین‌کننده انتخابی',
     ];
 
     public const array GUIDE = [
@@ -60,6 +71,8 @@ final class PriceSpreadsheet
         ['موجود نزد تأمین‌کننده', 'بله یا خیر. خالی: مقدار فعلی (برای ردیف جدید: بله).'],
         ['فروش از این تأمین‌کننده', 'بله یا خیر. خالی: مقدار فعلی (برای ردیف جدید: بله).'],
         ['زمان تحویل (ساعت)', 'اختیاری. عدد ساعت. خالی: مقدار فعلی.'],
+        ['کمیسیون (٪)', 'اختیاری. کمیسیون همین SKU برای همین تأمین‌کننده (دقیق‌ترین سطح). خالی: مقدار فعلی؛ «-» آن را پاک می‌کند تا کمیسیون محصول یا برند به کار رود.'],
+        ['تأمین‌کننده انتخابی', 'بله یا خیر. «بله» یعنی سایت از این تأمین‌کننده بفروشد تا وقتی قابل فروش است (فقط یکی برای هر SKU). خالی: مقدار فعلی.'],
         ['', ''],
         ['نکته', 'ردیف‌هایی که در فایل نیستند تغییری نمی‌کنند؛ ورود از اکسل هیچ تأمین‌کننده‌ای را از SKU حذف نمی‌کند.'],
         ['نکته', 'پیش از اعمال، پیش‌نمایش تغییرات و ردیف‌های مشکل‌دار نمایش داده می‌شود.'],
@@ -68,7 +81,7 @@ final class PriceSpreadsheet
     /**
      * Writes the template: one row per supplier price given, then the guide sheet.
      *
-     * @param  iterable<list<string|int>>  $rows  values in HEADER order
+     * @param  iterable<list<string|int|float>>  $rows  values in HEADER order
      */
     public static function writeTemplate(string $path, iterable $rows): void
     {
@@ -167,6 +180,28 @@ final class PriceSpreadsheet
             in_array($value, ['خیر', 'نه', 'نیست', 'ندارد', 'no', 'n', '0', 'false', '✗'], true) => false,
             default => throw new \InvalidArgumentException($value),
         };
+    }
+
+    /**
+     * A percent (0–100, decimals allowed) from a cell; null for blank, PERCENT_CLEAR for «-».
+     */
+    public static function percent(string $value): float|string|null
+    {
+        $value = str_replace(['٫', '%', '٪', ' '], ['.', '', '', ''], PersianNormalizer::digits(trim($value)));
+
+        if ($value === '') {
+            return null;
+        }
+
+        if ($value === '-') {
+            return self::PERCENT_CLEAR;
+        }
+
+        if (preg_match('/^\d+(\.\d+)?$/', $value) !== 1 || (float) $value > 100) {
+            throw new \InvalidArgumentException($value);
+        }
+
+        return (float) $value;
     }
 
     /**

@@ -35,6 +35,8 @@ final class StoreProviderPriceRequest extends FormRequest
             ProviderPrice::COLUMN_IS_AVAILABLE => ['boolean'],
             ProviderPrice::COLUMN_IS_ENABLED => ['boolean'],
             ProviderPrice::COLUMN_LEAD_TIME_HOURS => ['nullable', 'integer', 'min:0', 'max:2000'],
+            ProviderPrice::COLUMN_COMMISSION_PERCENT => ['nullable', 'numeric', 'min:0', 'max:100'],
+            ProviderPrice::COLUMN_IS_PREFERRED => ['boolean'],
         ];
     }
 

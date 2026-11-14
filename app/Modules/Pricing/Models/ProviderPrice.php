@@ -39,6 +39,10 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
 
     public const string COLUMN_IS_ENABLED = 'is_enabled';
 
+    public const string COLUMN_COMMISSION_PERCENT = 'commission_percent';
+
+    public const string COLUMN_IS_PREFERRED = 'is_preferred';
+
     public const string COLUMN_LEAD_TIME_HOURS = 'lead_time_hours';
 
     public const string COLUMN_UPDATED_AT = 'updated_at';
@@ -94,6 +98,39 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
     public function setIsAvailable(bool $isAvailable): static
     {
         return $this->setAttribute(self::COLUMN_IS_AVAILABLE, $isAvailable);
+    }
+
+    /**
+     * Commission for this SKU from this supplier (level 1, S15b); null uses the product or brand levels.
+     */
+    public function getCommissionPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_COMMISSION_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setCommissionPercent(?float $value): static
+    {
+        return $this->setAttribute(self::COLUMN_COMMISSION_PERCENT, $value);
+    }
+
+    /**
+     * The admin's preferred supplier for this SKU (one per SKU): the website sells from it while it can.
+     */
+    public function isPreferred(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_IS_PREFERRED);
+    }
+
+    public function getIsPreferred(): bool
+    {
+        return $this->isPreferred();
+    }
+
+    public function setIsPreferred(bool $isPreferred): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_PREFERRED, $isPreferred);
     }
 
     public function isEnabled(): bool
@@ -163,7 +200,7 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
     {
         return LogOptions::defaults()
             ->useLogName('pricing')
-            ->logOnly([self::COLUMN_PROVIDER_ID, self::COLUMN_VARIANT_ID, self::COLUMN_COST, self::COLUMN_IS_AVAILABLE, self::COLUMN_IS_ENABLED, self::COLUMN_LEAD_TIME_HOURS])
+            ->logOnly([self::COLUMN_PROVIDER_ID, self::COLUMN_VARIANT_ID, self::COLUMN_COST, self::COLUMN_IS_AVAILABLE, self::COLUMN_IS_ENABLED, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_IS_PREFERRED, self::COLUMN_LEAD_TIME_HOURS])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -179,6 +216,8 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
             self::COLUMN_COST => 'integer',
             self::COLUMN_IS_AVAILABLE => 'boolean',
             self::COLUMN_IS_ENABLED => 'boolean',
+            self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
+            self::COLUMN_IS_PREFERRED => 'boolean',
             self::COLUMN_LEAD_TIME_HOURS => 'integer',
         ];
     }

@@ -7,6 +7,7 @@ namespace App\Modules\Pricing\Models;
 use App\Modules\Pricing\Database\Factories\VariantPriceFactory;
 use App\Modules\Pricing\Enums\CommissionSource;
 use App\Modules\Pricing\Enums\PriceChangeReason;
+use App\Modules\Pricing\Enums\ProviderChoice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,8 @@ final class VariantPrice extends Model
     public const string COLUMN_PROVIDER_ID = 'provider_id';
 
     public const string COLUMN_PROVIDER_COST = 'provider_cost';
+
+    public const string COLUMN_PROVIDER_CHOICE = 'provider_choice';
 
     public const string COLUMN_COMMISSION_PERCENT = 'commission_percent';
 
@@ -121,6 +124,16 @@ final class VariantPrice extends Model
     public function setProviderCost(?int $providerCost): static
     {
         return $this->setAttribute(self::COLUMN_PROVIDER_COST, $providerCost);
+    }
+
+    public function getProviderChoice(): ?ProviderChoice
+    {
+        return $this->getAttribute(self::COLUMN_PROVIDER_CHOICE);
+    }
+
+    public function setProviderChoice(?ProviderChoice $choice): static
+    {
+        return $this->setAttribute(self::COLUMN_PROVIDER_CHOICE, $choice);
     }
 
     public function getCommissionPercent(): ?float
@@ -241,6 +254,7 @@ final class VariantPrice extends Model
             self::COLUMN_OFFICIAL_PRICE => 'integer',
             self::COLUMN_PROVIDER_ID => 'integer',
             self::COLUMN_PROVIDER_COST => 'integer',
+            self::COLUMN_PROVIDER_CHOICE => ProviderChoice::class,
             self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
             self::COLUMN_COMMISSION_SOURCE => CommissionSource::class,
             self::COLUMN_PRICE => 'integer',

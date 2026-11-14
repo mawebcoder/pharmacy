@@ -43,6 +43,8 @@ final readonly class ApplyPriceImport
                 ProviderPrice::COLUMN_IS_AVAILABLE => $row->getIsAvailable(),
                 ProviderPrice::COLUMN_IS_ENABLED => $row->getIsEnabled(),
                 ProviderPrice::COLUMN_LEAD_TIME_HOURS => $row->getLeadTimeHours(),
+                ProviderPrice::COLUMN_COMMISSION_PERCENT => $row->getCommissionPercent(),
+                ProviderPrice::COLUMN_IS_PREFERRED => $row->getIsPreferred(),
             ]), $existing, $import->getAdminId(), PriceChangeReason::Import)->exists) {
                 $updated++;
             }

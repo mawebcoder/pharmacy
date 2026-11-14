@@ -9,11 +9,14 @@ use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Pricing\Actions\DeleteProviderPrice;
 use App\Modules\Pricing\Actions\SaveProviderPrice;
+use App\Modules\Pricing\Data\ChosenSupplier;
 use App\Modules\Pricing\Data\ProviderPriceData;
+use App\Modules\Pricing\Data\SupplierOffer;
 use App\Modules\Pricing\Filament\Pages\SkuSuppliers;
 use App\Modules\Pricing\Filament\Support\ProviderPriceColumns;
 use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
+use App\Modules\Pricing\Queries\ActiveSuppliers;
 use App\Modules\Pricing\Queries\SupplierPrices;
 use App\Modules\Shared\Support\Toman;
 use Filament\Actions\Action;
@@ -50,6 +53,9 @@ final class ProviderPricesRelationManager extends RelationManager
     /** @var array<int, int|null>|null variant id => active supplier price id */
     private ?array $activePriceIds = null;
 
+    /** @var array<int, SupplierOffer>|null */
+    private ?array $offers = null;
+
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         return auth('admin')->user()?->can('view', $ownerRecord) ?? false;
@@ -76,10 +82,7 @@ final class ProviderPricesRelationManager extends RelationManager
                     ->url(fn (ProviderPrice $record): string => SkuSuppliers::getUrl(['variant' => $record->getVariantId()]))
                     ->wrap(),
                 TextColumn::make(ProviderPrice::COLUMN_COST)->label('قیمت خرید')->toman()->sortable(), // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                TextColumn::make('selling_with_commission')
-                    ->label('قیمت فروش با کمیسیون')
-                    ->state(fn (ProviderPrice $record): string => ProviderPriceColumns::sellingWithCommission($record->getCost(), $this->summary($record)))
-                    ->alignEnd(),
+                ...ProviderPriceColumns::offerColumns(fn (ProviderPrice $record): ?SupplierOffer => $this->offers()[$record->getId()] ?? null),
                 TextColumn::make('website_price')
                     ->label('قیمت فعلی سایت')
                     ->state(fn (ProviderPrice $record): ?string => ! ($summary = $this->summary($record)) instanceof VariantSummary || $summary->price === 0 ? null : Toman::format($summary->salePrice ?? $summary->price))
@@ -89,7 +92,7 @@ final class ProviderPricesRelationManager extends RelationManager
                 TextColumn::make('selling_from_here')
                     ->label('سایت')
                     ->badge()
-                    ->state(fn (ProviderPrice $record): string => $this->activePriceIds()[$record->getVariantId()] === $record->getId() ? 'از این تأمین‌کننده' : 'از دیگری یا روی جعبه')
+                    ->state(fn (ProviderPrice $record): string => ($this->activePriceIds()[$record->getVariantId()] ?? null) === $record->getId() ? 'از این تأمین‌کننده' : 'از دیگری یا روی جعبه')
                     ->color(fn (string $state): string => $state === 'از این تأمین‌کننده' ? 'success' : 'gray'),
                 ...ProviderPriceColumns::columns(),
             ])
@@ -171,18 +174,38 @@ final class ProviderPricesRelationManager extends RelationManager
     }
 
     /**
+     * The row each SKU sells from (ActiveSuppliers), keyed by variant id; null when it sells at the printed price.
+     *
      * @return array<int, int|null>
      */
     private function activePriceIds(): array
     {
-        $ids = [];
+        return $this->activePriceIds ??= array_map(
+            fn (?ChosenSupplier $chosen): ?int => $chosen?->offer->price->getId(),
+            app(ActiveSuppliers::class)->forVariants($this->variantIds()),
+        );
+    }
 
-        // Without a commission the SKU is sold at its printed price, not from a supplier.
-        foreach (app(SupplierPrices::class)->activeFor($this->variantIds()) as $variantId => $price) {
-            $ids[$variantId] = ($this->summaries()[$variantId] ?? null)?->commissionPercent === null ? null : $price?->getId();
+    /**
+     * This supplier's offer for each of its SKUs (commission, level, selling price), keyed by row id.
+     *
+     * @return array<int, SupplierOffer>
+     */
+    private function offers(): array
+    {
+        if ($this->offers === null) {
+            $this->offers = [];
+
+            foreach (app(ActiveSuppliers::class)->offers(app(VariantPricingInputs::class)->for($this->variantIds())) as $variantOffers) {
+                foreach ($variantOffers as $offer) {
+                    if ($offer->price->getProviderId() === $this->provider()->getId()) {
+                        $this->offers[$offer->price->getId()] = $offer;
+                    }
+                }
+            }
         }
 
-        return $this->activePriceIds ??= $ids;
+        return $this->offers;
     }
 
     /**

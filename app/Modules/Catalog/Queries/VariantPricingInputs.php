@@ -50,6 +50,9 @@ final readonly class VariantPricingInputs
                     default => null,
                 },
                 stockStatus: $variant->getStockStatus(),
+                brandId: $product?->getBrandId(),
+                productCommission: $productCommission,
+                brandCommission: $brandCommission,
             );
         }
 
@@ -119,6 +122,20 @@ final readonly class VariantPricingInputs
     public function variantIdsOfProduct(int $productId): array
     {
         return array_values(ProductVariant::query()->where(ProductVariant::COLUMN_PRODUCT_ID, $productId)->pluck(ProductVariant::COLUMN_ID)->map(intval(...))->all());
+    }
+
+    /**
+     * Every SKU of a brand's products (trashed products included), e.g. when a brand × supplier commission changes.
+     *
+     * @return list<int>
+     */
+    public function variantIdsOfBrand(int $brandId): array
+    {
+        return array_values(ProductVariant::query()
+            ->whereHas('product', fn (Builder $products) => $products->withTrashed()->where(Product::COLUMN_BRAND_ID, $brandId))
+            ->pluck(ProductVariant::COLUMN_ID)
+            ->map(intval(...))
+            ->all());
     }
 
     /**
