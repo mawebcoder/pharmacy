@@ -80,13 +80,19 @@ it('lists only the categories as tiles for the mobile tab', function (): void {
         ->assertDontSee('دسته غیرفعال');
 });
 
-it('puts the category menu with subcategory links in the header of every storefront page', function (): void {
+it('puts the category menu in the header of every storefront page, with only subcategories that have a product for sale', function (): void {
     $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها', Category::COLUMN_SLUG => 'supplements']);
-    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', Subcategory::COLUMN_SLUG => 'vitamins']);
+    productForSaleIn(Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', Subcategory::COLUMN_SLUG => 'vitamins']));
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'زیردسته خالی', Subcategory::COLUMN_SLUG => 'empty']);
+    $beauty = Category::factory()->create([Category::COLUMN_NAME_FA => 'آرایشی', Category::COLUMN_SLUG => 'beauty']);
+    Subcategory::factory()->of($beauty)->create();
 
-    $this->get(route('home'))
-        ->assertOk()
-        ->assertSee('aria-label="دسته‌بندی محصولات"', escape: false)
-        ->assertSee(route('category.show', 'supplements'), escape: false)
-        ->assertSee(route('subcategory.show', ['supplements', 'vitamins']), escape: false);
+    $menu = $this->get(route('home'))->assertOk()->assertSee('aria-label="دسته‌بندی محصولات"', escape: false)->getContent();
+    $panel = str($menu)->after('id="mega-menu"')->toString();
+
+    expect($panel)
+        ->toContain(route('category.show', 'supplements'))
+        ->toContain(route('subcategory.show', ['supplements', 'vitamins']))
+        ->not->toContain(route('subcategory.show', ['supplements', 'empty']))
+        ->not->toContain(route('category.show', 'beauty'));
 });

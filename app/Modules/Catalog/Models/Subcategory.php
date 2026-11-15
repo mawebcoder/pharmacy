@@ -260,6 +260,20 @@ final class Subcategory extends Model implements HasActivityLogLabel, HasImagePr
     }
 
     /**
+     * Subcategories with at least one product for sale, as main or extra subcategory (owner, 2026-11-15: the
+     * category page's boxes and the mega menu show only these).
+     *
+     * @param  Builder<Subcategory>  $query
+     * @return Builder<Subcategory>
+     */
+    public function scopeWithProductsForSale(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $inner) => $inner
+            ->whereHas('primaryProducts', fn (Builder $products) => $products->sellable())
+            ->orWhereHas('products', fn (Builder $products) => $products->sellable()));
+    }
+
+    /**
      * @param  Builder<Subcategory>  $query
      * @return Builder<Subcategory>
      */

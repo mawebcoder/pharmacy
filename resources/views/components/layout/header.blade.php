@@ -22,7 +22,9 @@
         </a>
 
         {{-- One search bar per page (owner, 2026-11-15): on /search the header's box holds the query. --}}
-        @php($searchQuery = request()->routeIs('search') ? (string) request()->query('q', '') : '')
+        @php
+            $searchQuery = request()->routeIs('search') ? (string) request()->query('q', '') : '';
+        @endphp
         <livewire:search::instant-search :value="$searchQuery" class="hidden flex-1 md:block xl:max-w-xl" />
 
         <nav class="ms-auto flex items-center gap-1" aria-label="حساب و سبد خرید">
@@ -86,7 +88,17 @@
         </nav>
     </div>
 
-    <x-catalog::category-nav />
+    {{-- Site links beside «دسته‌بندی کالاها» on desktop (owner, 2026-11-15); a page shows only once it is live. --}}
+    @php
+        $pageLinks = app(\App\Modules\Content\Queries\PageLinks::class);
+        $siteLinks = array_values(array_filter([
+            ['label' => 'همه کالاها', 'href' => route('products.index'), 'icon' => 'squares-2x2'],
+            ['label' => 'برندها', 'href' => route('brands.index'), 'icon' => 'tag'],
+            ['label' => 'درباره ما', 'href' => $pageLinks->urlOfSlug('about'), 'icon' => 'information-circle'],
+            ['label' => 'تماس با ما', 'href' => Route::has('contact') ? route('contact') : null, 'icon' => 'phone'],
+        ], fn (array $link): bool => $link['href'] !== null));
+    @endphp
+    <x-catalog::category-nav :links="$siteLinks" />
 
     <div class="border-t border-line-200 px-4 py-2 md:hidden">
         <livewire:search::instant-search input-id="site-search-mobile" :value="$searchQuery" />

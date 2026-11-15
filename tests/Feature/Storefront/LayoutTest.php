@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Content\Models\Page;
 use App\Modules\Identity\Models\Customer;
 
 it('renders the home page right-to-left in Persian inside the storefront layout', function (): void {
@@ -47,4 +49,18 @@ it('hides the footer on phones on the cart and the checkout steps only', functio
 
     $this->get('/')->assertOk()->assertSee('<footer', false)->assertDontSee($phonesOnly, false);
     $this->get('/cart')->assertOk()->assertSee('<footer', false)->assertSee($phonesOnly, false);
+});
+
+it('puts «همه کالاها» and «برندها» in the category bar, and «درباره ما» only once that page is live', function (): void {
+    Category::factory()->create();
+    $about = Page::query()->where(Page::COLUMN_SLUG, 'about')->sole();
+
+    $this->get('/')->assertOk()
+        ->assertSeeInOrder(['همه کالاها', 'برندها'])
+        ->assertSee(route('brands.index'), escape: false)
+        ->assertDontSee($about->url(), escape: false);
+
+    $about->setIsActive(true)->save();
+
+    $this->get('/')->assertOk()->assertSeeInOrder(['برندها', 'درباره ما'])->assertSee($about->url(), escape: false);
 });

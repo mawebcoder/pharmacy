@@ -61,10 +61,14 @@ final class CategoryForm
                             ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_DESCRIPTION)),
                     ]),
                 Section::make('تصاویر')
-                    ->columns(['md' => 3])
+                    ->columns(['md' => 4])
                     ->schema([
                         ImageUpload::make(Category::IMAGE_ICON, 'category_icon')
                             ->label('آیکن'),
+                        // Small, like the icon it holds (owner, 2026-11-15).
+                        ImageUpload::make(Category::IMAGE_MENU_ICON, 'category_menu_icon')
+                            ->label('آیکن منو (کوچک)')
+                            ->imagePreviewHeight('48'),
                         ImageUpload::make(Category::IMAGE_BANNER_DESKTOP, 'category_banner_desktop')
                             ->label('بنر دسکتاپ و تبلت'),
                         ImageUpload::make(Category::IMAGE_BANNER_MOBILE, 'category_banner_mobile')

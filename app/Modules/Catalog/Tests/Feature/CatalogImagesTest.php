@@ -87,6 +87,18 @@ describe('storefront', function (): void {
             ->assertSee($icon->url(96, 'webp'), escape: false);
     });
 
+    it('shows the tiny menu icon beside the category in the mega menu, else the category icon', function (bool $withMenuIcon): void {
+        $category = Category::factory()->create();
+        $subcategory = Subcategory::factory()->of($category)->create();
+        ProductVariant::factory()->for(Product::factory()->active()->for($subcategory, 'primarySubcategory')->create())->create([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 1_000_000]);
+        $icon = app(AttachImage::class)($category, Category::IMAGE_ICON, testImage(256, 256))->fresh();
+        $menuIcon = $withMenuIcon ? app(AttachImage::class)($category, Category::IMAGE_MENU_ICON, testImage(64, 64))->fresh() : null;
+
+        $panel = str($this->get('/')->assertOk()->getContent())->after('id="mega-menu"')->toString();
+
+        expect($panel)->toContain($menuIcon?->url(48, 'webp') ?? $icon->url(96, 'webp'));
+    })->with(['menu icon' => [true], 'category icon' => [false]]);
+
     it('still shows brands without a logo', function (): void {
         Brand::factory()->create([Brand::COLUMN_NAME_FA => 'سینره']);
 

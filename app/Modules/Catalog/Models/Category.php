@@ -67,6 +67,11 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
      */
     public const string IMAGE_ICON = 'icon';
 
+    /**
+     * The tiny icon beside the category in the desktop mega menu (owner, 2026-11-15).
+     */
+    public const string IMAGE_MENU_ICON = 'menu_icon';
+
     public const string IMAGE_BANNER_DESKTOP = 'banner_desktop';
 
     public const string IMAGE_BANNER_MOBILE = 'banner_mobile';
@@ -272,6 +277,7 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     {
         return [
             self::IMAGE_ICON => 'category_icon',
+            self::IMAGE_MENU_ICON => 'category_menu_icon',
             self::IMAGE_BANNER_DESKTOP => 'category_banner_desktop',
             self::IMAGE_BANNER_MOBILE => 'category_banner_mobile',
         ];
@@ -280,6 +286,11 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     public function getIcon(): ?StoredImage
     {
         return $this->image(self::IMAGE_ICON);
+    }
+
+    public function getMenuIcon(): ?StoredImage
+    {
+        return $this->image(self::IMAGE_MENU_ICON);
     }
 
     public function getBannerDesktop(): ?StoredImage

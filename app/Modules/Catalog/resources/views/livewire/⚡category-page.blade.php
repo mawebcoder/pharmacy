@@ -39,11 +39,7 @@ new class extends Component
         return $this->view([
             'page' => $page,
             // Only subcategories with at least one product for sale (owner, 2026-11-15).
-            'subcategories' => $this->category->subcategories()->active()->with('media')
-                ->where(fn ($query) => $query
-                    ->whereHas('primaryProducts', fn ($products) => $products->sellable())
-                    ->orWhereHas('products', fn ($products) => $products->sellable()))
-                ->get(),
+            'subcategories' => $this->category->subcategories()->active()->withProductsForSale()->with('media')->get(),
         ])->title($page->getSeoTitle() ?? $page->getNameFa());
     }
 };

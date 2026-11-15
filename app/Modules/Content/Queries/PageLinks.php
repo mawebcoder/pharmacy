@@ -37,4 +37,12 @@ final readonly class PageLinks
     {
         return Page::query()->active()->find($pageId)?->url();
     }
+
+    /**
+     * The address of a fixed page such as «about», or null while it is unpublished (the header then leaves it out).
+     */
+    public function urlOfSlug(string $slug): ?string
+    {
+        return Page::query()->active()->where(Page::COLUMN_SLUG, $slug)->first()?->url();
+    }
 }

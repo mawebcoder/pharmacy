@@ -53,6 +53,9 @@
         },
     }"
     x-on:click.outside="open = false"
+    {{-- A link (a product, «مشاهده همه», a category) closes the search at once, so the next page's skeleton shows
+         while it loads (owner, 2026-11-15). --}}
+    x-on:click="$event.target.closest('a[href]') && close()"
     x-on:keydown.escape="open = false; $refs.input.focus()"
     x-effect="document.documentElement.toggleAttribute('data-search-open', open)"
 >

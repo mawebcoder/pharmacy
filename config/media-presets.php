@@ -70,6 +70,13 @@ return [
             'widths' => [96, 192],
             'formats' => ['webp' => 90],
         ],
+        // The tiny icon beside a category in the desktop mega menu (owner, 2026-11-15), shown at 24 px.
+        'category_menu_icon' => [
+            'min_width' => 48, 'min_height' => 48, 'ratio' => 1,
+            'max_kb' => 50, 'mimes' => ['image/svg+xml', 'image/png'],
+            'widths' => [48, 96],
+            'formats' => ['webp' => 90],
+        ],
         'brand_logo' => [
             'min_width' => 400, 'min_height' => 200, 'ratio' => 2,
             'max_kb' => 1024, 'mimes' => ['image/svg+xml', 'image/png', 'image/webp'],
@@ -85,6 +92,7 @@ return [
         'pdp-zoom' => ['preset' => 'product', 'widths' => [1600], 'sizes' => '1600px'],
         'brand-logo' => ['preset' => 'brand_logo', 'widths' => [160, 320], 'sizes' => '(min-width: 1280px) 160px, (min-width: 768px) 120px, 96px'],
         'category-chip' => ['preset' => 'category_icon', 'widths' => [96], 'sizes' => '24px'],
+        'category-menu-icon' => ['preset' => 'category_menu_icon', 'widths' => [48, 96], 'sizes' => '24px'],
         'category-icon' => ['preset' => 'category_icon', 'widths' => [96, 192], 'sizes' => '(min-width: 1280px) 64px, (min-width: 768px) 56px, 48px'],
         'category-banner-desktop' => ['preset' => 'category_banner_desktop', 'widths' => [768, 1280, 1920], 'sizes' => '(min-width: 1280px) 1216px, 100vw', 'placeholder' => 'thumbhash'],
         'category-banner-mobile' => ['preset' => 'category_banner_mobile', 'widths' => [480, 800], 'sizes' => '100vw', 'placeholder' => 'thumbhash'],
