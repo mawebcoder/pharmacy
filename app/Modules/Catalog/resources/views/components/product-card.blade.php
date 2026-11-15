@@ -1,11 +1,14 @@
 {{--
-    Product card (roadmap B9.4): square photo on white with the colour placeholder, at most one badge, brand, name
-    (2 lines), price (old price struck through when on sale). The whole card links to the product; the quick view
-    button opens the product's summary without leaving the list. Add-to-cart arrives with the cart (S19).
-    <x-catalog::product-card :product="$product" />  (product with brand, media and active variants loaded)
+    Product card (roadmap B9.4), shaped like the owner's reference shop (owner, 2026-11-14/15: about 230 × 310 px): a
+    photo contained on a white well inset from the card's edges, at most one badge, then the name (2 lines), the price
+    (old price and discount on a second line when on sale) and the cart row (the square «+», then the quantity bar).
+    Every part has a fixed height, so a card is as tall on the home page as in a list or after an add (owner,
+    2026-11-15), whatever its width or sale. No brand line. The whole card links to the
+    product; only the heart and the cart row act on their own (owner, 2026-11-15: no quick view on cards).
+    <x-catalog::product-card :product="$product" />  (product with media and active variants loaded: ProductListing::CARD_RELATIONS)
     :href overrides the product link, e.g. to record clicks from search results.
 --}}
-@props(['product', 'quickView' => true, 'href' => null])
+@props(['product', 'href' => null])
 
 @use('App\Modules\Catalog\Support\ProductCardData')
 
@@ -19,9 +22,9 @@
 @endphp
 
 <article {{ $attributes->class('group relative flex h-full flex-col overflow-hidden rounded-card border border-line-200 bg-card transition-colors duration-200 ease-out hover:border-primary-700 motion-reduce:transition-none') }}>
-    <div class="relative aspect-square bg-media">
+    <div class="relative mx-2.5 mt-2.5 h-24 overflow-hidden rounded-lg bg-media md:mx-3 md:mt-3 md:h-32">
         @if ($product->getMainImage())
-            <x-media::picture :media="$product->getMainImage()" slot-name="product-card" :alt="$product->getNameFa()" class="size-full object-contain" />
+            <x-media::picture :media="$product->getMainImage()" slot-name="product-card" :alt="$product->getNameFa()" class="size-full object-contain p-2" />
         @else
             <div class="grid size-full place-items-center bg-surface-50 text-ink-500" aria-hidden="true">
                 <x-ts-icon icon="photo" class="size-10" />
@@ -33,41 +36,28 @@
         @endif
 
         <x-catalog::wishlist-button :product-id="$product->getId()" class="absolute end-2 top-2" />
-
-        @if ($quickView)
-            <button
-                type="button"
-                wire:click="$dispatch('quick-view', { productId: {{ $product->getId() }} })"
-                class="absolute end-2 bottom-2 z-10 grid size-11 place-items-center rounded-full bg-card/90 text-ink-500 shadow-sm hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700"
-                aria-label="نمایش سریع {{ $product->getNameFa() }}"
-            >
-                <x-ts-icon icon="eye" class="size-5" />
-            </button>
-        @endif
     </div>
 
-    <div class="flex flex-1 flex-col gap-1 p-3 md:p-4">
-        <p class="truncate text-xs text-ink-500">{{ $product->getBrand()?->getNameFa() }}</p>
-        <h3 class="line-clamp-2 min-h-12 text-sm leading-6 text-ink-900 md:text-base">
+    <div class="flex flex-1 flex-col gap-0.5 p-2.5 md:p-3">
+        <h3 class="line-clamp-2 h-10 text-sm leading-5 text-ink-900">
             <a href="{{ $href ?? route('products.show', $product) }}" @unless ($href) wire:navigate @endunless class="after:absolute after:inset-0 focus-visible:outline-none after:focus-visible:rounded-card after:focus-visible:outline-2 after:focus-visible:outline-primary-700">
                 {{ $product->getNameFa() }}
             </a>
         </h3>
 
-        {{-- Same layout with or without a haraj: a two-line price area (old price + badge, then the price), then the
-             add-to-cart line, so neighbouring cards line up. --}}
+        {{-- Same height with or without a haraj or the cart row: the two-line price area, then the 44 px cart row. --}}
         <div class="mt-auto space-y-2 pt-2">
-            <div class="flex min-h-12 flex-col justify-end">
+            <div class="h-11">
                 @if ($card->price !== null && $card->inStock)
-                    <x-ui.price :price="$card->price" :old="$card->oldPrice" />
+                    <x-ui.price :price="$card->price" :old="$card->oldPrice" size="card" />
                 @else
                     <span class="text-sm text-ink-500">ناموجود</span>
                 @endif
             </div>
             @if ($card->price !== null && $card->inStock && $card->variantId !== null && $product->isSellableType() && ! $product->requiresPrescription())
-                <div class="flex justify-end">
-                    <x-cart::add-button :variant-id="$card->variantId" :label="$product->getNameFa()" stack />
-                </div>
+                <x-cart::add-button :variant-id="$card->variantId" :label="$product->getNameFa()" card />
+            @else
+                <div class="h-11" aria-hidden="true"></div>
             @endif
         </div>
     </div>

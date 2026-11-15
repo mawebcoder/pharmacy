@@ -7,9 +7,9 @@ namespace App\Modules\Catalog\Database\Factories;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -35,7 +35,9 @@ final class ProductFactory extends Factory
             Product::COLUMN_NAME_EN => $nameEn,
             Product::COLUMN_SLUG => Str::slug($nameEn),
             Product::COLUMN_BRAND_ID => Brand::factory(),
-            Product::COLUMN_PRIMARY_CATEGORY_ID => Category::factory(),
+            // Products belong to subcategories (owner, 2026-11-15); the category is the subcategory's.
+            Product::COLUMN_PRIMARY_SUBCATEGORY_ID => Subcategory::factory(),
+            Product::COLUMN_PRIMARY_CATEGORY_ID => fn (array $attributes): int => (int) Subcategory::query()->whereKey($attributes[Product::COLUMN_PRIMARY_SUBCATEGORY_ID])->value(Subcategory::COLUMN_CATEGORY_ID),
             Product::COLUMN_PRODUCT_TYPE => ProductType::Cosmetic,
             Product::COLUMN_REQUIRES_PRESCRIPTION => false,
             Product::COLUMN_STATUS => ProductStatus::Draft,

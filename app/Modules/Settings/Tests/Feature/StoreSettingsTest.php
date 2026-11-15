@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
@@ -42,6 +44,35 @@ it('saves the WhatsApp number normalised, refuses one that is not a mobile and b
     expect($before)->toBeNull()
         ->and($settings->whatsAppNumber())->toBe('09123456789')
         ->and($settings->whatsAppChatUrl('سلام'))->toBe('https://wa.me/989123456789?text='.rawurlencode('سلام'));
+});
+
+it('saves the removal countdown between 0 and 10 seconds', function (): void {
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+    $before = app(StoreSettings::class)->removalDelaySeconds();
+
+    livewire(StoreSettingsPage::class)->fillForm(['removal_delay_seconds' => 11])->call('save')->assertHasFormErrors(['removal_delay_seconds']);
+    livewire(StoreSettingsPage::class)->fillForm(['removal_delay_seconds' => 0])->call('save')->assertHasNoFormErrors();
+
+    expect($before)->toBe(3)->and(app(StoreSettings::class)->removalDelaySeconds())->toBe(0);
+});
+
+it('saves the categories and brands pinned to the search panel in the order picked, at most 8', function (): void {
+    $settings = app(StoreSettings::class);
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+    [$first, $second] = Category::factory()->count(2)->create()->all();
+    $brand = Brand::factory()->create();
+
+    livewire(StoreSettingsPage::class)
+        ->fillForm(['search_category_ids' => [$second->getId(), $first->getId()], 'search_brand_ids' => [$brand->getId()]])
+        ->call('save')
+        ->assertHasNoFormErrors();
+    livewire(StoreSettingsPage::class)
+        ->fillForm(['search_brand_ids' => Brand::factory()->count(9)->create()->map->getId()->all()])
+        ->call('save')
+        ->assertHasFormErrors(['search_brand_ids']);
+
+    expect($settings->searchCategoryIds())->toBe([$second->getId(), $first->getId()])
+        ->and($settings->searchBrandIds())->toBe([$brand->getId()]);
 });
 
 it('saves the Telegram username from «@name» or a t.me link and refuses an invalid one', function (string $typed, ?string $saved): void {

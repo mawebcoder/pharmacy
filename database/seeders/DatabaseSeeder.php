@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Modules\Catalog\Database\Seeders\CategoriesSeeder;
+use App\Modules\Catalog\Database\Seeders\SearchShortcutsSeeder;
 use App\Modules\Catalog\Database\Seeders\StandardAttributesSeeder;
 use App\Modules\Identity\Database\Seeders\SuperAdminSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -18,6 +20,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([SuperAdminSeeder::class, StandardAttributesSeeder::class]);
+        $this->call([SuperAdminSeeder::class, StandardAttributesSeeder::class, CategoriesSeeder::class, SearchShortcutsSeeder::class]);
     }
 }

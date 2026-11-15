@@ -6,6 +6,7 @@ use App\Modules\Catalog\Actions\MoveCategories;
 use App\Modules\Catalog\Data\CategoryNode;
 use App\Modules\Catalog\Data\CategoryPositionData;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Queries\CategoryTree;
 use Illuminate\Support\Facades\Cache;
 
@@ -24,24 +25,32 @@ function treeNames(array $nodes): array
     return $names;
 }
 
-it('lists active categories in sort order with their subcategories', function (): void {
+it('lists active categories in sort order with their active subcategories', function (): void {
     $beauty = Category::factory()->create([Category::COLUMN_NAME_FA => 'آرایشی', Category::COLUMN_SORT => 2]);
     $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها', Category::COLUMN_SORT => 1]);
-    $vitamins = Category::factory()->childOf($supplements)->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها']);
-    Category::factory()->childOf($vitamins)->create([Category::COLUMN_NAME_FA => 'ویتامین D']);
-    Category::factory()->childOf($beauty)->inactive()->create([Category::COLUMN_NAME_FA => 'رژ لب']);
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'مولتی‌ویتامین', Subcategory::COLUMN_SORT => 2]);
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', Subcategory::COLUMN_SORT => 1]);
+    Subcategory::factory()->of($beauty)->inactive()->create([Subcategory::COLUMN_NAME_FA => 'رژ لب']);
 
     expect(treeNames(app(CategoryTree::class)->roots()))->toBe([
-        'مکمل‌ها' => ['ویتامین‌ها' => ['ویتامین D' => []]],
+        'مکمل‌ها' => ['ویتامین‌ها' => [], 'مولتی‌ویتامین' => []],
         'آرایشی' => [],
     ]);
 });
 
-it('hides the whole branch under an inactive category', function (): void {
+it('hides the subcategories under an inactive category', function (): void {
     $supplements = Category::factory()->inactive()->create();
-    Category::factory()->childOf($supplements)->create();
+    Subcategory::factory()->of($supplements)->create();
 
-    expect(app(CategoryTree::class)->roots())->toBe([]);
+    expect(app(CategoryTree::class)->roots())->toBe([])
+        ->and(app(CategoryTree::class)->visibleSubcategoryIds())->toBe([]);
+});
+
+it('builds subcategory addresses under their category', function (): void {
+    $supplements = Category::factory()->create([Category::COLUMN_SLUG => 'supplements']);
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_SLUG => 'vitamins']);
+
+    expect(app(CategoryTree::class)->roots()[0]->children[0]->url())->toBe(route('subcategory.show', ['supplements', 'vitamins']));
 });
 
 it('rebuilds the cached tree after a change', function (Closure $change, array $expected): void {
@@ -60,10 +69,20 @@ it('rebuilds the cached tree after a change', function (Closure $change, array $
         app(CategoryTree::class)->roots();
         $beauty->restore();
     }, ['مکمل‌ها', 'آرایشی']],
-    'reordered' => [fn (Category $supplements, Category $beauty) => app(MoveCategories::class)(CategoryPositionData::fromNestedList([
-        ['id' => $beauty->getId()], ['id' => $supplements->getId()],
+    'reordered' => [fn (Category $supplements, Category $beauty) => app(MoveCategories::class)(CategoryPositionData::fromOrderedIds([
+        $beauty->getId(), $supplements->getId(),
     ])), ['آرایشی', 'مکمل‌ها']],
 ]);
+
+it('rebuilds the cached tree after a subcategory change', function (): void {
+    $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها']);
+    $vitamins = Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها']);
+    app(CategoryTree::class)->roots();
+
+    $vitamins->setNameFa('ویتامین و مواد معدنی')->save();
+
+    expect(treeNames(app(CategoryTree::class)->roots()))->toBe(['مکمل‌ها' => ['ویتامین و مواد معدنی' => []]]);
+});
 
 it('reads the tree back from a cache that serializes its values', function (): void {
     config(['cache.stores.array.serialize' => true]);

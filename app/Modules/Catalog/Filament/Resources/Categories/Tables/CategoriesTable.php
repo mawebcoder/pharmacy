@@ -12,18 +12,15 @@ use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 final class CategoriesTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('parent'))
             ->columns([
                 ImageThumbnail::make(Category::IMAGE_ICON, 'category_icon'),
                 TextColumn::make(Category::COLUMN_NAME_FA)
@@ -31,10 +28,9 @@ final class CategoriesTable
                     ->description(fn (Category $record): ?string => $record->getNameEn())
                     ->searchable([Category::COLUMN_NAME_FA, Category::COLUMN_NAME_EN])
                     ->sortable(),
-                TextColumn::make('parent.'.Category::COLUMN_NAME_FA)
-                    ->label('دسته والد')
-                    ->placeholder('سطح اول')
-                    ->searchable(),
+                TextColumn::make('subcategories_count')
+                    ->label('زیردسته‌ها')
+                    ->counts('subcategories'),
                 TextColumn::make(Category::COLUMN_SLUG)
                     ->label('نامک')
                     ->searchable()
@@ -53,11 +49,6 @@ final class CategoriesTable
             ])
             ->filters([
                 TernaryFilter::make(Category::COLUMN_IS_ACTIVE)->label('فعال'),
-                SelectFilter::make(Category::COLUMN_PARENT_ID)
-                    ->label('دسته والد')
-                    ->relationship('parent', Category::COLUMN_NAME_FA)
-                    ->searchable()
-                    ->preload(),
                 TrashedFilter::make(),
             ])
             ->recordActions([
@@ -65,6 +56,7 @@ final class CategoriesTable
                 CategoryResource::deleteAction(),
                 CategoryResource::restoreAction(),
             ])
-            ->defaultSort(Category::COLUMN_NAME_FA);
+            ->reorderable(Category::COLUMN_SORT, fn (): bool => auth('admin')->user()?->can('reorder', Category::class) ?? false)
+            ->defaultSort(Category::COLUMN_SORT);
     }
 }

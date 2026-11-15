@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Settings\Filament\Pages;
 
+use App\Modules\Catalog\Filament\Forms\ImageSelect;
+use App\Modules\Catalog\Queries\AdminOptions;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shared\Rules\IranianMobile;
@@ -11,6 +13,7 @@ use App\Modules\Shared\Support\IranMobile;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -24,7 +27,8 @@ use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
 /**
- * «تنظیمات فروشگاه» (roadmap D3.6, started in S19; S35 adds contact details, logo, maintenance mode …).
+ * «تنظیمات فروشگاه» (roadmap D3.6, started in S19; S35 adds contact details, logo, maintenance mode …). «جستجو» pins
+ * categories and brands to the search panel (owner, 2026-11-15).
  *
  * @property-read Schema $form
  */
@@ -52,11 +56,14 @@ final class StoreSettingsPage extends Page
         $this->form->fill([
             'max_quantity_per_order' => $settings->maxQuantityPerOrder(),
             'free_shipping_threshold' => $settings->freeShippingThreshold(),
+            'removal_delay_seconds' => $settings->removalDelaySeconds(),
             'shipping_flat_rate' => $settings->shippingFlatRate(),
             'whatsapp_number' => $settings->whatsAppNumber(),
             'telegram_username' => $settings->telegramUsername(),
             'chat_message_product' => $settings->get(StoreSettings::CHAT_MESSAGE_PRODUCT),
             'chat_message_general' => $settings->generalChatMessage(),
+            'search_category_ids' => $settings->searchCategoryIds(),
+            'search_brand_ids' => $settings->searchBrandIds(),
         ]);
     }
 
@@ -81,6 +88,14 @@ final class StoreSettingsPage extends Page
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                             ->required()
                             ->helperText('سفارش‌های از این مبلغ به بالا رایگان ارسال می‌شوند؛ صفر یعنی بدون ارسال رایگان. در سبد خرید و نوار اطلاعیه نمایش داده می‌شود.'),
+                        TextInput::make('removal_delay_seconds')
+                            ->label('مهلت انصراف از حذف کالا (ثانیه)')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(0)
+                            ->maxValue(StoreSettings::MAX_REMOVAL_DELAY_SECONDS)
+                            ->required()
+                            ->helperText('با زدن سطل زباله، کالا پس از این چند ثانیه حذف می‌شود و تا آن زمان شمارش معکوس و دکمه «انصراف» نمایش داده می‌شود؛ صفر یعنی حذف فوری.'),
                     ]),
                 Section::make('ارسال')
                     ->columns(2)
@@ -126,6 +141,13 @@ final class StoreSettingsPage extends Page
                             ->required()
                             ->helperText('برای «مشاوره با داروساز» در سربرگ سایت، جایی که محصولی انتخاب نشده است.'),
                     ]),
+                Section::make('جستجو')
+                    ->description('در پنل جستجوی سایت وقتی کادر خالی است، یا متن جستجو با هیچ دسته‌بندی یا برندی جور نمی‌شود، نمایش داده می‌شوند.')
+                    ->columns(2)
+                    ->schema([
+                        self::shortcutPicker('search_category_ids', 'category', 'دسته‌بندی‌های ثابت در جستجو'),
+                        self::shortcutPicker('search_brand_ids', 'brand', 'برندهای ثابت در جستجو'),
+                    ]),
             ]);
     }
 
@@ -148,14 +170,31 @@ final class StoreSettingsPage extends Page
         $saveSettings([
             StoreSettings::MAX_QUANTITY_PER_ORDER => (int) $data['max_quantity_per_order'],
             StoreSettings::FREE_SHIPPING_THRESHOLD => (int) $data['free_shipping_threshold'],
+            StoreSettings::REMOVAL_DELAY_SECONDS => (int) $data['removal_delay_seconds'],
             StoreSettings::SHIPPING_FLAT_RATE => (int) $data['shipping_flat_rate'],
             StoreSettings::WHATSAPP_NUMBER => IranMobile::normalize((string) ($data['whatsapp_number'] ?? '')) ?? '',
             StoreSettings::TELEGRAM_USERNAME => (string) ($data['telegram_username'] ?? ''),
             StoreSettings::CHAT_MESSAGE_PRODUCT => trim((string) $data['chat_message_product']),
             StoreSettings::CHAT_MESSAGE_GENERAL => trim((string) $data['chat_message_general']),
+            StoreSettings::SEARCH_CATEGORY_IDS => array_values(array_map(intval(...), (array) ($data['search_category_ids'] ?? []))),
+            StoreSettings::SEARCH_BRAND_IDS => array_values(array_map(intval(...), (array) ($data['search_brand_ids'] ?? []))),
         ]);
 
         Notification::make()->success()->title('تنظیمات ذخیره شد.')->send();
+    }
+
+    /**
+     * Pinned categories or brands for the search panel (owner, 2026-11-15): round images, in the order picked.
+     */
+    private static function shortcutPicker(string $field, string $type, string $label): Select
+    {
+        $options = app(AdminOptions::class);
+
+        return ImageSelect::images(Select::make($field), $type, fn (): array => $options->names($type))
+            ->label($label)
+            ->multiple()
+            ->maxItems(StoreSettings::MAX_SEARCH_SHORTCUTS)
+            ->helperText('حداکثر ۸ مورد، به ترتیبی که انتخاب می‌کنید؛ موارد غیرفعال نمایش داده نمی‌شوند.');
     }
 
     /**

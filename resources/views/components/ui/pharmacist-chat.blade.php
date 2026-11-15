@@ -52,7 +52,9 @@
                     aria-label="گفت‌وگو با داروساز"
                     class="w-full rounded-t-2xl bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-start shadow-card md:max-w-md md:rounded-card md:pb-5"
                 >
-                    <div class="mx-auto mb-4 h-1 w-10 rounded-full bg-line-300 md:hidden" aria-hidden="true"></div>
+                    <div x-swipe-close="open = false" class="-mx-5 -mt-5 mb-1 flex h-9 cursor-grab items-center justify-center md:hidden" aria-hidden="true">
+                        <span class="h-1 w-10 rounded-full bg-line-300"></span>
+                    </div>
                     <p class="text-lg font-bold text-ink-900">{{ $only ? 'ادامه در '.$names[$only].'؟' : 'گفت‌وگو با داروساز' }}</p>
                     <p class="mt-2 text-sm leading-7 text-ink-500">
                         {{ $only ? 'گفت‌وگو با داروساز ما در '.$names[$only].' باز می‌شود.' : 'گفت‌وگو در کدام پیام‌رسان باز شود؟' }}

@@ -7,7 +7,7 @@ namespace App\Modules\Catalog\Data;
 use App\Modules\Catalog\Enums\ListingSort;
 
 /**
- * What a product list shows (roadmap B9.3, D21.2): the page's own scope (category, brand, tag or search text) and
+ * What a product list shows (roadmap B9.3, D21.2): the page's own scope (category, subcategory, brand, tag or search text) and
  * the shopper's filters, sort and page. Prices in rial.
  */
 final readonly class ListingCriteria
@@ -19,6 +19,7 @@ final readonly class ListingCriteria
     public function __construct(
         public ?string $query = null,
         public ?int $categoryId = null,
+        public ?int $subcategoryId = null,
         public ?int $brandId = null,
         public ?int $tagId = null,
         public ?int $collectionId = null,

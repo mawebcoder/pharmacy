@@ -10,7 +10,7 @@ use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\CreateCategory;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\EditCategory;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\ListCategories;
-use App\Modules\Catalog\Filament\Resources\Categories\Pages\ManageCategoryTree;
+use App\Modules\Catalog\Filament\Resources\Categories\RelationManagers\SubcategoriesRelationManager;
 use App\Modules\Catalog\Filament\Resources\Categories\Schemas\CategoryForm;
 use App\Modules\Catalog\Filament\Resources\Categories\Tables\CategoriesTable;
 use App\Modules\Catalog\Models\Category;
@@ -90,11 +90,17 @@ final class CategoryResource extends Resource
         return [Category::COLUMN_NAME_FA, Category::COLUMN_NAME_EN, Category::COLUMN_SLUG];
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            SubcategoriesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
-            'index' => ManageCategoryTree::route('/'),
-            'list' => ListCategories::route('/list'),
+            'index' => ListCategories::route('/'),
             'create' => CreateCategory::route('/create'),
             'edit' => EditCategory::route('/{record}/edit'),
         ];

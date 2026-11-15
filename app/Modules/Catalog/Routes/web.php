@@ -11,6 +11,8 @@ Route::livewire('/brands/{slug}', 'catalog::brand-page')->name('brands.show');
 // Category list for the mobile "دسته‌ها" tab (roadmap B9.1) and the category page (B5, PLP shell until S12).
 Route::livewire('/categories', 'catalog::category-index')->name('categories.index');
 Route::livewire('/categories/{slug}', 'catalog::category-page')->name('category.show');
+// A subcategory under its category (owner, 2026-11-15), e.g. /categories/supplements/vitamins.
+Route::livewire('/categories/{slug}/{subcategorySlug}', 'catalog::category-page')->name('subcategory.show');
 
 // Tag page: nutrient / need chips link here (roadmap B5); the product list comes in S12.
 Route::livewire('/t/{slug}', 'catalog::tag-page')->name('tags.show');
@@ -20,6 +22,8 @@ Route::livewire('/collections', 'catalog::collection-index')->name('collections.
 Route::livewire('/collections/{slug}', 'catalog::collection-page')->name('collections.show');
 
 // Product page: simple until S13 builds the full page (roadmap B5).
+// Every product for sale, without filters (owner, 2026-11-15: the 404 page's way back).
+Route::livewire('/products', 'catalog::product-index')->name('products.index');
 Route::livewire('/products/{slug}', 'catalog::product-page')->name('products.show');
 
 // The customer's saved products, inside the account area (roadmap S18).

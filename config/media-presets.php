@@ -43,8 +43,9 @@ return [
             'widths' => [1024, 1536],
             'formats' => ['avif' => 50, 'webp' => 75, 'jpg' => 80],
         ],
+        // 2:1 like the tablet artwork (owner, 2026-11-15: 4:5 was too tall on phones).
         'banner_mobile' => [
-            'min_width' => 800, 'min_height' => 1000, 'ratio' => 4 / 5,
+            'min_width' => 800, 'min_height' => 400, 'ratio' => 2,
             'max_kb' => 5120, 'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
             'widths' => [480, 800],
             'formats' => ['avif' => 50, 'webp' => 75, 'jpg' => 80],

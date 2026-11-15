@@ -50,7 +50,7 @@ describe('as a content editor', function (): void {
                 Banner::COLUMN_LINK_TYPE => BannerLinkType::Product->value,
                 'link_sku_id' => $sku->getId(),
                 Banner::IMAGE_DESKTOP => [testImage(1920, 600, 'jpg')],
-                Banner::IMAGE_MOBILE => [testImage(800, 1000, 'jpg')],
+                Banner::IMAGE_MOBILE => [testImage(800, 400, 'jpg')],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
@@ -59,6 +59,20 @@ describe('as a content editor', function (): void {
             ->getLinkType()->toBe(BannerLinkType::Product)
             ->getLinkId()->toBe($product->getId())
             ->getDesktopImage()->not->toBeNull();
+    });
+
+    it('takes 2:1 mobile artwork and refuses the old 4:5 shape', function (): void {
+        $create = fn (int $height) => livewire(CreateBanner::class)
+            ->fillForm([
+                Banner::COLUMN_TITLE => 'حراج',
+                Banner::COLUMN_LINK_TYPE => BannerLinkType::BrandsList->value,
+                Banner::IMAGE_DESKTOP => [testImage(1920, 600, 'jpg')],
+                Banner::IMAGE_MOBILE => [testImage(800, $height, 'jpg')],
+            ])
+            ->call('create');
+
+        $create(1000)->assertHasFormErrors([Banner::IMAGE_MOBILE]);
+        $create(400)->assertHasNoFormErrors();
     });
 
     it('asks for the desktop and mobile artwork', function (): void {

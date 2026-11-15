@@ -8,6 +8,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -19,14 +20,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 final readonly class CatalogLinks
 {
-    public const array TYPES = ['category', 'collection', 'brand', 'tag', 'product'];
+    public const array TYPES = ['category', 'subcategory', 'collection', 'brand', 'tag', 'product'];
 
     public function url(string $type, int $id): ?string
     {
         $item = $this->shown($type)?->find($id);
 
         return match (true) {
-            $item instanceof Category => route('category.show', $item->getSlug()),
+            $item instanceof Category => $item->url(),
+            $item instanceof Subcategory => $item->url(),
             $item instanceof ProductCollection => route('collections.show', $item->getSlug()),
             $item instanceof Brand => route('brands.show', $item->getSlug()),
             $item instanceof Tag => route('tags.show', $item->getSlug()),
@@ -79,6 +81,7 @@ final readonly class CatalogLinks
         /** @var Builder<Model>|null $query */
         $query = match ($type) {
             'category' => Category::query()->active(),
+            'subcategory' => Subcategory::query()->active()->with('category')->whereHas('category', fn (Builder $category) => $category->active()),
             'collection' => ProductCollection::query()->visible(),
             'brand' => Brand::query()->active(),
             'tag' => Tag::query(),
@@ -97,6 +100,7 @@ final readonly class CatalogLinks
         /** @var Builder<Model>|null $query */
         $query = match ($type) {
             'category' => Category::query(),
+            'subcategory' => Subcategory::query()->with('category'),
             'collection' => ProductCollection::query(),
             'brand' => Brand::query(),
             'tag' => Tag::query(),
@@ -107,8 +111,13 @@ final readonly class CatalogLinks
         return $query;
     }
 
+    /**
+     * A subcategory reads «دسته › زیردسته», so the admin can tell same-named ones apart.
+     */
     private function nameOf(Model $item): string
     {
-        return (string) $item->getAttribute('name_fa');
+        $name = (string) $item->getAttribute('name_fa');
+
+        return $item instanceof Subcategory && $item->getCategory() instanceof Category ? $item->getCategory()->getNameFa().' › '.$name : $name;
     }
 }

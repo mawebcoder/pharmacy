@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Search;
 
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Subcategory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -32,14 +33,23 @@ final class ProductSearchIndex
     }
 
     /**
-     * Products of a category or any category below it (primary or extra category).
+     * Products of a category: main or extra category, or placed in one of its subcategories.
      */
     public static function refreshCategory(Category $category): void
     {
-        $ids = $category->subtreeIds();
-
         self::refreshWhere(Product::query()->where(fn (Builder $query) => $query
-            ->whereIn(Product::COLUMN_PRIMARY_CATEGORY_ID, $ids)
-            ->orWhereHas('categories', fn (Builder $categories) => $categories->whereIn('categories.id', $ids))));
+            ->where(Product::COLUMN_PRIMARY_CATEGORY_ID, $category->getId())
+            ->orWhereHas('categories', fn (Builder $categories) => $categories->whereKey($category->getId()))
+            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->where(Subcategory::COLUMN_CATEGORY_ID, $category->getId()))));
+    }
+
+    /**
+     * Products of a subcategory: main or extra subcategory.
+     */
+    public static function refreshSubcategory(Subcategory $subcategory): void
+    {
+        self::refreshWhere(Product::query()->where(fn (Builder $query) => $query
+            ->where(Product::COLUMN_PRIMARY_SUBCATEGORY_ID, $subcategory->getId())
+            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->whereKey($subcategory->getId()))));
     }
 }

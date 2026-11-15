@@ -35,6 +35,16 @@ class AppServiceProvider extends ServiceProvider
             ->dialog()
             ->block('buttons.cancel.base', 'w-full text-sm focus:ring-0! focus:ring-offset-0! bg-card! text-ink-900! ring-1 ring-line-200! hover:bg-surface-50!');
 
+        // The slide and modal «×» is a bare 20 px icon; give it a 44 px touch target (owner, 2026-11-15: the phone filter
+        // panel must be easy to close) without moving it.
+        $closeButton = '-m-3 box-content size-5 cursor-pointer rounded-full p-3 text-ink-500 hover:bg-surface-50 hover:text-ink-900';
+        TallStackUi::customize()->slide()->block('title.close', $closeButton);
+        TallStackUi::customize()->modal()->block('title.close', $closeButton);
+
+        // On phones every modal is a bottom sheet that can be dragged down to close (owner, 2026-11-15); its grab bar in
+        // the design tokens. Storefront modals pass `handle`.
+        TallStackUi::customize()->modal()->block('handle.bar', 'h-1 w-10 rounded-full bg-line-300');
+
         // The modal panel ships with `text-left`; the storefront is RTL, so align to the start side instead.
         TallStackUi::customize()
             ->modal()

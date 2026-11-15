@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\CategoryFactory;
 use App\Modules\Catalog\Queries\CategoryTree;
+use App\Modules\Catalog\Search\NameDocument;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
@@ -14,17 +15,17 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A product category (roadmap D3.1): a tree of at most MAX_DEPTH levels, ordered by "sort" among siblings.
- * Shown on the storefront at /categories/{slug} while it and all its parents are active.
+ * A product category (roadmap D3.1): the top level, ordered by "sort"; its subcategories are Subcategory rows in their
+ * own table (owner, 2026-11-15). Shown on the storefront at /categories/{slug} while active.
  */
 final class Category extends Model implements HasActivityLogLabel, HasImagePresets
 {
@@ -33,16 +34,10 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
 
     use InteractsWithImagePresets;
     use LogsActivity;
+    use Searchable;
     use SoftDeletes;
 
-    /**
-     * Top level (category bar) › mega-menu column › link, e.g. مکمل‌ها › ویتامین‌ها › ویتامین D.
-     */
-    public const int MAX_DEPTH = 3;
-
     public const string COLUMN_ID = 'id';
-
-    public const string COLUMN_PARENT_ID = 'parent_id';
 
     public const string COLUMN_NAME_FA = 'name_fa';
 
@@ -79,18 +74,6 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     public function getId(): int
     {
         return (int) $this->getAttribute(self::COLUMN_ID);
-    }
-
-    public function getParentId(): ?int
-    {
-        $value = $this->getAttribute(self::COLUMN_PARENT_ID);
-
-        return $value === null ? null : (int) $value;
-    }
-
-    public function setParentId(?int $parentId): static
-    {
-        return $this->setAttribute(self::COLUMN_PARENT_ID, $parentId);
     }
 
     public function getNameFa(): string
@@ -202,101 +185,35 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     }
 
     /**
-     * @return BelongsTo<Category, $this>
+     * @return HasMany<Subcategory, $this>
      */
-    public function parent(): BelongsTo
+    public function subcategories(): HasMany
     {
-        return $this->belongsTo(self::class, self::COLUMN_PARENT_ID);
-    }
-
-    public function getParent(): ?self
-    {
-        return $this->getRelationValue('parent');
+        return $this->hasMany(Subcategory::class)->orderBy(Subcategory::COLUMN_SORT)->orderBy(Subcategory::COLUMN_ID);
     }
 
     /**
-     * @return HasMany<Category, $this>
+     * @return Collection<int, Subcategory>
      */
-    public function children(): HasMany
+    public function getSubcategories(): Collection
     {
-        return $this->hasMany(self::class, self::COLUMN_PARENT_ID)->orderBy(self::COLUMN_SORT)->orderBy(self::COLUMN_ID);
+        return $this->getRelationValue('subcategories');
     }
 
     /**
-     * @return Collection<int, Category>
-     */
-    public function getChildren(): Collection
-    {
-        return $this->getRelationValue('children');
-    }
-
-    public function isRoot(): bool
-    {
-        return $this->getParentId() === null;
-    }
-
-    /**
-     * The categories above this one, from the top level down (for breadcrumbs).
-     *
-     * @return list<Category>
-     */
-    public function ancestors(): array
-    {
-        $ancestors = [];
-        $parent = $this->getParent();
-
-        while ($parent instanceof self && count($ancestors) < self::MAX_DEPTH) {
-            array_unshift($ancestors, $parent);
-            $parent = $parent->getParent();
-        }
-
-        return $ancestors;
-    }
-
-    /**
-     * This category's id and the ids of all categories below it.
-     *
-     * @return list<int>
-     */
-    public function subtreeIds(): array
-    {
-        $ids = [$this->getId()];
-        $level = [$this->getId()];
-
-        for ($depth = 1; $depth < self::MAX_DEPTH && $level !== []; $depth++) {
-            $level = self::query()->whereIn(self::COLUMN_PARENT_ID, $level)->pluck(self::COLUMN_ID)->map(intval(...))->all();
-            array_push($ids, ...$level);
-        }
-
-        return $ids;
-    }
-
-    /**
-     * Whether the storefront shows this category: it and every category above it are active and not deleted.
+     * Whether the storefront shows this category: active and not deleted.
      */
     public function isShownOnStorefront(): bool
     {
-        $category = $this;
+        return $this->isActive() && ! $this->trashed();
+    }
 
-        for ($level = 1; $level <= self::MAX_DEPTH; $level++) {
-            if (! $category->isActive() || $category->trashed()) {
-                return false;
-            }
-
-            if ($category->getParentId() === null) {
-                return true;
-            }
-
-            $parent = $category->getParent();
-
-            if (! $parent instanceof self) {
-                return false;
-            }
-
-            $category = $parent;
-        }
-
-        return false;
+    /**
+     * The storefront page, e.g. /categories/supplements.
+     */
+    public function url(): string
+    {
+        return route('category.show', $this->getSlug());
     }
 
     /**
@@ -321,7 +238,7 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
 
     /**
      * Whether any (not deleted) product uses this category, as primary or extra category; such a category cannot
-     * be deleted (DeleteCategory).
+     * be deleted (DeleteCategory), nor one that has subcategories.
      */
     public function hasProducts(): bool
     {
@@ -338,14 +255,14 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     }
 
     /**
-     * Parents first, then siblings in their sort order (used by the admin tree page).
+     * In their sort order (menu, admin).
      *
      * @param  Builder<Category>  $query
      * @return Builder<Category>
      */
     public function scopeOrdered(Builder $query): Builder
     {
-        return $query->orderBy(self::COLUMN_PARENT_ID)->orderBy(self::COLUMN_SORT)->orderBy(self::COLUMN_ID);
+        return $query->orderBy(self::COLUMN_SORT)->orderBy(self::COLUMN_ID);
     }
 
     /**
@@ -385,11 +302,35 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
         return LogOptions::defaults()
             ->useLogName('catalog')
             ->logOnly([
-                self::COLUMN_PARENT_ID, self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_DESCRIPTION,
+                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_DESCRIPTION,
                 self::COLUMN_SORT, self::COLUMN_IS_ACTIVE, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /**
+     * Meilisearch index name, with Scout's prefix (tests use their own prefix per process).
+     */
+    public function searchableAs(): string
+    {
+        return config('scout.prefix').'categories';
+    }
+
+    /**
+     * Only active categories are in the search panel's index (owner, 2026-11-15).
+     */
+    public function shouldBeSearchable(): bool
+    {
+        return $this->isActive() && ! $this->trashed();
+    }
+
+    /**
+     * @return array{id: int, name_fa: string, name_en: string}
+     */
+    public function toSearchableArray(): array
+    {
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn());
     }
 
     public function activityLogLabel(): string
@@ -413,7 +354,6 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     protected function casts(): array
     {
         return [
-            self::COLUMN_PARENT_ID => 'integer',
             self::COLUMN_SORT => 'integer',
             self::COLUMN_IS_ACTIVE => 'boolean',
         ];

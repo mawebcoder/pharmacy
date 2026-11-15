@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Modules\Catalog\Actions\AddProductsToCollection;
+use App\Modules\Catalog\Database\Seeders\SearchShortcutsSeeder;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Content\Actions\SaveHomeWidget;
@@ -75,6 +77,7 @@ final class HomePageDemoSeeder extends Seeder
 
         $brands = [];
         $categories = [];
+        $subcategories = [];
         $tags = [];
 
         foreach (range(0, self::ITEMS - 1) as $index) {
@@ -92,6 +95,13 @@ final class HomePageDemoSeeder extends Seeder
                 Category::COLUMN_NAME_EN => "Demo Category {$number}",
                 Category::COLUMN_SLUG => "demo-category-{$number}",
                 Category::COLUMN_SORT => $number,
+            ]);
+            // Products belong to subcategories (owner, 2026-11-15): one per demo category.
+            $subcategories[] = Subcategory::factory()->of($category)->create([
+                Subcategory::COLUMN_NAME_FA => 'منتخب '.self::CATEGORIES[$index],
+                Subcategory::COLUMN_NAME_EN => "Demo Subcategory {$number}",
+                Subcategory::COLUMN_SLUG => "demo-subcategory-{$number}",
+                Subcategory::COLUMN_SORT => 1,
             ]);
             $this->attach($attachImage, $category, Category::IMAGE_ICON, 256, 256, $index, 'png');
 
@@ -115,6 +125,7 @@ final class HomePageDemoSeeder extends Seeder
                 Product::COLUMN_SLUG => "demo-product-{$number}",
                 Product::COLUMN_BRAND_ID => $brands[$index % self::ITEMS]->getId(),
                 Product::COLUMN_PRIMARY_CATEGORY_ID => $categories[$index % self::ITEMS]->getId(),
+                Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategories[$index % self::ITEMS]->getId(),
             ]);
             $product->tags()->attach($tags[$index % self::ITEMS]->getId());
 
@@ -156,7 +167,7 @@ final class HomePageDemoSeeder extends Seeder
         foreach ($bannerTargets as $index => [$type, $id]) {
             $banner = Banner::factory()->linkingTo($type, $id)->create([Banner::COLUMN_TITLE => 'بنر نمونه '.($index + 1)]);
             $this->attach($attachImage, $banner, Banner::IMAGE_DESKTOP, 1920, 600, $index, 'jpg');
-            $this->attach($attachImage, $banner, Banner::IMAGE_MOBILE, 800, 1000, $index, 'jpg');
+            $this->attach($attachImage, $banner, Banner::IMAGE_MOBILE, 800, 400, $index, 'jpg');
             $bannerIds[] = $banner->getId();
         }
 
@@ -170,6 +181,9 @@ final class HomePageDemoSeeder extends Seeder
         $widget([HomeWidget::COLUMN_TYPE => HomeWidgetType::Collection, 'collection_id' => $special->getId()]);
         $widget([HomeWidget::COLUMN_TYPE => HomeWidgetType::Tags, HomeWidget::COLUMN_TITLE_FA => 'خرید بر اساس نیاز', 'tag_ids' => array_map(fn (Tag $tag): int => $tag->getId(), $tags)]);
         $widget([HomeWidget::COLUMN_TYPE => HomeWidgetType::Trust]);
+
+        // The search panel's default categories and brands, unless the admin already picked some.
+        $this->call(SearchShortcutsSeeder::class);
 
         $this->command?->info('Home page sample data added: 6 brands, 6 categories, 6 tags, 12 products, 2 collections, 6 banners, 7 widgets.');
     }

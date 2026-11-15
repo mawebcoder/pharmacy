@@ -19,6 +19,11 @@ final class ProductChangeRefused extends RuntimeException
         return new self('محصول فعال نشد: '.implode('؛ ', $missing).'.');
     }
 
+    public static function subcategoryRequired(): self
+    {
+        return new self('برای محصول یک زیردسته انتخاب کنید.');
+    }
+
     public static function salePriceNotBelowPrice(): self
     {
         return new self('قیمت حراج باید کمتر از قیمت فروش باشد.');

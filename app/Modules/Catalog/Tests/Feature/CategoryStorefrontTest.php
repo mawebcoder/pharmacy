@@ -3,17 +3,43 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 
-it('shows the category page with breadcrumbs and active subcategories', function (): void {
-    $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها']);
-    $vitamins = Category::factory()->childOf($supplements)->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها', Category::COLUMN_SLUG => 'vitamins']);
-    Category::factory()->childOf($vitamins)->create([Category::COLUMN_NAME_FA => 'ویتامین D']);
-    Category::factory()->childOf($vitamins)->inactive()->create([Category::COLUMN_NAME_FA => 'ویتامین غیرفعال']);
+use function Pest\Livewire\livewire;
 
-    $this->get('/categories/vitamins')
+function productForSaleIn(Subcategory $subcategory): Product
+{
+    $product = Product::factory()->active()->for($subcategory, 'primarySubcategory')->create();
+    ProductVariant::factory()->for($product)->create([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 1_000_000]);
+
+    return $product;
+}
+
+it('shows the category page with a box for each subcategory that has a product for sale', function (): void {
+    $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها', Category::COLUMN_SLUG => 'supplements']);
+    productForSaleIn(Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', Subcategory::COLUMN_SLUG => 'vitamins']));
+    Product::factory()->for(Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'زیردسته بدون فروش']), 'primarySubcategory')->create();
+    productForSaleIn(Subcategory::factory()->of($supplements)->inactive()->create([Subcategory::COLUMN_NAME_FA => 'زیردسته غیرفعال']));
+
+    $this->get('/categories/supplements')->assertOk();
+
+    // The page component alone: the header menu lists every active subcategory.
+    livewire('catalog::category-page', ['slug' => 'supplements'])
+        ->assertSeeInOrder(['خانه', 'مکمل‌ها', 'همه', 'ویتامین‌ها'])
+        ->assertSeeHtml(route('subcategory.show', ['supplements', 'vitamins']))
+        ->assertDontSee('زیردسته بدون فروش')
+        ->assertDontSee('زیردسته غیرفعال');
+});
+
+it('shows a subcategory page under its category', function (): void {
+    $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها', Category::COLUMN_SLUG => 'supplements']);
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', Subcategory::COLUMN_SLUG => 'vitamins']);
+
+    $this->get('/categories/supplements/vitamins')
         ->assertOk()
-        ->assertSeeInOrder(['خانه', 'مکمل‌ها', 'ویتامین‌ها', 'ویتامین D'])
-        ->assertDontSee('ویتامین غیرفعال');
+        ->assertSeeInOrder(['خانه', 'مکمل‌ها', 'ویتامین‌ها']);
 });
 
 it('does not show hidden or unknown categories', function (Closure $makeCategory): void {
@@ -22,30 +48,45 @@ it('does not show hidden or unknown categories', function (Closure $makeCategory
     $this->get('/categories/vitamins')->assertNotFound();
 })->with([
     'inactive' => [fn () => Category::factory()->inactive()->create([Category::COLUMN_SLUG => 'vitamins'])],
-    'under an inactive parent' => [fn () => Category::factory()->childOf(Category::factory()->inactive()->create())->create([Category::COLUMN_SLUG => 'vitamins'])],
     'deleted' => [fn () => Category::factory()->create([Category::COLUMN_SLUG => 'vitamins'])->delete()],
     'unknown' => [fn (): null => null],
 ]);
 
-it('lists the categories two levels deep for the mobile tab', function (): void {
-    $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها']);
-    Category::factory()->childOf($supplements)->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها']);
+it('does not show hidden, misplaced or unknown subcategories', function (Closure $makeSubcategory): void {
+    $makeSubcategory(Category::factory()->create([Category::COLUMN_SLUG => 'supplements']));
+
+    $this->get('/categories/supplements/vitamins')->assertNotFound();
+})->with([
+    'inactive' => [fn (Category $category) => Subcategory::factory()->of($category)->inactive()->create([Subcategory::COLUMN_SLUG => 'vitamins'])],
+    'under an inactive category' => [function (Category $category): void {
+        Subcategory::factory()->of($category)->create([Subcategory::COLUMN_SLUG => 'vitamins']);
+        $category->setIsActive(false)->save();
+    }],
+    'in another category' => [fn () => Subcategory::factory()->create([Subcategory::COLUMN_SLUG => 'vitamins'])],
+    'deleted' => [fn (Category $category) => Subcategory::factory()->of($category)->create([Subcategory::COLUMN_SLUG => 'vitamins'])->delete()],
+    'unknown' => [fn (): null => null],
+]);
+
+it('lists only the categories as tiles for the mobile tab', function (): void {
+    $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها', Category::COLUMN_SLUG => 'supplements']);
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها']);
     Category::factory()->inactive()->create([Category::COLUMN_NAME_FA => 'دسته غیرفعال']);
 
-    $this->get(route('categories.index'))
-        ->assertOk()
-        ->assertSeeInOrder(['مکمل‌ها', 'همه مکمل‌ها', 'ویتامین‌ها'])
+    $this->get(route('categories.index'))->assertOk();
+    livewire('catalog::category-index')
+        ->assertSee('مکمل‌ها')
+        ->assertSeeHtml(route('category.show', 'supplements'))
+        ->assertDontSee('ویتامین‌ها')
         ->assertDontSee('دسته غیرفعال');
 });
 
-it('puts the category menu in the header of every storefront page', function (): void {
+it('puts the category menu with subcategory links in the header of every storefront page', function (): void {
     $supplements = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها', Category::COLUMN_SLUG => 'supplements']);
-    $vitamins = Category::factory()->childOf($supplements)->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها']);
-    Category::factory()->childOf($vitamins)->create([Category::COLUMN_NAME_FA => 'ویتامین D', Category::COLUMN_SLUG => 'vitamin-d']);
+    Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', Subcategory::COLUMN_SLUG => 'vitamins']);
 
     $this->get(route('home'))
         ->assertOk()
         ->assertSee('aria-label="دسته‌بندی محصولات"', escape: false)
         ->assertSee(route('category.show', 'supplements'), escape: false)
-        ->assertSee(route('category.show', 'vitamin-d'), escape: false);
+        ->assertSee(route('subcategory.show', ['supplements', 'vitamins']), escape: false);
 });

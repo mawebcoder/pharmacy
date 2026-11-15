@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Http\Requests\StoreCategoryRequest;
+use App\Modules\Catalog\Http\Requests\StoreSubcategoryRequest;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Subcategory;
 use Illuminate\Support\Facades\Validator;
 
 function categoryInput(array $overrides = []): array
@@ -19,26 +21,21 @@ it('rejects invalid input', function (array $input, string $field): void {
     expect(Validator::make(categoryInput($input), StoreCategoryRequest::baseRules())->errors()->has($field))->toBeTrue();
 })->with([
     'missing Persian name' => [[Category::COLUMN_NAME_FA => null], Category::COLUMN_NAME_FA],
-    'unknown parent' => [[Category::COLUMN_PARENT_ID => 999_999], Category::COLUMN_PARENT_ID],
     'slug with spaces' => [[Category::COLUMN_SLUG => 'food supplements'], Category::COLUMN_SLUG],
 ]);
 
-it('rejects a deleted parent', function (): void {
-    $parent = Category::factory()->create();
-    $parent->delete();
+it('checks a subcategory: a Persian name, a clean slug unused by another subcategory', function (array $input, ?string $field): void {
+    Subcategory::factory()->create([Subcategory::COLUMN_SLUG => 'vitamins']);
 
-    $validator = Validator::make(categoryInput([Category::COLUMN_PARENT_ID => $parent->getId()]), StoreCategoryRequest::baseRules());
+    $errors = Validator::make([Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها', ...$input], StoreSubcategoryRequest::baseRules())->errors();
 
-    expect($validator->errors()->has(Category::COLUMN_PARENT_ID))->toBeTrue();
-});
-
-it('rejects a category as its own parent', function (): void {
-    $category = Category::factory()->create();
-
-    $validator = Validator::make(categoryInput([Category::COLUMN_PARENT_ID => $category->getId()]), StoreCategoryRequest::baseRules($category->getId()));
-
-    expect($validator->errors()->has(Category::COLUMN_PARENT_ID))->toBeTrue();
-});
+    expect($field === null ? $errors->isEmpty() : $errors->has($field))->toBeTrue();
+})->with([
+    'valid' => [[], null],
+    'missing Persian name' => [[Subcategory::COLUMN_NAME_FA => null], Subcategory::COLUMN_NAME_FA],
+    'slug with spaces' => [[Subcategory::COLUMN_SLUG => 'vitamin d'], Subcategory::COLUMN_SLUG],
+    'slug in use' => [[Subcategory::COLUMN_SLUG => 'vitamins'], Subcategory::COLUMN_SLUG],
+]);
 
 it('rejects a slug another category uses, even a deleted one', function (): void {
     Category::factory()->create([Category::COLUMN_SLUG => 'supplements'])->delete();

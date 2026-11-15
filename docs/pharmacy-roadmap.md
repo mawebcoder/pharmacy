@@ -158,11 +158,13 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 |---|---|---|
 | `/` | Home | Built by the admin from widgets (D3.6 «Home widgets»): slider, collection rails, brands, categories, tags, trust; later flash deal and bundles (S33) |
 | `/collections/{slug}` | Collection PLP | Same as PLP; `popular` is the system collection «محصولات محبوب» |
-| `/categories/{slug}` | Category PLP | Breadcrumb, sub-category chips, filters (brand, form, suitable-for, price, in-stock, discount %), sort, infinite scroll/pagination, quick view |
-| `/brands` and `/brands/{slug}` | Brands list, brand PLP | A–Z index, logo grid; brand header + PLP |
-| `/categories`, `/collections`, `/collections/{slug}` | Categories list, collections list, collection PLP | Round icons / collection tiles; optional banner or slider on top (S13b). Addresses use full words (decided 2026-11-07, S13b); the first short ones `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` redirect permanently (301). Tags stay at `/t/{slug}`. |
+| `/categories/{slug}` and `/categories/{category}/{subcategory}` | Category PLP, subcategory PLP | Breadcrumb (خانه › category › subcategory), banner, a swipeable row of boxes — «همه» (the category) and its subcategories, the open one marked — **only subcategories with at least one product for sale** (owner, 2026-11-15), filters (brand, form, suitable-for, price, in-stock, discount %), sort, pagination. A category lists the products of all its subcategories |
+| `/products` | All products («همه کالاها») | The PLP without a scope (owner, 2026-11-15); the target of the empty-result and 404 buttons |
+| any unknown address | 404 page | Designed like the empty states (owner, 2026-11-15): icon, short message and one button «مشاهده همه کالاها» → `/products` (`resources/views/errors/404.blade.php`) |
+| `/brands` and `/brands/{slug}` | Brands list, brand PLP | A–Z index, logo grid (each logo in a white well with a border, owner 2026-11-14); brand header + PLP |
+| `/categories`, `/collections`, `/collections/{slug}` | Categories list, collections list, collection PLP | `/categories`: only the categories (not their subcategories), as a grid of tiles with each category's round icon (3 / 4 / 6 per row; owner, 2026-11-14/15) / collection tiles; optional banner or slider on top (S13b). Addresses use full words (decided 2026-11-07, S13b); the first short ones `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` redirect permanently (301). Tags stay at `/t/{slug}`. |
 | `/t/{slug}` | Tag PLP (need/nutrient) | Same as PLP |
-| `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper. The empty search box shows «محصولات محبوب» (D21.2) |
+| `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper (like the empty cart, with «مشاهده همه دسته‌بندی‌ها»; owner, 2026-11-15). The empty search box shows «محصولات محبوب» (D21.2). **One search bar** (owner, 2026-11-15): the page has no box of its own; the header's box holds the query, and without a query (the «جستجو» tab) it gets the cursor |
 | `/products/{slug}` | Product detail (PDP) | Gallery + zoom, brand, badges, price, variant picker, expiry, stock, qty, add-to-cart, sticky buy bar (mobile), tabs (description, ingredients, usage, warnings, side effects, FAQ, reviews), related, ask a pharmacist |
 | `/deals` | Deals hub | Flash deals, discount tiers, near-expiry, damaged-box |
 | `/bundles/{slug}` | Bundle | Items, saving, add bundle |
@@ -181,7 +183,7 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 | Group | Resources / pages |
 |---|---|
 | Dashboard | Sales today/7d/30d, margin, orders by status, sourcing backlog, shipments in transit, low-margin alerts, failed integrations |
-| Catalog | Products (variants as relation manager), Categories (tree), Brands, Attributes, Tags, Collections, Bundles, Reviews (moderation), Questions |
+| Catalog | Products (variants as relation manager), Categories (one level, with «زیردسته‌ها» inside each; owner, 2026-11-15), Brands, Attributes, Tags, Collections, Bundles, Reviews (moderation), Questions |
 | Pricing | Providers, Provider prices, Pricing rules, Price imports (upload Excel, preview diff, apply) |
 | Sales | Orders (state actions), Provider purchases, Returns, Coupons, Payments |
 | Shipping | Shipments, Carrier services, Boxes, Origins, City mapping, Delivery zones & slots, Couriers, Shipping rules |
@@ -249,7 +251,7 @@ Breakpoints: mobile < 768 px, tablet 768–1279 px, desktop ≥ 1280 px. Content
 | Announcement bar | 1 line, dismissible, 32 px | same | same |
 | Header row | logo (right), cart + account icons (left), height 56 px | logo, search field (flex), cart, account, 64 px | logo, search (max 560 px), consult link, account, cart with count + total, 72 px |
 | Search | full-width field under header, sticky on scroll | inline | inline |
-| Category navigation | "دسته‌ها" tab in bottom nav → full-screen list (2 levels) | horizontal category bar under header | mega-menu on hover/click (B8.1 rule) |
+| Category navigation | "دسته‌ها" tab in bottom nav → full-screen list (2 levels) | horizontal category bar under header | mega-menu on hover/click (B8.1 rule): a flat grid of the category's subcategory links (owner, 2026-11-15); a menu fades in but leaves at once, so moving to the next category never shows two (owner, 2026-11-15). **A click on any link in a header panel (mega menu, mini cart, account menu) closes it at once**; the page being opened shows its skeleton (owner, 2026-11-15). **While any header panel is open — search, mega menu, mini cart, account menu — the page below the header is dimmed and blurred** (`x-layout.header-backdrop`, from the header's real bottom edge; owner, 2026-11-14/15) |
 | Bottom navigation | 5 items: خانه، دسته‌ها، جستجو، سبد خرید، حساب من (64 px, safe-area aware) | hidden | hidden |
 
 ### B9.2 Home (order of sections)
@@ -271,21 +273,27 @@ Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop
 | Element | Mobile | Tablet | Desktop |
 |---|---|---|---|
 | Title + count | top | top | top |
-| Sub-category chips | horizontal scroll | same | same |
+| Subcategory boxes | «همه» + subcategories with a product for sale, swipeable (Swiper, `slidesPerView: 'auto'`), the open one marked (owner, 2026-11-15) | same | same |
+| While filtering | the phone filter sheet shows a spinner | same | skeleton cards replace the grid until the new list arrives (owner, 2026-11-15) |
 | Filters | "فیلترها" button → bottom slide (full height), apply/clear buttons sticky | left/right drawer | sidebar 280 px (right side in RTL), groups collapsible |
 | Applied filters | chips row with × and "حذف همه" | same | same |
 | Sort | select in toolbar | same | segmented links |
 | Grid | 2 columns | 3–4 columns | 4 columns (with sidebar) |
+| Empty result | like the empty cart (owner, 2026-11-15): icon, «کالایی با این مشخصات پیدا نشد», and one button — «نمایش همه کالاها» (the same list without filters) when filters are on, «بازگشت به فروشگاه» otherwise | same | same |
+| Discount filter | a second click on the picked step clears it (owner, 2026-11-15) | same | same |
+| Filter panel | no counts beside the options (owner, 2026-11-15: they made the panel jump); while results load, «نمایش n کالا» shows a small spinner and waits | same | sidebar without counts |
+| Filters | bottom sheet: «×» (44 px), «نمایش n کالا», or drag the grab handle / title down to close (owner, 2026-11-15) | same | sticky sidebar |
 | Pagination | infinite scroll with "load more" fallback | same | numbered pages + infinite optional |
 
 ### B9.4 Product card anatomy (all breakpoints)
-1. Image 1:1 on white, dominant-colour placeholder, max 1 badge top corner (priority: discount % → near-expiry → damaged-box → new).
-2. Brand (small, `ink-500`, 1 line).
-3. Name (2 lines max, ellipsis, 15 px, `ink-900`).
+Reshaped like the owner's reference shop (owner, 2026-11-14/15: about 230 × 310 px on desktop; the home rail shows 5 cards). One component, `<x-catalog::product-card>`, is the only source of product cells (lists, home rails, search panel, related products, wishlist) and is shown on the design-system page `/dev/ui`; its placeholder is `<x-ui.product-card-skeleton>`.
+1. Photo contained (not cropped) on the white `media` well, inset 12 px from the card's edges with rounded corners; **fixed height** (96 px on phones, 128 px from tablet up; owner, 2026-11-15: about 230 × 312 px like the reference), so a card is as tall on the home page as in a list; max 1 badge top corner (priority: discount % → near-expiry → damaged-box → new); the heart at the top end.
+2. ~~Brand~~: no brand line on cards, and card queries do not load the brand (owner, 2026-11-15).
+3. Name (2 lines, fixed height, 14 px, `ink-900`).
 4. Rating stars + count (only if ≥ 1 review).
-5. Price block: old price struck (`ink-500`, 13 px) above new price (bold, 16 px), "تومان" suffix.
-6. Action: "افزودن به سبد" icon button (44×44); becomes − qty + stepper after adding.
-Card: `card` background, radius 12 px, border `line-200`; on hover only the border turns `primary-700` (no lift, no shadow; owner, 2026-11-14); the photo sits on the white `media` well in both themes; whole card clickable except the action.
+5. Price area of fixed height (two lines): the price (bold), then the old price struck with the discount pill when on sale.
+6. Cart row of fixed height (44 px): a small light rounded-square «+» at the end; after adding, a light full-width bar «− | n | +» (the «−» is a bin at 1) with thin separators, always fully shown. Adding never changes the card's height (owner, 2026-11-15). On phones the card is tighter (10 px inset, 96 px photo) and phone rails show about 2.15 cards, so it is not tall and narrow.
+Card: `card` background, radius 12 px, border `line-200`, padding 12 px; on hover only the border turns `primary-700` (no lift, no shadow; owner, 2026-11-14); the whole card links to the product except the heart and the cart row. **No quick view on cards** (owner, 2026-11-15; the eye button is removed and the listing no longer mounts the quick-view component).
 
 ### B9.5 Product detail page (PDP)
 
@@ -301,15 +309,25 @@ Card: `card` background, radius 12 px, border `line-200`; on hover only the bord
 | Below | related products rail, recently viewed | same | same |
 | Rx product (MVP) | add-to-cart replaced by info box "فروش آنلاین این دارو به‌زودی" (violet) | same | same |
 
+Phones (owner, 2026-11-15): the buy bar is always fixed above the bottom navigation, with the price beside the add-to-cart (like the cart's bar), and the buy box in the page has no add-to-cart button of its own (tablets and up keep it; tablets show the bar once the buy box scrolls away).
 Built ahead of S13 (owner, 2026-11-14): layout, gallery (swipe with dots and «۱ / ۳» counter, thumbnails that switch the photo, hover zoom on desktop, full screen with tap-to-zoom), buy box with SKU picker, sticky bar, tabs, the WhatsApp/Telegram question button and related products. S13 still adds rating, stock alerts, question submission, reviews, SKU images and recently viewed.
 
 ### B9.6 Cart
 Mobile: item list (image 64, name, variant, price, qty stepper, remove), coupon field (collapsible), free-shipping progress bar, summary card, sticky "ادامه خرید" button. Desktop: items 8/12, summary 4/12 sticky. Empty state: illustration + "سبد خرید شما خالی است" + popular categories.
+One-tap removal (owner, 2026-11-15): a bin beside each line's total (cart page) and on each mini-cart line removes the line whatever its quantity; mini-cart lines also have the «− n +» stepper; «حذف همه» on the cart page and in the mini cart empties the cart after a confirmation (`cart-clear` → `CartState::clear` → `EmptyCart`).
+**Removal countdown (owner, 2026-11-15):** a line's bin and the stepper's bin at 1 (cart, mini cart, product cards, search rows) do not remove at once: a countdown runs first — a small soft pill (a ring that empties around the seconds left, and «انصراف») in the place of the control that started it — and the product leaves the cart at zero. Its length is «مهلت انصراف از حذف کالا» in «تنظیمات فروشگاه» › «سبد خرید» (default 3 s, 0–10, 0 = at once). «حذف همه» has no countdown; it asks in the confirmation dialog.
+**At zero the line leaves at once (owner, 2026-11-15):** the page hides it and every add-to-cart control of that SKU shows «+» straight away, while the server removes it in the background (`$store.cartRemoval.removed`); if the server keeps it (refused), it comes back.
+**«حذف همه» (owner, 2026-11-15):** after the confirmation, the whole page below the header — the title row, the lines, the summary and the phone bars — is dimmed and blurred with a spinner until the cart shows as empty (`$store.cartRemoval.clearAll()`; at most 10 s).
+**Free-shipping progress (owner, 2026-11-15):** on the cart page, while a quantity change is on its way the whole progress box softly fades and blurs; when the page shows the new cart it clears and the bar slides to its new width. The toast after an add has no blur; its bar grows from the progress before the add to the new one.
+**Toasts (owner, 2026-11-15):** every toast (e.g. the free-shipping progress) can be swiped sideways to dismiss it.
+**Phones (owner, 2026-11-15):** the cart's fixed bar shows «جمع سبد» and the amount beside «ادامه خرید»; the cart and both checkout steps have no footer (tablets and up keep it).
+**Confirmation dialog (owner, 2026-11-15):** storefront confirmations use the site's own dialog (`x-ui.confirm-dialog`, `$store.confirm.ask()`; a bottom sheet on phones, a centred dialog from tablets up), never the browser's `confirm()` or `wire:confirm`: «حذف همه», cancelling an order, deleting an address (their buttons spin until the server answers). **On phones every modal is a bottom sheet that can be dragged down to close** (TallStackUI modals with `handle`; our sheets and the filter panel with `x-swipe-close`).
 
 ### B9.7 Checkout (as built in S25; owner, 2026-11-14)
+- **Address step (owner, 2026-11-15)**: «بازگشت به سبد» on top of the page; on phones «ادامه با آدرس انتخاب‌شده» is a fixed bar above the bottom navigation, like the cart's; it is always shown and disabled until an address is chosen. Every input of the address form has a placeholder; deleting an address shows a spinner on its button until done.
 - **Flow**: cart «ادامه خرید» → `/checkout/address` **always** → `/checkout` («بازبینی و پرداخت») → gateway → `/checkout/result/{order}`. Guests sign in first and come back to the address step. Stepper on top: آدرس ارسال ← بازبینی و پرداخت (a shipping step returns with real shipping options in phase 8).
 - **Address step**: the customer's address cards (the same list as «آدرس‌ها»: add, edit, make default, delete) with «ارسال به این آدرس» on each; the add/edit form opens in a right-to-left modal; no map pin.
-- **Review**: address with «تغییر آدرس», «ارسال» (one flat «هزینه ارسال», «رایگان» over the threshold or with a free-shipping coupon), items (collapsed on mobile), order note, coupon field (collapsible), totals, terms checkbox, «پرداخت <total>». Items that can no longer be bought are named in a warning and the button reads «ابتدا سبد خرید را اصلاح کنید».
+- **Review**: address with «تغییر آدرس», «ارسال» (one flat «هزینه ارسال», «رایگان» over the threshold or with a free-shipping coupon), items (collapsed on mobile), order note, coupon field (collapsible), totals, «پرداخت <total>». No terms checkbox or terms link on checkout (owner, 2026-11-15); the static pages (terms, privacy, …) are to be linked from the customer's profile later. **Nothing clickable on checkout leads outside the purchase** (owner, 2026-11-15): only the steps back (address, cart) and paying. Under «ارسال» a hint says the parcel's «کد رهگیری» appears on the order's detail page in the account after dispatch (owner, 2026-11-15) — **S27/S29 must show the tracking code there**. Items that can no longer be bought are named in a warning and the button reads «ابتدا سبد خرید را اصلاح کنید».
 - Desktop: content with the summary column on the end side; mobile: sticky pay button.
 - Never show fees for the first time at the last step.
 
@@ -782,7 +800,9 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 ### D3.1 Catalog
 
-**categories**: `parent_id` (nullable), `name_fa`, `name_en`, `slug`, `description`, `sort`, `is_active`, `seo_title`, `seo_description`. Images are medialibrary collections (decided 2026-11-07 in S09): `icon` (preset `category_icon`) and the category-page banner as `banner_desktop` + `banner_mobile` (presets `category_banner_desktop`/`category_banner_mobile`).
+**categories**: `name_fa`, `name_en`, `slug`, `description`, `sort`, `is_active`, `seo_title`, `seo_description`. Images are medialibrary collections (decided 2026-11-07 in S09): `icon` (preset `category_icon`) and the category-page banner as `banner_desktop` + `banner_mobile` (presets `category_banner_desktop`/`category_banner_mobile`). **One level (owner, 2026-11-15):** `parent_id` was dropped; the admin list is reordered by dragging rows (`MoveCategories`).
+
+**subcategories** (owner, 2026-11-15: **two levels, subcategories in their own table**): `category_id`, `name_fa`, `name_en`, `slug` (unique among all subcategories, deleted ones included), `description`, `sort`, `is_active`, `seo_title`, `seo_description`, soft deletes; the same images and presets as categories. Page `/categories/{category}/{subcategory}`, shown while it and its category are active. Managed in the category's «زیردسته‌ها» tab (add, edit, drag order, delete, restore); **a subcategory used by products cannot be deleted**, and a category with subcategories cannot be deleted. Own Meilisearch index `subcategories` (search suggestions). The migration `2026_11_23_090000` moved every lower-level category into this table (products, extra placements, images, banner placements and links; coupon lists point at the top category; home widget and pinned search ids of lower levels were dropped).
 
 **brands**: `name_fa`, `name_en`, `slug`, `country`, `description`, `commission_percent` (nullable, S15; D3.2), `is_active`, `seo_title`, `seo_description`. The logo is the medialibrary collection `logo` (preset `brand_logo`), not an `*_image_id` column (decided 2026-11-07 in S09).
 
@@ -793,7 +813,8 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | name_fa, name_en | string | |
 | slug | string | unique |
 | brand_id | FK | |
-| primary_category_id | FK | plus pivot `category_product` for extra categories |
+| primary_subcategory_id | FK | **required** (owner, 2026-11-15): products belong to subcategories only; plus pivot `product_subcategory` for extra subcategories |
+| primary_category_id | FK | always the main subcategory's category (set on save); the pivot `category_product` is no longer filled |
 | default_variant_id | FK nullable | the admin's default SKU (decided 2026-11-07, S12); see «Default SKU» below |
 | product_type | enum | `cosmetic`, `personal_care`, `supplement`, `otc`, `rx`, `medical_device` |
 | requires_prescription | bool | blocks add-to-cart in MVP |
@@ -837,7 +858,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 **Admin tables** show a round thumbnail first (products, brands, categories, tags, SKUs; `Media\Filament\Tables\ImageThumbnail`, decided 2026-11-07).
 
-**attributes**: `name_fa`, `code`, `type` (`select`, `multi_select`), `is_filterable`, `sort`. **attribute_values**: `attribute_id`, `value_fa`, `sort`. Pivot **product_attribute_value**. Used for: form (tablet, syrup, cream…), "suitable for" (age, gender), skin type, hair type. Attributes are chosen from lists only; the `text` type was dropped (decided 2026-11-07 in S11: free details belong in the description). `StandardAttributesSeeder` adds the standard attributes (form, suitable_for, age_group, benefit, skin_type, hair_type) based on the reference sites' filters (darunet «نوع دارو»/«مناسب برای», mosbatesabz «فرم محصول»/«رده سنی»/«فیلتر کارایی»); it only adds what is missing, and admins add or edit attributes and values in the admin.
+**attributes**: `name_fa`, `code`, `type` (`select`, `multi_select`), `is_filterable`, `sort`. **attribute_values**: `attribute_id`, `value_fa`, `sort`. Pivot **product_attribute_value**. Used for: form (tablet, syrup, cream…), "suitable for" (age, gender), skin type, hair type. Attributes are chosen from lists only; the `text` type was dropped (decided 2026-11-07 in S11: free details belong in the description). `StandardAttributesSeeder` adds the standard attributes (form, suitable_for, age_group, benefit, skin_type, hair_type) based on the reference sites' filters (darunet «نوع دارو»/«مناسب برای», mosbatesabz «فرم محصول»/«رده سنی»/«فیلتر کارایی»); it only adds what is missing, and admins add or edit attributes and values in the admin. **Added 2026-11-15 from Provin's supplement filters** (owner): food_context «مصرف با غذا», usage_frequency «دفعات مصرف», diet «رژیم غذایی», allergens «حاوی حساسیت‌زا», doses_per_day «دفعات مصرف در روز», dose_time «زمان مصرف» (their four dose-time groups as one), dose_unit «واحد هر نوبت», and the gummy and tea-bag forms; their age and gender groups map to age_group and suitable_for. `DemoProductAttributesSeeder` (development only, not in DatabaseSeeder) gives the demo products sample values so these filters show on list pages.
 
 **tags**: `name_fa`, `name_en` (optional, for the slug; decided 2026-11-07 in S11), `slug`, `type` (`nutrient`, `need`, `general`), `is_featured`, `sort`. The icon is the medialibrary collection `icon` (preset `category_icon`). Pivot **product_tag**. Powers home chips ("آهن", "ویتامین D", "بی‌خوابی"); featured tags in `sort` order.
 
@@ -903,7 +924,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 **coupons**: `code` (unique, case-insensitive; stored upper-case with Latin digits), `type` (`percent`, `fixed`, `free_shipping`), `value` (percent 1–100, or rial), `max_discount` (percent only), `min_order_amount`, `applies_to_sale_items`, `starts_at`, `ends_at`, `usage_limit_total`, `usage_limit_per_customer`, `first_order_only`, `is_active`, soft deletes. Pivots **coupon_categories**, **coupon_brands**, **coupon_products** (include lists).
 **coupon_usages**: `coupon_id`, `customer_id`, `order_id` (foreign key added with the orders table, S25), `discount_amount`, `status` (`CouponUsageStatus`: `checkout`, `reserved`, `used`, `released`), `reserved_until`, `used_at`, `released_at`, timestamps.
 
-**Coupon rules** (owner, 2026-11-14, S20): **one coupon per order**. The include lists are optional: **all empty = the whole cart**; when filled, an item is covered if its product is listed, its brand is listed, or it sits in a listed category **or below it** (any list may match); a listed product covers **all its SKUs**; no exclude lists. **The coupon is applied at checkout, not in the cart** (owner, 2026-11-14: the cart may belong to a guest; checkout always has a signed-in customer), and carts store no coupon. **Haraj (sale-priced) items** are covered only when the coupon's «شامل کالاهای حراج» switch is on. The **minimum order counts only the covered items**, and the discount applies only to them: percent of the covered amount (capped by `max_discount`), a fixed amount never above the covered amount, rounded down to whole toman; free shipping gives no item discount. **Checkout works the discount out on the fly** (`Cart\Actions\QuoteCoupon` → `ValidateCoupon`, which only reads). **Usage lifecycle** (owner, 2026-11-14), one `coupon_usages` row per customer and coupon: (1) the customer applies the code at checkout → `checkout` (a log only; applying again refreshes it; `ApplyCouponAtCheckout`); (2) the payment link is created and the customer goes to the gateway → `reserved` until `config('payments.pending_expiry_minutes')` (`PAYMENT_PENDING_EXPIRY_MINUTES`, the gateway's pending-order expiry; `ReserveCoupon` locks the coupon row and re-checks the limits); (3) the payment is verified → `used` (`MarkCouponUsed`, S26); (4) the payment fails, is cancelled or the order expires → `released` (`ReleaseCoupon`; `ReleaseExpiredCouponReservations` runs every 5 minutes). **Limits count `used` and unexpired `reserved` uses**, never `checkout` or `released`; «first order only» asks `Cart\Contracts\CustomerOrderHistory` (S25 binds the Orders implementation). **The coupon discount comes out of the store's margin** in reports (net margin formula), not the suppliers'.
+**Coupon rules** (owner, 2026-11-14, S20): **one coupon per order**. The include lists are optional: **all empty = the whole cart**; when filled, an item is covered if its product is listed, its brand is listed, or it sits in a listed category **or in one of its subcategories** (main or extra; owner, 2026-11-15) (any list may match); a listed product covers **all its SKUs**; no exclude lists. **The coupon is applied at checkout, not in the cart** (owner, 2026-11-14: the cart may belong to a guest; checkout always has a signed-in customer), and carts store no coupon. **Haraj (sale-priced) items** are covered only when the coupon's «شامل کالاهای حراج» switch is on. The **minimum order counts only the covered items**, and the discount applies only to them: percent of the covered amount (capped by `max_discount`), a fixed amount never above the covered amount, rounded down to whole toman; free shipping gives no item discount. **Checkout works the discount out on the fly** (`Cart\Actions\QuoteCoupon` → `ValidateCoupon`, which only reads). **Usage lifecycle** (owner, 2026-11-14), one `coupon_usages` row per customer and coupon: (1) the customer applies the code at checkout → `checkout` (a log only; applying again refreshes it; `ApplyCouponAtCheckout`); (2) the payment link is created and the customer goes to the gateway → `reserved` until `config('payments.pending_expiry_minutes')` (`PAYMENT_PENDING_EXPIRY_MINUTES`, the gateway's pending-order expiry; `ReserveCoupon` locks the coupon row and re-checks the limits); (3) the payment is verified → `used` (`MarkCouponUsed`, S26); (4) the payment fails, is cancelled or the order expires → `released` (`ReleaseCoupon`; `ReleaseExpiredCouponReservations` runs every 5 minutes). **Limits count `used` and unexpired `reserved` uses**, never `checkout` or `released`; «first order only» asks `Cart\Contracts\CustomerOrderHistory` (S25 binds the Orders implementation). **The coupon discount comes out of the store's margin** in reports (net margin formula), not the suppliers'.
 
 **orders**
 
@@ -961,8 +982,8 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 ### D3.6 Content, settings, search, admin
 
 - **Home widgets** (decided 2026-11-07; replaces `home_sections` and banner slots): **home_widgets**: `type` (`slider`, `collection`, `brands`, `categories`, `tags`, `trust`; S33 adds `flash_deal`, `bundles`), `title_fa`, `settings` (json: e.g. `collection_id`, ordered `brand_ids` / `category_ids`), `sort`, `is_active`, `starts_at`, `ends_at`. The admin adds, sets up, schedules and drags widgets into order on «چیدمان صفحه اصلی», with a preview link. **Every widget shows at most 6 items** (6 banners, 6 cards, 6 logos, 6 icons, 6 chips); a collection rail adds «مشاهده همه». ≤ 8 live widgets (the page warns). **A widget is shown only with at least one item** (owner, 2026-11-07): a slider needs a visible banner, a collection rail an in-stock product of a visible collection, brands / categories / tags an active item; the trust block is always shown (`Content\Queries\HomeWidgetItems`). The «در صفحه» column of «چیدمان صفحه اصلی» says why a widget is hidden; with no widget to show, the home page shows a short welcome. **Sliders** (owner, 2026-11-09): the banner slider swipes with an arrow on each side and no dots; the other rows become sliders with side arrows only when their items do not fit on the screen (Swiper, C2). **No rendered-HTML cache** for the home page (decided 2026-11-07, S13b): widget queries are light and cards must show live prices.
-- **banners** (decided 2026-11-07): a library («بنرها») of banners created once and reused: `title`, `link_type` (`category`, `collection`, `brand`, `tag`, `product`, `page` (a static page, S34), `categories_list`, `collections_list`, `brands_list`, `external`), `link_id` (for an item), `external_url` (for `external`; opens in a new tab with `rel="noopener"`), `is_active`, `starts_at`, `ends_at`; images: medialibrary collections `desktop` (1920×600), `tablet` (1536×768), `mobile` (800×1000) (D14.2). The admin picks the target item rather than typing its URL, so links follow slug changes and a banner whose target is gone or inactive is hidden.
-- **banner_placements** (as built in S13b): `banner_id`, `place` (`home_widget`, `category`, `collection`, `brand`, `tag`, `categories_list`, `collections_list`, `brands_list`), `place_id` (the widget, category, collection, brand or tag id; null for the list pages), `sort`. A place shows one banner, or a slider when it has several; **at most 6 per place**; a banner whose target is hidden or gone is not shown. The admin sets banners only in home slider widgets: the «جایگاه بنرها» page for the page-top places was removed at the owner's request (2026-11-07), so the storefront still renders page-top banners but nothing sets them for now. The S07 category banner images stay as the category page's banner until the owner decides to retire them (that means rewriting the S09 image tests).
+- **banners** (decided 2026-11-07): a library («بنرها») of banners created once and reused: `title`, `link_type` (`category`, `subcategory` (owner, 2026-11-15), `collection`, `brand`, `tag`, `product`, `page` (a static page, S34), `categories_list`, `collections_list`, `brands_list`, `external`), `link_id` (for an item), `external_url` (for `external`; opens in a new tab with `rel="noopener"`), `is_active`, `starts_at`, `ends_at`; images: medialibrary collections `desktop` (1920×600), `tablet` (1536×768), `mobile` (800×1000) (D14.2). The admin picks the target item rather than typing its URL, so links follow slug changes and a banner whose target is gone or inactive is hidden.
+- **banner_placements** (as built in S13b): `banner_id`, `place` (`home_widget`, `category`, `subcategory` (owner, 2026-11-15), `collection`, `brand`, `tag`, `categories_list`, `collections_list`, `brands_list`), `place_id` (the widget, category, subcategory, collection, brand or tag id; null for the list pages), `sort`. A place shows one banner, or a slider when it has several; **at most 6 per place**; a banner whose target is hidden or gone is not shown. The admin sets banners only in home slider widgets: the «جایگاه بنرها» page for the page-top places was removed at the owner's request (2026-11-07), so the storefront still renders page-top banners but nothing sets them for now. The S07 category banner images stay as the category page's banner until the owner decides to retire them (that means rewriting the S09 image tests).
 - **flash_deals**: `variant_id`, `deal_price`, `starts_at`, `ends_at`, `quantity_limit`, `sold_count`.
 - **pages** (built ahead of S34, owner 2026-11-14): `title`, `slug` (URL `/pages/{slug}`; lower-case letters, Persian letters or digits joined by «-», unique), `body` (rich-editor HTML), `is_active`, `seo_title`, `seo_description`, soft deletes. The eight footer pages (`about`, `terms`, `privacy`, `returns`, `shipping`, `payment-methods`, `buying-guide`, `licenses`) are created as unpublished drafts. Admin «صفحه‌های ثابت» (group «محتوا») with Filament's rich editor; **images in a page are uploaded to the default filesystem disk** (`FILESYSTEM_DISK`: local in development, S3 on the server; not base64), private, and shown through signed URLs. **The body is cleaned on save and again when shown** (`Content\Support\PageHtml`: script-like elements removed with their content, `strip_tags` to the editor's tags, Symfony HtmlSanitizer with per-tag attributes, no `on*` handlers or `javascript:`/`data:` URLs, links `rel="noopener noreferrer"`, style reduced to text alignment); title and SEO texts are stored as plain text and escaped by Blade. Banners can link to a page (`link_type` `page`, picked by title); a banner whose page is unpublished or deleted is not shown.
 - **faqs**: `group`, `question`, `answer`, `sort`.
@@ -1704,7 +1725,8 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 
 | Table | Index |
 |---|---|
-| categories | unique(slug); index(parent_id, sort); index(is_active) |
+| categories | unique(slug); index(sort); index(is_active) |
+| subcategories | unique(slug); index(category_id, sort); index(is_active) |
 | brands | unique(slug); index(is_active) |
 | products | unique(slug); index(brand_id); index(primary_category_id); index(status, product_type); fulltext(name_fa, name_en) |
 | product_variants | unique(sku); index(product_id); index(barcode); index(is_active, stock_status); index(is_near_expiry); index(is_damaged_box); index(expiry_date) |
@@ -1783,9 +1805,10 @@ return new class extends Migration
 
 | Model | Relations |
 |---|---|
-| Category | parent(), children(), products() (belongsToMany), primaryProducts() |
+| Category | subcategories(), products() (belongsToMany), primaryProducts() |
+| Subcategory | category(), products() (belongsToMany), primaryProducts() |
 | Brand | products() |
-| Product | brand(), primaryCategory(), categories(), variants(), attributeValues(), tags(), faqs(), relations(), reviews(), questions(), media (gallery) |
+| Product | brand(), primaryCategory(), primarySubcategory(), subcategories(), categories(), variants(), attributeValues(), tags(), faqs(), relations(), reviews(), questions(), media (gallery) |
 | ProductVariant | product(), providerPrices(), cartItems(), orderItems(), flashDeals() |
 | Provider | prices(), purchases() |
 | Customer | addresses(), orders(), carts(), wishlist(), reviews() |
@@ -1877,7 +1900,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 | product | 1200×1200 | 1:1 (auto trim + pad white) | 5 MB | JPEG, PNG, WebP |
 | banner_desktop | 1920×600 | 16:5 | 5 MB | JPEG, PNG, WebP |
 | banner_tablet | 1536×768 | 2:1 | 5 MB | JPEG, PNG, WebP |
-| banner_mobile | 800×1000 | 4:5 | 5 MB | JPEG, PNG, WebP |
+| banner_mobile | 800×400 | 2:1 (was 4:5; owner, 2026-11-15: too tall on phones; older artwork is shown cropped to its middle) | 5 MB | JPEG, PNG, WebP |
 | category_icon | SVG preferred, else 256×256 | 1:1 | 500 KB | SVG, PNG |
 | brand_logo | 400×200 (transparent) | 2:1 | 1 MB | SVG, PNG, WebP |
 | category_banner_desktop | 1920×480 (also used on tablet) | 4:1 | 5 MB | JPEG, PNG, WebP |
@@ -1911,6 +1934,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 - `<x-media.picture :media="$m" slot="product-card" />` Blade component outputs `<picture>` with AVIF/WebP `srcset`, `sizes` per slot, JPEG `<img>` fallback, `width`/`height`, `loading="lazy"`, `decoding="async"`, Persian `alt`.
 - Hero (LCP) image: no lazy, `fetchpriority="high"`, `<link rel="preload" as="image" imagesrcset=… imagesizes=…>`.
 - Placeholders: skeleton for whole sections (TallStackUI loading/skeleton or Tailwind `animate-pulse`), dominant-colour box for product cards, ThumbHash for banners; fade-in 200 ms.
+- **Loading rules (owner, 2026-11-14/15):** every page change (wire:navigate, plain links, ordinary form posts) shows a skeleton of the page being opened under the header, **with that page's real layout** (home, each list page head + toolbar + filter sidebar + grid, brand / brands / categories / collections, product page, cart, both checkout steps, result, login, text pages, and each account page inside the account frame), after 150 ms so fast pages do not flash (`x-layout.page-loading`); every button that calls the server shows a spinner (`data-loading`, opt out with `data-own-loading`); the add-to-cart button spins inside itself until `cart-settled`; locally `LOCAL_LOADING_DELAY_MS` holds requests back so these can be seen.
 - Carousels load the visible slide + next only.
 
 ### D14.6 medialibrary configuration (example)
@@ -1943,6 +1967,8 @@ public function registerMediaConversions(?Media $media = null): void
 | GET | `/` | `content::home-page` | home |
 | GET | `/categories` | `catalog::category-index` | categories.index |
 | GET | `/categories/{slug}` | `catalog::category-page` | category.show |
+| GET | `/categories/{slug}/{subcategorySlug}` | `catalog::category-page` | subcategory.show |
+| GET | `/products` | `catalog::product-index` | products.index |
 | GET | `/brands` | `catalog::brand-index` | brands.index |
 | GET | `/brands/{slug}` | `catalog::brand-page` | brands.show |
 | GET | `/collections` | `catalog::collection-index` | collections.index |
@@ -1980,7 +2006,7 @@ Names below are written `module.component` for readability; in code a module com
 `layout.app` (header with search, mega menu, mini-cart, bottom nav), `search.instant-box`, `catalog.product-card`, `catalog.quick-view`, `catalog.filters` (desktop sidebar / mobile slide), `catalog.sort`, `catalog.variant-picker`, `cart.mini-cart`, `cart.add-button`, `content.flash-deal-countdown`, `content.banner-slider`, `content.chips`, `checkout.address-form` (map), `checkout.shipping-options`, `orders.tracking-timeline`, `media.picture`, `ui.price`, `ui.badge-*` (discount, near-expiry, damaged-box, rx, original).
 
 ### D15.3 Filament resources (per module)
-Catalog: ProductResource (tabs: general, content, SEO, media; relation managers: Variants, FAQs, Relations, Tags), CategoryResource (tree reorder), BrandResource, AttributeResource, TagResource, BundleResource, ReviewResource, ProductQuestionResource.
+Catalog: ProductResource (tabs: general, content, SEO, media; relation managers: Variants, FAQs, Relations, Tags), CategoryResource (one level, drag to reorder; relation manager «زیردسته‌ها»), BrandResource, AttributeResource, TagResource, BundleResource, ReviewResource, ProductQuestionResource.
 Pricing: ProviderResource, ProviderPriceResource, PricingRuleResource, PriceImportResource (custom page: upload → preview → apply).
 Orders: OrderResource (view page with timeline, state actions: mark sourcing/received/packed, register shipment, cancel, refund), ProviderPurchaseResource, ReturnRequestResource.
 Payments: PaymentResource (read-only + reverse action), PaymentRefundResource.
@@ -2044,7 +2070,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 
 Rules:
 - Every step in Part E ships tests; a step is not done until `php artisan test --parallel` is green, Pint passes, Larastan passes.
-- Factories for every model; seeders for demo data (`DemoCatalogSeeder`: 30 products, 5 brands, 8 categories).
+- Factories for every model; seeders for demo data (as built: `CategoriesSeeder` with 8 categories and their subcategories, in DatabaseSeeder; `HomePageDemoSeeder` for sample products, brands and home widgets, not in production; `DemoProductAttributesSeeder` for filter values in development).
 - Coverage target: ≥ 80 % for `Actions/` and integration clients; critical flows (payment verify, order state machine, pricing engine) 100 % branch coverage.
 - Never call real Tipax/Zarinpal in automated tests; sandbox checks are manual steps in the step's acceptance list.
 
@@ -2140,9 +2166,12 @@ Why not others:
 3. Synonyms: «ویتامین دی» = «ویتامین D» = «D3»; «امگا ۳» = «omega 3» = «روغن ماهی»; «ضد آفتاب» = «کرم ضدآفتاب» = «sunscreen».
 4. Filters: category, brand, dosage form, suitable for (age/gender), price range, in stock, discount %, near-expiry, damaged-box.
 5. Sort: relevance, best selling, newest, cheapest, most expensive, highest discount.
-6. Autocomplete under the search box: up to 6 products, 3 brands, 3 categories, 3 tags, in < 150 ms.
+6. Autocomplete under the search box: up to 6 products, 3 brands, 3 categories, 3 tags, in < 150 ms (brands and categories: up to 8 each as icon rows since 2026-11-15, item 10).
 7. Zero-result page with popular tags/categories and logging of the query.
 8. Only active, sellable variants appear; prescription products appear with their info badge but cannot be added to cart in MVP.
+9. Recent searches (owner, 2026-11-14): the empty search box lists the latest 6 searches, kept in the browser and, for a signed-in customer, from `search_logs.customer_id`; «پاک کردن» unlinks them from the customer (the logs stay for reporting).
+10. Categories and brands in the search panel (owner, 2026-11-15), as rows of round icons and logos like the home widgets (Provin as the reference): while typing, up to 8 categories and 8 brands whose names match — from **their own Meilisearch indexes** `categories` and `brands` (one multi-search with products; same typo rules and synonyms; only active ones) — then subcategories from **their own index** `subcategories` (owner, 2026-11-15; those under a hidden category dropped), in the same row after the categories (8 at most) — followed by the categories and brands of the matched products. A row that finds none shows the admin's pinned ones under «دسته‌بندی‌های پیشنهادی» / «برندهای پیشنهادی»; the empty box shows the pinned ones after «محصولات محبوب». Pinned in «تنظیمات فروشگاه» › «جستجو» (up to 8 each, in order); `SearchShortcutsSeeder` (in DatabaseSeeder and the home-page demo seeder) fills them by default with the first categories in menu order and the first active brands by name, and leaves a list the admin already filled alone. At most 6 products are suggested. Without Meilisearch the names are matched in memory. Deploy: `php artisan scout:sync-index-settings`, then `scout:import` for `Brand`, `Category` and `Subcategory`, and restart Horizon.
+11. **Full-screen search on phones and tablets (owner, 2026-11-15):** tapping the search box opens a full-screen search page over the header and bottom nav — a back arrow beside the box on top, then the same content as the panel (recent searches, popular products, pinned categories and brands, or suggestions while typing); the page behind does not scroll. The back arrow (or Escape) closes it. Desktop keeps the drop-down panel, 44 rem wide and centred under the box (wider than the box, like the reference). **Products while typing are cards** in one swipeable row like «محصولات محبوب» (at most 6) with «مشاهده همه» → `/search?q=…`; in both rows cards are about 2.15 per screen on phones and 220 px wide from 640 px up (not stretched or squeezed).
 
 ---
 
@@ -2746,6 +2775,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Refs:** D3.1, B5, D15.3, B7–B13
 - **Build:** tree with parent_id, reorderable tree in Filament, mega-menu component (cached), `/c/{slug}` shell, breadcrumbs.
 - **Tests:** tree ordering, menu cache invalidation, breadcrumb.
+- **Changed (owner, 2026-11-15):** the three-level tree became **categories + subcategories** (two levels, D3.1): the tree page and `parent_id` are gone, categories are reordered in the list, subcategories are managed in the category's «زیردسته‌ها» tab, products need a main subcategory, the URL of a subcategory is `/categories/{category}/{subcategory}`, and the category page shows only subcategories with a product for sale. `CategoriesSeeder` seeds 8 pharmacy categories with 3–5 subcategories each (safe to rerun).
 
 ### S09 Media pipeline
 - **Refs:** D8, D14 (all)
@@ -2754,7 +2784,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S10 Products and variants
 - **Refs:** D3.1, D12.2, D12.3, D15.3
-- **Decisions (2026-11-07):** only Rx is blocked (OTC sellable); slugs from the English name, else Persian; admins type prices in toman until the pricing engine (S15), which then sets `price`; activation needs a brand, primary category, an active variant with a price and at least one photo; medicines need an official price and are never priced above it.
+- **Decisions (2026-11-07):** only Rx is blocked (OTC sellable); slugs from the English name, else Persian; admins type prices in toman until the pricing engine (S15), which then sets `price`; activation needs a brand, primary category (since 2026-11-15: a main subcategory, which every product must have), an active variant with a price and at least one photo; medicines need an official price and are never priced above it.
 - **Build:** products, product_variants, categories pivot, FAQs, relations; ProductResource with tabs and Variants relation manager; dimension/weight fields + `dimensions_verified`; `requires_prescription` guard; `Brand::products()` and `Brand::hasProducts()` checking it (a brand with products cannot be deleted, decided 2026-11-07 in S07).
 - **Tests:** create product with 2 variants; rx product cannot be activated for sale in MVP; deleting a brand that has products is refused; factories.
 
@@ -2775,7 +2805,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** renders variant change, shows expiry, rx product shows "not available online yet", stock alert subscription.
 
 ### S13b Collections, popular products and home page builder
-- **Decisions (2026-11-07):** banners are a reusable library with a picked link target (category, collection, brand, tag, product, the categories / collections / brands list pages, or an external URL) and can be placed on the home page (slider widget) and at the top of category, collection, brand, tag and list pages; collections are hand-picked product lists; «محصولات محبوب» is a system collection; the empty search box shows its first 6 in-stock products as cards (phone: swipeable row with the next card peeking; tablet/desktop: 3 × 2 grid) with «مشاهده همه» → `/collections/popular`, the cards get «+ افزودن به سبد» in S19; the admin builds the home page from widgets (slider, collection, brands, categories, tags, trust), each showing at most 6 items.
+- **Decisions (2026-11-07):** banners are a reusable library with a picked link target (category, collection, brand, tag, product, the categories / collections / brands list pages, or an external URL) and can be placed on the home page (slider widget) and at the top of category, collection, brand, tag and list pages; collections are hand-picked product lists; «محصولات محبوب» is a system collection; the empty search box shows its first 6 in-stock products as cards (phone: swipeable row with the next card peeking; tablet/desktop: 3 × 2 grid) with «مشاهده همه» → `/collections/popular`, the cards get «+ افزودن به سبد» in S19; the admin builds the home page from widgets (slider, collection, brands, categories, tags, trust), each showing at most 6 items. **Changed (owner, 2026-11-14): «محصولات محبوب» is no longer hand-picked**; `Search\Jobs\RecalculatePopularProducts` recalculates it nightly at 03:30 Tehran from the products opened from search in the last 30 days (top 24, active only) through `Catalog\Actions\ReplacePopularProducts`, and keeps the current list when there were no clicks.
 - **More decisions (2026-11-07 – 2026-11-09):** admin selects show round images (brands, categories, tags, collections); products are picked by SKU and the product is saved; every product has at least one SKU (asked on create; the last cannot be deleted); full-word addresses with 301s from the short ones; no home page HTML cache; widgets show only with at least one item, and the admin says why one is hidden; «جایگاه بنرها» removed from the admin (banners are set in home sliders only); Swiper sliders (banner slider always, other rows only when they overflow); `HomePageDemoSeeder` for sample data (`php artisan db:seed --class=HomePageDemoSeeder`, not in production).
 - **Refs:** D3.1 (collections), D3.6 (home widgets, banners), B5, B9.2, D14.2 (banner presets), D21.2, B7–B13
 - **Build:** banners library + banner_placements (Filament «بنرها»: images, link target picker, schedule), banner/slider at the top of category, collection, brand, tag and list pages (rendered; no admin screen sets them, see D3.6), `/categories` and `/collections` list pages; collections + collection_product, Filament «کالکشن‌ها» (product picker, drag order, schedule; system collection not deletable), `/collections/{slug}` PLP, `collection_ids` in the Meilisearch document; empty-search popular products in the search box; home_widgets + banners, Filament «چیدمان صفحه اصلی» (widget forms per type, banners tab for sliders, drag order, schedule, preview, warnings over 8 widgets), Home page rendering the widgets that have items (no HTML cache).
@@ -2817,7 +2847,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S19 Cart
 - **Refs:** D13.3, D3.4, B7–B13
 - **Decisions (owner, 2026-11-14):** see D3.4 «Cart rules»: quantity stepper on cards, toast only for the free-shipping nudge and refusals, limit per order SKU → product → store setting, guest cart by an encrypted random-token cookie (hash in the database), merge on sign-in (assign or merge-and-delete), unavailable lines block checkout until «به‌روزرسانی سبد», price-change alert once, `GET /cart/quantities`; a product with one SKU shows no SKU list on the product page, just «افزودن به سبد» (it adds the default SKU everywhere); minimal «تنظیمات فروشگاه».
-- **Build:** carts/cart_items, add-to-cart action + button (on the card, quick view and the search box's product rows: a «+» that adds the default SKU, with a «تغییر» link to the product page; decided 2026-11-07, S12; S13b's empty-search popular cards and home collection rows get the same «+ افزودن به سبد»), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
+- **Build:** carts/cart_items, add-to-cart action + button (on the card and quick view: a «+» that adds the default SKU — not on the search box's product rows since 2026-11-15 (owner: the name needs the room) —, with a «تغییر» link to the product page; decided 2026-11-07, S12; S13b's empty-search popular cards and home collection rows get the same «+ افزودن به سبد»), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
 - **Tests:** qty limits, rx/cold-chain blocked, price snapshot refresh, merge.
 
 ### S20 Coupons
@@ -2833,7 +2863,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
-- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
+- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (the read-only order detail page `/account/orders/{id}` was built early with S25: header card, items, status history, address and payment summary; owner, 2026-11-14) (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders, the customer page lists only that customer's orders and each row links to its order view (new tab).
 
 ### S30 Provider purchases (sourcing)

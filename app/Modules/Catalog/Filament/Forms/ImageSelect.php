@@ -17,7 +17,7 @@ use Filament\Forms\Components\Select;
 final class ImageSelect
 {
     /**
-     * @param  Closure(): array<int, string>  $labels  id => plain label; Filament injects $record and the like
+     * @param  Closure  $labels  returns id => plain label; Filament injects $record, $get and the like
      */
     public static function images(Select $select, string $type, Closure $labels): Select
     {

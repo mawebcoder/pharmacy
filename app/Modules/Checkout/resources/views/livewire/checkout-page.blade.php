@@ -40,16 +40,23 @@
                 </section>
 
                 {{-- Shipping: one option until phase 8. --}}
-                <section class="flex items-center justify-between gap-3 rounded-card border border-line-200 bg-card p-4" aria-labelledby="checkout-shipping">
-                    <h2 id="checkout-shipping" class="flex items-center gap-2 font-bold text-ink-900">
-                        <x-ts-icon icon="truck" class="size-5 text-primary-700" />
-                        ارسال
-                    </h2>
-                    @if ($quote->freeShipping)
-                        <span class="font-medium text-success-600">رایگان</span>
-                    @else
-                        <span class="text-ink-900">@toman($quote->shippingPrice)</span>
-                    @endif
+                <section class="rounded-card border border-line-200 bg-card p-4" aria-labelledby="checkout-shipping">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 id="checkout-shipping" class="flex items-center gap-2 font-bold text-ink-900">
+                            <x-ts-icon icon="truck" class="size-5 text-primary-700" />
+                            ارسال
+                        </h2>
+                        @if ($quote->freeShipping)
+                            <span class="font-medium text-success-600">رایگان</span>
+                        @else
+                            <span class="text-ink-900">@toman($quote->shippingPrice)</span>
+                        @endif
+                    </div>
+                    {{-- Where to follow the parcel (owner, 2026-11-15); plain text, nothing on checkout leads away from paying. --}}
+                    <p class="mt-2 flex items-start gap-1.5 text-xs leading-6 text-ink-500">
+                        <x-ts-icon icon="information-circle" class="mt-0.5 size-4 shrink-0" />
+                        <span>پس از ارسال، کد رهگیری مرسوله در «حساب کاربری › سفارش‌ها»، در جزئیات همین سفارش نمایش داده می‌شود.</span>
+                    </p>
                 </section>
 
                 {{-- Items (collapsed on phones). --}}
@@ -155,13 +162,8 @@
                         <div class="flex justify-between border-t border-line-200 pt-2 text-base"><dt class="font-bold text-ink-900">مبلغ قابل پرداخت</dt><dd class="font-bold text-ink-900">@toman($quote->total())</dd></div>
                     </dl>
 
-                    <label class="flex items-start gap-2 text-sm leading-6 text-ink-900">
-                        <input type="checkbox" wire:model="acceptTerms" class="mt-1 size-5 shrink-0 rounded border-line-300 text-primary-700 focus:ring-primary-700" @error('acceptTerms') aria-invalid="true" aria-describedby="checkout-terms-error" @enderror>
-                        <span><a href="{{ route('pages.show', 'terms') }}" target="_blank" class="text-primary-700 underline">قوانین و مقررات</a> خرید را خوانده‌ام و می‌پذیرم.</span>
-                    </label>
-                    @error('acceptTerms') <p id="checkout-terms-error" class="text-sm text-danger-600">{{ $message }}</p> @enderror
 
-                    <div class="fixed inset-x-0 bottom-16 z-30 border-t border-line-200 bg-card p-3 md:static md:border-0 md:p-0">
+                    <div class="fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-30 border-t border-line-200 bg-card p-3 md:static md:border-0 md:p-0">
                         <button
                             type="button"
                             wire:click="pay" data-own-loading

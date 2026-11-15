@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Support\AdminOptionLabel;
 use App\Modules\Shared\Support\PersianDigits;
@@ -69,6 +70,10 @@ final readonly class AdminOptions
      */
     public function names(string $type): array
     {
+        if ($type === 'subcategory') {
+            return $this->subcategoryNames();
+        }
+
         $query = match ($type) {
             'brand' => Brand::query(),
             'category' => Category::query(),
@@ -162,6 +167,7 @@ final readonly class AdminOptions
         [$query, $image, $width] = match ($type) {
             'brand' => [Brand::query(), fn (Brand $brand): ?\App\Modules\Media\Contracts\StoredImage => $brand->getLogo(), 160],
             'category' => [Category::query(), fn (Category $category): ?\App\Modules\Media\Contracts\StoredImage => $category->getIcon(), 96],
+            'subcategory' => [Subcategory::query(), fn (Subcategory $subcategory): ?\App\Modules\Media\Contracts\StoredImage => $subcategory->getIcon(), 96],
             'collection' => [ProductCollection::query(), fn (ProductCollection $collection): ?\App\Modules\Media\Contracts\StoredImage => $collection->getIcon(), 96],
             'tag' => [Tag::query(), fn (Tag $tag): ?\App\Modules\Media\Contracts\StoredImage => $tag->getIcon(), 96],
             default => [null, null, 0],
@@ -179,5 +185,23 @@ final readonly class AdminOptions
         }
 
         return $options;
+    }
+
+    /**
+     * Every subcategory as «دسته › زیردسته», in that order (owner, 2026-11-15: subcategories in their own table).
+     *
+     * @return array<int, string>
+     */
+    private function subcategoryNames(): array
+    {
+        $names = [];
+
+        foreach (Subcategory::query()->with('category')->get() as $subcategory) {
+            $names[$subcategory->getId()] = $subcategory->getCategory()?->getNameFa().' › '.$subcategory->getNameFa();
+        }
+
+        asort($names);
+
+        return $names;
     }
 }

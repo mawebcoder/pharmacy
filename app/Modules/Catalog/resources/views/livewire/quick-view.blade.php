@@ -2,7 +2,7 @@
 @use('App\Modules\Catalog\Enums\StockStatus')
 
 <div>
-    <x-ts-modal wire="show" size="3xl" :title="$this->product?->getNameFa() ?? ''">
+    <x-ts-modal wire="show" handle size="3xl" :title="$this->product?->getNameFa() ?? ''">
         @if ($product = $this->product)
             <div class="grid gap-4 md:grid-cols-2">
                 <div class="relative aspect-square overflow-hidden rounded-card bg-media">

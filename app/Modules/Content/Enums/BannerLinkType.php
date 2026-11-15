@@ -17,6 +17,7 @@ enum BannerLinkType: string implements HasLabel
     use LabelledEnum;
 
     case Category = 'category';
+    case Subcategory = 'subcategory';
     case Collection = 'collection';
     case Brand = 'brand';
     case Tag = 'tag';
@@ -31,6 +32,7 @@ enum BannerLinkType: string implements HasLabel
     {
         return match ($this) {
             self::Category => 'یک دسته‌بندی',
+            self::Subcategory => 'یک زیردسته',
             self::Collection => 'یک کالکشن',
             self::Brand => 'یک برند',
             self::Tag => 'یک برچسب',
@@ -56,6 +58,6 @@ enum BannerLinkType: string implements HasLabel
      */
     public function isCatalogItem(): bool
     {
-        return in_array($this, [self::Category, self::Collection, self::Brand, self::Tag, self::Product], true);
+        return in_array($this, [self::Category, self::Subcategory, self::Collection, self::Brand, self::Tag, self::Product], true);
     }
 }

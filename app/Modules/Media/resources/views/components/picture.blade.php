@@ -2,7 +2,8 @@
     Responsive image (roadmap D14.5): <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="اوسرین" />
     - AVIF/WebP <source>s with srcset and the slot's `sizes`, then an <img> fallback with width/height (no layout shift)
     - lazy by default; :priority="true" for the largest image above the fold (eager, fetchpriority="high")
-    - dominant colour (or ThumbHash for banners) behind the image until it loads
+    - dominant colour (or ThumbHash for banners) behind the image until it loads; then it is cleared
+      (resources/js/components/image-placeholders.js), so a contained photo never shows coloured bars beside it
     - SVG is served as-is; an image still processing shows only its placeholder
     Renders nothing when $media is null, so callers decide the fallback.
 --}}
@@ -42,7 +43,7 @@
                 @if ($picture->height) height="{{ $picture->height }}" @endif
                 alt="{{ $altText }}"
                 decoding="async"
-                style="{{ $picture->placeholderStyle }}"
+                @if ($picture->placeholderStyle !== '') style="{{ $picture->placeholderStyle }}" data-placeholder @endif
                 {{ $attributes->merge($loading) }}
             >
         </picture>

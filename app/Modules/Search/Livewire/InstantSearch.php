@@ -6,6 +6,7 @@ namespace App\Modules\Search\Livewire;
 
 use App\Modules\Catalog\Data\SearchSuggestions;
 use App\Modules\Catalog\Queries\CollectionProducts;
+use App\Modules\Catalog\Queries\SearchShortcuts;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
 use App\Modules\Search\Actions\ForgetRecentSearches;
 use App\Modules\Search\Queries\RecentSearches;
@@ -18,9 +19,9 @@ use Livewire\Component;
 
 /**
  * The search box (roadmap B2 rule 2, D21.2 item 6): suggestions while typing (300 ms pause, from 2 letters) —
- * up to 6 products, 3 brands, 3 categories, 3 tags — with keyboard navigation; Enter opens /search?q=….
- * Without JavaScript it is a plain form to the search page. Opened empty, it shows «جستجوهای اخیر» and
- * «محصولات محبوب» (S13b). Recent searches live in the browser (latest 6); a signed-in customer's come from their
+ * up to 6 products, rows of 8 categories and 8 brands (or the admin's pinned ones when none match; owner,
+ * 2026-11-15), 3 tags — with keyboard navigation; Enter opens /search?q=…. Without JavaScript it is a plain form to
+ * the search page. Opened empty, it shows «جستجوهای اخیر», «محصولات محبوب» (S13b) and the pinned categories and brands. Recent searches live in the browser (latest 6); a signed-in customer's come from their
  * search logs too, loaded with popular products in the same request and merged in the browser (owner, 2026-11-14).
  */
 final class InstantSearch extends Component
@@ -74,6 +75,27 @@ final class InstantSearch extends Component
         $products = app(CollectionProducts::class)->popular();
 
         return $products;
+    }
+
+    /**
+     * The admin's pinned categories and brands for the empty box, loaded with popular products.
+     *
+     * @return array{categories: Collection<int, Model>, brands: Collection<int, Model>}
+     */
+    #[Computed]
+    public function shortcuts(): array
+    {
+        if (! $this->popularRequested) {
+            return ['categories' => new Collection, 'brands' => new Collection];
+        }
+
+        $shortcuts = app(SearchShortcuts::class);
+        /** @var Collection<int, Model> $categories */
+        $categories = $shortcuts->categories();
+        /** @var Collection<int, Model> $brands */
+        $brands = $shortcuts->brands();
+
+        return ['categories' => $categories, 'brands' => $brands];
     }
 
     public function updatedPopularRequested(RecentSearches $recentSearches): void

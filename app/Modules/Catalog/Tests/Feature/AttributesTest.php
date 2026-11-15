@@ -8,6 +8,7 @@ use App\Modules\Catalog\Actions\SaveAttribute;
 use App\Modules\Catalog\Actions\SaveAttributeValue;
 use App\Modules\Catalog\Actions\UpdateProduct;
 use App\Modules\Catalog\Data\ProductData;
+use App\Modules\Catalog\Database\Seeders\DemoProductAttributesSeeder;
 use App\Modules\Catalog\Database\Seeders\StandardAttributesSeeder;
 use App\Modules\Catalog\Enums\AttributeType;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
@@ -22,7 +23,7 @@ function productInput(Product $product, array $overrides = []): ProductData
         Product::COLUMN_NAME_FA => $product->getNameFa(),
         Product::COLUMN_NAME_EN => $product->getNameEn(),
         Product::COLUMN_BRAND_ID => $product->getBrandId(),
-        Product::COLUMN_PRIMARY_CATEGORY_ID => $product->getPrimaryCategoryId(),
+        Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $product->getPrimarySubcategoryId(),
         Product::COLUMN_PRODUCT_TYPE => $product->getProductType(),
         Product::COLUMN_STATUS => $product->getStatus(),
         ...$overrides,
@@ -36,7 +37,7 @@ describe('standard attributes', function (): void {
         $form = Attribute::query()->where(Attribute::COLUMN_CODE, 'form')->sole();
 
         expect(Attribute::query()->orderBy(Attribute::COLUMN_SORT)->pluck(Attribute::COLUMN_CODE)->all())
-            ->toBe(['form', 'suitable_for', 'age_group', 'benefit', 'skin_type', 'hair_type'])
+            ->toBe(['form', 'suitable_for', 'age_group', 'benefit', 'skin_type', 'hair_type', 'food_context', 'usage_frequency', 'diet', 'allergens', 'doses_per_day', 'dose_time', 'dose_unit'])
             ->and($form->getType())->toBe(AttributeType::Select)
             ->and($form->values()->pluck(AttributeValue::COLUMN_VALUE_FA)->take(3)->all())->toBe(['قرص', 'قرص جوشان', 'قرص جویدنی']);
     });
@@ -54,6 +55,22 @@ describe('standard attributes', function (): void {
             ->and(AttributeValue::query()->count())->toBe($count)
             ->and($added->fresh())->not->toBeNull();
     });
+});
+
+it('gives demo products the same sample filter values on every run, one per single-choice attribute', function (): void {
+    $product = Product::factory()->active()->create();
+    Product::factory()->create();
+
+    $this->seed(DemoProductAttributesSeeder::class);
+    $first = $product->attributeValues()->pluck('attribute_values.id')->sort()->values()->all();
+    $this->seed(DemoProductAttributesSeeder::class);
+
+    $byAttribute = $product->attributeValues()->with('attribute')->get()->groupBy(fn (AttributeValue $value): string => (string) $value->getAttributeModel()?->getCode());
+
+    expect($product->attributeValues()->pluck('attribute_values.id')->sort()->values()->all())->toBe($first)
+        ->and($byAttribute->keys()->sort()->values()->all())->toBe(collect(DemoProductAttributesSeeder::CODES)->sort()->values()->all())
+        ->and($byAttribute['food_context'])->toHaveCount(1)
+        ->and($byAttribute['dose_time'])->toHaveCount(2);
 });
 
 describe('values', function (): void {

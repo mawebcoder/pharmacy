@@ -30,8 +30,6 @@ final class CheckoutPage extends Component
 
     public string $couponInput = '';
 
-    public bool $acceptTerms = false;
-
     public string $note = '';
 
     /** Why the last «پرداخت» did not go through (prices, stock, coupon or address changed). */
@@ -91,7 +89,7 @@ final class CheckoutPage extends Component
     public function pay(PlaceOrder $placeOrder): void
     {
         $this->notice = null;
-        $this->validate(['acceptTerms' => ['accepted'], 'note' => ['nullable', 'string', 'max:500']], ['acceptTerms.accepted' => 'برای ثبت سفارش، قوانین را بپذیرید.']);
+        $this->validate(['note' => ['nullable', 'string', 'max:500']]);
 
         try {
             $placed = $placeOrder(new PlaceOrderData(

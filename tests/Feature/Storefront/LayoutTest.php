@@ -41,3 +41,10 @@ it('lists the account pages, orders included, in the signed-in header menu', fun
         ->assertSee('href="'.route('account.orders').'" wire:navigate role="menuitem"', false)
         ->assertSeeInOrder(['حساب من', 'سفارش‌ها', 'آدرس‌ها', 'علاقه‌مندی‌ها', 'اطلاعات حساب', 'خروج']);
 });
+
+it('hides the footer on phones on the cart and the checkout steps only', function (): void {
+    $phonesOnly = '<div class="hidden md:block">';
+
+    $this->get('/')->assertOk()->assertSee('<footer', false)->assertDontSee($phonesOnly, false);
+    $this->get('/cart')->assertOk()->assertSee('<footer', false)->assertSee($phonesOnly, false);
+});

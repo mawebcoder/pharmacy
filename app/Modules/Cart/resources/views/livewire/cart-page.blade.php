@@ -2,8 +2,33 @@
 @use('App\Modules\Shared\Support\PersianDigits')
 @use('App\Modules\Shared\Support\Toman')
 
-<div class="space-y-4">
-    <h1 class="text-xl font-bold text-ink-900 xl:text-2xl">سبد خرید</h1>
+<div class="space-y-4" x-bind:aria-busy="$store.cartRemoval.clearing">
+    {{-- «حذف همه» blurs the whole page below the header, its own bars included, until the cart re-renders empty
+         (owner, 2026-11-15). z-35 like the page skeleton: above the page's fixed bars (z-30), below the header and
+         bottom nav (z-40). --}}
+    <div
+        x-data="{ below: 0 }"
+        x-effect="if ($store.cartRemoval.clearing) below = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0"
+        x-show="$store.cartRemoval.clearing"
+        x-cloak
+        x-transition.opacity
+        x-bind:style="{ top: below + 'px' }"
+        class="fixed inset-x-0 bottom-0 z-35 grid place-items-center bg-surface-50/60 backdrop-blur-sm [contain:strict]"
+        role="status"
+        aria-label="در حال خالی کردن سبد خرید"
+    >
+        <x-ui.spinner class="size-8 text-primary-700" />
+    </div>
+
+    <div class="flex items-center justify-between gap-3">
+        <h1 class="text-xl font-bold text-ink-900 xl:text-2xl">سبد خرید</h1>
+        @unless ($summary->isEmpty())
+            <button type="button" x-on:click="$store.confirm.ask({ title: 'خالی کردن سبد خرید', message: 'همه کالاها از سبد خرید حذف شوند؟', confirm: 'حذف همه' }).then((ok) => ok && $store.cartRemoval.clearAll())" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
+                <x-ts-icon icon="trash" class="size-4" />
+                حذف همه
+            </button>
+        @endunless
+    </div>
 
     @if (session('reorder.message'))
         <p role="status" class="flex items-start gap-2 rounded-card bg-primary-50 px-4 py-3 text-sm text-primary-800">
@@ -13,7 +38,8 @@
     @endif
 
     @if ($summary->isEmpty())
-        <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center">
+        {{-- The emptied cart ends the «حذف همه» blur. --}}
+        <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center" x-data x-init="$store.cartRemoval.stopClearing()">
             <span class="mx-auto grid size-14 place-items-center rounded-full bg-primary-50 text-primary-700">
                 <x-ts-icon icon="shopping-bag" class="size-7" />
             </span>
@@ -47,7 +73,7 @@
                     @foreach ($summary->lines as $line)
                         @php($variant = $line->variant)
                         @php($before = $priceChanges[$variant->variantId] ?? null)
-                        <li wire:key="cart-line-{{ $variant->variantId }}" class="p-4">
+                        <li wire:key="cart-line-{{ $variant->variantId }}" x-show="! $store.cartRemoval.isRemoved({{ $variant->variantId }})" class="p-4">
                             <div @class(['flex gap-3', 'opacity-60' => ! $line->isAvailable()])>
                                 <a href="{{ route('products.show', $variant->productSlug) }}" wire:navigate class="size-16 shrink-0 overflow-hidden rounded-md border border-line-200 bg-media" tabindex="-1" aria-hidden="true">
                                     <x-media::picture :media="$variant->image" slot-name="cart-thumb" alt="" class="size-full object-contain" />
@@ -67,12 +93,19 @@
                                 <div class="flex shrink-0 flex-col items-end justify-between gap-2">
                                     @if ($line->isAvailable())
                                         <x-cart::add-button :variant-id="$variant->variantId" :label="$variant->productName" />
-                                        <p class="text-sm font-bold text-ink-900">@toman($line->lineTotal)</p>
+                                        {{-- Removes the line whatever its quantity (owner, 2026-11-15). --}}
+                                        <div class="-me-3 flex items-center gap-1">
+                                            <p class="text-sm font-bold text-ink-900">@toman($line->lineTotal)</p>
+                                            <button type="button" x-on:click="$store.cartRemoval.start({{ $variant->variantId }})" x-bind:class="$store.cartRemoval.isPending({{ $variant->variantId }}) && 'invisible'" class="grid size-11 place-items-center rounded-card text-ink-500 hover:bg-surface-50 hover:text-danger-600 focus-visible:outline-2 focus-visible:outline-primary-700" aria-label="حذف {{ $variant->productName }} از سبد">
+                                                <x-ts-icon icon="trash" class="size-5" />
+                                            </button>
+                                        </div>
                                     @else
-                                        <button type="button" x-on:click="$dispatch('cart-set', { variantId: {{ $variant->variantId }}, quantity: 0 })" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
+                                        <button type="button" x-show="! $store.cartRemoval.isPending({{ $variant->variantId }})" x-on:click="$store.cartRemoval.start({{ $variant->variantId }})" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
                                             <x-ts-icon icon="trash" class="size-4" />
                                             حذف
                                         </button>
+                                        <x-cart::removal-countdown :variant-id="$variant->variantId" :label="$variant->productName" class="h-11" />
                                     @endif
                                 </div>
                             </div>
@@ -95,7 +128,36 @@
 
             <aside class="space-y-3 xl:sticky xl:top-[calc(var(--header-height,72px)+1rem)] xl:col-span-4" aria-label="خلاصه سبد">
                 @if ($summary->freeShippingThreshold > 0)
-                    <div class="rounded-card border border-line-200 bg-card p-4">
+                    {{-- While a quantity change is on its way the box softly blurs and fades; when this page renders the new
+                         cart it clears and the bar slides to its new width (owner, 2026-11-15). 10 s at most. --}}
+                    <div
+                        x-data="{
+                            updating: false,
+                            timer: null,
+                            forget: null,
+                            init() {
+                                this.forget = Livewire.hook('morphed', ({ component }) => component.id === $wire.$id && this.done())
+                            },
+                            destroy() {
+                                this.forget?.()
+                                clearTimeout(this.timer)
+                            },
+                            start() {
+                                this.updating = true
+                                clearTimeout(this.timer)
+                                this.timer = setTimeout(() => this.done(), 10000)
+                            },
+                            done() {
+                                this.updating = false
+                                clearTimeout(this.timer)
+                            },
+                        }"
+                        x-on:cart-add.window="start()"
+                        x-on:cart-set.window="start()"
+                        x-bind:class="updating && 'opacity-60 blur-[1.5px] saturate-50'"
+                        x-bind:aria-busy="updating"
+                        class="rounded-card border border-line-200 bg-card p-4 transition-[opacity,filter] duration-300 ease-out motion-reduce:transition-none"
+                    >
                         <p class="text-sm text-ink-900">
                             @if ($summary->hasFreeShipping())
                                 <x-ts-icon icon="truck" class="inline size-5 text-success-600" /> ارسال این سفارش رایگان است.
@@ -105,7 +167,7 @@
                         </p>
                         <p class="mt-1 text-xs text-ink-500">ارسال رایگان برای خریدهای بالای {{ Toman::format($summary->freeShippingThreshold) }}</p>
                         <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-50" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $summary->freeShippingProgress() }}" aria-label="پیشرفت تا ارسال رایگان">
-                            <div class="h-full rounded-full bg-primary-700" style="width: {{ $summary->freeShippingProgress() }}%"></div>
+                            <div class="h-full rounded-full bg-primary-700 transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" style="width: {{ $summary->freeShippingProgress() }}%"></div>
                         </div>
                     </div>
                 @endif
@@ -119,15 +181,22 @@
                         <div class="flex justify-between"><dt class="text-ink-500">هزینه ارسال</dt><dd class="text-ink-500">در مرحله بعد</dd></div>
                         <div class="flex justify-between border-t border-line-200 pt-2 text-base"><dt class="font-bold text-ink-900">جمع سبد</dt><dd class="font-bold text-ink-900">@toman($summary->subtotal)</dd></div>
                     </dl>
-                    <div class="fixed inset-x-0 bottom-16 z-30 border-t border-line-200 bg-card p-3 md:static md:border-0 md:p-0">
-                        <button
-                            type="button"
-                            wire:click="proceed"
-                            @disabled($summary->hasUnavailable())
-                            class="flex h-12 w-full items-center justify-center rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:bg-line-200 disabled:text-ink-500"
-                        >
-                            ادامه خرید
-                        </button>
+                    <div class="fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-30 border-t border-line-200 bg-card p-3 md:static md:border-0 md:p-0">
+                        {{-- Phones: the total beside the button (owner, 2026-11-15); from tablets the card above shows it. --}}
+                        <div class="flex items-center gap-4">
+                            <p class="shrink-0 md:hidden">
+                                <span class="block text-xs text-ink-500">جمع سبد</span>
+                                <span class="block font-bold text-ink-900">@toman($summary->subtotal)</span>
+                            </p>
+                            <button
+                                type="button"
+                                wire:click="proceed"
+                                @disabled($summary->hasUnavailable())
+                                class="flex h-12 min-w-0 flex-1 items-center justify-center rounded-card bg-primary-700 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:cursor-not-allowed disabled:bg-line-200 disabled:text-ink-500"
+                            >
+                                ادامه خرید
+                            </button>
+                        </div>
                         @if ($summary->hasUnavailable())
                             <p class="mt-2 text-center text-xs text-danger-600">ابتدا سبد را به‌روزرسانی کنید.</p>
                         @endif

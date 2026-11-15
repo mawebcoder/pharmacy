@@ -12,10 +12,10 @@ use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Models\Attribute;
 use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Shared\Support\SearchText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,9 +38,9 @@ use Psr\Http\Client\ClientExceptionInterface;
 final readonly class ProductListing
 {
     /**
-     * Relations product cards need.
+     * Relations product cards need (no brand: cards do not show it; owner, 2026-11-15).
      */
-    public const array CARD_RELATIONS = ['brand', 'media', 'variants'];
+    public const array CARD_RELATIONS = ['media', 'variants'];
 
     /**
      * Most products a collection page can order by the collection (Meilisearch's maxTotalHits).
@@ -171,6 +171,7 @@ final readonly class ProductListing
         /** @var list<non-empty-string> $filters */
         $filters = array_values(array_filter([
             $criteria->categoryId === null ? null : 'category_ids = '.$criteria->categoryId,
+            $criteria->subcategoryId === null ? null : 'subcategory_ids = '.$criteria->subcategoryId,
             $criteria->brandId === null ? null : 'brand_id = '.$criteria->brandId,
             $criteria->tagId === null ? null : 'tag_ids = '.$criteria->tagId,
             $criteria->collectionId === null ? null : 'collection_ids = '.$criteria->collectionId,
@@ -284,12 +285,14 @@ final readonly class ProductListing
     {
         $query = $this->withCardRelations(Product::query()->active())
             ->whereHas('variants', fn (Builder $variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true))
-            ->when($criteria->categoryId !== null, function (Builder $query) use ($criteria): void {
-                $ids = Category::query()->find($criteria->categoryId)?->subtreeIds() ?? [$criteria->categoryId];
-                $query->where(fn (Builder $inCategory) => $inCategory
-                    ->whereIn(Product::COLUMN_PRIMARY_CATEGORY_ID, $ids)
-                    ->orWhereHas('categories', fn (Builder $categories) => $categories->whereIn('categories.id', $ids)));
-            })
+            // A category lists its own products and its subcategories' (main or extra placement).
+            ->when($criteria->categoryId !== null, fn (Builder $query) => $query->where(fn (Builder $inCategory) => $inCategory
+                ->where(Product::COLUMN_PRIMARY_CATEGORY_ID, $criteria->categoryId)
+                ->orWhereHas('categories', fn (Builder $categories) => $categories->whereKey($criteria->categoryId))
+                ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->where(Subcategory::COLUMN_CATEGORY_ID, $criteria->categoryId))))
+            ->when($criteria->subcategoryId !== null, fn (Builder $query) => $query->where(fn (Builder $inSubcategory) => $inSubcategory
+                ->where(Product::COLUMN_PRIMARY_SUBCATEGORY_ID, $criteria->subcategoryId)
+                ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->whereKey($criteria->subcategoryId))))
             ->when($criteria->brandId !== null, fn (Builder $query) => $query->where(Product::COLUMN_BRAND_ID, $criteria->brandId))
             ->when($criteria->brandIds !== [], fn (Builder $query) => $query->whereIn(Product::COLUMN_BRAND_ID, $criteria->brandIds))
             ->when($criteria->tagId !== null, fn (Builder $query) => $query->whereHas('tags', fn (Builder $tags) => $tags->whereKey($criteria->tagId)))
@@ -317,7 +320,6 @@ final readonly class ProductListing
     private function withCardRelations(Builder $query): Builder
     {
         return $query->with([
-            'brand',
             'media',
             'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true),
         ]);

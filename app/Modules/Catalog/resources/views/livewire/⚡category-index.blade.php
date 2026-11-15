@@ -8,9 +8,10 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * All categories (roadmap B9.1): the full-screen list behind the mobile "دسته‌ها" tab, two levels deep.
- * Tablet and desktop reach the same categories through the header bar and mega-menu. Each top-level row shows the
- * category's icon (owner, 2026-11-14), loaded in one query beside the cached tree.
+ * All categories (roadmap B9.1): the page behind the mobile "دسته‌ها" tab. Only the top level, as a grid of tiles with
+ * each category's round icon (owner, 2026-11-14/15); a category's page shows its subcategories as chips. Tablet and
+ * desktop also reach the categories through the header bar and mega-menu. Icons load in one query beside the cached
+ * tree.
  */
 new #[Title('دسته‌بندی‌ها')] class extends Component
 {
@@ -46,46 +47,20 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
             هنوز دسته‌ای ثبت نشده است.
         </div>
     @else
-        <ul class="divide-y divide-line-200 overflow-hidden rounded-card border border-line-200 bg-card">
+        <ul class="grid grid-cols-3 gap-3 md:grid-cols-4 xl:grid-cols-6">
             @foreach ($this->roots as $root)
-                <li wire:key="category-{{ $root->id }}" x-data="{ open: false }">
-                    @php($icon = ($this->withIcons[$root->id] ?? null)?->getIcon())
-                    @if ($root->children === [])
-                        <a href="{{ $root->url() }}" wire:navigate class="flex min-h-14 items-center px-4 font-bold text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700">
-                            <span class="flex items-center gap-3">
-                                <x-catalog::category-icon :icon="$icon" />
-                                {{ $root->nameFa }}
-                            </span>
-                        </a>
-                    @else
-                        <button
-                            type="button"
-                            x-on:click="open = ! open"
-                            x-bind:aria-expanded="open"
-                            aria-controls="category-panel-{{ $root->id }}"
-                            class="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-start font-bold text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700"
-                        >
-                            <span class="flex items-center gap-3">
-                                <x-catalog::category-icon :icon="$icon" />
-                                {{ $root->nameFa }}
-                            </span>
-                            <x-ts-icon icon="chevron-down" class="size-5 text-ink-500 transition motion-reduce:transition-none" x-bind:class="open && 'rotate-180'" />
-                        </button>
-                        <ul id="category-panel-{{ $root->id }}" x-show="open" x-cloak class="bg-surface-50 pb-2">
-                            <li>
-                                <a href="{{ $root->url() }}" wire:navigate class="flex min-h-11 items-center px-6 text-sm font-bold text-primary-700 hover:underline">
-                                    همه {{ $root->nameFa }}
-                                </a>
-                            </li>
-                            @foreach ($root->children as $child)
-                                <li wire:key="category-{{ $child->id }}">
-                                    <a href="{{ $child->url() }}" wire:navigate class="flex min-h-11 items-center px-6 text-sm text-ink-900 hover:text-primary-700">
-                                        {{ $child->nameFa }}
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
+                @php($icon = ($this->withIcons[$root->id] ?? null)?->getIcon())
+                <li wire:key="category-{{ $root->id }}">
+                    <a href="{{ $root->url() }}" wire:navigate class="flex h-full flex-col items-center gap-2 rounded-card border border-line-200 bg-card p-3 text-center hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                        <span class="grid size-16 place-items-center rounded-full bg-primary-50 md:size-20">
+                            @if ($icon)
+                                <x-media::picture :media="$icon" slot-name="category-icon" alt="" class="size-10 object-contain md:size-12" />
+                            @else
+                                <x-ts-icon icon="squares-2x2" class="size-7 text-primary-700" />
+                            @endif
+                        </span>
+                        <span class="line-clamp-2 text-sm font-medium text-ink-900">{{ $root->nameFa }}</span>
+                    </a>
                 </li>
             @endforeach
         </ul>

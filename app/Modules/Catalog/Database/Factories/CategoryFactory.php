@@ -24,7 +24,6 @@ final class CategoryFactory extends Factory
         $nameEn = "Category {$number}";
 
         return [
-            Category::COLUMN_PARENT_ID => null,
             Category::COLUMN_NAME_FA => "دسته {$number}",
             Category::COLUMN_NAME_EN => $nameEn,
             Category::COLUMN_SLUG => Str::slug($nameEn),
@@ -34,11 +33,6 @@ final class CategoryFactory extends Factory
             Category::COLUMN_SEO_TITLE => null,
             Category::COLUMN_SEO_DESCRIPTION => null,
         ];
-    }
-
-    public function childOf(Category $parent): static
-    {
-        return $this->state(fn (array $attributes): array => [Category::COLUMN_PARENT_ID => $parent->getId()]);
     }
 
     public function inactive(): static

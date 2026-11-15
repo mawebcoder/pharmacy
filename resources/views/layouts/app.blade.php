@@ -37,6 +37,7 @@
         </a>
 
         <x-layout.page-loading />
+        <x-ui.confirm-dialog />
         <x-ts-toast />
         <x-ts-dialog />
         <livewire:catalog::wishlist-toggle />
@@ -49,9 +50,12 @@
             {{ $slot }}
         </main>
 
-        {{-- Keeps the end of the page clear of the mobile bottom navigation (64px + safe area). --}}
+        {{-- Keeps the end of the page clear of the mobile bottom navigation (64px + safe area). On phones the cart and the
+             checkout steps have no footer, so nothing leads away from the purchase (owner, 2026-11-15). --}}
         <div class="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-            <x-layout.footer />
+            <div @class(['hidden md:block' => request()->routeIs('cart', 'checkout.address', 'checkout')])>
+                <x-layout.footer />
+            </div>
         </div>
 
         <x-layout.bottom-nav />

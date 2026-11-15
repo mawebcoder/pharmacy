@@ -17,6 +17,7 @@ enum BannerPlace: string implements HasLabel
 
     case HomeWidget = 'home_widget';
     case Category = 'category';
+    case Subcategory = 'subcategory';
     case Collection = 'collection';
     case Brand = 'brand';
     case Tag = 'tag';
@@ -31,6 +32,7 @@ enum BannerPlace: string implements HasLabel
         return match ($this) {
             self::HomeWidget => 'اسلایدر صفحه اصلی',
             self::Category => 'بالای صفحه یک دسته‌بندی',
+            self::Subcategory => 'بالای صفحه یک زیردسته',
             self::Collection => 'بالای صفحه یک کالکشن',
             self::Brand => 'بالای صفحه یک برند',
             self::Tag => 'بالای صفحه یک برچسب',
@@ -47,6 +49,7 @@ enum BannerPlace: string implements HasLabel
     {
         return match ($this) {
             self::Category => 'category',
+            self::Subcategory => 'subcategory',
             self::Collection => 'collection',
             self::Brand => 'brand',
             self::Tag => 'tag',

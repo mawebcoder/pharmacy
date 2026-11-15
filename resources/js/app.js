@@ -1,13 +1,23 @@
+import cartRemoval from './components/cart-removal';
+import confirmDialog from './components/confirm-dialog';
+import copyText from './components/copy-text';
+import imagePlaceholders from './components/image-placeholders';
 import jalaliDate from './components/jalali-date';
 import productGallery from './components/product-gallery';
 import searchHistory from './components/search-history';
 import slider from './components/slider';
+import swipeClose from './components/swipe-close';
+import swipeToasts from './components/toast-swipe';
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('jalaliDate', jalaliDate);
     window.Alpine.data('slider', slider);
     window.Alpine.data('productGallery', productGallery);
     window.Alpine.store('searchHistory', searchHistory);
+    window.Alpine.directive('swipe-close', swipeClose);
+    window.Alpine.store('confirm', confirmDialog);
+    window.Alpine.store('cartRemoval', cartRemoval);
+    window.Alpine.magic('copy', () => copyText);
 
     // The shopper's cart for the add-to-cart buttons and the header (roadmap S19), seeded and updated by cart-state.
     window.Alpine.store('cart', {
@@ -16,6 +26,11 @@ document.addEventListener('alpine:init', () => {
         count: 0,
         total: 0,
         quantityOf(variantId) {
+            // A SKU whose removal is on its way already shows as gone.
+            if (window.Alpine.store('cartRemoval').isRemoved(variantId)) {
+                return 0;
+            }
+
             return this.items[variantId] ?? 0;
         },
         atLimit(variantId) {
@@ -28,6 +43,7 @@ document.addEventListener('alpine:init', () => {
             this.limits = state.limits ?? {};
             this.count = state.count ?? 0;
             this.total = state.total ?? 0;
+            window.Alpine.store('cartRemoval').reconcile(state);
         },
     });
 
@@ -42,6 +58,9 @@ document.addEventListener('alpine:init', () => {
         },
     });
 });
+
+swipeToasts();
+imagePlaceholders();
 
 // A page restored from the back/forward cache shows old quantities: refresh them from the lightweight endpoint.
 window.addEventListener('pageshow', async (event) => {

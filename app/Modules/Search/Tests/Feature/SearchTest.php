@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Modules\Catalog\Actions\AddProductsToCollection;
 use App\Modules\Catalog\Data\ListingCriteria;
+use App\Modules\Catalog\Database\Seeders\SearchShortcutsSeeder;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
@@ -17,6 +19,8 @@ use App\Modules\Identity\Models\Customer;
 use App\Modules\Search\Actions\SaveSearchSynonym;
 use App\Modules\Search\Livewire\InstantSearch;
 use App\Modules\Search\Models\SearchLog;
+use App\Modules\Settings\Actions\SaveStoreSettings;
+use App\Modules\Settings\Queries\StoreSettings;
 use Meilisearch\Client;
 
 use function Pest\Livewire\livewire;
@@ -63,7 +67,9 @@ it('logs searches without results and suggests other ways', function (): void {
 
     $this->get('/search?q=هواپیما')
         ->assertOk()
-        ->assertSee('کالایی برای «هواپیما» پیدا نشد.')
+        ->assertSee('کالایی برای «هواپیما» پیدا نشد')
+        ->assertSee('مشاهده همه دسته‌بندی‌ها')
+        ->assertSee(route('categories.index'), false)
         ->assertSee('آهن');
 
     expect(SearchLog::query()->sole()->getResultsCount())->toBe(0);
@@ -79,25 +85,110 @@ it('records the product opened from the results', function (): void {
     expect($log->fresh()->getClickedProductId())->toBe($this->vitamin->getId());
 });
 
-it('suggests products, brands, categories and tags while typing', function (): void {
+it('suggests products, then brands, categories and subcategories by name followed by those of the products, and tags', function (): void {
     Brand::factory()->create([Brand::COLUMN_NAME_FA => 'ویتابیوتیکس']);
     Category::factory()->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها']);
+    Subcategory::factory()->create([Subcategory::COLUMN_NAME_FA => 'ویتامین C']);
     Tag::factory()->create([Tag::COLUMN_NAME_FA => 'ویتامین D']);
+    waitForSearchIndex();
 
     $suggestions = app(SearchSuggestionsQuery::class)->for('ویتا');
 
     expect($suggestions->products->map->getNameFa()->all())->toBe(['ویتامین D3 ۱۰۰۰ واحد'])
-        ->and($suggestions->brands->map->getNameFa()->all())->toBe(['ویتابیوتیکس'])
-        ->and($suggestions->categories->map->getNameFa()->all())->toBe(['ویتامین‌ها'])
-        ->and($suggestions->tags->map->getNameFa()->all())->toBe(['ویتامین D']);
+        ->and($suggestions->brands->map->getNameFa()->all())->toBe(['ویتابیوتیکس', $this->vitamin->getBrand()->getNameFa()])
+        // Categories first, then subcategories (owner, 2026-11-15), each by name and then the products' own.
+        ->and($suggestions->categories->map->getNameFa()->all())->toBe(['ویتامین‌ها', $this->vitamin->getPrimaryCategory()->getNameFa(), 'ویتامین C', $this->vitamin->primarySubcategory->getNameFa()])
+        ->and($suggestions->tags->map->getNameFa()->all())->toBe(['ویتامین D'])
+        ->and($suggestions->pinnedBrands)->toBeFalse()
+        ->and($suggestions->pinnedCategories)->toBeFalse();
 });
 
-it('shows the default SKU price, struck-through box price and discount in the suggestions', function (): void {
+it('finds brands and categories in their own indexes despite a typo, leaving out hidden ones', function (): void {
+    Brand::factory()->create([Brand::COLUMN_NAME_FA => 'ویتابیوتیکس']);
+    Brand::factory()->create([Brand::COLUMN_NAME_FA => 'ویتابیوتیکس قدیمی', Brand::COLUMN_IS_ACTIVE => false]);
+    $archive = Category::factory()->create([Category::COLUMN_NAME_FA => 'آرشیو', Category::COLUMN_IS_ACTIVE => false]);
+    Subcategory::factory()->of($archive)->create([Subcategory::COLUMN_NAME_FA => 'مکمل‌های گیاهی']);
+    Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌های کودک', Category::COLUMN_IS_ACTIVE => false]);
+    Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌های ورزشی']);
+    waitForSearchIndex();
+
+    expect(app(SearchSuggestionsQuery::class)->for('ویتابیوتکس')->brands->map->getNameFa()->all())->toBe(['ویتابیوتیکس'])
+        ->and(app(SearchSuggestionsQuery::class)->for('مکمل')->categories->map->getNameFa()->all())->toBe(['مکمل‌های ورزشی']);
+});
+
+it('falls back to the pinned categories and brands, in the admin\'s order, when the text matches none', function (): void {
+    $first = Category::factory()->create([Category::COLUMN_NAME_FA => 'مراقبت پوست']);
+    $second = Category::factory()->create([Category::COLUMN_NAME_FA => 'مادر و کودک']);
+    $hidden = Category::factory()->create([Category::COLUMN_IS_ACTIVE => false]);
+    $brand = Brand::factory()->create([Brand::COLUMN_NAME_FA => 'نیلوفر']);
+    $inactive = Brand::factory()->create([Brand::COLUMN_IS_ACTIVE => false]);
+    app(SaveStoreSettings::class)([
+        StoreSettings::SEARCH_CATEGORY_IDS => [$second->getId(), $hidden->getId(), $first->getId()],
+        StoreSettings::SEARCH_BRAND_IDS => [$inactive->getId(), $brand->getId()],
+    ]);
+    waitForSearchIndex();
+
+    $suggestions = app(SearchSuggestionsQuery::class)->for('زززز');
+
+    expect($suggestions->isEmpty())->toBeTrue()
+        ->and($suggestions->pinnedCategories)->toBeTrue()
+        ->and($suggestions->categories->map->getNameFa()->all())->toBe(['مادر و کودک', 'مراقبت پوست'])
+        ->and($suggestions->pinnedBrands)->toBeTrue()
+        ->and($suggestions->brands->map->getNameFa()->all())->toBe(['نیلوفر']);
+
+    livewire(InstantSearch::class)->set('value', 'زززز')->assertSee('دسته‌بندی‌های پیشنهادی')->assertSee('برندهای پیشنهادی')->assertSee('مادر و کودک');
+    livewire(InstantSearch::class)->set('popularRequested', true)->assertSee('مراقبت پوست')->assertSee('نیلوفر');
+});
+
+it('suggests at most 6 products', function (): void {
+    foreach (range(1, 8) as $number) {
+        $product = Product::factory()->active()->create([Product::COLUMN_NAME_FA => "ویتامین شماره {$number}"]);
+        ProductVariant::factory()->for($product)->create();
+    }
+    indexProductsForSearch();
+
+    expect(app(SearchSuggestionsQuery::class)->for('ویتامین')->products)->toHaveCount(SearchSuggestionsQuery::MAX_PRODUCTS)
+        ->and(SearchSuggestionsQuery::MAX_PRODUCTS)->toBe(6);
+});
+
+it('pins the first categories and active brands by default, leaving the admin\'s choice alone', function (): void {
+    $first = Category::factory()->create([Category::COLUMN_SORT => 1]);
+    $second = Category::factory()->create([Category::COLUMN_SORT => 2]);
+    $brand = Brand::factory()->create([Brand::COLUMN_NAME_FA => 'آریا']);
+    $inactive = Brand::factory()->create([Brand::COLUMN_IS_ACTIVE => false]);
+    $settings = app(StoreSettings::class);
+
+    $this->seed(SearchShortcutsSeeder::class);
+    $seeded = [$settings->searchCategoryIds(), $settings->searchBrandIds()];
+    app(SaveStoreSettings::class)([StoreSettings::SEARCH_CATEGORY_IDS => [$second->getId()]]);
+    $this->seed(SearchShortcutsSeeder::class);
+
+    [$categories, $brands] = $seeded;
+
+    expect(array_search($first->getId(), $categories, true))->toBeLessThan(array_search($second->getId(), $categories, true))
+        ->and($brands)->toContain($brand->getId())->not->toContain($inactive->getId())
+        ->and($settings->searchCategoryIds())->toBe([$second->getId()]);
+});
+
+it('matches brands and categories in memory when Meilisearch is off', function (): void {
+    Brand::factory()->create([Brand::COLUMN_NAME_FA => 'ویتابیوتیکس']);
+    Category::factory()->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها']);
+    config(['scout.driver' => 'null']);
+
+    $suggestions = app(SearchSuggestionsQuery::class)->for('ویتا');
+
+    expect($suggestions->productsAvailable)->toBeFalse()
+        ->and($suggestions->brands->map->getNameFa()->all())->toBe(['ویتابیوتیکس'])
+        ->and($suggestions->categories->map->getNameFa()->all())->toBe(['ویتامین‌ها']);
+});
+
+it('suggests products as cards with the default SKU price, struck-through box price and discount, and a link to all results', function (): void {
     $this->vitamin->variants()->sole()->setOfficialPrice(1_250_000)->setPrice(1_200_000)->setSalePrice(1_100_000)->save();
 
     $html = livewire(InstantSearch::class)->set('value', 'ویتا')->html();
 
-    expect($html)->toMatch('/ویتامین D3 ۱۰۰۰ واحد.*<del.*۱۲۵٬۰۰۰ تومان.*۱۲٪.*۱۱۰٬۰۰۰ تومان/su');
+    expect($html)->toMatch('/<article.*ویتامین D3 ۱۰۰۰ واحد.*۱۱۰٬۰۰۰ تومان.*<del.*۱۲۵٬۰۰۰ تومان.*۱۲٪/su')
+        ->toContain(e(route('search', ['q' => 'ویتا'])));
 });
 
 it('says search is unavailable when Meilisearch is down', function (): void {

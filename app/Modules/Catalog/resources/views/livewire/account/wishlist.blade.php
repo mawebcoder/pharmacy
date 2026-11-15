@@ -6,7 +6,7 @@
         <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:gap-4">
             @foreach ($products as $product)
                 <li wire:key="wishlist-{{ $product->getId() }}" class="flex flex-col gap-2">
-                    <x-catalog::product-card :product="$product" :quick-view="false" />
+                    <x-catalog::product-card :product="$product" />
                     <button type="button" wire:click="remove({{ $product->getId() }})" class="inline-flex min-h-11 items-center justify-center gap-1 rounded-card border border-line-200 bg-card text-sm text-danger-600 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
                         <x-ts-icon icon="trash" class="size-4" />
                         حذف

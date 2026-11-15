@@ -9,26 +9,19 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Shared\Support\PersianNormalizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Rules\Unique;
 
 /**
  * Validation for creating or updating a category (roadmap C5). The Filament form applies the same baseRules().
- * Tree rules (depth, not under itself) are checked by CreateCategory and UpdateCategory.
  */
 final class StoreCategoryRequest extends FormRequest
 {
     /**
-     * @return array<string, list<string|Unique|Exists>>
+     * @return array<string, list<string|Unique>>
      */
     public static function baseRules(?int $categoryId = null): array
     {
         return [
-            Category::COLUMN_PARENT_ID => [
-                'nullable', 'integer',
-                Rule::exists(Category::class, Category::COLUMN_ID)->withoutTrashed(),
-                ...($categoryId === null ? [] : ['not_in:'.$categoryId]),
-            ],
             Category::COLUMN_NAME_FA => ['required', 'string', 'max:255'],
             Category::COLUMN_NAME_EN => ['nullable', 'string', 'max:255'],
             Category::COLUMN_SLUG => ['nullable', 'string', 'max:255', 'regex:'.StoreBrandRequest::SLUG_PATTERN, Rule::unique(Category::class, Category::COLUMN_SLUG)->ignore($categoryId)],
@@ -49,7 +42,7 @@ final class StoreCategoryRequest extends FormRequest
     }
 
     /**
-     * @return array<string, list<string|Unique|Exists>>
+     * @return array<string, list<string|Unique>>
      */
     public function rules(): array
     {

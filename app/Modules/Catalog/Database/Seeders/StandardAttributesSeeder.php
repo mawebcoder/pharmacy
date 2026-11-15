@@ -15,6 +15,9 @@ use Illuminate\Database\Seeder;
  * «مناسب برای» and mosbatesabz «رده سنی»; benefits from mosbatesabz «فیلتر کارایی». Skin and hair type are not
  * filters on those sites (only category names) and were added for our skin and hair care categories.
  * Values are cleaned up: one spelling each, Persian digits, near-duplicates merged, overly specific forms left out.
+ * Added 2026-11-15 from Provin's supplement filters (owner: «Energy & Fitness» page): food context, usage frequency,
+ * diet, allergens, doses per day, time of day (their four morning/noon/afternoon/night dose groups as one) and dose
+ * unit, plus the gummy and tea-bag forms. Their age and gender groups are already «رده سنی» and «مناسب برای».
  *
  * Safe to run again: it only adds attributes and values that are missing (matched by code and by value), so
  * admins' edits, renames and new values are kept. Attributes or values an admin deleted come back only if they
@@ -31,7 +34,7 @@ final class StandardAttributesSeeder extends Seeder
         'form' => ['شکل محصول', AttributeType::Select, [
             'قرص', 'قرص جوشان', 'قرص جویدنی', 'قرص مکیدنی', 'کپسول', 'سافت ژل', 'پودر', 'ساشه', 'شربت', 'سوسپانسیون',
             'قطره', 'ویال خوراکی', 'محلول', 'اسپری', 'کرم', 'ژل', 'ژل کرم', 'پماد', 'لوسیون', 'امولسیون', 'سرم',
-            'روغن', 'بالم', 'استیک', 'فوم', 'شامپو', 'صابون', 'تونر', 'ماسک', 'پد', 'چسب',
+            'روغن', 'بالم', 'استیک', 'فوم', 'شامپو', 'صابون', 'تونر', 'ماسک', 'پد', 'چسب', 'پاستیل', 'چای کیسه‌ای',
         ]],
         'suitable_for' => ['مناسب برای', AttributeType::MultiSelect, [
             'بانوان', 'آقایان', 'نوزادان', 'کودکان', 'نوجوانان', 'بزرگسالان', 'سالمندان', 'باردار و شیرده', 'ورزشکاران',
@@ -52,6 +55,28 @@ final class StandardAttributesSeeder extends Seeder
         ]],
         'hair_type' => ['نوع مو', AttributeType::MultiSelect, [
             'خشک', 'چرب', 'معمولی', 'رنگ‌شده', 'آسیب‌دیده', 'مستعد ریزش', 'وزدار',
+        ]],
+        'food_context' => ['مصرف با غذا', AttributeType::Select, [
+            'همراه با غذا', 'بدون غذا (معده خالی)',
+        ]],
+        'usage_frequency' => ['دفعات مصرف', AttributeType::Select, [
+            'روزانه', 'هفتگی',
+        ]],
+        'diet' => ['رژیم غذایی', AttributeType::MultiSelect, [
+            'وگان', 'گیاه‌خواری', 'ارگانیک', 'کتوژنیک', 'بدون گلوتن', 'بدون لبنیات', 'حلال', 'غیرتراریخته (Non-GMO)',
+        ]],
+        'allergens' => ['حاوی حساسیت‌زا', AttributeType::MultiSelect, [
+            'مغزها', 'سویا', 'گلوتن', 'ماهی', 'غلات', 'لبنیات', 'تخم‌مرغ', 'سولفیت', 'کنجد',
+        ]],
+        'doses_per_day' => ['دفعات مصرف در روز', AttributeType::Select, [
+            'یک بار', 'دو بار', 'سه بار',
+        ]],
+        'dose_time' => ['زمان مصرف', AttributeType::MultiSelect, [
+            'صبح', 'ظهر', 'عصر', 'شب',
+        ]],
+        'dose_unit' => ['واحد هر نوبت', AttributeType::Select, [
+            'قرص', 'کپسول', 'سافت ژل', 'پاستیل', 'قرص جویدنی', 'پیمانه (اسکوپ)', 'گرم', 'قاشق غذاخوری', 'قاشق چای‌خوری',
+            'قطره',
         ]],
     ];
 

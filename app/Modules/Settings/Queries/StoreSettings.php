@@ -19,6 +19,13 @@ final readonly class StoreSettings
 
     public const string FREE_SHIPPING_THRESHOLD = 'cart.free_shipping_threshold';
 
+    public const string REMOVAL_DELAY_SECONDS = 'cart.removal_delay_seconds';
+
+    /**
+     * Longest countdown the admin can set before a product leaves the cart.
+     */
+    public const int MAX_REMOVAL_DELAY_SECONDS = 10;
+
     public const string SHIPPING_FLAT_RATE = 'shipping.flat_rate';
 
     public const string WHATSAPP_NUMBER = 'contact.whatsapp_number';
@@ -29,17 +36,29 @@ final readonly class StoreSettings
 
     public const string CHAT_MESSAGE_GENERAL = 'contact.chat_message_general';
 
+    public const string SEARCH_CATEGORY_IDS = 'search.category_ids';
+
+    public const string SEARCH_BRAND_IDS = 'search.brand_ids';
+
+    /**
+     * Most categories, and most brands, the admin can pin to the search panel.
+     */
+    public const int MAX_SEARCH_SHORTCUTS = 8;
+
     /**
      * Defaults when the admin has not saved a value (the threshold in rial).
      */
     public const array DEFAULTS = [
         self::MAX_QUANTITY_PER_ORDER => 10,
         self::FREE_SHIPPING_THRESHOLD => 5_000_000,
+        self::REMOVAL_DELAY_SECONDS => 3,
         self::SHIPPING_FLAT_RATE => 500_000,
         self::WHATSAPP_NUMBER => '',
         self::TELEGRAM_USERNAME => '',
         self::CHAT_MESSAGE_PRODUCT => 'سلام، درباره «{product}» {variant} سؤال دارم: {link}',
         self::CHAT_MESSAGE_GENERAL => 'سلام، سؤالی دارم.',
+        self::SEARCH_CATEGORY_IDS => [],
+        self::SEARCH_BRAND_IDS => [],
     ];
 
     /**
@@ -56,6 +75,15 @@ final readonly class StoreSettings
     public function freeShippingThreshold(): int
     {
         return max(0, (int) $this->get(self::FREE_SHIPPING_THRESHOLD));
+    }
+
+    /**
+     * Seconds a removed product waits, with a countdown and «انصراف», before it leaves the cart (owner, 2026-11-15);
+     * 0 removes at once.
+     */
+    public function removalDelaySeconds(): int
+    {
+        return min(self::MAX_REMOVAL_DELAY_SECONDS, max(0, (int) $this->get(self::REMOVAL_DELAY_SECONDS)));
     }
 
     /**
@@ -137,6 +165,28 @@ final readonly class StoreSettings
         return trim((string) $this->get(self::CHAT_MESSAGE_GENERAL));
     }
 
+    /**
+     * Categories the search panel shows when the box is empty or the text matches none (owner, 2026-11-15), in the
+     * admin's order.
+     *
+     * @return list<int>
+     */
+    public function searchCategoryIds(): array
+    {
+        return $this->ids(self::SEARCH_CATEGORY_IDS);
+    }
+
+    /**
+     * Brands the search panel shows when the box is empty or the text matches none (owner, 2026-11-15), in the
+     * admin's order.
+     *
+     * @return list<int>
+     */
+    public function searchBrandIds(): array
+    {
+        return $this->ids(self::SEARCH_BRAND_IDS);
+    }
+
     public function get(string $key): mixed
     {
         return $this->all()[$key] ?? self::DEFAULTS[$key] ?? null;
@@ -151,5 +201,15 @@ final readonly class StoreSettings
         $saved = Cache::rememberForever(self::CACHE_KEY, fn (): array => Setting::query()->pluck(Setting::COLUMN_VALUE, Setting::COLUMN_KEY)->all());
 
         return [...self::DEFAULTS, ...$saved];
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function ids(string $key): array
+    {
+        $value = $this->get($key);
+
+        return is_array($value) ? array_values(array_unique(array_map(intval(...), $value))) : [];
     }
 }

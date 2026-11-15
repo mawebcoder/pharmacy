@@ -17,7 +17,7 @@ final class DeleteCategory
      */
     public function __invoke(Category $category): void
     {
-        if ($category->children()->exists()) {
+        if ($category->subcategories()->exists()) {
             throw CategoryChangeRefused::hasChildren($category->getNameFa());
         }
 

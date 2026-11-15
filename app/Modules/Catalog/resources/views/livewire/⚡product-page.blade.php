@@ -29,7 +29,7 @@ new class extends Component
     {
         $this->product = Product::query()
             ->active()
-            ->with(['brand', 'primaryCategory', 'media', 'faqs', 'attributeValues.attribute', 'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true)])
+            ->with(['brand', 'primaryCategory', 'primarySubcategory', 'media', 'faqs', 'attributeValues.attribute', 'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true)])
             ->where(Product::COLUMN_SLUG, $slug)
             ->firstOrFail();
         $this->variantId = $this->product->getDefaultVariant()?->getId() ?? 0;
@@ -96,7 +96,9 @@ new class extends Component
 
 @php
     $category = $product->getPrimaryCategory();
-    $trail = $category ? [...$category->ancestors(), $category] : [];
+    // Breadcrumb: the category, then the main subcategory when there is one (owner, 2026-11-15).
+    $subcategory = $product->getPrimarySubcategory()?->setRelation('category', $category);
+    $trail = array_values(array_filter([$category, $subcategory]));
     $images = $product->images($product::IMAGE_GALLERY);
     $variants = $product->getVariants();
     $variant = $this->selectedVariant;
@@ -117,13 +119,13 @@ new class extends Component
     $firstTab = array_key_first($tabs);
 @endphp
 
-<div class="space-y-6 pb-20 xl:pb-0" x-data="{ pastBuyBox: false }">
+<div class="space-y-6 pb-20 xl:pb-0" x-data="{ pastBuyBox: false, phone: window.matchMedia('(max-width: 767px)').matches }" x-init="window.matchMedia('(max-width: 767px)').addEventListener('change', (event) => (phone = event.matches))">
     <nav aria-label="مسیر صفحه" class="text-sm text-ink-500">
         <ol class="flex flex-wrap items-center gap-1">
             <li><a href="{{ route('home') }}" wire:navigate class="hover:text-primary-700">خانه</a></li>
             @foreach ($trail as $node)
                 <li aria-hidden="true">/</li>
-                <li><a href="{{ route('category.show', $node) }}" wire:navigate class="hover:text-primary-700">{{ $node->getNameFa() }}</a></li>
+                <li><a href="{{ $node->url() }}" wire:navigate class="hover:text-primary-700">{{ $node->getNameFa() }}</a></li>
             @endforeach
             <li aria-hidden="true">/</li>
             <li aria-current="page" class="line-clamp-1 text-ink-900">{{ $product->getNameFa() }}</li>
@@ -295,7 +297,8 @@ new class extends Component
                     @if ($isRx)
                         <p class="rounded-card border border-rx-600 bg-card p-3 text-sm leading-7 text-rx-600" role="note">فروش آنلاین این دارو به‌زودی</p>
                     @elseif ($variant->canAddToCart())
-                        <x-cart::add-button wire:key="buy-{{ $variant->getId() }}" :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" wide />
+                        {{-- On phones the bottom bar is the add-to-cart (owner, 2026-11-15). --}}
+                        <x-cart::add-button wire:key="buy-{{ $variant->getId() }}" :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" wide class="hidden md:block" />
                     @endif
                 @endif
 
@@ -386,12 +389,12 @@ new class extends Component
     @if ($this->relatedProducts->isNotEmpty())
         <section aria-labelledby="related-products">
             <h2 id="related-products" class="mb-3 text-lg font-bold text-ink-900">محصولات مرتبط</h2>
-            <div class="relative" wire:ignore x-data="slider({ slidesPerView: 2.3, spaceBetween: 12, breakpoints: { 768: { slidesPerView: 3, spaceBetween: 16 }, 1280: { slidesPerView: 5, spaceBetween: 16 } } })">
+            <div class="relative" wire:ignore x-data="slider({ slidesPerView: 2.15, spaceBetween: 12, breakpoints: { 768: { slidesPerView: 3, spaceBetween: 16 }, 1280: { slidesPerView: 5, spaceBetween: 16 } } })">
                 <div x-ref="slider" class="swiper">
                     <ul class="swiper-wrapper">
                         @foreach ($this->relatedProducts as $related)
-                            <li wire:key="related-{{ $related->getId() }}" class="swiper-slide h-auto! w-[42%] md:w-[calc((100%-32px)/3)] xl:w-[calc((100%-64px)/5)]">
-                                <x-catalog::product-card :product="$related" :quick-view="false" />
+                            <li wire:key="related-{{ $related->getId() }}" class="swiper-slide h-auto! w-[45%] md:w-[calc((100%-32px)/3)] xl:w-[calc((100%-64px)/5)]">
+                                <x-catalog::product-card :product="$related" />
                             </li>
                         @endforeach
                     </ul>
@@ -401,20 +404,23 @@ new class extends Component
         </section>
     @endif
 
-    {{-- Bottom buy bar on phones and tablets, once the buy box has scrolled out of view (above the mobile nav). --}}
+    {{-- Bottom buy bar above the mobile nav: always on phones, like the cart's (owner, 2026-11-15): the price beside the
+         button; on tablets once the buy box has scrolled out of view, with the name too. --}}
     @if ($variant)
-        <div x-show="pastBuyBox" x-cloak x-transition.opacity class="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line-200 bg-card px-4 py-2 shadow-card md:bottom-0 xl:hidden">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <p class="truncate text-sm text-ink-900">{{ $product->getNameFa() }}</p>
+        <div x-show="phone || pastBuyBox" x-cloak x-transition.opacity class="fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-30 border-t border-line-200 bg-card p-3 shadow-card md:bottom-0 md:px-4 md:py-2 xl:hidden">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+                <div class="min-w-0 shrink-0 md:shrink">
+                    <p class="hidden truncate text-sm text-ink-900 md:block">{{ $product->getNameFa() }}</p>
                     <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="sm" />
                 </div>
                 @if ($isRx)
                     <p class="shrink-0 text-sm font-medium text-rx-600">فروش آنلاین به‌زودی</p>
                 @elseif ($variant->canAddToCart())
-                    <div class="w-40 shrink-0">
+                    <div class="min-w-0 flex-1 md:w-40 md:flex-none">
                         <x-cart::add-button wire:key="bar-{{ $variant->getId() }}" :variant-id="$variant->getId()" :label="$product->getNameFa().' '.$variant->getTitleFa()" wide />
                     </div>
+                @else
+                    <p class="shrink-0 text-sm font-medium text-ink-500">ناموجود</p>
                 @endif
             </div>
         </div>

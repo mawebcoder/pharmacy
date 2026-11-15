@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Subcategory;
+use App\Modules\Catalog\Search\NameDocument;
 use App\Modules\Catalog\Search\ProductDocument;
 
 return [
@@ -123,6 +127,10 @@ return [
         'index-settings' => [
             // Products (roadmap D21.5.5); the settings live next to the document they describe.
             Product::class => ProductDocument::indexSettings(),
+            // Brands and categories for the search panel (owner, 2026-11-15).
+            Brand::class => NameDocument::indexSettings(),
+            Category::class => NameDocument::indexSettings(),
+            Subcategory::class => NameDocument::indexSettings(),
             // 'users' => [
             //     'searchableAttributes' => ['id', 'name', 'email'],
             //     'attributesForFaceting'=> ['filterOnly(email)'],
@@ -149,6 +157,10 @@ return [
         'index-settings' => [
             // Products (roadmap D21.5.5); the settings live next to the document they describe.
             Product::class => ProductDocument::indexSettings(),
+            // Brands and categories for the search panel (owner, 2026-11-15).
+            Brand::class => NameDocument::indexSettings(),
+            Category::class => NameDocument::indexSettings(),
+            Subcategory::class => NameDocument::indexSettings(),
             // 'users' => [
             //     'filterableAttributes' => ['id', 'name', 'email'],
             //     'embedders' => [

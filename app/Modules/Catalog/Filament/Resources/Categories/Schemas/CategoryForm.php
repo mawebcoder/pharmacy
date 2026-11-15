@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Filament\Resources\Categories\Schemas;
 
-use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Http\Requests\StoreCategoryRequest;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Media\Filament\Forms\ImageUpload;
-use App\Modules\Shared\Support\PersianDigits;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -41,11 +38,6 @@ final class CategoryForm
                             ->extraInputAttributes(['dir' => 'ltr'])
                             ->maxLength(255)
                             ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_NAME_EN)),
-                        ImageSelect::images(Select::make(Category::COLUMN_PARENT_ID), 'category', fn (?Category $record = null): array => self::parentOptions($record))
-                            ->label('دسته والد')
-                            ->placeholder('سطح اول (بدون والد)')
-                            ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_PARENT_ID))
-                            ->helperText('حداکثر '.PersianDigits::toPersian(Category::MAX_DEPTH).' سطح؛ زیردسته‌ها همراه دسته جابه‌جا می‌شوند.'),
                         TextInput::make(Category::COLUMN_SLUG)
                             ->label('نامک (آدرس)')
                             ->prefix('/categories/')
@@ -93,39 +85,5 @@ final class CategoryForm
                             ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_SEO_DESCRIPTION)),
                     ]),
             ]);
-    }
-
-    /**
-     * Categories that can hold children (not on the last level), shown as paths ("مکمل‌ها › ویتامین‌ها").
-     * The category being edited and its subcategories are left out.
-     *
-     * @return array<int, string>
-     */
-    private static function parentOptions(?Category $record): array
-    {
-        $categories = Category::query()->ordered()->get([Category::COLUMN_ID, Category::COLUMN_PARENT_ID, Category::COLUMN_NAME_FA])->keyBy(Category::COLUMN_ID);
-        $options = [];
-
-        foreach ($categories as $category) {
-            $path = [$category->getNameFa()];
-            $parentId = $category->getParentId();
-            $excluded = $record instanceof Category && $category->getId() === $record->getId();
-
-            while ($parentId !== null && $categories->has($parentId) && count($path) <= Category::MAX_DEPTH) {
-                $excluded = $excluded || ($record instanceof Category && $parentId === $record->getId());
-                /** @var Category $parent */
-                $parent = $categories->get($parentId);
-                array_unshift($path, $parent->getNameFa());
-                $parentId = $parent->getParentId();
-            }
-
-            if (! $excluded && count($path) < Category::MAX_DEPTH) {
-                $options[$category->getId()] = implode(' › ', $path);
-            }
-        }
-
-        asort($options);
-
-        return $options;
     }
 }

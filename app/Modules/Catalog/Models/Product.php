@@ -54,6 +54,8 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_PRIMARY_CATEGORY_ID = 'primary_category_id';
 
+    public const string COLUMN_PRIMARY_SUBCATEGORY_ID = 'primary_subcategory_id';
+
     public const string COLUMN_DEFAULT_VARIANT_ID = 'default_variant_id';
 
     public const string COLUMN_PRODUCT_TYPE = 'product_type';
@@ -304,6 +306,21 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     }
 
     /**
+     * The main subcategory, one of the main category's (optional; owner, 2026-11-15).
+     */
+    public function getPrimarySubcategoryId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_PRIMARY_SUBCATEGORY_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setPrimarySubcategoryId(?int $subcategoryId): static
+    {
+        return $this->setAttribute(self::COLUMN_PRIMARY_SUBCATEGORY_ID, $subcategoryId);
+    }
+
+    /**
      * The variant the admin chose as default; see getDefaultVariant() for the one actually shown.
      */
     public function getDefaultVariantId(): ?int
@@ -424,6 +441,37 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function getCategories(): Collection
     {
         return $this->getRelationValue('categories');
+    }
+
+    /**
+     * @return BelongsTo<Subcategory, $this>
+     */
+    public function primarySubcategory(): BelongsTo
+    {
+        return $this->belongsTo(Subcategory::class, self::COLUMN_PRIMARY_SUBCATEGORY_ID)->withTrashed();
+    }
+
+    public function getPrimarySubcategory(): ?Subcategory
+    {
+        return $this->getRelationValue('primarySubcategory');
+    }
+
+    /**
+     * Extra subcategories besides the main one.
+     *
+     * @return BelongsToMany<Subcategory, $this>
+     */
+    public function subcategories(): BelongsToMany
+    {
+        return $this->belongsToMany(Subcategory::class);
+    }
+
+    /**
+     * @return Collection<int, Subcategory>
+     */
+    public function getSubcategories(): Collection
+    {
+        return $this->getRelationValue('subcategories');
     }
 
     /**
@@ -580,6 +628,25 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     }
 
     /**
+     * Products for sale, as in search (shouldBeSearchable): active, not prescription-only, a sellable type, with an
+     * active SKU.
+     *
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    public function scopeSellable(Builder $query): Builder
+    {
+        /** @var list<string> $unsellable */
+        $unsellable = config('catalog.unsellable_product_types', []);
+
+        return $query
+            ->where(self::COLUMN_STATUS, ProductStatus::Active)
+            ->where(self::COLUMN_REQUIRES_PRESCRIPTION, false)
+            ->whereNotIn(self::COLUMN_PRODUCT_TYPE, $unsellable)
+            ->whereHas('variants', fn (Builder $variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true));
+    }
+
+    /**
      * Meilisearch index name, with Scout's prefix (tests use their own prefix per process).
      */
     public function searchableAs(): string
@@ -622,7 +689,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return LogOptions::defaults()
             ->useLogName('catalog')
             ->logOnly([
-                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
+                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_PRIMARY_SUBCATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
                 self::COLUMN_PRODUCT_TYPE, self::COLUMN_REQUIRES_PRESCRIPTION, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_SHORT_DESCRIPTION,
                 self::COLUMN_DESCRIPTION, self::COLUMN_INGREDIENTS, self::COLUMN_USAGE, self::COLUMN_WARNINGS, self::COLUMN_SIDE_EFFECTS,
                 self::COLUMN_INTERACTIONS, self::COLUMN_STATUS, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
@@ -645,6 +712,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_BRAND_ID => 'integer',
             self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
             self::COLUMN_PRIMARY_CATEGORY_ID => 'integer',
+            self::COLUMN_PRIMARY_SUBCATEGORY_ID => 'integer',
             self::COLUMN_DEFAULT_VARIANT_ID => 'integer',
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
             self::COLUMN_REQUIRES_PRESCRIPTION => 'boolean',

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Shared\Support\SearchText;
 use Meilisearch\Client;
 
 /**
- * Replaces the synonyms of the Meilisearch product index (roadmap D21.5.6). Each group is mutual: every word or
- * phrase in it finds the others. Text is normalised like product text so «ویتامين دي» and «ویتامین دی» agree.
- * Used by the Search module whenever its synonyms change.
+ * Replaces the synonyms of the Meilisearch product, brand, category and subcategory indexes (roadmap D21.5.6; brands and categories
+ * since 2026-11-15). Each group is mutual: every word or phrase in it finds the others. Text is normalised like
+ * product text so «ویتامين دي» and «ویتامین دی» agree. Used by the Search module whenever its synonyms change.
  */
 final readonly class ApplySearchSynonyms
 {
@@ -25,7 +28,9 @@ final readonly class ApplySearchSynonyms
         /** @var array<non-empty-string, list<non-empty-string>> $synonyms phrases are non-empty (mutual() drops empty ones) */
         $synonyms = self::mutual($groups);
 
-        $this->meilisearch->index((new Product)->indexableAs())->updateSynonyms($synonyms);
+        foreach ([new Product, new Brand, new Category, new Subcategory] as $model) {
+            $this->meilisearch->index($model->indexableAs())->updateSynonyms($synonyms);
+        }
     }
 
     /**

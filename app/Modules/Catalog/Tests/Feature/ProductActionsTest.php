@@ -17,9 +17,9 @@ use App\Modules\Catalog\Enums\ProductType;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Media\Actions\AttachImage;
 use Illuminate\Support\Facades\Storage;
 
@@ -34,7 +34,7 @@ function productData(Product $product, array $overrides = []): ProductData
         Product::COLUMN_NAME_FA => $product->getNameFa(),
         Product::COLUMN_NAME_EN => $product->getNameEn(),
         Product::COLUMN_BRAND_ID => $product->getBrandId(),
-        Product::COLUMN_PRIMARY_CATEGORY_ID => $product->getPrimaryCategoryId(),
+        Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $product->getPrimarySubcategoryId(),
         Product::COLUMN_PRODUCT_TYPE => $product->getProductType(),
         Product::COLUMN_REQUIRES_PRESCRIPTION => $product->requiresPrescription(),
         Product::COLUMN_STATUS => $product->getStatus(),
@@ -66,16 +66,16 @@ function readyProduct(array $state = []): Product
 }
 
 describe('creating', function (): void {
-    it('creates a draft product with its first SKU, its extra categories and a slug from the English name', function (): void {
+    it('creates a draft product with its first SKU, its subcategories and a slug from the English name', function (): void {
         $brand = Brand::factory()->create();
-        [$primary, $extra] = Category::factory()->count(2)->create();
+        [$primary, $extra] = Subcategory::factory()->count(2)->create();
 
         $product = app(CreateProduct::class)(ProductData::fromArray([
             Product::COLUMN_NAME_FA => 'کرم مرطوب‌کننده اوره ۱۰٪',
             Product::COLUMN_NAME_EN => 'UreaRepair Plus 10% Cream',
             Product::COLUMN_BRAND_ID => $brand->getId(),
-            Product::COLUMN_PRIMARY_CATEGORY_ID => $primary->getId(),
-            'category_ids' => [$extra->getId()],
+            Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $primary->getId(),
+            'subcategory_ids' => [$primary->getId(), $extra->getId()],
             Product::COLUMN_PRODUCT_TYPE => 'cosmetic',
         ]), variantData());
 
@@ -83,16 +83,42 @@ describe('creating', function (): void {
             ->getSlug()->toBe('urearepair-plus-10-cream')
             ->getStatus()->toBe(ProductStatus::Draft)
             ->getDefaultVariantId()->toBe($product->variants()->sole()->getId())
+            // The main category is the main subcategory's (owner, 2026-11-15).
+            ->getPrimaryCategoryId()->toBe($primary->getCategoryId())
             // No supplier yet: sold at its printed price (roadmap D3.2).
             ->and($product->variants()->sole())->getPrice()->toBe(4_850_000)->getStockStatus()->toBe(StockStatus::Available)
-            ->and($product->categories()->pluck('categories.id')->all())->toBe([$extra->getId()]);
+            ->and($product->subcategories()->pluck('subcategories.id')->all())->toBe([$extra->getId()]);
+    });
+
+    it('refuses a product without a main subcategory', function (): void {
+        $data = ProductData::fromArray([
+            Product::COLUMN_NAME_FA => 'استامینوفن ۵۰۰',
+            Product::COLUMN_BRAND_ID => Brand::factory()->create()->getId(),
+            Product::COLUMN_PRODUCT_TYPE => 'otc',
+        ]);
+
+        expect(fn () => app(CreateProduct::class)($data, variantData()))
+            ->toThrow(ProductChangeRefused::class, ProductChangeRefused::subcategoryRequired()->getMessage());
+
+        expect(Product::withTrashed()->count())->toBe(0);
+    });
+
+    it('moves a product to the category of its new main subcategory', function (): void {
+        $product = Product::factory()->create();
+        $other = Subcategory::factory()->create();
+
+        $updated = app(UpdateProduct::class)($product, productData($product, [Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $other->getId()]));
+
+        expect($updated->fresh())
+            ->getPrimarySubcategoryId()->toBe($other->getId())
+            ->getPrimaryCategoryId()->toBe($other->getCategoryId());
     });
 
     it('creates nothing when the first SKU breaks a price rule', function (): void {
         $data = ProductData::fromArray([
             Product::COLUMN_NAME_FA => 'استامینوفن ۵۰۰',
             Product::COLUMN_BRAND_ID => Brand::factory()->create()->getId(),
-            Product::COLUMN_PRIMARY_CATEGORY_ID => Category::factory()->create()->getId(),
+            Product::COLUMN_PRIMARY_SUBCATEGORY_ID => Subcategory::factory()->create()->getId(),
             Product::COLUMN_PRODUCT_TYPE => 'otc',
         ]);
 

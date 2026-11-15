@@ -13,7 +13,6 @@ use App\Modules\Shared\Support\PersianNormalizer;
 final readonly class CategoryData
 {
     public function __construct(
-        public ?int $parentId,
         public string $nameFa,
         public ?string $nameEn,
         public ?string $slug,
@@ -30,10 +29,7 @@ final readonly class CategoryData
      */
     public static function fromArray(array $data): self
     {
-        $parentId = $data[Category::COLUMN_PARENT_ID] ?? null;
-
         return new self(
-            parentId: blank($parentId) ? null : (int) $parentId,
             nameFa: PersianNormalizer::letters(trim((string) ($data[Category::COLUMN_NAME_FA] ?? ''))),
             nameEn: self::text($data[Category::COLUMN_NAME_EN] ?? null),
             slug: self::text($data[Category::COLUMN_SLUG] ?? null),

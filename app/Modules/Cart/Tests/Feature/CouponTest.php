@@ -26,18 +26,19 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Identity\Models\Customer;
 use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
- * An active SKU at a price (rial), optionally on sale, in a brand and category.
+ * An active SKU at a price (rial), optionally on sale, in a brand and (main) subcategory.
  */
-function couponSku(int $price, ?int $salePrice = null, ?Brand $brand = null, ?Category $category = null): ProductVariant
+function couponSku(int $price, ?int $salePrice = null, ?Brand $brand = null, ?Subcategory $subcategory = null): ProductVariant
 {
     $product = Product::factory()->active()->create(array_filter([
         Product::COLUMN_BRAND_ID => $brand?->getId(),
-        Product::COLUMN_PRIMARY_CATEGORY_ID => $category?->getId(),
+        Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategory?->getId(),
     ]));
 
     return ProductVariant::factory()->for($product)->create([
@@ -148,15 +149,18 @@ describe('covered items', function (): void {
     it('covers a listed category with its subcategories, a listed brand or a listed product', function (string $list): void {
         $customer = Customer::factory()->create();
         $skin = Category::factory()->create();
-        $creams = Category::factory()->childOf($skin)->create();
+        $creams = Subcategory::factory()->of($skin)->create();
         $brand = Brand::factory()->create();
-        $covered = couponSku(1_000_000, brand: $brand, category: $creams);
+        $covered = couponSku(1_000_000, brand: $brand, subcategory: $list === 'category, extra subcategory' ? null : $creams);
+        if ($list === 'category, extra subcategory') {
+            $covered->product->subcategories()->attach($creams);
+        }
         $other = couponSku(4_000_000);
         $cart = couponCart($customer, [$covered, $other]);
         $coupon = Coupon::factory()->percent(10)->create([Coupon::COLUMN_CODE => 'LIMITED']);
 
         match ($list) {
-            'category' => saveCouponLists($coupon, categoryIds: [$skin->getId()]),
+            'category, main subcategory', 'category, extra subcategory' => saveCouponLists($coupon, categoryIds: [$skin->getId()]),
             'brand' => saveCouponLists($coupon, brandIds: [$brand->getId()]),
             default => saveCouponLists($coupon, productIds: [$covered->getProductId()]),
         };
@@ -164,7 +168,7 @@ describe('covered items', function (): void {
         $applied = applyCode($cart, $customer, 'LIMITED');
         expect($applied->coveredSubtotal)->toBe(1_000_000)
             ->and($applied->discount)->toBe(100_000);
-    })->with(['category', 'brand', 'product']);
+    })->with(['category, main subcategory', 'category, extra subcategory', 'brand', 'product']);
 
     it('leaves haraj items out unless the coupon includes them', function (): void {
         $customer = Customer::factory()->create();

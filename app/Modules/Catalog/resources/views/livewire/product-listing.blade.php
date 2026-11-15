@@ -72,16 +72,39 @@
         @endif
 
         <div class="min-w-0 flex-1 space-y-6">
+            {{-- Desktop: while a filter, sort or page change loads, skeleton cards stand in for the results (owner,
+                 2026-11-15); phones keep the faded list, their filters sit in the sheet with its own spinner. --}}
+            <div class="hidden xl:contents" aria-hidden="true">
+                <ul wire:loading.grid class="hidden animate-pulse grid-cols-4 gap-4 motion-reduce:animate-none">
+                    @foreach (range(1, 8) as $placeholder)
+                        <li><x-ui.product-card-skeleton /></li>
+                    @endforeach
+                </ul>
+            </div>
+
             @if ($products->isEmpty())
-                <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center">
-                    <x-ts-icon icon="magnifying-glass" class="mx-auto size-10 text-ink-500" />
-                    <p class="mt-3 font-bold text-ink-900">کالایی با این مشخصات پیدا نشد.</p>
+                {{-- Empty result, like the empty cart (owner, 2026-11-15): one clear way on — the same list without filters,
+                     or the shop when nothing was filtered. --}}
+                <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center" wire:loading.class="xl:hidden">
+                    <span class="mx-auto grid size-14 place-items-center rounded-full bg-primary-50 text-primary-700">
+                        <x-ts-icon icon="magnifying-glass" class="size-7" />
+                    </span>
+                    <p class="mt-4 font-bold text-ink-900">کالایی با این مشخصات پیدا نشد</p>
                     @if ($applied !== [])
-                        <x-ts-button color="primary" outline class="mt-4" wire:click="clearFilters">حذف فیلترها</x-ts-button>
+                        <p class="mt-1 text-sm text-ink-500">فیلترها را بردارید تا همه کالاهای این بخش را ببینید.</p>
+                        <button type="button" wire:click="clearFilters" class="mt-5 inline-flex h-12 items-center justify-center gap-2 rounded-card bg-primary-700 px-6 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700">
+                            <x-ts-icon icon="funnel" class="size-5" />
+                            نمایش همه کالاها
+                        </button>
+                    @else
+                        <p class="mt-1 text-sm text-ink-500">فعلاً کالایی در این بخش نیست.</p>
+                        <a href="{{ route('home') }}" wire:navigate class="mt-5 inline-flex h-12 items-center justify-center rounded-card bg-primary-700 px-6 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700">
+                            بازگشت به فروشگاه
+                        </a>
                     @endif
                 </div>
             @else
-                <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4" wire:loading.class="opacity-60">
+                <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4" wire:loading.class="opacity-60 xl:hidden">
                     @foreach ($products as $product)
                         <li wire:key="listing-product-{{ $product->getId() }}">
                             <x-catalog::product-card :product="$product" :href="$this->productHref($product)" />
@@ -106,17 +129,24 @@
 
     @if ($hasFilters)
         <x-ts-slide id="listing-filters" title="فیلترها" bottom size="full">
+            {{-- Drag this handle or the title row down to close (owner, 2026-11-15); «×» and the buttons close it too. --}}
+            <div x-swipe-close="$tsui.close.slide('listing-filters')" class="-mt-2 mb-2 flex h-8 cursor-grab items-center justify-center" aria-hidden="true">
+                <span class="h-1.5 w-12 rounded-full bg-line-300"></span>
+            </div>
             @include('catalog::partials.filters', ['result' => $result, 'idPrefix' => 'sheet'])
             <x-slot:footer>
                 <div class="flex w-full gap-2">
-                    <x-ts-button color="primary" class="flex-1" x-on:click="$tsui.close.slide('listing-filters')">
-                        نمایش {{ PersianDigits::toPersian($products->total()) }} کالا
+                    {{-- While a filter change loads, a small spinner stands in for the count (owner, 2026-11-15). --}}
+                    <x-ts-button color="primary" class="flex-1" x-on:click="$tsui.close.slide('listing-filters')" wire:loading.attr="disabled" data-own-loading>
+                        <span wire:loading.remove>نمایش {{ PersianDigits::toPersian($products->total()) }} کالا</span>
+                        <span wire:loading.flex class="items-center gap-2" role="status">
+                            <x-ui.spinner class="size-4" />
+                            در حال به‌روزرسانی…
+                        </span>
                     </x-ts-button>
                     <x-ts-button color="secondary" outline wire:click="clearFilters">حذف فیلترها</x-ts-button>
                 </div>
             </x-slot:footer>
         </x-ts-slide>
     @endif
-
-    <livewire:catalog::quick-view />
 </section>

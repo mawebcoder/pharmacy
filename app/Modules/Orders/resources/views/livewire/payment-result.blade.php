@@ -30,8 +30,8 @@
         <div class="mt-5 rounded-card bg-surface-50 p-4 text-sm" x-data="{ copied: false }">
             <p class="text-ink-500">شماره سفارش</p>
             <div class="mt-1 flex items-center justify-center gap-2">
-                <span class="text-lg font-bold text-ink-900" dir="ltr">{{ $order->getNumber() }}</span>
-                <button type="button" x-on:click="navigator.clipboard.writeText(@js($order->getNumber())); copied = true; setTimeout(() => copied = false, 2000)" class="grid size-11 place-items-center rounded-full text-primary-700 hover:bg-primary-50" aria-label="کپی شماره سفارش">
+                <span class="text-lg font-bold text-ink-900 select-all" dir="ltr">{{ $order->getNumber() }}</span>
+                <button type="button" x-on:click="$copy(@js($order->getNumber())).then((ok) => { copied = ok; setTimeout(() => (copied = false), 2000) })" class="grid size-11 place-items-center rounded-full text-primary-700 hover:bg-primary-50" aria-label="کپی شماره سفارش">
                     <x-ts-icon icon="clipboard-document" class="size-5" x-show="! copied" />
                     <x-ts-icon icon="check" class="size-5" x-show="copied" x-cloak />
                 </button>

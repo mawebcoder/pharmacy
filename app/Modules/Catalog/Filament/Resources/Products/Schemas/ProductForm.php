@@ -16,6 +16,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
+use App\Modules\Catalog\Queries\AdminOptions;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Livewire\ProductProvidersTable;
@@ -95,15 +96,17 @@ final class ProductForm
                                     ->helperText(fn (?Product $record): string => $record instanceof Product
                                         ? 'تغییر نامک، پیوندهای قبلی این محصول را از کار می‌اندازد.'
                                         : 'خالی بگذارید تا از نام انگلیسی (یا فارسی) ساخته شود.'),
-                                ImageSelect::images(Select::make(Product::COLUMN_PRIMARY_CATEGORY_ID), 'category', self::categoryOptions(...))
-                                    ->label('دسته اصلی')
+                                // Products belong to subcategories (owner, 2026-11-15); the category follows the main one.
+                                ImageSelect::images(Select::make(Product::COLUMN_PRIMARY_SUBCATEGORY_ID), 'subcategory', fn (): array => app(AdminOptions::class)->names('subcategory'))
+                                    ->label('زیردسته اصلی')
                                     ->required()
-                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_PRIMARY_CATEGORY_ID)),
-                                ImageSelect::images(Select::make('category_ids'), 'category', self::categoryOptions(...))
-                                    ->label('دسته‌های دیگر')
+                                    ->helperText('دسته محصول همان دستهٔ این زیردسته است.')
+                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_PRIMARY_SUBCATEGORY_ID)),
+                                ImageSelect::images(Select::make('subcategory_ids'), 'subcategory', fn (): array => app(AdminOptions::class)->names('subcategory'))
+                                    ->label('زیردسته‌های دیگر')
                                     ->multiple()
-                                    ->rules(fn (?Product $record): array => $rules($record, 'category_ids'))
-                                    ->nestedRecursiveRules(StoreProductRequest::baseRules()['category_ids.*']),
+                                    ->rules(fn (?Product $record): array => $rules($record, 'subcategory_ids'))
+                                    ->nestedRecursiveRules(StoreProductRequest::baseRules()['subcategory_ids.*']),
                                 Select::make(Product::COLUMN_PRODUCT_TYPE)
                                     ->label('نوع محصول')
                                     ->options(ProductType::options())
@@ -300,34 +303,5 @@ final class ProductForm
         $data['attribute_value_ids'] = $ids;
 
         return $data;
-    }
-
-    /**
-     * Every category as a path ("مکمل‌ها › ویتامین‌ها › ویتامین D").
-     *
-     * @return array<int, string>
-     */
-    private static function categoryOptions(): array
-    {
-        $categories = Category::query()->get([Category::COLUMN_ID, Category::COLUMN_PARENT_ID, Category::COLUMN_NAME_FA])->keyBy(Category::COLUMN_ID);
-        $options = [];
-
-        foreach ($categories as $category) {
-            $path = [$category->getNameFa()];
-            $parentId = $category->getParentId();
-
-            while ($parentId !== null && $categories->has($parentId) && count($path) < Category::MAX_DEPTH) {
-                /** @var Category $parent */
-                $parent = $categories->get($parentId);
-                array_unshift($path, $parent->getNameFa());
-                $parentId = $parent->getParentId();
-            }
-
-            $options[$category->getId()] = implode(' › ', $path);
-        }
-
-        asort($options);
-
-        return $options;
     }
 }

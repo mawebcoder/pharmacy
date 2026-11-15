@@ -14,13 +14,13 @@
         @include('content::widgets.heading', ['title' => $widget->getTitleFa() ?? $collection->getNameFa(), 'href' => route('collections.show', $collection)])
         <div
             class="relative"
-            x-data="slider({ slidesPerView: 2.3, spaceBetween: 12, breakpoints: { 768: { slidesPerView: 3, spaceBetween: 16 }, 1280: { slidesPerView: 6, spaceBetween: 16 } } })"
+            x-data="slider({ slidesPerView: 2.15, spaceBetween: 12, breakpoints: { 768: { slidesPerView: 3, spaceBetween: 16 }, 1280: { slidesPerView: 5, spaceBetween: 16 } } })"
         >
             <div x-ref="slider" class="swiper">
                 <ul class="swiper-wrapper">
                     @foreach ($products as $product)
-                        <li wire:key="widget-{{ $widget->getId() }}-product-{{ $product->getId() }}" class="swiper-slide h-auto! w-[42%] md:w-[calc((100%-32px)/3)] xl:w-[calc((100%-80px)/6)]">
-                            <x-catalog::product-card :product="$product" :quick-view="false" />
+                        <li wire:key="widget-{{ $widget->getId() }}-product-{{ $product->getId() }}" class="swiper-slide h-auto! w-[45%] md:w-[calc((100%-32px)/3)] xl:w-[calc((100%-64px)/5)]">
+                            <x-catalog::product-card :product="$product" />
                         </li>
                     @endforeach
                 </ul>

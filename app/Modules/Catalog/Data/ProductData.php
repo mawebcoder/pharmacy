@@ -18,6 +18,7 @@ final readonly class ProductData
      * @param  list<int>  $categoryIds  extra categories besides the primary one
      * @param  list<int>  $attributeValueIds  chosen attribute values (any attribute)
      * @param  list<int>  $tagIds
+     * @param  list<int>  $subcategoryIds  extra subcategories besides the main one (owner, 2026-11-15)
      */
     public function __construct(
         public string $nameFa,
@@ -43,10 +44,13 @@ final readonly class ProductData
         public array $attributeValueIds = [],
         public array $tagIds = [],
         public ?int $maxPerOrder = null,
+        public ?int $primarySubcategoryId = null,
+        public array $subcategoryIds = [],
     ) {}
 
     /**
-     * Keys are the products columns (Product::COLUMN_*) plus "category_ids", "attribute_value_ids" and "tag_ids".
+     * Keys are the products columns (Product::COLUMN_*) plus "category_ids", "subcategory_ids", "attribute_value_ids" and
+     * "tag_ids".
      *
      * @param  array<string, mixed>  $data
      */
@@ -80,6 +84,8 @@ final readonly class ProductData
             attributeValueIds: self::ids($data['attribute_value_ids'] ?? []),
             tagIds: self::ids($data['tag_ids'] ?? []),
             maxPerOrder: blank($data[Product::COLUMN_MAX_PER_ORDER] ?? null) ? null : (int) PersianNormalizer::digits((string) $data[Product::COLUMN_MAX_PER_ORDER]),
+            primarySubcategoryId: blank($data[Product::COLUMN_PRIMARY_SUBCATEGORY_ID] ?? null) ? null : (int) $data[Product::COLUMN_PRIMARY_SUBCATEGORY_ID],
+            subcategoryIds: self::ids($data['subcategory_ids'] ?? []),
         );
     }
 

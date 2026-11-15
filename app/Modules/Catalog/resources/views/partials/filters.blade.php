@@ -1,14 +1,11 @@
 {{--
-    Filter groups of a product list (roadmap B9.3): collapsible groups with counts; long lists get a search box.
+    Filter groups of a product list (roadmap B9.3): collapsible groups; long lists get a search box. No counts beside
+    the options (owner, 2026-11-15: they shifted the panel as they changed).
     Used in the desktop sidebar and in the phone/tablet slide. Changes apply at once (wire:model.live).
     Variables: $result (ListingResult), $idPrefix (unique per copy of the panel).
 --}}
 @use('App\Modules\Catalog\Livewire\ProductListing')
 @use('App\Modules\Shared\Support\PersianDigits')
-
-@php
-    $count = fn (int $value): string => PersianDigits::toPersian($value);
-@endphp
 
 <div class="divide-y divide-line-200">
     @foreach ($result->facets as $group)
@@ -43,7 +40,6 @@
                                     class="size-5 rounded border-line-300 text-primary-700 focus:ring-primary-700"
                                 >
                                 <span class="flex-1">{{ $option->label }}</span>
-                                <span class="text-xs text-ink-500">{{ $count($option->count) }}</span>
                             </label>
                         </li>
                     @endforeach
@@ -79,9 +75,10 @@
             <x-ts-icon icon="chevron-down" class="size-4 text-ink-500 transition group-open:rotate-180 motion-reduce:transition-none" />
         </summary>
         <div class="flex flex-wrap gap-2 pt-1">
+            {{-- A second click on the picked step clears it (owner, 2026-11-15); a radio alone cannot be unticked. --}}
             @foreach (ProductListing::DISCOUNT_STEPS as $step)
                 <label class="cursor-pointer">
-                    <input type="radio" name="{{ $idPrefix }}-discount" value="{{ $step }}" wire:model.live="discount" class="peer sr-only">
+                    <input type="radio" name="{{ $idPrefix }}-discount" value="{{ $step }}" wire:model.live="discount" x-on:click="if (Number($wire.discount) === {{ $step }}) { $event.preventDefault(); setTimeout(() => document.querySelectorAll('input[name$=-discount]').forEach((radio) => (radio.checked = false))); $wire.set('discount', null) }" class="peer sr-only">
                     <span class="flex h-9 items-center rounded-full border border-line-200 px-3 text-sm text-ink-900 peer-checked:border-accent-500 peer-checked:bg-accent-500 peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-primary-700">
                         {{ PersianDigits::toPersian($step) }}٪ و بیشتر
                     </span>
@@ -91,9 +88,9 @@
     </details>
 
     <div class="space-y-1 py-3">
-        @foreach (['inStock' => ['فقط کالاهای موجود', 'in_stock'], 'nearExpiry' => ['زودمصرف', 'near_expiry'], 'damagedBox' => ['کج‌جعبه', 'damaged_box']] as $property => [$label, $countKey])
+        @foreach (['inStock' => 'فقط کالاهای موجود', 'nearExpiry' => 'زودمصرف', 'damagedBox' => 'کج‌جعبه'] as $property => $label)
             <label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm text-ink-900">
-                <span>{{ $label }} @unless ($result->degraded)<span class="text-xs text-ink-500">({{ $count($result->flagCounts[$countKey]) }})</span>@endunless</span>
+                <span>{{ $label }}</span>
                 <input type="checkbox" wire:model.live="{{ $property }}" class="size-5 rounded border-line-300 text-primary-700 focus:ring-primary-700">
             </label>
         @endforeach

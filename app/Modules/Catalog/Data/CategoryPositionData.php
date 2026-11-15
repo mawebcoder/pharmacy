@@ -5,36 +5,23 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Data;
 
 /**
- * Where one category sits after a drag and drop in the admin tree.
+ * Where one category sits after a drag and drop in the admin categories table (one level; owner, 2026-11-15).
  */
 final readonly class CategoryPositionData
 {
     public function __construct(
         public int $categoryId,
-        public ?int $parentId,
         public int $sort,
     ) {}
 
     /**
-     * Flattens the nested list the admin tree sends: [['id' => 3, 'children' => [['id' => 7, 'children' => []]]], …].
-     * Siblings are numbered from 1 in the order given.
+     * The ids in their new order, numbered from 1.
      *
-     * @param  array<int, array{id: int|string, children?: array<int, mixed>}>  $nodes
+     * @param  array<int|string>  $orderedIds
      * @return list<self>
      */
-    public static function fromNestedList(array $nodes, ?int $parentId = null): array
+    public static function fromOrderedIds(array $orderedIds): array
     {
-        $positions = [];
-
-        foreach (array_values($nodes) as $index => $node) {
-            $id = (int) $node['id'];
-            $positions[] = new self($id, $parentId, $index + 1);
-
-            /** @var array<int, array{id: int|string, children?: array<int, mixed>}> $children */
-            $children = $node['children'] ?? [];
-            array_push($positions, ...self::fromNestedList($children, $id));
-        }
-
-        return $positions;
+        return array_map(fn (int $index, int|string $id): self => new self((int) $id, $index + 1), array_keys(array_values($orderedIds)), array_values($orderedIds));
     }
 }

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 use App\Modules\Catalog\Actions\CreateCategory;
 use App\Modules\Catalog\Actions\DeleteCategory;
+use App\Modules\Catalog\Actions\DeleteSubcategory;
 use App\Modules\Catalog\Actions\MoveCategories;
-use App\Modules\Catalog\Actions\RestoreCategory;
+use App\Modules\Catalog\Actions\SaveSubcategory;
 use App\Modules\Catalog\Actions\UpdateCategory;
 use App\Modules\Catalog\Data\CategoryData;
 use App\Modules\Catalog\Data\CategoryPositionData;
+use App\Modules\Catalog\Data\SubcategoryData;
 use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Subcategory;
 
 function categoryData(array $overrides = []): CategoryData
 {
@@ -23,18 +26,14 @@ function categoryData(array $overrides = []): CategoryData
     ]);
 }
 
-/**
- * مکمل‌ها › ویتامین‌ها › ویتامین D
- *
- * @return array{0: Category, 1: Category, 2: Category}
- */
-function threeLevels(): array
+function subcategoryData(array $overrides = []): SubcategoryData
 {
-    $root = Category::factory()->create([Category::COLUMN_NAME_FA => 'مکمل‌ها']);
-    $middle = Category::factory()->childOf($root)->create([Category::COLUMN_NAME_FA => 'ویتامین‌ها']);
-    $leaf = Category::factory()->childOf($middle)->create([Category::COLUMN_NAME_FA => 'ویتامین D']);
-
-    return [$root, $middle, $leaf];
+    return SubcategoryData::fromArray([
+        Subcategory::COLUMN_NAME_FA => 'ویتامین‌ها',
+        Subcategory::COLUMN_NAME_EN => 'Vitamins',
+        Subcategory::COLUMN_IS_ACTIVE => true,
+        ...$overrides,
+    ]);
 }
 
 describe('creating', function (): void {
@@ -46,56 +45,16 @@ describe('creating', function (): void {
             ->and($persian->getSlug())->toBe('مادر-و-کودک');
     });
 
-    it('adds a category after its last sibling', function (): void {
-        $root = Category::factory()->create();
-        Category::factory()->childOf($root)->create([Category::COLUMN_SORT => 4]);
+    it('adds a category at the end of the list', function (): void {
+        Category::factory()->create([Category::COLUMN_SORT => 4]);
 
-        $category = app(CreateCategory::class)(categoryData([Category::COLUMN_PARENT_ID => $root->getId()]));
+        $category = app(CreateCategory::class)(categoryData());
 
         expect($category->getSort())->toBe(5);
-    });
-
-    it('refuses a fourth level', function (): void {
-        [, , $leaf] = threeLevels();
-
-        expect(fn () => app(CreateCategory::class)(categoryData([Category::COLUMN_PARENT_ID => $leaf->getId()])))
-            ->toThrow(CategoryChangeRefused::class);
-
-        expect(Category::query()->count())->toBe(3);
     });
 });
 
 describe('updating', function (): void {
-    it('moves a category with its subcategories to the end of the new siblings', function (): void {
-        [$root, $middle, $leaf] = threeLevels();
-        $other = Category::factory()->create();
-        Category::factory()->childOf($other)->create([Category::COLUMN_SORT => 1]);
-
-        $moved = app(UpdateCategory::class)($middle, categoryData([Category::COLUMN_NAME_FA => 'ویتامین‌ها', Category::COLUMN_PARENT_ID => $other->getId()]));
-
-        expect($moved->fresh())
-            ->getParentId()->toBe($other->getId())
-            ->getSort()->toBe(2)
-            ->and($leaf->fresh()->getParentId())->toBe($middle->getId());
-    });
-
-    it('refuses to put a category under its own subcategory', function (): void {
-        [$root, , $leaf] = threeLevels();
-
-        expect(fn () => app(UpdateCategory::class)($root, categoryData([Category::COLUMN_PARENT_ID => $leaf->getId()])))
-            ->toThrow(CategoryChangeRefused::class);
-
-        expect($root->fresh()->getParentId())->toBeNull();
-    });
-
-    it('refuses a move that pushes subcategories past three levels', function (): void {
-        [, $middle] = threeLevels();
-        $otherRoot = Category::factory()->create();
-
-        expect(fn () => app(UpdateCategory::class)($middle, categoryData([Category::COLUMN_PARENT_ID => Category::factory()->childOf($otherRoot)->create()->getId()])))
-            ->toThrow(CategoryChangeRefused::class);
-    });
-
     it('keeps the slug when a category is renamed', function (): void {
         $category = Category::factory()->create([Category::COLUMN_SLUG => 'supplements']);
 
@@ -105,35 +64,22 @@ describe('updating', function (): void {
     });
 });
 
-describe('deleting and restoring', function (): void {
+describe('deleting', function (): void {
     it('refuses to delete a category that has subcategories', function (): void {
-        [$root] = threeLevels();
+        $category = Category::factory()->create();
+        Subcategory::factory()->of($category)->create();
 
-        expect(fn () => app(DeleteCategory::class)($root))->toThrow(CategoryChangeRefused::class);
+        expect(fn () => app(DeleteCategory::class)($category))->toThrow(CategoryChangeRefused::class);
 
-        expect($root->fresh()->trashed())->toBeFalse();
+        expect($category->fresh()->trashed())->toBeFalse();
     });
 
-    it('moves a category without subcategories to the trash', function (): void {
-        [, , $leaf] = threeLevels();
+    it('moves a category without subcategories or products to the trash', function (): void {
+        $category = Category::factory()->create();
 
-        app(DeleteCategory::class)($leaf);
+        app(DeleteCategory::class)($category);
 
-        expect($leaf->fresh()->trashed())->toBeTrue();
-    });
-
-    it('refuses to restore a category whose parent is deleted', function (): void {
-        $root = Category::factory()->create();
-        $child = Category::factory()->childOf($root)->create();
-        $child->delete();
-        $root->delete();
-
-        expect(fn () => app(RestoreCategory::class)($child->fresh()))->toThrow(CategoryChangeRefused::class);
-
-        app(RestoreCategory::class)($root->fresh());
-        app(RestoreCategory::class)($child->fresh());
-
-        expect($child->fresh()->trashed())->toBeFalse();
+        expect($category->fresh()->trashed())->toBeTrue();
     });
 
     it('refuses to delete a category that has products, as primary or extra category', function (Closure $attach): void {
@@ -149,35 +95,62 @@ describe('deleting and restoring', function (): void {
     ]);
 });
 
-describe('moving in the tree', function (): void {
-    it('saves the new order and nesting from the tree', function (): void {
+describe('reordering', function (): void {
+    it('saves the new order from the table', function (): void {
         $first = Category::factory()->create([Category::COLUMN_SORT => 1]);
         $second = Category::factory()->create([Category::COLUMN_SORT => 2]);
         $third = Category::factory()->create([Category::COLUMN_SORT => 3]);
 
-        $moved = app(MoveCategories::class)(CategoryPositionData::fromNestedList([
-            ['id' => $third->getId(), 'children' => [['id' => $first->getId(), 'children' => []]]],
-            ['id' => $second->getId(), 'children' => []],
-        ]));
+        $moved = app(MoveCategories::class)(CategoryPositionData::fromOrderedIds([$third->getId(), $first->getId(), $second->getId()]));
 
-        expect($moved)->toBe(2)
-            ->and($third->fresh())->getParentId()->toBeNull()->getSort()->toBe(1)
-            ->and($first->fresh())->getParentId()->toBe($third->getId())->getSort()->toBe(1)
-            ->and($second->fresh()->getSort())->toBe(2);
+        expect($moved)->toBe(3)
+            ->and($third->fresh()->getSort())->toBe(1)
+            ->and($first->fresh()->getSort())->toBe(2)
+            ->and($second->fresh()->getSort())->toBe(3);
+    });
+});
+
+describe('subcategories', function (): void {
+    it('adds a subcategory at the end of its own category', function (): void {
+        $supplements = Category::factory()->create();
+        Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_SORT => 3]);
+        Subcategory::factory()->create([Subcategory::COLUMN_SORT => 9]);
+
+        $subcategory = app(SaveSubcategory::class)($supplements, subcategoryData());
+
+        expect($subcategory->fresh())
+            ->getCategoryId()->toBe($supplements->getId())
+            ->getSort()->toBe(4)
+            ->getSlug()->toBe('vitamins');
     });
 
-    it('saves nothing when the tree would get a fourth level', function (): void {
-        [$root, $middle, $leaf] = threeLevels();
-        $extra = Category::factory()->create();
+    it('keeps the slug when a subcategory is renamed', function (): void {
+        $subcategory = Subcategory::factory()->create([Subcategory::COLUMN_SLUG => 'vitamins']);
 
-        expect(fn () => app(MoveCategories::class)(CategoryPositionData::fromNestedList([
-            ['id' => $root->getId(), 'children' => [
-                ['id' => $middle->getId(), 'children' => [
-                    ['id' => $leaf->getId(), 'children' => [['id' => $extra->getId(), 'children' => []]]],
-                ]],
-            ]],
-        ])))->toThrow(CategoryChangeRefused::class);
+        $renamed = app(SaveSubcategory::class)($subcategory->category, subcategoryData([Subcategory::COLUMN_NAME_EN => 'Vitamins & Minerals']), $subcategory);
 
-        expect($extra->fresh()->getParentId())->toBeNull();
+        expect($renamed->fresh())
+            ->getNameEn()->toBe('Vitamins & Minerals')
+            ->getSlug()->toBe('vitamins');
+    });
+
+    it('refuses to delete a subcategory that has products, as main or extra subcategory', function (Closure $attach): void {
+        $subcategory = Subcategory::factory()->create();
+        $attach($subcategory);
+
+        expect(fn () => app(DeleteSubcategory::class)($subcategory))->toThrow(CategoryChangeRefused::class);
+
+        expect($subcategory->fresh()->trashed())->toBeFalse();
+    })->with([
+        'main subcategory' => [fn (Subcategory $subcategory) => Product::factory()->for($subcategory, 'primarySubcategory')->create()],
+        'extra subcategory' => [fn (Subcategory $subcategory) => Product::factory()->create()->subcategories()->attach($subcategory)],
+    ]);
+
+    it('moves a subcategory without products to the trash', function (): void {
+        $subcategory = Subcategory::factory()->create();
+
+        app(DeleteSubcategory::class)($subcategory);
+
+        expect($subcategory->fresh()->trashed())->toBeTrue();
     });
 });

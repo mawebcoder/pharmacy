@@ -23,7 +23,7 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A banner in the library («بنرها», roadmap D3.6, S13b): three artworks (desktop 1920×600, tablet 1536×768,
- * mobile 800×1000), a link target the admin picked, and a schedule. Placed on the home page and list pages through
+ * mobile 800×400, 2:1 since 2026-11-15), a link target the admin picked, and a schedule. Placed on the home page and list pages through
  * banner_placements; one banner can be reused in several places.
  */
 final class Banner extends Model implements HasActivityLogLabel, HasImagePresets

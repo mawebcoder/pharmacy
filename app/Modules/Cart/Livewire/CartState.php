@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Cart\Livewire;
 
 use App\Modules\Cart\Actions\AddToCart;
+use App\Modules\Cart\Actions\EmptyCart;
 use App\Modules\Cart\Actions\SetCartQuantity;
 use App\Modules\Cart\Data\CartOwnerData;
 use App\Modules\Cart\Exceptions\CartRefused;
+use App\Modules\Cart\Models\Cart;
 use App\Modules\Cart\Queries\CurrentCart;
+use App\Modules\Settings\Queries\StoreSettings;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -16,8 +19,8 @@ use TallStackUi\Traits\Interactions;
 
 /**
  * Behind every add-to-cart button (roadmap S19), once per page: seeds the Alpine «cart» store (quantity and limit per
- * SKU, item count, total) and handles the `cart-add` / `cart-set` browser events, then sends `cart-updated` with the new
- * state. No toast on a change (the stepper and header count show it; owner, 2026-11-14), except the free-shipping
+ * SKU, item count, total) and handles the `cart-add` / `cart-set` / `cart-clear` browser events, then sends `cart-updated`
+ * with the new state. No toast on a change (the stepper and header count show it; owner, 2026-11-14), except the free-shipping
  * progress when it is close; refusals (out of stock, limit, prescription) are shown as warnings.
  */
 final class CartState extends Component
@@ -50,8 +53,9 @@ final class CartState extends Component
             $this->settle($variantId);
         }
 
+        $previousSubtotal = $this->state['total'];
         $this->publish($carts, $quantity);
-        $this->nudgeTowardsFreeShipping($carts);
+        $this->nudgeTowardsFreeShipping($carts, $previousSubtotal);
     }
 
     #[On('cart-set')]
@@ -68,9 +72,25 @@ final class CartState extends Component
         $this->publish($carts, $quantity);
     }
 
-    public function render(): View
+    /**
+     * «حذف همه» on the cart page and the mini cart (owner, 2026-11-15): empties the current owner's cart.
+     */
+    #[On('cart-clear')]
+    public function clear(EmptyCart $emptyCart, CurrentCart $carts): void
     {
-        return view('cart::livewire.cart-state');
+        $cart = $carts->find(CartOwnerData::current());
+
+        if (! $cart instanceof Cart) {
+            return;
+        }
+
+        $emptyCart($cart->getId());
+        $this->publish($carts, 0);
+    }
+
+    public function render(StoreSettings $settings): View
+    {
+        return view('cart::livewire.cart-state', ['removalDelaySeconds' => $settings->removalDelaySeconds()]);
     }
 
     /**
@@ -92,9 +112,10 @@ final class CartState extends Component
 
     /**
      * After an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar (owner,
-     * 2026-11-14). Nothing when there is no offer, the order already ships free, or more is left.
+     * 2026-11-14). The bar grows from where it was before the add. Nothing when there is no offer, the order already
+     * ships free, or more is left.
      */
-    private function nudgeTowardsFreeShipping(CurrentCart $carts): void
+    private function nudgeTowardsFreeShipping(CurrentCart $carts, int $previousSubtotal): void
     {
         $summary = $carts->summary(CartOwnerData::current());
 
@@ -103,7 +124,10 @@ final class CartState extends Component
         }
 
         $this->toast()
-            ->info('تا ارسال رایگان چیزی نمانده', view('cart::partials.free-shipping-toast', ['summary' => $summary])->render())
+            ->info('تا ارسال رایگان چیزی نمانده', view('cart::partials.free-shipping-toast', [
+                'summary' => $summary,
+                'previousProgress' => (int) min(100, floor($previousSubtotal * 100 / $summary->freeShippingThreshold)),
+            ])->render())
             ->send();
     }
 

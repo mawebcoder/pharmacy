@@ -9,6 +9,7 @@ use App\Modules\Cart\Exceptions\CartRefused;
 use App\Modules\Cart\Jobs\PruneGuestCarts;
 use App\Modules\Cart\Livewire\CartPage;
 use App\Modules\Cart\Livewire\CartState;
+use App\Modules\Cart\Livewire\MiniCart;
 use App\Modules\Cart\Models\Cart;
 use App\Modules\Cart\Models\CartItem;
 use App\Modules\Cart\Queries\CurrentCart;
@@ -16,6 +17,7 @@ use App\Modules\Cart\Support\CartCookie;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Queries\ProductListing;
 use App\Modules\Identity\Events\CustomerLoggedIn;
 use App\Modules\Identity\Models\Customer;
 use App\Modules\Settings\Actions\SaveStoreSettings;
@@ -134,6 +136,27 @@ describe('adding', function (): void {
             ->assertDispatched('cart-updated', count: 0);
     });
 
+    it('empties only the current owner\'s cart on «حذف همه»', function (): void {
+        $customer = Customer::factory()->create();
+        $other = Customer::factory()->create();
+        $sku = buyable();
+        foreach ([$customer, $other] as $owner) {
+            expect(app(AddToCart::class)(customerOwner($owner), $sku->getId()))->toBe(1);
+        }
+        $this->actingAs($customer, 'customer');
+
+        livewire(CartState::class)
+            ->dispatch('cart-clear')
+            ->assertDispatched('cart-updated', items: [], count: 0, total: 0);
+
+        expect(cartQuantities(app(CurrentCart::class)->find(customerOwner($customer))))->toBe([])
+            ->and(cartQuantities(app(CurrentCart::class)->find(customerOwner($other))))->toBe([$sku->getId() => 1]);
+    });
+
+    it('does nothing on «حذف همه» without a cart', function (): void {
+        livewire(CartState::class)->dispatch('cart-clear')->assertNotDispatched('cart-updated');
+    });
+
     it('tells the buttons to stop their spinner whether the change was made or refused', function (): void {
         $sku = buyable();
         $gone = buyable([ProductVariant::COLUMN_IS_ACTIVE => false]);
@@ -201,6 +224,37 @@ describe('cart page', function (): void {
         expect(cartQuantities(app(CurrentCart::class)->find(customerOwner($customer))))->toBe([$kept->getId() => 1]);
     });
 
+    it('lets the mini cart change a line, remove it, or empty the cart', function (): void {
+        $customer = Customer::factory()->create();
+        $sku = buyable();
+        expect(app(AddToCart::class)(customerOwner($customer), $sku->getId()))->toBe(1);
+        $this->actingAs($customer, 'customer');
+
+        livewire(MiniCart::class)
+            ->call('load')
+            ->assertSeeHtml('aria-label="تعداد کرم اوره در سبد"')
+            ->assertSeeHtml('aria-label="حذف کرم اوره از سبد"')
+            ->assertSee('حذف همه');
+    });
+
+    it('counts down before a product leaves the cart, asks before emptying it, and takes the length from the settings', function (): void {
+        app(SaveStoreSettings::class)([StoreSettings::REMOVAL_DELAY_SECONDS => 5]);
+        $customer = Customer::factory()->create();
+        $sku = buyable();
+        expect(app(AddToCart::class)(customerOwner($customer), $sku->getId()))->toBe(1);
+        $this->actingAs($customer, 'customer');
+        $starts = '$store.cartRemoval.start('.$sku->getId().')';
+
+        foreach ([livewire(CartPage::class)->html(), livewire(MiniCart::class)->call('load')->html()] as $html) {
+            expect($html)->toContain($starts)
+                ->toContain('removalOf: '.$sku->getId())
+                ->toContain("message: 'همه کالاها از سبد خرید حذف شوند؟'")
+                ->not->toContain("message: '«کرم اوره» از سبد خرید حذف شود؟'");
+        }
+
+        expect(livewire(CartState::class)->html())->toContain('$store.cartRemoval.seconds = 5');
+    });
+
     it('sends a guest to sign in before checkout', function (): void {
         $sku = buyable();
         $token = str_repeat('c', 40);
@@ -213,7 +267,7 @@ describe('cart page', function (): void {
         $inStock = buyable([], [Product::COLUMN_NAME_FA => 'موجود', Product::COLUMN_SLUG => 'in-stock']);
         $outOfStock = buyable([ProductVariant::COLUMN_STOCK_STATUS => StockStatus::OutOfStock], [Product::COLUMN_NAME_FA => 'ناموجود', Product::COLUMN_SLUG => 'out-of-stock']);
 
-        $card = fn (ProductVariant $variant): string => view('catalog::components.product-card', ['product' => $variant->getProduct()?->load(['brand', 'media', 'variants']), 'quickView' => false, 'href' => null, 'attributes' => new ComponentAttributeBag])->render();
+        $card = fn (ProductVariant $variant): string => view('catalog::components.product-card', ['product' => $variant->getProduct()?->load(ProductListing::CARD_RELATIONS), 'href' => null, 'attributes' => new ComponentAttributeBag])->render();
 
         expect($card($inStock))->toContain('به سبد خرید')
             ->and($card($outOfStock))->not->toContain('به سبد خرید');

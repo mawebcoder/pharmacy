@@ -9,9 +9,9 @@ use App\Modules\Catalog\Filament\Resources\Products\Pages\ListProducts;
 use App\Modules\Catalog\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
 use App\Modules\Catalog\Filament\Resources\Products\Schemas\ProductForm;
 use App\Modules\Catalog\Models\Brand;
-use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
@@ -37,14 +37,14 @@ describe('as a content editor', function (): void {
 
     it('creates a draft product with its first SKU and continues on its edit page', function (): void {
         $brand = Brand::factory()->create();
-        $category = Category::factory()->create();
+        $subcategory = Subcategory::factory()->create();
 
         livewire(CreateProduct::class)
             ->fillForm([
                 Product::COLUMN_NAME_FA => 'کرم مرطوب‌کننده',
                 Product::COLUMN_NAME_EN => 'Moisturising Cream',
                 Product::COLUMN_BRAND_ID => $brand->getId(),
-                Product::COLUMN_PRIMARY_CATEGORY_ID => $category->getId(),
+                Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategory->getId(),
                 Product::COLUMN_PRODUCT_TYPE => 'cosmetic',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => '۵۰ میلی‌لیتر',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_OFFICIAL_PRICE => '485,000',
@@ -67,7 +67,7 @@ describe('as a content editor', function (): void {
             ->fillForm([
                 Product::COLUMN_NAME_FA => 'کرم مرطوب‌کننده',
                 Product::COLUMN_BRAND_ID => Brand::factory()->create()->getId(),
-                Product::COLUMN_PRIMARY_CATEGORY_ID => Category::factory()->create()->getId(),
+                Product::COLUMN_PRIMARY_SUBCATEGORY_ID => Subcategory::factory()->create()->getId(),
             ])
             ->call('create')
             ->assertHasFormErrors([

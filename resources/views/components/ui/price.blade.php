@@ -3,6 +3,7 @@
     <x-ui.price :price="$variant->price" :old="$variant->official_price" />
     - discounted: old price struck through with a discount badge, then the new price
     - free (0): "رایگان" in the success colour
+    - size: sm, md (default), lg, or card (product cards: price first, old price below; sm price on phones)
 --}}
 @props([
     'price',
@@ -18,11 +19,28 @@
     $discount = $old !== null ? Toman::discountPercent((int) $old, $price) : 0;
     $priceSize = match ($size) {
         'sm' => 'text-sm',
+        'card' => 'text-sm md:text-base',
         'lg' => 'text-xl',
         default => 'text-base',
     };
 @endphp
 
+@if ($size === 'card')
+    {{-- Product cards: the price, then the old price and discount on a second line. --}}
+    <div {{ $attributes->class('flex flex-col items-start') }}>
+        @if ($price === 0)
+            <span @class(['font-bold text-success-600', $priceSize])>رایگان</span>
+        @else
+            <span @class(['font-bold whitespace-nowrap text-ink-900', $priceSize])>@toman($price)</span>
+        @endif
+        @if ($discount > 0)
+            <span class="flex h-5 items-center gap-1">
+                <del class="text-xs whitespace-nowrap text-ink-500"><span class="sr-only">قیمت قبلی:</span>@toman($old)</del>
+                <span class="rounded-full bg-accent-500 px-1.5 text-xs leading-5 font-bold text-white">{{ PersianDigits::toPersian($discount) }}٪<span class="sr-only"> تخفیف</span></span>
+            </span>
+        @endif
+    </div>
+@else
 <div {{ $attributes->class('flex flex-col items-start') }}>
     @if ($discount > 0)
         <div class="flex flex-wrap items-center gap-x-2">
@@ -43,3 +61,4 @@
         <span @class(['font-bold whitespace-nowrap text-ink-900', $priceSize])>@toman($price)</span>
     @endif
 </div>
+@endif

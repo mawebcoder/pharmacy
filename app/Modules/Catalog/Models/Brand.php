@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\BrandFactory;
+use App\Modules\Catalog\Search\NameDocument;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Laravel\Scout\Searchable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -29,6 +31,7 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
 
     use InteractsWithImagePresets;
     use LogsActivity;
+    use Searchable;
     use SoftDeletes;
 
     public const string COLUMN_ID = 'id';
@@ -256,6 +259,30 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /**
+     * Meilisearch index name, with Scout's prefix (tests use their own prefix per process).
+     */
+    public function searchableAs(): string
+    {
+        return config('scout.prefix').'brands';
+    }
+
+    /**
+     * Only active brands are in the search panel's index (owner, 2026-11-15).
+     */
+    public function shouldBeSearchable(): bool
+    {
+        return $this->isActive() && ! $this->trashed();
+    }
+
+    /**
+     * @return array{id: int, name_fa: string, name_en: string}
+     */
+    public function toSearchableArray(): array
+    {
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn());
     }
 
     public function activityLogLabel(): string

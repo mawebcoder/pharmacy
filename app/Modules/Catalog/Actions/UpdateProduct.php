@@ -12,6 +12,7 @@ use App\Modules\Catalog\Events\PricingInputsChanged;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Catalog\Support\CatalogSlug;
 use App\Modules\Catalog\Support\ProductActivation;
@@ -53,20 +54,33 @@ final class UpdateProduct
     }
 
     /**
-     * Extra categories (without the primary one), attribute values and tags.
+     * Extra subcategories (without the main one), attribute values and tags. Products are placed in subcategories
+     * only (owner, 2026-11-15), so extra categories are cleared.
      */
     public static function syncLinks(Product $product, ProductData $data): void
     {
-        $product->categories()->sync(array_values(array_diff($data->categoryIds, [$data->primaryCategoryId])));
+        $product->categories()->sync([]);
+        $product->subcategories()->sync(array_values(array_diff($data->subcategoryIds, array_filter([$data->primarySubcategoryId]))));
         $product->attributeValues()->sync($data->attributeValueIds);
         $product->tags()->sync($data->tagIds);
     }
 
     /**
-     * Copies the data onto the product, except the status.
+     * Copies the data onto the product, except the status. Products belong to subcategories (owner, 2026-11-15): the
+     * main category is the main subcategory's.
+     *
+     * @throws ProductChangeRefused
      */
     public static function fill(Product $product, ProductData $data): Product
     {
+        $categoryId = $data->primarySubcategoryId === null
+            ? null
+            : Subcategory::query()->whereKey($data->primarySubcategoryId)->value(Subcategory::COLUMN_CATEGORY_ID);
+
+        if ($categoryId === null) {
+            throw ProductChangeRefused::subcategoryRequired();
+        }
+
         $slug = $product->exists && ($data->slug === null || $data->slug === $product->getSlug())
             ? $product->getSlug()
             : CatalogSlug::for(Product::class, $data->slug, $data->nameFa, $data->nameEn, $product->exists ? $product->getId() : null);
@@ -77,7 +91,8 @@ final class UpdateProduct
             ->setSlug($slug)
             ->setBrandId($data->brandId)
             ->setCommissionPercent($data->commissionPercent)
-            ->setPrimaryCategoryId($data->primaryCategoryId)
+            ->setPrimaryCategoryId((int) $categoryId)
+            ->setPrimarySubcategoryId($data->primarySubcategoryId)
             ->setProductType($data->productType)
             // Prescription medicines always need a prescription.
             ->setRequiresPrescription($data->requiresPrescription || $data->productType === ProductType::Rx)

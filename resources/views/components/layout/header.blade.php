@@ -2,9 +2,10 @@
     Site header (roadmap B9.1). Mobile 56px with search below, tablet 64px, desktop 72px.
     Below the header row: the category bar and mega-menu (Catalog module, S08). The mini-cart total plugs in with S19.
 --}}
-{{-- Publishes the header's current height as --header-height for sticky bars below it (e.g. the brand letter bar). --}}
+{{-- Publishes the header's current height as --header-height for sticky bars below it (e.g. the brand letter bar).
+     While the full-screen search is open (phones, tablets) the header, which holds it, rises above the bottom nav. --}}
 <header
-    class="sticky top-0 z-40 border-b border-line-200 bg-card"
+    class="sticky top-0 z-40 border-b border-line-200 bg-card max-xl:[html[data-search-open]_&]:z-[70]"
     x-data
     x-init="
         const publishHeight = () => document.documentElement.style.setProperty('--header-height', $el.offsetHeight + 'px');
@@ -20,14 +21,18 @@
             <span class="text-lg font-bold text-primary-700">{{ config('app.display_name') }}</span>
         </a>
 
-        <livewire:search::instant-search class="hidden flex-1 md:block xl:max-w-xl" />
+        {{-- One search bar per page (owner, 2026-11-15): on /search the header's box holds the query. --}}
+        @php($searchQuery = request()->routeIs('search') ? (string) request()->query('q', '') : '')
+        <livewire:search::instant-search :value="$searchQuery" class="hidden flex-1 md:block xl:max-w-xl" />
 
         <nav class="ms-auto flex items-center gap-1" aria-label="حساب و سبد خرید">
             <x-ui.pharmacist-chat label="مشاوره با داروساز" class="flex h-11 min-w-11 items-center justify-center gap-2 rounded-full px-2.5 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 xl:px-3" icon-class="size-6 text-primary-700 xl:size-5" label-class="sr-only xl:not-sr-only" />
             <livewire:identity::theme-toggle />
             @auth('customer')
-                {{-- Signed-in customer (S17): their name, the account area (S18) and sign-out. --}}
+                {{-- Signed-in customer (S17): their name, the account area (S18) and sign-out; the page dims behind the menu
+                     (owner, 2026-11-15). --}}
                 <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
+                    <x-layout.header-backdrop show="open" close="open = false" />
                     <button
                         type="button"
                         class="flex h-11 items-center gap-2 rounded-full px-2 text-ink-900 hover:bg-surface-50 xl:px-3"
@@ -44,8 +49,10 @@
                         x-show="open"
                         x-cloak
                         x-transition.origin.top
+                        {{-- A link closes the menu at once; the page shows its own skeleton while it loads (owner, 2026-11-15). --}}
+                        x-on:click="$event.target.closest('a[href]') && (open = false)"
                         role="menu"
-                        class="absolute end-0 top-full z-50 mt-2 w-56 rounded-card border border-line-200 bg-card py-2 shadow-lg"
+                        class="absolute end-0 top-full z-[60] mt-2 w-56 rounded-card border border-line-200 bg-card py-2 shadow-lg"
                     >
                         <p class="truncate px-4 pb-2 text-sm font-bold text-ink-900">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</p>
                         @foreach ([
@@ -82,6 +89,6 @@
     <x-catalog::category-nav />
 
     <div class="border-t border-line-200 px-4 py-2 md:hidden">
-        <livewire:search::instant-search input-id="site-search-mobile" />
+        <livewire:search::instant-search input-id="site-search-mobile" :value="$searchQuery" />
     </div>
 </header>

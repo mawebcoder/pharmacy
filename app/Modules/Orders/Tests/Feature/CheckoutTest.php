@@ -128,6 +128,11 @@ describe('the checkout page', function (): void {
         fillCart($this->customer, [checkoutSku(1_000_000)->getId() => 1]);
 
         livewire(CheckoutPage::class)->assertRedirect(route('checkout.address'));
+        livewire(AddressStep::class)
+            ->assertSeeHtml('wire:click="proceed" disabled')
+            ->call('proceed')
+            ->assertHasErrors('address')
+            ->assertNoRedirect();
     });
 
     it('uses the picked address, else the default when none was picked or the picked one is gone', function (): void {
@@ -184,18 +189,17 @@ describe('the checkout page', function (): void {
             ->and(Order::query()->count())->toBe(0);
     });
 
-    it('requires the terms and sends the customer to the gateway', function (): void {
+    it('sends the customer to the gateway without a terms checkbox', function (): void {
         $this->actingAs($this->customer, 'customer');
         fillCart($this->customer, [checkoutSku(1_000_000)->getId() => 1]);
         homeAddress($this->customer);
 
-        livewire(CheckoutPage::class)->call('pay')->assertHasErrors('acceptTerms');
-        expect(Order::query()->count())->toBe(0);
-
         livewire(CheckoutPage::class)
-            ->set('acceptTerms', true)
+            ->assertDontSeeHtml('type="checkbox"')
             ->call('pay')
+            ->assertHasNoErrors()
             ->assertRedirect(Payment::query()->first()?->getUrl() ?? 'missing');
+        expect(Order::query()->count())->toBe(1);
     });
 });
 

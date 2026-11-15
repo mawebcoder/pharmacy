@@ -36,7 +36,7 @@ final class EditProduct extends EditRecord
     {
         /** @var Product $record */
         $record = $this->getRecord();
-        $data['category_ids'] = $record->categories()->pluck('categories.id')->all();
+        $data['subcategory_ids'] = $record->subcategories()->pluck('subcategories.id')->all();
         $data['attribute_values'] = ProductForm::attributeState($record);
         $data['tag_ids'] = $record->tags()->pluck('tags.id')->all();
 

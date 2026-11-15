@@ -9,6 +9,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Shared\Support\SearchText;
 
@@ -16,8 +17,8 @@ use App\Modules\Shared\Support\SearchText;
  * The Meilisearch document of a product (roadmap D21.5.4, decided 2026-11-07 in S12). Text fields are normalised
  * with SearchText, the same way queries are. price, discount_pct and in_stock come from the default SKU
  * (Product::getDefaultVariant()), so filters and sorting match the card; variants lists every active SKU.
- * category_ids holds every category above the product's categories too, so a parent category lists its
- * subcategories' products.
+ * category_ids holds the categories of its subcategories too, so a category lists its subcategories' products;
+ * subcategory_ids holds its main and extra subcategories (owner, 2026-11-15: subcategories in their own table).
  */
 final class ProductDocument
 {
@@ -25,7 +26,7 @@ final class ProductDocument
      * Relations a document needs; load them for many products at once (Product::makeSearchableUsing).
      */
     public const array RELATIONS = [
-        'brand', 'primaryCategory.parent.parent', 'categories.parent.parent', 'tags', 'attributeValues', 'variants', 'collections',
+        'brand', 'primaryCategory', 'categories', 'primarySubcategory', 'subcategories', 'tags', 'attributeValues', 'variants', 'collections',
     ];
 
     /**
@@ -34,16 +35,20 @@ final class ProductDocument
     public static function for(Product $product): array
     {
         $variants = $product->getVariants()->filter(fn (ProductVariant $variant): bool => $variant->isActive() && ! $variant->trashed());
-        $categories = collect([$product->getPrimaryCategory(), ...$product->getCategories()->all()])->filter();
+        $subcategories = collect([$product->getPrimarySubcategory(), ...$product->getSubcategories()->all()])->filter();
         $categoryIds = [];
         $categoryNames = [];
 
         /** @var Category $category */
-        foreach ($categories as $category) {
-            foreach ([...$category->ancestors(), $category] as $node) {
-                $categoryIds[] = $node->getId();
-                $categoryNames[] = $node->getNameFa();
-            }
+        foreach (collect([$product->getPrimaryCategory(), ...$product->getCategories()->all()])->filter() as $category) {
+            $categoryIds[] = $category->getId();
+            $categoryNames[] = $category->getNameFa();
+        }
+
+        /** @var Subcategory $subcategory */
+        foreach ($subcategories as $subcategory) {
+            $categoryIds[] = $subcategory->getCategoryId();
+            $categoryNames[] = $subcategory->getNameFa();
         }
 
         $default = $product->getDefaultVariant();
@@ -56,6 +61,7 @@ final class ProductDocument
             'brand_fa' => SearchText::forIndex((string) $product->getBrand()?->getNameFa()),
             'brand_en' => SearchText::normalize((string) $product->getBrand()?->getNameEn()),
             'category_ids' => array_values(array_unique($categoryIds)),
+            'subcategory_ids' => array_values(array_unique($subcategories->map(fn (Subcategory $subcategory): int => $subcategory->getId())->all())),
             'category_names' => array_values(array_unique(array_map(SearchText::forIndex(...), $categoryNames))),
             'collection_ids' => $product->getCollections()->map(fn (ProductCollection $collection): int => $collection->getId())->values()->all(),
             'tag_ids' => $product->getTags()->map(fn (Tag $tag): int => $tag->getId())->values()->all(),
@@ -114,7 +120,7 @@ final class ProductDocument
     {
         return [
             'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'category_names', 'attribute_values', 'ingredients', 'codes'],
-            'filterableAttributes' => ['category_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
+            'filterableAttributes' => ['category_ids', 'subcategory_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
             'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
             'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [

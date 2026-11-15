@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Queries\ProductListing;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -48,6 +50,7 @@ new #[Title('اجزای رابط کاربری')] class extends Component
     {
         return [
             'now' => Carbon::now(),
+            'products' => Product::query()->active()->with(ProductListing::CARD_RELATIONS)->latest()->limit(4)->get(),
             'brands' => [
                 ['label' => 'نیچرز بونتی', 'value' => 'natures-bounty'],
                 ['label' => 'ویتابیوتیکس', 'value' => 'vitabiotics'],
@@ -92,6 +95,19 @@ new #[Title('اجزای رابط کاربری')] class extends Component
             <x-ui.price :price="12_500_000" :old="15_000_000" size="lg" />
             <x-ui.price :price="0" />
         </div>
+    </section>
+
+    {{-- The one product card (B9.4) used by every list, rail, the search panel, related products and the wishlist,
+         and its skeleton; both come from these components only. --}}
+    <section class="space-y-4 rounded-card border border-line-200 bg-card p-4 md:p-6">
+        <h2 class="font-bold">کارت محصول (B9.4)</h2>
+        <p class="text-sm text-ink-500">&lt;x-catalog::product-card&gt; و &lt;x-ui.product-card-skeleton&gt;؛ ارتفاع هر بخش ثابت است.</p>
+        <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5">
+            @foreach ($products as $product)
+                <li wire:key="ui-card-{{ $product->getId() }}"><x-catalog::product-card :product="$product" /></li>
+            @endforeach
+            <li class="animate-pulse motion-reduce:animate-none" aria-hidden="true"><x-ui.product-card-skeleton /></li>
+        </ul>
     </section>
 
     <section class="space-y-4 rounded-card border border-line-200 bg-card p-4 md:p-6">

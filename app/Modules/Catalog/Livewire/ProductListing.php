@@ -39,6 +39,9 @@ final class ProductListing extends Component
     public ?int $categoryId = null;
 
     #[Locked]
+    public ?int $subcategoryId = null;
+
+    #[Locked]
     public ?int $brandId = null;
 
     #[Locked]
@@ -278,6 +281,7 @@ final class ProductListing extends Component
         return new ListingCriteria(
             query: $this->query,
             categoryId: $this->categoryId,
+            subcategoryId: $this->subcategoryId,
             brandId: $this->brandId,
             tagId: $this->tagId,
             collectionId: $this->collectionId,

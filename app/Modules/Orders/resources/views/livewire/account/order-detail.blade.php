@@ -19,8 +19,8 @@
     <div class="{{ $card }}" x-data="{ copied: false }">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-1">
-                <p class="text-lg font-bold text-ink-900" dir="ltr">{{ $order->getNumber() }}</p>
-                <button type="button" x-on:click="navigator.clipboard.writeText(@js($order->getNumber())); copied = true; setTimeout(() => copied = false, 2000)" class="grid size-11 place-items-center rounded-full text-primary-700 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-primary-700" aria-label="کپی شماره سفارش">
+                <p class="text-lg font-bold text-ink-900 select-all" dir="ltr">{{ $order->getNumber() }}</p>
+                <button type="button" x-on:click="$copy(@js($order->getNumber())).then((ok) => { copied = ok; setTimeout(() => (copied = false), 2000) })" class="grid size-11 place-items-center rounded-full text-primary-700 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-primary-700" aria-label="کپی شماره سفارش">
                     <x-ts-icon icon="clipboard-document" class="size-5" x-show="! copied" />
                     <x-ts-icon icon="check" class="size-5" x-show="copied" x-cloak />
                 </button>
@@ -43,8 +43,9 @@
                     <span class="text-xs text-ink-500">مهلت پرداخت تا {{ JalaliDate::display($order->getExpiresAt(), 'H:i') }}</span>
                 @else
                     @if ($status === OrderStatus::Paid)
-                        <button type="button" wire:click="cancel({{ $order->getId() }})" wire:confirm="سفارش {{ $order->getNumber() }} لغو شود؟ مبلغ پرداختی بازگردانده می‌شود." class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50">
-                            <x-ts-icon icon="x-circle" class="size-5" />
+                        <button type="button" x-data="{ working: false }" x-bind:disabled="working" x-bind:aria-busy="working" x-on:click="$store.confirm.ask({ title: 'لغو سفارش', message: @js('سفارش '.$order->getNumber().' لغو شود؟ مبلغ پرداختی بازگردانده می‌شود.'), confirm: 'لغو سفارش', cancel: 'منصرف شدم', icon: 'cancel' }).then((ok) => { if (! ok) return; working = true; $wire.cancel({{ $order->getId() }}).finally(() => (working = false)); })" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 disabled:cursor-wait disabled:opacity-60">
+                            <x-ts-icon icon="x-circle" class="size-5" x-show="! working" />
+                            <x-ui.spinner class="size-5" x-show="working" x-cloak />
                             لغو سفارش
                         </button>
                     @endif

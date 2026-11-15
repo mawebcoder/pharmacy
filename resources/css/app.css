@@ -161,6 +161,37 @@
         }
     }
 
+    /* The ring of a cart removal countdown (x-cart::removal-countdown): full to empty over the countdown. */
+    @keyframes cart-removal-ring {
+        from {
+            stroke-dashoffset: 0;
+        }
+
+        to {
+            stroke-dashoffset: 62.83;
+        }
+    }
+
+    /* The free-shipping bar in the add-to-cart toast grows from its progress before the add (--progress-from). */
+    @keyframes progress-grow {
+        from {
+            width: var(--progress-from, 0%);
+        }
+    }
+
+    /* While the full-screen search is open on phones and tablets (search::instant-search), the page does not scroll;
+       the header that holds it rises above the bottom nav (its own class, layouts header). */
+    @media (width < 80rem) {
+        html[data-search-open] {
+            overflow: hidden;
+        }
+    }
+
+    /* Toasts swipe sideways to dismiss (resources/js/components/toast-swipe.js); vertical drags still scroll the page. */
+    [x-data^="tallstackui_toastLoop"] {
+        touch-action: pan-y;
+    }
+
     /* Swiper lets presses through (for wire:navigate links), so stop photos and text from being dragged or selected. */
     .swiper img {
         -webkit-user-drag: none;

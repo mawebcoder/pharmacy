@@ -6,6 +6,9 @@ use App\Modules\Catalog\Filament\Resources\Brands\Pages\CreateBrand;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\EditCategory;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Media\Actions\AttachImage;
 use Filament\Facades\Filament;
@@ -72,9 +75,11 @@ describe('storefront', function (): void {
 
     it('shows the category banner and subcategory icons on the category page', function (): void {
         $category = Category::factory()->create([Category::COLUMN_SLUG => 'supplements']);
-        $child = Category::factory()->childOf($category)->create();
+        $subcategory = Subcategory::factory()->of($category)->create();
+        // The category page shows only subcategories with a product for sale.
+        ProductVariant::factory()->for(Product::factory()->active()->for($subcategory, 'primarySubcategory')->create())->create([ProductVariant::COLUMN_OFFICIAL_PRICE => null, ProductVariant::COLUMN_PRICE => 1_000_000]);
         $banner = app(AttachImage::class)($category, Category::IMAGE_BANNER_DESKTOP, testImage(1920, 480, 'jpg'))->fresh();
-        $icon = app(AttachImage::class)($child, Category::IMAGE_ICON, testImage(256, 256))->fresh();
+        $icon = app(AttachImage::class)($subcategory, Subcategory::IMAGE_ICON, testImage(256, 256))->fresh();
 
         $this->get('/categories/supplements')
             ->assertOk()

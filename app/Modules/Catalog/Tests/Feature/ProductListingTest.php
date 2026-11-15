@@ -13,6 +13,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
 use App\Modules\Pricing\Actions\SaveProviderPrice;
@@ -20,6 +21,7 @@ use App\Modules\Pricing\Data\ProviderPriceData;
 use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\ComponentAttributeBag;
 use Meilisearch\Client;
 
 use function Pest\Livewire\livewire;
@@ -85,18 +87,34 @@ it('keeps products that are not for sale out of the index', function (): void {
     expect(listedNames(new ListingCriteria))->toBe(['محصول فعال']);
 });
 
-it('lists a category with the products of its subcategories', function (): void {
+it('lists a category with the products of its subcategories, main or extra', function (): void {
     $supplements = Category::factory()->create();
-    $vitamins = Category::factory()->childOf($supplements)->create();
-    $beauty = Category::factory()->create();
-    sellable([Product::COLUMN_NAME_FA => 'ویتامین', Product::COLUMN_PRIMARY_CATEGORY_ID => $vitamins->getId()]);
-    sellable([Product::COLUMN_NAME_FA => 'رژ لب', Product::COLUMN_PRIMARY_CATEGORY_ID => $beauty->getId()]);
-    $extra = sellable([Product::COLUMN_NAME_FA => 'امگا ۳', Product::COLUMN_PRIMARY_CATEGORY_ID => $beauty->getId()]);
-    $extra->categories()->attach($supplements);
+    $vitamins = Subcategory::factory()->of($supplements)->create();
+    $lipsticks = Subcategory::factory()->create();
+    sellable([Product::COLUMN_NAME_FA => 'ویتامین', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $vitamins->getId()]);
+    sellable([Product::COLUMN_NAME_FA => 'رژ لب', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $lipsticks->getId()]);
+    $extra = sellable([Product::COLUMN_NAME_FA => 'امگا ۳', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $lipsticks->getId()]);
+    $extra->subcategories()->attach($vitamins);
     indexProductsForSearch();
 
     expect(listedNames(new ListingCriteria(categoryId: $supplements->getId())))->toEqualCanonicalizing(['ویتامین', 'امگا ۳']);
 });
+
+it('lists a subcategory with its products, main or extra, from search and from the database', function (bool $searchIsDown): void {
+    $category = Category::factory()->create();
+    [$vitamins, $minerals] = Subcategory::factory()->of($category)->count(2)->create();
+    sellable([Product::COLUMN_NAME_FA => 'ویتامین', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $vitamins->getId()]);
+    sellable([Product::COLUMN_NAME_FA => 'زینک', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $minerals->getId()]);
+    sellable([Product::COLUMN_NAME_FA => 'مولتی', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $minerals->getId()])->subcategories()->attach($vitamins);
+    indexProductsForSearch();
+
+    if ($searchIsDown) {
+        config(['scout.meilisearch.host' => 'http://127.0.0.1:1']);
+        app()->forgetInstance(Client::class);
+    }
+
+    expect(listedNames(new ListingCriteria(subcategoryId: $vitamins->getId())))->toEqualCanonicalizing(['ویتامین', 'مولتی']);
+})->with(['search' => [false], 'database' => [true]]);
 
 it('lists the products of a brand and of a tag', function (): void {
     $brand = Brand::factory()->create();
@@ -137,6 +155,21 @@ describe('filters', function (): void {
         'discount' => [fn (): array => ['minDiscount' => 20], ['کرم اوسرین']],
         'near expiry' => [fn (): array => ['nearExpiry' => true], ['کرم سینره']],
     ]);
+
+    it('offers the same list without filters when they leave nothing, and the shop when nothing was filtered', function (): void {
+        $listing = livewire(ProductListingComponent::class)
+            ->set('discount', 50)
+            ->assertSee('کالایی با این مشخصات پیدا نشد')
+            ->assertSee('نمایش همه کالاها')
+            ->call('clearFilters')
+            ->assertDontSee('کالایی با این مشخصات پیدا نشد');
+
+        expect($listing->get('discount'))->toBeNull();
+
+        livewire(ProductListingComponent::class, ['categoryId' => Category::factory()->create()->getId()])
+            ->assertSee('بازگشت به فروشگاه')
+            ->assertDontSee('نمایش همه کالاها');
+    });
 
     it('checks and unchecks an attribute value from the filter panel', function (): void {
         $listing = livewire(ProductListingComponent::class)->call('toggleAttributeValue', 'form', $this->cream->getId());
@@ -213,10 +246,11 @@ it('updates the index when a supplier price changes the selling price', function
 });
 
 it('falls back to the newest products from the database when search is down', function (): void {
-    $category = Category::factory()->create();
-    sellable([Product::COLUMN_NAME_FA => 'قدیمی', Product::COLUMN_PRIMARY_CATEGORY_ID => $category->getId()]);
+    $subcategory = Subcategory::factory()->create();
+    $category = $subcategory->category;
+    sellable([Product::COLUMN_NAME_FA => 'قدیمی', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategory->getId()]);
     $this->travel(1)->minutes();
-    sellable([Product::COLUMN_NAME_FA => 'جدید', Product::COLUMN_PRIMARY_CATEGORY_ID => $category->getId()]);
+    sellable([Product::COLUMN_NAME_FA => 'جدید', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategory->getId()]);
     config(['scout.meilisearch.host' => 'http://127.0.0.1:1']);
     app()->forgetInstance(Client::class);
 
@@ -226,10 +260,24 @@ it('falls back to the newest products from the database when search is down', fu
         ->and($result->products->getCollection()->map->getNameFa()->all())->toBe(['جدید', 'قدیمی']);
 });
 
+it('leaves the brand off product cards and out of their query', function (): void {
+    $subcategory = Subcategory::factory()->create();
+    $category = $subcategory->category;
+    $brand = Brand::factory()->create([Brand::COLUMN_NAME_FA => 'برند پنهان']);
+    sellable([Product::COLUMN_NAME_FA => 'کرم', Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategory->getId(), Product::COLUMN_BRAND_ID => $brand->getId()]);
+    indexProductsForSearch();
+
+    $product = app(ProductListing::class)->get(new ListingCriteria(categoryId: $category->getId()))->products->getCollection()->first();
+
+    expect($product?->relationLoaded('brand'))->toBeFalse()
+        ->and(view('catalog::components.product-card', ['product' => $product, 'href' => null, 'attributes' => new ComponentAttributeBag])->render())
+        ->toContain('کرم')->not->toContain('برند پنهان');
+});
+
 it('renders a listing page in a fixed number of queries', function (int $products): void {
-    $category = Category::factory()->create([Category::COLUMN_SLUG => 'skin']);
+    $subcategory = Subcategory::factory()->of(Category::factory()->create([Category::COLUMN_SLUG => 'skin']))->create();
     foreach (range(1, $products) as $number) {
-        sellable([Product::COLUMN_NAME_FA => "محصول {$number}", Product::COLUMN_PRIMARY_CATEGORY_ID => $category->getId()]);
+        sellable([Product::COLUMN_NAME_FA => "محصول {$number}", Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $subcategory->getId()]);
     }
     indexProductsForSearch();
 
