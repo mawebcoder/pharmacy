@@ -32,6 +32,8 @@ final class RolesSeeder extends Seeder
             'ViewAny:Coupon', 'View:Coupon',
             // S17 Identity: look up customers and block or unblock them.
             'ViewAny:Customer', 'View:Customer', 'Update:Customer',
+            // S29 Orders: look up orders and move their status, cancelling included (refunds are left to super admins).
+            'ViewAny:Order', 'View:Order', 'Update:Order',
         ],
         'content_editor' => [
             // S07 Catalog: create and edit brands (deleting is left to super admins).

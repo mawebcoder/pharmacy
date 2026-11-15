@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 
+// «پیگیری سفارش» without signing in: order number and mobile (roadmap S29).
+Route::livewire('/track', 'orders::track-order')->name('orders.track');
+
 // The payment result and the customer's orders (roadmap B5, B9.8, B9.9, S25). Customers only.
 Route::middleware('auth:customer')->group(function (): void {
     Route::livewire('/checkout/result/{order}', 'orders::payment-result')->whereNumber('order')->name('checkout.result');

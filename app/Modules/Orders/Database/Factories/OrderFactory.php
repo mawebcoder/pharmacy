@@ -53,7 +53,7 @@ final class OrderFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             Order::COLUMN_STATUS => OrderStatus::Expired,
-            Order::COLUMN_PAYMENT_STATUS => PaymentStatus::Unpaid,
+            Order::COLUMN_PAYMENT_STATUS => PaymentStatus::Expired,
             Order::COLUMN_EXPIRES_AT => now()->subMinute(),
         ]);
     }

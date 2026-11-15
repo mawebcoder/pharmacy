@@ -76,6 +76,18 @@ final class Order extends Model implements HasActivityLogLabel
 
     public const string COLUMN_DELIVERED_AT = 'delivered_at';
 
+    /**
+     * The carrier's tracking code, typed by the admin when the order goes on its way (S29; Tipax fills it from S27).
+     */
+    public const string COLUMN_TRACKING_CODE = 'tracking_code';
+
+    public const string COLUMN_REFUNDED_AT = 'refunded_at';
+
+    /**
+     * The bank or gateway panel reference of a manual refund (S29).
+     */
+    public const string COLUMN_REFUND_REFERENCE = 'refund_reference';
+
     public const string COLUMN_CREATED_AT = 'created_at';
 
     public function getId(): int
@@ -349,6 +361,40 @@ final class Order extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_DELIVERED_AT, $value);
     }
 
+    public function getTrackingCode(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_TRACKING_CODE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setTrackingCode(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TRACKING_CODE, $value);
+    }
+
+    public function getRefundedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_REFUNDED_AT);
+    }
+
+    public function setRefundedAt(?Carbon $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUNDED_AT, $value);
+    }
+
+    public function getRefundReference(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_REFUND_REFERENCE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setRefundReference(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUND_REFERENCE, $value);
+    }
+
     public function getCreatedAt(): ?Carbon
     {
         return $this->getAttribute(self::COLUMN_CREATED_AT);
@@ -399,7 +445,7 @@ final class Order extends Model implements HasActivityLogLabel
     {
         return LogOptions::defaults()
             ->useLogName('orders')
-            ->logOnly([self::COLUMN_PAYMENT_STATUS])
+            ->logOnly([self::COLUMN_PAYMENT_STATUS, self::COLUMN_TRACKING_CODE, self::COLUMN_REFUND_REFERENCE, self::COLUMN_ADMIN_NOTE])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -425,6 +471,7 @@ final class Order extends Model implements HasActivityLogLabel
             self::COLUMN_PAID_AT => 'datetime',
             self::COLUMN_CANCELLED_AT => 'datetime',
             self::COLUMN_DELIVERED_AT => 'datetime',
+            self::COLUMN_REFUNDED_AT => 'datetime',
         ];
     }
 }

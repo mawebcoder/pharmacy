@@ -28,7 +28,7 @@ final class ExpirePendingOrders implements ShouldQueue
             ->where(Order::COLUMN_EXPIRES_AT, '<=', now())
             ->each(function (Order $order) use ($changeStatus, $settleCoupon): void {
                 $changeStatus($order, OrderStatus::Expired, OrderActor::System);
-                $order->setPaymentStatus(PaymentStatus::Unpaid)->save();
+                $order->setPaymentStatus(PaymentStatus::Expired)->save();
                 $settleCoupon($order->getId(), paid: false);
             });
     }

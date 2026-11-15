@@ -24,7 +24,7 @@
             const exact = {
                 '/': 'home', '/logout': 'home', '/cart': 'cart', '/checkout': 'review', '/checkout/address': 'address',
                 '/login': 'login', '/brands': 'brands', '/categories': 'categories', '/collections': 'collections',
-                '/search': 'search', '/faq': 'text', '/contact': 'text', '/account': 'dashboard',
+                '/search': 'search', '/faq': 'text', '/contact': 'text', '/track': 'result', '/account': 'dashboard',
                 '/account/orders': 'orders', '/account/addresses': 'addresses', '/account/profile': 'profile',
                 '/account/wishlist': 'wishlist', '/account/reviews': 'reviews',
             };

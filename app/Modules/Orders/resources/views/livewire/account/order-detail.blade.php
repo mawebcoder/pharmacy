@@ -33,6 +33,21 @@
             <div><dt class="text-ink-500">پرداخت</dt><dd class="mt-0.5 text-ink-900">{{ $order->getPaymentStatus()->label() }}</dd></div>
         </dl>
 
+        {{-- The carrier's tracking code once the order is on its way (S29; promised at checkout). --}}
+        @if ($order->getTrackingCode())
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-primary-50 px-3 py-2" x-data="{ copiedCode: false }">
+                <p class="text-sm text-primary-800">
+                    کد رهگیری مرسوله:
+                    <span class="font-bold select-all" dir="ltr">{{ $order->getTrackingCode() }}</span>
+                </p>
+                <button type="button" x-on:click="$copy(@js($order->getTrackingCode())).then((ok) => { copiedCode = ok; setTimeout(() => (copiedCode = false), 2000) })" class="inline-flex min-h-11 items-center gap-1 rounded-card px-2 text-sm font-medium text-primary-700 hover:bg-card focus-visible:outline-2 focus-visible:outline-primary-700">
+                    <x-ts-icon icon="clipboard-document" class="size-5" x-show="! copiedCode" />
+                    <x-ts-icon icon="check" class="size-5" x-show="copiedCode" x-cloak />
+                    کپی کد
+                </button>
+            </div>
+        @endif
+
         @if ($order->canBePaid() || $status === OrderStatus::Paid || $status !== OrderStatus::Pending)
             <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line-200 pt-4">
                 @if ($order->canBePaid())

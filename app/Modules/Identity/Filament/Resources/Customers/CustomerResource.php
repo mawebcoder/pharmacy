@@ -10,6 +10,7 @@ use App\Modules\Identity\Filament\Resources\Customers\RelationManagers\Addresses
 use App\Modules\Identity\Filament\Resources\Customers\Schemas\CustomerInfolist;
 use App\Modules\Identity\Filament\Resources\Customers\Tables\CustomersTable;
 use App\Modules\Identity\Models\Customer;
+use App\Modules\Orders\Filament\RelationManagers\CustomerOrdersRelationManager;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -19,7 +20,7 @@ use UnitEnum;
 
 /**
  * Storefront customers (roadmap D3.3, S17): a read-only list whose rows open the customer's page, with block and
- * unblock. Customers sign up themselves with an SMS code. The orders step adds their orders to the page.
+ * unblock. Customers sign up themselves with an SMS code. Their orders (S29) and addresses are tabs on the page.
  */
 final class CustomerResource extends Resource
 {
@@ -49,7 +50,7 @@ final class CustomerResource extends Resource
 
     public static function getRelations(): array
     {
-        return [AddressesRelationManager::class];
+        return [CustomerOrdersRelationManager::class, AddressesRelationManager::class];
     }
 
     public static function canCreate(): bool

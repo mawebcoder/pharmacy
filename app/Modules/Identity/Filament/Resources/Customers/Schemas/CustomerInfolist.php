@@ -11,7 +11,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 /**
- * A customer's details (roadmap D3.3). Their orders join this page as a relation manager with the orders step.
+ * A customer's details (roadmap D3.3). Their orders and addresses are tabs below (relation managers).
  */
 final class CustomerInfolist
 {

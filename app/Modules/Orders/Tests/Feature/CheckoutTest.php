@@ -34,6 +34,7 @@ use App\Modules\Orders\Livewire\PaymentResult;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderStatusLog;
+use App\Modules\Payments\Actions\HandlePaymentCallback;
 use App\Modules\Payments\Enums\PaymentAttemptStatus;
 use App\Modules\Payments\Models\Payment;
 use App\Modules\Pricing\Enums\CommissionSource;
@@ -43,6 +44,7 @@ use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 use function Pest\Livewire\livewire;
 
@@ -352,6 +354,38 @@ describe('paying', function (): void {
             ->and(Payment::query()->open()->count())->toBe(1);
     });
 
+    it('refuses a second successful payment for an order that is already paid', function (): void {
+        fillCart($this->customer, [checkoutSku(1_000_000)->getId() => 1]);
+        homeAddress($this->customer);
+        $placed = placeOrder($this->customer, 1_500_000);
+        $first = Payment::query()->sole();
+        // A second attempt still open, as from another tab.
+        $second = $first->replicate([Payment::COLUMN_PAID_ORDER_ID])->setAuthority('SECOND-TAB')->setStatus(PaymentAttemptStatus::Pending);
+        $second->save();
+
+        $this->get(route('payments.callback', ['Authority' => $first->getAuthority(), 'Status' => 'OK']));
+        $this->get(route('payments.callback', ['Authority' => 'SECOND-TAB', 'Status' => 'OK']));
+
+        expect($second->refresh())
+            ->getStatus()->toBe(PaymentAttemptStatus::Failed)
+            ->getFailureReason()->toBe(HandlePaymentCallback::ALREADY_PAID)
+            ->getRefId()->toBeNull()
+            ->and(Payment::query()->where(Payment::COLUMN_STATUS, PaymentAttemptStatus::Paid)->count())->toBe(1)
+            ->and(Order::query()->findOrFail($placed->orderId)->getStatus())->toBe(OrderStatus::Paid)
+            ->and(OrderStatusLog::query()->where(OrderStatusLog::COLUMN_TO_STATUS, OrderStatus::Paid)->count())->toBe(1);
+    });
+
+    it('lets the database keep a single paid payment per order', function (): void {
+        fillCart($this->customer, [checkoutSku(1_000_000)->getId() => 1]);
+        homeAddress($this->customer);
+        placeOrder($this->customer, 1_500_000);
+        $first = Payment::query()->sole();
+        $first->setStatus(PaymentAttemptStatus::Paid)->save();
+
+        expect(fn () => $first->replicate([Payment::COLUMN_PAID_ORDER_ID])->setAuthority('SECOND-TAB')->setStatus(PaymentAttemptStatus::Paid)->save())
+            ->toThrow(UniqueConstraintViolationException::class);
+    });
+
     it('expires an unpaid order, releases its coupon and refuses to pay it', function (): void {
         $this->actingAs($this->customer, 'customer');
         fillCart($this->customer, [checkoutSku(1_000_000)->getId() => 1]);
@@ -364,7 +398,7 @@ describe('paying', function (): void {
 
         $order = Order::query()->findOrFail($placed->orderId);
         expect($order->getStatus())->toBe(OrderStatus::Expired)
-            ->and($order->getPaymentStatus())->toBe(PaymentStatus::Unpaid)
+            ->and($order->getPaymentStatus())->toBe(PaymentStatus::Expired)
             ->and(CouponUsage::query()->sole()->getStatus())->toBe(CouponUsageStatus::Released);
 
         livewire(OrderList::class)->call('pay', $placed->orderId)->assertNoRedirect();

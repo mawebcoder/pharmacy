@@ -933,7 +933,9 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | number | human-readable, e.g. `PH-140508-000123` |
 | customer_id | |
 | status | see D3.5 |
-| payment_status | `pending`, `paid`, `unpaid` (expired unpaid), `refund_pending` (cancelled after payment), `refunded` (as built in S25) |
+| payment_status | `pending`, `paid`, `expired` («منقضی‌شده», expired unpaid; was `unpaid`, owner 2026-11-15), `refund_pending` (cancelled after payment), `refunded` (as built in S25) |
+| tracking_code | the carrier's tracking code, typed by the admin at «تحویل به حمل» (S29); Tipax fills it from S27 |
+| refunded_at, refund_reference | when a manual refund was recorded and its bank or gateway panel reference (S29, super admins only) |
 | address_id | the address used (null when deleted); the snapshot is what counts |
 | address_snapshot | JSON copy of the address: title, receiver name and mobile, province and city names with their Tipax ids, every street part, plaque, unit, floor, extra directions, postal code |
 | customer_snapshot | JSON: customer name and mobile at ordering |
@@ -1283,7 +1285,7 @@ Headers: `Content-Type: application/json`, `Accept: application/json`. Sandbox: 
 | 100 / 101 | Success / already verified |
 
 ### D7.4 Payment tables
-- **payments** (as built in S25; owner, 2026-11-14): one row per payment attempt (link): `order_id`, `gateway` (`fake` until S26), `amount` (Rial), `authority` (unique), `url` (the gateway page), `status` (`pending`, `paid`, `failed`, `expired`; `PaymentAttemptStatus`), `expires_at`, `ref_id`, `card_pan`, `failure_reason`, `verified_at`, `failed_at`. **At most one open link per order**: «پرداخت» reuses the open (pending, unexpired) link; a new one only after a failed attempt; none after the order expired (`OpenPaymentLink` locks the order's attempts). `HandlePaymentCallback` locks, verifies and sends `PaymentSucceeded` once; `ExpireStalePayments` runs every minute. S26 adds Zarinpal's fields (`card_hash`, `fee_type`, `fee`, raw request/response).
+- **payments** (as built in S25; owner, 2026-11-14): one row per payment attempt (link): `order_id`, `gateway` (`fake` until S26), `amount` (Rial), `authority` (unique), `url` (the gateway page), `status` (`pending`, `paid`, `failed`, `expired`; `PaymentAttemptStatus`), `expires_at`, `ref_id`, `card_pan`, `failure_reason`, `verified_at`, `failed_at`. **At most one open link per order**: «پرداخت» reuses the open (pending, unexpired) link; a new one only after a failed attempt; none after the order expired (`OpenPaymentLink` locks the order's attempts). `HandlePaymentCallback` locks, verifies and sends `PaymentSucceeded` once; `ExpireStalePayments` runs every minute. **At most one successful payment per order** (owner, 2026-11-15, S29): the callback locks all of the order's attempts; when another is already paid, this one is not verified (the gateway returns the money) and is marked failed «سفارش قبلاً پرداخت شده است»; a unique key on the virtual column `paid_order_id` is the backstop. Every attempt shows in «تراکنش‌های پرداخت» on the admin order page. S26 adds Zarinpal's fields (`card_hash`, `fee_type`, `fee`, raw request/response).
 - **payment_refunds**: `payment_id`, `amount`, `method` (`reverse`, `panel`, `manual_transfer`), `status`, `reference`, `admin_id`.
 
 ### D7.5 Security rules
@@ -1992,6 +1994,7 @@ public function registerMediaConversions(?Media $media = null): void
 | GET | `/account/addresses` | `Identity\Livewire\Account\Addresses` | account.addresses |
 | GET | `/account/wishlist` | `Catalog\Livewire\Account\Wishlist` | account.wishlist |
 | GET | `/account/profile` | `Identity\Livewire\Account\Profile` | account.profile |
+| GET | `/track` | `Orders\Livewire\TrackOrder` (guests too; 10 tries a minute) | orders.track |
 | GET | `/track` | `Orders\Livewire\GuestTracking` | track |
 | GET | `/pages/{page:slug}` | `Content\Livewire\StaticPage` | pages.show |
 | GET | `/faq` | `Content\Livewire\FaqPage` | faq |
@@ -2866,6 +2869,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
 - **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (the read-only order detail page `/account/orders/{id}` was built early with S25: header card, items, status history, address and payment summary; owner, 2026-11-14) (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders, the customer page lists only that customer's orders and each row links to its order view (new tab).
+- **As built (owner, 2026-11-15):** «سفارش‌ها» in «فروش» (`OrderResource`): list (number, date, customer and mobile from the snapshot, status, items, total, payment; search by number or mobile; filters by status, payment, date) and a view page from the snapshots only (summary with tracking code and refund, items with supplier, purchase price and gross margin, totals, customer and address, status history with who and why). Header actions show only when the move is allowed (D3.5): «شروع آماده‌سازی», «تحویل به حمل» (tracking code required; `SendOrderOnItsWay`), «تحویل شد», «لغو سفارش» (reason required; `CancelOrderByAdmin`, payment → refund pending), «ثبت بازگشت وجه» (reference required; `MarkOrderRefunded`, super admins only), «یادداشت مدیر». Operators get `ViewAny/View/Update:Order`; `Refund:Order` is left to super admins; content editors see no orders. Tabs: «تراکنش‌های پرداخت» on the order (`Payments\Filament\RelationManagers\OrderPaymentsRelationManager`) and «سفارش‌ها» on the customer (`Orders\Filament\RelationManagers\CustomerOrdersRelationManager`, rows open in a new tab); both build their relation from the owner record, keeping module boundaries. Customers see the tracking code on their order page; `/track` («پیگیری سفارش») finds an order by number plus the customer's or receiver's mobile and shows only its status, history and tracking code, with the same answer for any mismatch.
 
 ### S30 Provider purchases (sourcing)
 - **Refs:** D13.6, D3.4 (provider_purchases)

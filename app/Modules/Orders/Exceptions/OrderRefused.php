@@ -32,6 +32,11 @@ final class OrderRefused extends BaseException
         return new self('اتصال به درگاه پرداخت ممکن نشد؛ چند دقیقه دیگر از «سفارش‌ها» دوباره تلاش کنید.', 'order_payment_unavailable', Response::HTTP_SERVICE_UNAVAILABLE);
     }
 
+    public static function notRefundable(): self
+    {
+        return new self('بازگشت وجه فقط برای سفارش لغوشده‌ای که در انتظار بازگشت وجه است ثبت می‌شود.', 'order_not_refundable');
+    }
+
     public static function nothingToReorder(): self
     {
         return new self('هیچ‌یک از کالاهای این سفارش اکنون موجود نیست.', 'order_nothing_to_reorder');

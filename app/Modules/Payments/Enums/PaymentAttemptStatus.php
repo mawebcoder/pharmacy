@@ -29,4 +29,17 @@ enum PaymentAttemptStatus: string implements HasLabel
             self::Expired => 'منقضی‌شده',
         };
     }
+
+    /**
+     * Badge colour (Filament names).
+     */
+    public function color(): string
+    {
+        return match ($this) {
+            self::Pending => 'warning',
+            self::Paid => 'success',
+            self::Failed => 'danger',
+            self::Expired => 'gray',
+        };
+    }
 }

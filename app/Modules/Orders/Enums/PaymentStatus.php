@@ -8,8 +8,8 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where an order's money stands (roadmap D3.4): waiting at the gateway, paid, never paid (expired), or owed back
- * after a cancellation (refunded by hand until Zarinpal, S26).
+ * Where an order's money stands (roadmap D3.4): waiting at the gateway, paid, expired unpaid («منقضی‌شده», like the
+ * order; owner, 2026-11-15, was «unpaid»), or owed back after a cancellation (refunded by hand until Zarinpal, S26).
  */
 enum PaymentStatus: string implements HasLabel
 {
@@ -17,7 +17,7 @@ enum PaymentStatus: string implements HasLabel
 
     case Pending = 'pending';
     case Paid = 'paid';
-    case Unpaid = 'unpaid';
+    case Expired = 'expired';
     case RefundPending = 'refund_pending';
     case Refunded = 'refunded';
 
@@ -26,9 +26,23 @@ enum PaymentStatus: string implements HasLabel
         return match ($this) {
             self::Pending => 'در انتظار پرداخت',
             self::Paid => 'پرداخت‌شده',
-            self::Unpaid => 'پرداخت نشد',
+            self::Expired => 'منقضی‌شده',
             self::RefundPending => 'در انتظار بازگشت وجه',
             self::Refunded => 'وجه بازگشت داده شد',
+        };
+    }
+
+    /**
+     * Badge colour (TallStackUI / Filament names); money owed back stands out.
+     */
+    public function color(): string
+    {
+        return match ($this) {
+            self::Pending => 'warning',
+            self::Paid => 'success',
+            self::Expired => 'gray',
+            self::RefundPending => 'danger',
+            self::Refunded => 'info',
         };
     }
 }
