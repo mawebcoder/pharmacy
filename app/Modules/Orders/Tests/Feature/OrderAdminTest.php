@@ -239,6 +239,24 @@ describe('as a super admin', function (): void {
             ->getRefundedAt()->not->toBeNull();
     });
 
+    it('holds back the free shipping from the product refund when the order had been delivered', function (bool $delivered, int $itemsToman, int $itemsRial): void {
+        $order = refundableOrder();
+        $order->setShippingPrice(500_000)->setShippingDiscount(500_000)->setShippingDiscountReason('coupon')->setShippingTotal(0)
+            ->setTotal(12_345_675)->setDeliveredAt($delivered ? now() : null)->save();
+
+        livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->mountAction('markRefunded')
+            ->assertActionDataSet(['items_amount' => $itemsToman, 'shipping_amount' => 0])
+            ->fillForm(['reference' => 'REF-7'])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        expect($order->refresh())->getRefundItemsAmount()->toBe($itemsRial)->getRefundShippingAmount()->toBe(0);
+    })->with([
+        'delivered, then cancelled' => [true, 1_184_568, 11_845_675],
+        'cancelled before delivery' => [false, 1_234_568, 12_345_675],
+    ]);
+
     it('records a partial refund for the products and for shipping', function (): void {
         $order = refundableOrder();
 

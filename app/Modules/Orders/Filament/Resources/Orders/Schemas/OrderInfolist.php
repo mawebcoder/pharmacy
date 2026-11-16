@@ -111,7 +111,8 @@ final class OrderInfolist
                             ->helperText(fn (Order $record): ?string => $record->getCouponCode() !== null ? 'کد تخفیف '.$record->getCouponCode() : null),
                         TextEntry::make(Order::COLUMN_SHIPPING_TOTAL)
                             ->label('هزینه ارسال')
-                            ->formatStateUsing(fn (int $state): string => $state > 0 ? Toman::format($state) : 'رایگان'),
+                            ->formatStateUsing(fn (int $state): string => $state > 0 ? Toman::format($state) : 'رایگان')
+                            ->helperText(fn (Order $record): ?string => self::shippingDiscountNote($record)),
                         self::money(Order::COLUMN_TOTAL, 'مبلغ پرداختی')->weight('bold'),
                         TextEntry::make('gross_margin')
                             ->label('سود ناخالص اقلام')
@@ -146,10 +147,10 @@ final class OrderInfolist
                             'tipax' => 'تیپاکس',
                             default => (string) ($record->getShippingQuoteSnapshot()['label'] ?? 'ارسال'),
                         }),
-                    TextEntry::make('shipping_price')
+                    TextEntry::make(Order::COLUMN_SHIPPING_PRICE)
                         ->label('هزینه ارسال')
-                        ->state(fn (Order $record): int => $record->getShippingTotal())
-                        ->formatStateUsing(fn (int $state): string => $state > 0 ? Toman::format($state) : 'رایگان'),
+                        ->formatStateUsing(fn (int $state, Order $record): string => $record->getShippingTotal() > 0 ? Toman::format($record->getShippingTotal()) : 'رایگان')
+                        ->helperText(fn (Order $record): ?string => self::shippingDiscountNote($record)),
                     TextEntry::make(Order::COLUMN_CUSTOMER_NOTE)->label('توضیح مشتری')->placeholder('—')->columnSpanFull(),
                     TextEntry::make(Order::COLUMN_ADMIN_NOTE)->label('یادداشت مدیر')->placeholder('—')->columnSpanFull(),
                 ]),
@@ -211,6 +212,24 @@ final class OrderInfolist
             ->helperText(fn (OrderItem $record): ?string => $total($record) > 0
                 ? 'جمع '.PersianDigits::toPersian($record->getQuantity()).' عدد: '.Toman::format($total($record))
                 : null);
+    }
+
+    /**
+     * «هزینه ارسال ۵۰٬۰۰۰ تومان، رایگان با کوپن» when shipping was discounted (owner, 2026-11-16).
+     */
+    private static function shippingDiscountNote(Order $record): ?string
+    {
+        if ($record->getShippingDiscount() === 0) {
+            return null;
+        }
+
+        $reason = match ($record->getShippingDiscountReason()) {
+            'coupon' => 'با کوپن ارسال رایگان',
+            'threshold' => 'با رسیدن به حد ارسال رایگان',
+            default => null,
+        };
+
+        return trim('قیمت ارسال '.Toman::format($record->getShippingPrice()).'، تخفیف '.Toman::format($record->getShippingDiscount()).' '.($reason ?? ''));
     }
 
     private static function money(string $column, string $label): TextEntry

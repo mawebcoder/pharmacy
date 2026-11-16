@@ -290,6 +290,25 @@ describe('placing the order', function (): void {
         }
     });
 
+    it('records the shipping price, its discount and why on every order', function (int $price, ?string $code, int $charged, int $discount, ?string $reason): void {
+        fillCart($this->customer, [checkoutSku($price)->getId() => 1]);
+        homeAddress($this->customer);
+        Coupon::factory()->freeShipping()->create([Coupon::COLUMN_CODE => 'SHIP']);
+
+        $order = Order::query()->findOrFail(placeOrder($this->customer, $price + $charged, $code)->orderId);
+
+        expect($order)
+            ->getShippingPrice()->toBe(500_000)
+            ->getShippingDiscount()->toBe($discount)
+            ->getShippingDiscountReason()->toBe($reason)
+            ->getShippingTotal()->toBe($charged)
+            ->and($order->getShippingPrice() - $order->getShippingDiscount())->toBe($order->getShippingTotal());
+    })->with([
+        'paid shipping' => [1_000_000, null, 500_000, 0, null],
+        'free-shipping coupon' => [1_000_000, 'SHIP', 0, 500_000, 'coupon'],
+        'free-shipping threshold' => [50_000_000, null, 0, 500_000, 'threshold'],
+    ]);
+
     it('reserves the coupon, empties the cart, logs the status and opens one payment link', function (): void {
         fillCart($this->customer, [checkoutSku(1_000_000)->getId() => 1]);
         homeAddress($this->customer);

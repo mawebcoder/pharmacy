@@ -48,6 +48,12 @@ final class Order extends Model implements HasActivityLogLabel
 
     public const string COLUMN_DISCOUNT_TOTAL = 'discount_total';
 
+    public const string COLUMN_SHIPPING_PRICE = 'shipping_price';
+
+    public const string COLUMN_SHIPPING_DISCOUNT = 'shipping_discount';
+
+    public const string COLUMN_SHIPPING_DISCOUNT_REASON = 'shipping_discount_reason';
+
     public const string COLUMN_SHIPPING_TOTAL = 'shipping_total';
 
     public const string COLUMN_TOTAL = 'total';
@@ -213,6 +219,54 @@ final class Order extends Model implements HasActivityLogLabel
     public function setShippingTotal(int $value): static
     {
         return $this->setAttribute(self::COLUMN_SHIPPING_TOTAL, $value);
+    }
+
+    /**
+     * The shipping price before any discount (owner, 2026-11-16); shipping_total is this less shipping_discount.
+     */
+    public function getShippingPrice(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_SHIPPING_PRICE);
+    }
+
+    public function setShippingPrice(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SHIPPING_PRICE, $value);
+    }
+
+    public function getShippingDiscount(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_SHIPPING_DISCOUNT);
+    }
+
+    public function setShippingDiscount(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SHIPPING_DISCOUNT, $value);
+    }
+
+    /**
+     * Why shipping was discounted: «coupon» (a free-shipping coupon) or «threshold» (the order reached the free-shipping
+     * amount); null when it was not.
+     */
+    public function getShippingDiscountReason(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_SHIPPING_DISCOUNT_REASON);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setShippingDiscountReason(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SHIPPING_DISCOUNT_REASON, $value);
+    }
+
+    /**
+     * The free shipping the store paid for on an order that was delivered and then cancelled (owner, 2026-11-16): it
+     * is held back from the product refund. Nothing before delivery: nothing was shipped.
+     */
+    public function getDeliveredFreeShipping(): int
+    {
+        return $this->getDeliveredAt() === null ? 0 : $this->getShippingDiscount();
     }
 
     public function getTotal(): int
@@ -509,6 +563,8 @@ final class Order extends Model implements HasActivityLogLabel
             self::COLUMN_SHIPPING_QUOTE_SNAPSHOT => 'array',
             self::COLUMN_SUBTOTAL => 'integer',
             self::COLUMN_DISCOUNT_TOTAL => 'integer',
+            self::COLUMN_SHIPPING_PRICE => 'integer',
+            self::COLUMN_SHIPPING_DISCOUNT => 'integer',
             self::COLUMN_SHIPPING_TOTAL => 'integer',
             self::COLUMN_TOTAL => 'integer',
             self::COLUMN_PLACED_AT => 'datetime',
