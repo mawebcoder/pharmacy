@@ -162,6 +162,15 @@ describe('filters', function (): void {
         'flash deal' => [fn (): array => ['flashDeal' => true], ['کرم سینره']],
     ]);
 
+    it('keeps flash deals and «زودمصرف» out of the filter panel, and lists only deals from the home row\'s link', function (): void {
+        livewire(ProductListingComponent::class)
+            ->assertDontSeeHtml('wire:model.live="flashDeal"')
+            ->assertDontSeeHtml('wire:model.live="nearExpiry"')
+            ->set('flashDeal', true)
+            ->assertSee(['کرم سینره', 'پیشنهاد لحظه‌ای'])
+            ->assertDontSee('کرم اوسرین');
+    });
+
     it('offers the same list without filters when they leave nothing, and the shop when nothing was filtered', function (): void {
         $listing = livewire(ProductListingComponent::class)
             ->set('discount', 50)

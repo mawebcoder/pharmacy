@@ -12,8 +12,8 @@ use Livewire\Component;
 
 /**
  * «تخفیف‌ها» (/deals, roadmap B5, S33): the live flash deals with one countdown to the last deal's end, the discount
- * tiers as chips that open the discounted products (/products?off=N), and the «زودمصرف» row with «مشاهده همه»
- * (/products?expiry=1). When the countdown reaches zero the page refreshes.
+ * tiers as chips that open the discounted products (/products?off=N), and the «زودمصرف» row (the product list has no
+ * near-expiry filter; owner, 2026-11-17). When the countdown reaches zero the page refreshes.
  */
 new #[Title('تخفیف‌ها')] class extends Component
 {
@@ -100,13 +100,7 @@ new #[Title('تخفیف‌ها')] class extends Component
 
     @if ($this->nearExpiry->isNotEmpty())
         <section aria-labelledby="near-expiry" class="space-y-3">
-            <div class="flex min-h-11 items-center justify-between gap-3">
-                <h2 id="near-expiry" class="text-lg font-bold text-ink-900 xl:text-xl">زودمصرف</h2>
-                <a href="{{ route('products.index', ['expiry' => 1]) }}" wire:navigate class="flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
-                    مشاهده همه
-                    <x-ts-icon icon="chevron-left" class="size-4" />
-                </a>
-            </div>
+            <h2 id="near-expiry" class="text-lg font-bold text-ink-900 xl:text-xl">زودمصرف</h2>
             <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-6">
                 @foreach ($this->nearExpiry as $product)
                     <li wire:key="near-expiry-{{ $product->getId() }}"><x-catalog::product-card :product="$product" /></li>

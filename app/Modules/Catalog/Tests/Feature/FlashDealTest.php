@@ -152,7 +152,7 @@ it('shows live deals, discount tiers and «زودمصرف» on /deals', function
         ->assertSee(['تخفیف‌ها', 'پیشنهاد لحظه‌ای', $this->product->getNameFa(), '۸۰٬۰۰۰ تومان', '۲۰٪ تخفیف و بیشتر', 'زودمصرف', $nearExpiry->getNameFa()])
         ->assertSee(route('products.index', ['deal' => 1]), false)
         ->assertSee(route('products.index', ['off' => 20]), false)
-        ->assertSee(route('products.index', ['expiry' => 1]), false);
+        ->assertDontSee(route('products.index', ['expiry' => 1]), false);
 });
 
 it('sells a deal from a chosen supplier that carries the SKU', function (): void {

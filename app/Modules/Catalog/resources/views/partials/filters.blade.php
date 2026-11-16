@@ -88,7 +88,7 @@
     </details>
 
     <div class="space-y-1 py-3">
-        @foreach (['inStock' => 'فقط کالاهای موجود', 'flashDeal' => 'پیشنهاد لحظه‌ای', 'nearExpiry' => 'زودمصرف'] as $property => $label)
+        @foreach (['inStock' => 'فقط کالاهای موجود'] as $property => $label)
             <label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm text-ink-900">
                 <span>{{ $label }}</span>
                 <input type="checkbox" wire:model.live="{{ $property }}" class="size-5 rounded border-line-300 text-primary-700 focus:ring-primary-700">

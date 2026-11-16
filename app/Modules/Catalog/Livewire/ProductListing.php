@@ -89,10 +89,10 @@ final class ProductListing extends Component
     #[Url(as: 'off')]
     public ?int $discount = null;
 
-    #[Url(as: 'expiry')]
-    public bool $nearExpiry = false;
-
-    /** Products with a live flash deal (S33): the «مشاهده همه» of the home page row lands here, with every filter. */
+    /**
+     * Products with a live flash deal (S33): where the home page row's «مشاهده همه» lands, with every filter. Not in the
+     * filter panel (owner, 2026-11-17); shown as a chip that clears it.
+     */
     #[Url(as: 'deal')]
     public bool $flashDeal = false;
 
@@ -153,7 +153,7 @@ final class ProductListing extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('brands', 'filters', 'minPrice', 'maxPrice', 'inStock', 'discount', 'nearExpiry', 'flashDeal');
+        $this->reset('brands', 'filters', 'minPrice', 'maxPrice', 'inStock', 'discount', 'flashDeal');
         $this->updated('filters');
     }
 
@@ -210,7 +210,7 @@ final class ProductListing extends Component
             $chips[] = ['label' => PersianDigits::toPersian($this->discount).'٪ تخفیف و بیشتر', 'action' => '$set(\'discount\', null)'];
         }
 
-        foreach (['inStock' => 'فقط موجود', 'nearExpiry' => 'زودمصرف', 'flashDeal' => 'پیشنهاد لحظه‌ای'] as $property => $label) {
+        foreach (['inStock' => 'فقط موجود', 'flashDeal' => 'پیشنهاد لحظه‌ای'] as $property => $label) {
             if ($this->{$property}) {
                 $chips[] = ['label' => $label, 'action' => "\$set('{$property}', false)"];
             }
@@ -292,7 +292,6 @@ final class ProductListing extends Component
             maxPrice: $this->maxPrice === null ? null : Toman::toRial($this->maxPrice),
             inStock: $this->inStock,
             minDiscount: in_array($this->discount, self::DISCOUNT_STEPS, true) ? $this->discount : null,
-            nearExpiry: $this->nearExpiry,
             flashDeal: $this->flashDeal,
             sort: $this->sortOrder(),
             page: $isDesktopPage ? $this->getPage() : 1,
