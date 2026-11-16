@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Content\Queries;
 
 use App\Modules\Catalog\Queries\CollectionProducts;
+use App\Modules\Catalog\Queries\FlashDealProducts;
 use App\Modules\Catalog\Queries\HomeItems;
 use App\Modules\Content\Enums\BannerPlace;
 use App\Modules\Content\Enums\HomeWidgetType;
@@ -15,7 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * What each home widget shows now (roadmap D3.6, S13b). A widget is shown only with at least one item (owner,
  * 2026-11-07): a slider needs a visible banner, a collection rail an in-stock product of a visible collection, and
- * brands, categories and tags an active item. The trust block has no items and is always shown.
+ * brands, categories and tags an active item, a flash deal row a live deal (S33). The trust block has no items and is
+ * always shown.
  */
 final readonly class HomeWidgetItems
 {
@@ -23,6 +25,7 @@ final readonly class HomeWidgetItems
         private PlaceBanners $placeBanners,
         private HomeItems $homeItems,
         private CollectionProducts $collectionProducts,
+        private FlashDealProducts $flashDeals,
     ) {}
 
     /**
@@ -60,6 +63,7 @@ final readonly class HomeWidgetItems
             HomeWidgetType::Categories => $this->homeItems->categories($widget->getItemIds()),
             HomeWidgetType::Tags => $this->homeItems->tags($widget->getItemIds()),
             HomeWidgetType::Trust => null,
+            HomeWidgetType::FlashDeal => $this->flashDeals->live(HomeWidgetType::MAX_ITEMS),
         };
 
         return $items;
@@ -85,6 +89,7 @@ final readonly class HomeWidgetItems
             HomeWidgetType::Collection => $widget->getCollectionId() !== null && $this->homeItems->collection($widget->getCollectionId())?->getId() !== null
                 ? 'کالکشن محصول موجودی ندارد'
                 : 'کالکشن فعال نیست',
+            HomeWidgetType::FlashDeal => 'پیشنهاد لحظه‌ای در حال اجرایی نیست',
             default => 'هیچ‌کدام از موارد انتخاب‌شده فعال نیست',
         };
     }

@@ -229,6 +229,7 @@ final class HomeWidgetResource extends Resource
             HomeWidgetType::Categories => $count(count($widget->getItemIds()), 'دسته'),
             HomeWidgetType::Tags => $count(count($widget->getItemIds()), 'برچسب'),
             HomeWidgetType::Trust => 'مجوزها، داروساز، ارسال، مرجوعی',
+            HomeWidgetType::FlashDeal => 'پیشنهادهای لحظه‌ای در حال اجرا',
         };
     }
 

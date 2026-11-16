@@ -26,6 +26,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin panel domain
+    |--------------------------------------------------------------------------
+    |
+    | When set, the admin (Filament) is served at the root of this subdomain, e.g. admin.hutana.ir (owner, 2026-11-17).
+    | Empty: it stays at /admin on the store's domain (tests and other setups).
+    |
+    */
+
+    'admin_domain' => env('ADMIN_DOMAIN') ?: null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

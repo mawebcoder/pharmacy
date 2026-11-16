@@ -48,6 +48,10 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
     public const string COLUMN_CURRENT_PRICE_ID = 'current_price_id';
 
+    public const string COLUMN_FLASH_DEAL_PRICE = 'flash_deal_price';
+
+    public const string COLUMN_FLASH_DEAL_ID = 'flash_deal_id';
+
     public const string COLUMN_STOCK_STATUS = 'stock_status';
 
     public const string COLUMN_WEIGHT_G = 'weight_g';
@@ -194,6 +198,31 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public function setSalePrice(?int $value): static
     {
         return $this->setAttribute(self::COLUMN_SALE_PRICE, $value);
+    }
+
+    /**
+     * The live flash deal's price (S33), copied here by SyncFlashDealPrices while the deal runs and is not sold out.
+     */
+    public function getFlashDealPrice(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_FLASH_DEAL_PRICE);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function getFlashDealId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_FLASH_DEAL_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    /**
+     * Puts a live flash deal's price on the SKU, or clears it (null).
+     */
+    public function setFlashDeal(?int $dealId, ?int $dealPrice): static
+    {
+        return $this->setAttribute(self::COLUMN_FLASH_DEAL_ID, $dealId)->setAttribute(self::COLUMN_FLASH_DEAL_PRICE, $dealId === null ? null : $dealPrice);
     }
 
     /**
@@ -385,9 +414,18 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     }
 
     /**
-     * The price the customer pays now, in rial: the sale price when set, else the price.
+     * The price the customer pays now, in rial: a live flash deal's price (S33), else the sale price when set, else the
+     * price.
      */
     public function currentPrice(): int
+    {
+        return $this->getFlashDealPrice() ?? $this->regularPrice();
+    }
+
+    /**
+     * The price without a flash deal: the sale price when set, else the price.
+     */
+    public function regularPrice(): int
     {
         return $this->getSalePrice() ?? $this->getPrice();
     }
@@ -402,6 +440,10 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
         if ($official !== null && $official > $this->currentPrice()) {
             return $official;
+        }
+
+        if ($official === null && $this->getFlashDealPrice() !== null) {
+            return $this->regularPrice();
         }
 
         return $official === null && $this->getSalePrice() !== null ? $this->getPrice() : null;
@@ -479,6 +521,8 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_OFFICIAL_PRICE => 'integer',
             self::COLUMN_PRICE => 'integer',
             self::COLUMN_SALE_PRICE => 'integer',
+            self::COLUMN_FLASH_DEAL_PRICE => 'integer',
+            self::COLUMN_FLASH_DEAL_ID => 'integer',
             self::COLUMN_CURRENT_PRICE_ID => 'integer',
             self::COLUMN_STOCK_STATUS => StockStatus::class,
             self::COLUMN_WEIGHT_G => 'integer',

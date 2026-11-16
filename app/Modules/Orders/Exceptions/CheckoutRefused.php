@@ -46,6 +46,11 @@ final class CheckoutRefused extends BaseException
         return new self('ارسال به شهر این آدرس فعلاً ممکن نیست؛ آدرس دیگری انتخاب کنید.', 'checkout_address_not_deliverable');
     }
 
+    public static function dealEnded(string $reason): self
+    {
+        return new self($reason, 'checkout_flash_deal_ended');
+    }
+
     public static function busy(): self
     {
         return new self('سفارش شما در حال ثبت است؛ چند لحظه صبر کنید.', 'checkout_busy');

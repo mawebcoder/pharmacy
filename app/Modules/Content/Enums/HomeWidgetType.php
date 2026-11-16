@@ -8,7 +8,8 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Kinds of home page widget (roadmap D3.6, S13b). Each shows at most 6 items. S33 adds flash deals and bundles.
+ * Kinds of home page widget (roadmap D3.6, S13b). Each shows at most 6 items. S33 adds flash deals (bundles follow in
+ * S33b).
  */
 enum HomeWidgetType: string implements HasLabel
 {
@@ -20,6 +21,7 @@ enum HomeWidgetType: string implements HasLabel
     case Categories = 'categories';
     case Tags = 'tags';
     case Trust = 'trust';
+    case FlashDeal = 'flash_deal';
 
     public const int MAX_ITEMS = 6;
 
@@ -32,6 +34,7 @@ enum HomeWidgetType: string implements HasLabel
             self::Categories => 'دسته‌بندی‌ها',
             self::Tags => 'برچسب‌ها (نیازها و مواد مغذی)',
             self::Trust => 'اعتماد (مجوزها، داروساز، ارسال، مرجوعی)',
+            self::FlashDeal => 'پیشنهاد لحظه‌ای (با شمارش معکوس)',
         };
     }
 
@@ -44,6 +47,7 @@ enum HomeWidgetType: string implements HasLabel
             self::Categories => 'heroicon-o-squares-2x2',
             self::Tags => 'heroicon-o-hashtag',
             self::Trust => 'heroicon-o-shield-check',
+            self::FlashDeal => 'heroicon-o-bolt',
         };
     }
 

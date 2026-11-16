@@ -115,7 +115,9 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            // Its own subdomain when ADMIN_DOMAIN is set (admin.hutana.ir, owner 2026-11-17), else /admin.
+            ->domain(config('app.admin_domain'))
+            ->path(config('app.admin_domain') === null ? 'admin' : '')
             // Staff only, with a mandatory authenticator app (TOTP) and recovery codes (roadmap D16).
             ->authGuard('admin')
             ->login()

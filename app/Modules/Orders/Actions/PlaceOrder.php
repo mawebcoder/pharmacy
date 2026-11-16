@@ -11,6 +11,8 @@ use App\Modules\Cart\Data\CartLineData;
 use App\Modules\Cart\Data\CheckoutQuoteData;
 use App\Modules\Cart\Exceptions\CouponRefused;
 use App\Modules\Cart\Queries\CheckoutQuote;
+use App\Modules\Catalog\Actions\ReserveFlashDealUnits;
+use App\Modules\Catalog\Exceptions\FlashDealRefused;
 use App\Modules\Catalog\Queries\OrderItemSnapshots;
 use App\Modules\Identity\Data\AddressSnapshotData;
 use App\Modules\Identity\Queries\CustomerContact;
@@ -27,7 +29,9 @@ use App\Modules\Payments\Actions\OpenPaymentLink;
 use App\Modules\Payments\Data\PaymentRequestData;
 use App\Modules\Payments\Exceptions\GatewayUnavailable;
 use App\Modules\Pricing\Data\PriceRecordData;
+use App\Modules\Pricing\Enums\ProviderChoice;
 use App\Modules\Pricing\Queries\CurrentPriceRecords;
+use App\Modules\Pricing\Queries\SupplierOptions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -51,6 +55,8 @@ final readonly class PlaceOrder
         private ReserveCoupon $reserveCoupon,
         private EmptyCart $emptyCart,
         private OpenPaymentLink $openPaymentLink,
+        private ReserveFlashDealUnits $reserveFlashDealUnits,
+        private SupplierOptions $suppliers,
     ) {}
 
     /**
@@ -134,6 +140,15 @@ final readonly class PlaceOrder
 
         foreach ($lines as $line) {
             $this->addItem($order, $line, $prices[$line->variant->variantId] ?? null, $snapshots[$line->variant->variantId] ?? [], $discounts[$line->variant->variantId] ?? 0);
+
+            // Flash deal units are counted now, locked, so the last units are never sold twice (owner, 2026-11-16).
+            if ($line->variant->flashDealId !== null) {
+                try {
+                    ($this->reserveFlashDealUnits)($line->variant->flashDealId, $line->quantity, $line->variant->productName);
+                } catch (FlashDealRefused $refused) {
+                    throw CheckoutRefused::dealEnded($refused->getMessage());
+                }
+            }
         }
 
         if ($quote->coupon instanceof AppliedCouponData) {
@@ -231,6 +246,11 @@ final readonly class PlaceOrder
         $harajUnit = max(0, $listPrice - $variant->price);
         $paidTotal = $line->lineTotal - $discount;
         $paidUnit = intdiv($paidTotal, max(1, $line->quantity));
+        // Bought under a flash deal from a chosen supplier (S33, owner 2026-11-17): that supplier and its cost.
+        $dealProviderId = $variant->flashDealProviderId;
+        $providerId = $dealProviderId ?? $price?->providerId;
+        $providerName = $dealProviderId === null ? $price?->providerName : $this->suppliers->name($dealProviderId);
+        $unitCost = $dealProviderId === null ? $price?->providerCost : $this->suppliers->cost($dealProviderId, $variant->variantId);
 
         $item = (new OrderItem)
             ->setOrderId($order->getId())
@@ -244,14 +264,15 @@ final readonly class PlaceOrder
             ->setImageUrl($variant->image?->url(320, 'webp'))
             ->setProductType($variant->productType)
             ->setRequiresPrescription($variant->requiresPrescription)
+            ->setFlashDealId($variant->flashDealId)
             ->setQuantity($line->quantity)
             ->setProductSnapshot($snapshot)
-            ->setProviderId($price?->providerId)
-            ->setProviderName($price?->providerName)
-            ->setUnitCost($price?->providerCost)
+            ->setProviderId($providerId)
+            ->setProviderName($providerName)
+            ->setUnitCost($unitCost)
             ->setCommissionPercent($price?->commissionPercent)
             ->setCommissionSource($price?->commissionSource)
-            ->setProviderChoice($price?->providerChoice)
+            ->setProviderChoice($dealProviderId === null ? $price?->providerChoice : ProviderChoice::FlashDeal->value)
             ->setOfficialPrice($price?->officialPrice)
             ->setListPrice($listPrice)
             ->setSalePrice($price?->salePrice)

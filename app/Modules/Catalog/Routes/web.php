@@ -26,6 +26,9 @@ Route::livewire('/collections/{slug}', 'catalog::collection-page')->name('collec
 Route::livewire('/products', 'catalog::product-index')->name('products.index');
 Route::livewire('/products/{slug}', 'catalog::product-page')->name('products.show');
 
+// «تخفیف‌ها»: flash deals, discount tiers and «زودمصرف» (roadmap B5, S33).
+Route::livewire('/deals', 'catalog::deals-page')->name('deals');
+
 // The customer's saved products, inside the account area (roadmap S18).
 Route::livewire('/account/wishlist', 'catalog::account.wishlist')->middleware('auth:customer')->name('account.wishlist');
 

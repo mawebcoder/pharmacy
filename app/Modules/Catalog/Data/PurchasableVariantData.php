@@ -37,6 +37,8 @@ final readonly class PurchasableVariantData
         public bool $isOnSale = false,
         public ?string $productType = null,
         public bool $requiresPrescription = false,
+        public ?int $flashDealId = null,
+        public ?int $flashDealProviderId = null,
     ) {}
 
     public function canBuy(): bool

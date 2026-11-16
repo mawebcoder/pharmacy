@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Queries;
 
 use App\Modules\Catalog\Data\PurchasableVariantData;
+use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Settings\Queries\StoreSettings;
@@ -33,6 +34,10 @@ final readonly class PurchasableVariants
             ->with(['product' => fn ($products) => $products->withTrashed()->with(['brand', 'media', 'variants'])])
             ->get();
         $storeLimit = $this->settings->maxQuantityPerOrder();
+        // The supplier each live flash deal sells from (S33, owner 2026-11-17).
+        $dealProviders = FlashDeal::query()
+            ->whereKey($variants->map(fn (ProductVariant $variant): ?int => $variant->getFlashDealId())->filter()->all())
+            ->pluck(FlashDeal::COLUMN_PROVIDER_ID, FlashDeal::COLUMN_ID);
         $found = [];
 
         foreach ($variants as $variant) {
@@ -56,9 +61,13 @@ final readonly class PurchasableVariants
                 maxPerOrder: max(1, $variant->getMaxPerOrder() ?? $product->getMaxPerOrder() ?? $storeLimit),
                 refusal: $this->refusal($product, $variant),
                 image: $product->getMainImage(),
-                isOnSale: $variant->getSalePrice() !== null,
+                isOnSale: $variant->getSalePrice() !== null || $variant->getFlashDealPrice() !== null,
                 productType: $product->getProductType()->value,
                 requiresPrescription: $product->requiresPrescription(),
+                flashDealId: $variant->getFlashDealId(),
+                flashDealProviderId: $variant->getFlashDealId() === null || $dealProviders->get($variant->getFlashDealId()) === null
+                    ? null
+                    : (int) $dealProviders->get($variant->getFlashDealId()),
             );
         }
 

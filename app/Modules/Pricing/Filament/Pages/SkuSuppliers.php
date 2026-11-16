@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Pricing\Filament\Pages;
 
 use App\Modules\Catalog\Data\VariantSummary;
+use App\Modules\Catalog\Queries\FlashDealSuppliers;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
 use App\Modules\Pricing\Actions\DeleteProviderPrice;
 use App\Modules\Pricing\Actions\SaveProviderPrice;
 use App\Modules\Pricing\Data\ChosenSupplier;
 use App\Modules\Pricing\Data\ProviderPriceData;
 use App\Modules\Pricing\Data\SupplierOffer;
+use App\Modules\Pricing\Enums\ProviderChoice;
 use App\Modules\Pricing\Filament\Resources\Providers\ProviderResource;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Filament\Support\ProviderPriceColumns;
@@ -122,7 +124,7 @@ final class SkuSuppliers extends Page implements HasTable
                 TextColumn::make('active')
                     ->label('سایت')
                     ->badge()
-                    ->state(fn (ProviderPrice $record): ?string => $this->activeSupplier()?->offer->price->getId() === $record->getId() ? 'فعال: '.$this->activeSupplier()->choice->label() : null)
+                    ->state(fn (ProviderPrice $record): ?string => $this->siteBadge($record))
                     ->color('success'),
                 ...ProviderPriceColumns::columns(),
             ])
@@ -156,6 +158,21 @@ final class SkuSuppliers extends Page implements HasTable
     private function summary(): ?VariantSummary
     {
         return app(VariantPricingInputs::class)->summary($this->variant ?? (int) request()->route('variant'));
+    }
+
+    /**
+     * «فعال: …» on the supplier the website sells from now: a live flash deal's supplier first (S33, owner 2026-11-17),
+     * else the default one and how it was chosen.
+     */
+    private function siteBadge(ProviderPrice $record): ?string
+    {
+        $dealSupplierId = app(FlashDealSuppliers::class)->forVariants([$this->variant])[$this->variant] ?? null;
+
+        if ($dealSupplierId !== null) {
+            return $record->getProviderId() === $dealSupplierId ? 'فعال: '.ProviderChoice::FlashDeal->label() : null;
+        }
+
+        return $this->activeSupplier()?->offer->price->getId() === $record->getId() ? 'فعال: '.$this->activeSupplier()->choice->label() : null;
     }
 
     /**

@@ -21,4 +21,9 @@ final class HomeWidgetChangeRefused extends RuntimeException
     {
         return new self('بین ۱ تا '.PersianDigits::toPersian($max).' مورد انتخاب کنید.');
     }
+
+    public static function onlyOneFlashDeal(): self
+    {
+        return new self('صفحه اصلی فقط یک ردیف «پیشنهاد لحظه‌ای» دارد؛ همان را ویرایش کنید.');
+    }
 }

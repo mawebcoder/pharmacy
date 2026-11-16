@@ -14,10 +14,12 @@ use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Queries\FlashDealSuppliers;
 use App\Modules\Pricing\Actions\CalculateVariantPrice;
 use App\Modules\Pricing\Filament\Pages\SkuSuppliers;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Queries\ActiveSuppliers;
+use App\Modules\Pricing\Queries\SupplierOptions;
 use App\Modules\Pricing\Queries\SupplierPrices;
 use App\Modules\Shared\Support\Toman;
 use Filament\Actions\Action;
@@ -281,7 +283,14 @@ final class VariantsRelationManager extends RelationManager
      */
     private function activeSuppliers(): array
     {
-        return $this->activeSupplierNames ??= app(ActiveSuppliers::class)->names($this->variantIds());
+        // A live flash deal's supplier replaces the default one (S33, owner 2026-11-17).
+        return $this->activeSupplierNames ??= array_replace(
+            app(ActiveSuppliers::class)->names($this->variantIds()),
+            array_map(
+                fn (int $providerId): string => (app(SupplierOptions::class)->name($providerId) ?? '').' (پیشنهاد لحظه‌ای)',
+                app(FlashDealSuppliers::class)->forVariants($this->variantIds()),
+            ),
+        );
     }
 
     /**

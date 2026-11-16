@@ -6,6 +6,7 @@ namespace App\Modules\Pricing\Queries;
 
 use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
+use App\Modules\Shared\Support\Toman;
 
 /**
  * Suppliers for other modules' admin forms (roadmap S30): their names, and a supplier's current cost of a SKU, which
@@ -26,6 +27,22 @@ final readonly class SupplierOptions
             ->orderBy(Provider::COLUMN_NAME)
             ->pluck(Provider::COLUMN_NAME, Provider::COLUMN_ID)
             ->all();
+    }
+
+    /**
+     * The suppliers carrying a SKU with their current cost, cheapest first: «پخش البرز — ۴۵٬۰۰۰ تومان».
+     *
+     * @return array<int, string> id => label
+     */
+    public function forVariant(int $variantId): array
+    {
+        $options = [];
+
+        foreach (ProviderPrice::query()->with('provider')->where(ProviderPrice::COLUMN_VARIANT_ID, $variantId)->orderBy(ProviderPrice::COLUMN_COST)->get() as $price) {
+            $options[$price->getProviderId()] = ($price->getProvider()?->getName() ?? '#'.$price->getProviderId()).' — '.Toman::format($price->getCost());
+        }
+
+        return $options;
     }
 
     /**

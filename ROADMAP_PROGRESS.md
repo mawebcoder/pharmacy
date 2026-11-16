@@ -32,7 +32,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S30 | Provider purchases (sourcing) | done | 2026-11-16 | 27e16b1 |
 | S31 | Packing | todo | | |
 | S32 | Returns | todo | | |
-| S33 | Home, banners, deals | todo | | |
+| S33 | Home, banners, deals (flash deals, /deals; bundles in S33b) | done | 2026-11-17 | |
 | S34 | Static pages, FAQ, contact, menus | in progress (pages done) | | |
 | S35 | Settings and trust | todo | | |
 | S36 | SEO | todo | | |

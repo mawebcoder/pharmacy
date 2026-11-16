@@ -10,7 +10,9 @@ use App\Modules\Cart\Models\Cart;
 use App\Modules\Cart\Models\CartItem;
 use App\Modules\Cart\Models\Coupon;
 use App\Modules\Cart\Models\CouponUsage;
+use App\Modules\Catalog\Actions\SyncFlashDealPrices;
 use App\Modules\Catalog\Enums\StockStatus;
+use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Checkout\Livewire\AddressStep;
@@ -41,6 +43,7 @@ use App\Modules\Pricing\Enums\CommissionSource;
 use App\Modules\Pricing\Enums\PriceChangeReason;
 use App\Modules\Pricing\Enums\ProviderChoice;
 use App\Modules\Pricing\Models\Provider;
+use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
@@ -436,6 +439,61 @@ describe('paying', function (): void {
 
         expect(fn () => $first->replicate([Payment::COLUMN_PAID_ORDER_ID])->setAuthority('SECOND-TAB')->setStatus(PaymentAttemptStatus::Paid)->save())
             ->toThrow(UniqueConstraintViolationException::class);
+    });
+
+    it('counts flash deal units when the order is placed, never past the limit, and gives them back when it expires', function (): void {
+        $variant = checkoutSku(1_000_000);
+        $deal = FlashDeal::factory()->limitedTo(2)->create([FlashDeal::COLUMN_VARIANT_ID => $variant->getId(), FlashDeal::COLUMN_DEAL_PRICE => 800_000]);
+        app(SyncFlashDealPrices::class)();
+        fillCart($this->customer, [$variant->getId() => 2]);
+        homeAddress($this->customer);
+
+        $placed = placeOrder($this->customer, 2 * 800_000 + 500_000);
+
+        expect($deal->fresh()->getSoldCount())->toBe(2)
+            ->and(OrderItem::query()->sole()->getFlashDealId())->toBe($deal->getId())
+            ->and(OrderItem::query()->sole()->getUnitPrice())->toBe(800_000)
+            // Sold out: the SKU is back at its regular price.
+            ->and($variant->fresh()->currentPrice())->toBe(1_000_000);
+
+        $this->travel((int) config('payments.pending_expiry_minutes') + 1)->minutes();
+        app(ExpirePendingOrders::class)->handle(app(ChangeOrderStatus::class), app(SettleOrderCoupon::class));
+
+        expect(Order::query()->findOrFail($placed->orderId)->getStatus())->toBe(OrderStatus::Expired)
+            ->and($deal->fresh()->getSoldCount())->toBe(0)
+            ->and($variant->fresh()->currentPrice())->toBe(800_000);
+    });
+
+    it('records the deal\'s supplier and its cost on items bought under a flash deal', function (): void {
+        $variant = checkoutSku(1_000_000);
+        $sina = Provider::factory()->create([Provider::COLUMN_NAME => 'پخش سینا']);
+        ProviderPrice::factory()->create([ProviderPrice::COLUMN_PROVIDER_ID => $sina->getId(), ProviderPrice::COLUMN_VARIANT_ID => $variant->getId(), ProviderPrice::COLUMN_COST => 600_000]);
+        FlashDeal::factory()->create([FlashDeal::COLUMN_VARIANT_ID => $variant->getId(), FlashDeal::COLUMN_PROVIDER_ID => $sina->getId(), FlashDeal::COLUMN_DEAL_PRICE => 800_000]);
+        app(SyncFlashDealPrices::class)();
+        fillCart($this->customer, [$variant->getId() => 1]);
+        homeAddress($this->customer);
+
+        placeOrder($this->customer, 800_000 + 500_000);
+
+        expect(OrderItem::query()->sole())
+            ->getProviderId()->toBe($sina->getId())
+            ->getProviderName()->toBe('پخش سینا')
+            ->getUnitCost()->toBe(600_000)
+            ->getUnitPrice()->toBe(800_000);
+    });
+
+    it('refuses the order when the deal sold out since the page was shown', function (): void {
+        $variant = checkoutSku(1_000_000);
+        $deal = FlashDeal::factory()->limitedTo(1)->create([FlashDeal::COLUMN_VARIANT_ID => $variant->getId(), FlashDeal::COLUMN_DEAL_PRICE => 800_000]);
+        app(SyncFlashDealPrices::class)();
+        fillCart($this->customer, [$variant->getId() => 1]);
+        homeAddress($this->customer);
+        // Someone else took the last unit a moment ago; the SKU still shows the deal price to this customer.
+        $deal->setSoldCount(1)->save();
+
+        expect(fn () => placeOrder($this->customer, 800_000 + 500_000))->toThrow(CheckoutRefused::class, 'پیشنهاد لحظه‌ای')
+            ->and(Order::query()->count())->toBe(0)
+            ->and($deal->fresh()->getSoldCount())->toBe(1);
     });
 
     it('expires an unpaid order, releases its coupon and refuses to pay it', function (): void {

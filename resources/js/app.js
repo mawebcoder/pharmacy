@@ -1,6 +1,7 @@
 import cartRemoval from './components/cart-removal';
 import confirmDialog from './components/confirm-dialog';
 import copyText from './components/copy-text';
+import countdown from './components/countdown';
 import imagePlaceholders from './components/image-placeholders';
 import jalaliDate from './components/jalali-date';
 import productGallery from './components/product-gallery';
@@ -12,6 +13,7 @@ import swipeToasts from './components/toast-swipe';
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('jalaliDate', jalaliDate);
     window.Alpine.data('slider', slider);
+    window.Alpine.data('countdown', countdown);
     window.Alpine.data('productGallery', productGallery);
     window.Alpine.store('searchHistory', searchHistory);
     window.Alpine.directive('swipe-close', swipeClose);

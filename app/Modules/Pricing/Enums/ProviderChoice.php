@@ -17,6 +17,8 @@ enum ProviderChoice: string implements HasLabel
     case PreferredSku = 'preferred_sku';
     case PreferredProduct = 'preferred_product';
     case Cheapest = 'cheapest';
+    // A live flash deal's supplier replaces the default one (S33, owner 2026-11-17); set on order items, not price records.
+    case FlashDeal = 'flash_deal';
 
     public function label(): string
     {
@@ -24,6 +26,7 @@ enum ProviderChoice: string implements HasLabel
             self::PreferredSku => 'انتخابی (SKU)',
             self::PreferredProduct => 'انتخابی (محصول)',
             self::Cheapest => 'خودکار: کمترین قیمت فروش',
+            self::FlashDeal => 'پیشنهاد لحظه‌ای',
         };
     }
 }

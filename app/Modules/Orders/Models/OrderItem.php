@@ -47,6 +47,8 @@ final class OrderItem extends Model
 
     public const string COLUMN_REQUIRES_PRESCRIPTION = 'requires_prescription';
 
+    public const string COLUMN_FLASH_DEAL_ID = 'flash_deal_id';
+
     public const string COLUMN_QUANTITY = 'quantity';
 
     public const string COLUMN_PRODUCT_SNAPSHOT = 'product_snapshot';
@@ -210,6 +212,21 @@ final class OrderItem extends Model
     public function setRequiresPrescription(bool $value): static
     {
         return $this->setAttribute(self::COLUMN_REQUIRES_PRESCRIPTION, $value);
+    }
+
+    /**
+     * The flash deal it was bought under (S33); its units are released when the order expires or is cancelled.
+     */
+    public function getFlashDealId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_FLASH_DEAL_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setFlashDealId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_FLASH_DEAL_ID, $value);
     }
 
     public function getQuantity(): int

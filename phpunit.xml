@@ -26,6 +26,7 @@
         <!-- Architecture tests load every class; with the feature tests in the same process 256M is not enough. -->
         <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
+        <env name="ADMIN_DOMAIN" value=""/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="PAYMENT_GATEWAY" value="fake"/>
         <env name="PAYMENT_FAKE_ENABLED" value="true"/>

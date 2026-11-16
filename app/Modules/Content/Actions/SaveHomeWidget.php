@@ -11,7 +11,8 @@ use App\Modules\Content\Models\HomeWidget;
 
 /**
  * Creates or updates a home widget (roadmap D3.6, S13b): a collection rail needs its collection; brands, categories
- * and tags need 1 to 6 items. A new widget goes to the end of the page. A slider's banners are set with
+ * and tags need 1 to 6 items; there is at most one flash deal row (owner, 2026-11-17). A new widget goes to the end of
+ * the page. A slider's banners are set with
  * SetPlaceBanners.
  */
 final class SaveHomeWidget
@@ -24,6 +25,15 @@ final class SaveHomeWidget
     {
         if ($data->type === HomeWidgetType::Collection && ($data->settings['collection_id'] ?? null) === null) {
             throw HomeWidgetChangeRefused::collectionMissing();
+        }
+
+        $anotherFlashDeal = $data->type === HomeWidgetType::FlashDeal && HomeWidget::query()
+            ->where(HomeWidget::COLUMN_TYPE, HomeWidgetType::FlashDeal)
+            ->when($widget instanceof HomeWidget, fn ($query) => $query->whereKeyNot($widget?->getId()))
+            ->exists();
+
+        if ($anotherFlashDeal) {
+            throw HomeWidgetChangeRefused::onlyOneFlashDeal();
         }
 
         $itemsKey = $data->type->itemsKey();
