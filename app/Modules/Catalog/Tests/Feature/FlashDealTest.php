@@ -206,6 +206,17 @@ it('shows the SKU\'s box, selling, haraj and current prices on the deal form', f
         ->assertSee(['قیمت روی جعبه', '۱۲۰٬۰۰۰ تومان', 'قیمت فروش', '۱۰۰٬۰۰۰ تومان', 'قیمت حراج', '۹۵٬۰۰۰ تومان', 'قیمت فعلی سایت', 'قیمت فعلی این تنوع: ۹۵٬۰۰۰ تومان']);
 });
 
+it('says when the SKU\'s current price is a live deal\'s price', function (): void {
+    Filament::setCurrentPanel('admin');
+    $this->seed(RolesSeeder::class);
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::SuperAdmin)->create(), 'admin');
+    dealFor($this->variant, [FlashDeal::COLUMN_PROVIDER_ID => $this->supplier->getId()]);
+
+    livewire(CreateFlashDeal::class)
+        ->fillForm([FlashDeal::COLUMN_VARIANT_ID => $this->variant->getId()])
+        ->assertSee(['۸۰٬۰۰۰ تومان', 'با پیشنهاد لحظه‌ای فعال تا', 'قیمت عادی: ۱۰۰٬۰۰۰ تومان']);
+});
+
 it('lets a super admin set up a deal, and keeps it from operators', function (): void {
     Filament::setCurrentPanel('admin');
     $this->seed(RolesSeeder::class);

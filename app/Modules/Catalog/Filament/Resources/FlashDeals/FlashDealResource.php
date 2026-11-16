@@ -15,6 +15,7 @@ use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Pricing\Queries\CurrentPriceRecords;
 use App\Modules\Pricing\Queries\SupplierOptions;
+use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
 use BackedEnum;
@@ -84,7 +85,9 @@ final class FlashDealResource extends Resource
                             self::price('official_price', 'قیمت روی جعبه', fn (ProductVariant $variant): ?int => $variant->getOfficialPrice()),
                             self::price('list_price', 'قیمت فروش', fn (ProductVariant $variant): int => $variant->getPrice()),
                             self::price('haraj_price', 'قیمت حراج', fn (ProductVariant $variant): ?int => $variant->getSalePrice()),
-                            self::price('current_price', 'قیمت فعلی سایت', fn (ProductVariant $variant): int => $variant->currentPrice()),
+                            self::price('current_price', 'قیمت فعلی سایت', fn (ProductVariant $variant): int => $variant->currentPrice())
+                                ->helperText(fn (Get $get): ?string => self::liveDealNote($get))
+                                ->color(fn (Get $get): ?string => self::liveDealNote($get) === null ? null : 'warning'),
                         ]),
                     Select::make(FlashDeal::COLUMN_PROVIDER_ID)
                         ->label('تأمین‌کننده')
@@ -226,6 +229,20 @@ final class FlashDealResource extends Resource
 
                 return $value === null ? '—' : Toman::format($value);
             });
+    }
+
+    /**
+     * «با پیشنهاد لحظه‌ای فعال تا …» when the SKU's current price is a live deal's price, so it is not read as the
+     * regular price.
+     */
+    private static function liveDealNote(Get $get): ?string
+    {
+        $variant = self::variant($get);
+        $deal = $variant?->getFlashDealId() === null ? null : FlashDeal::query()->find($variant->getFlashDealId());
+
+        return $deal instanceof FlashDeal
+            ? 'با پیشنهاد لحظه‌ای فعال تا '.JalaliDate::display($deal->getEndsAt(), 'j F، H:i').'؛ قیمت عادی: '.Toman::format($variant->regularPrice())
+            : null;
     }
 
     /**
