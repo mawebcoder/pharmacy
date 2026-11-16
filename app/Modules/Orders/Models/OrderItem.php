@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * One line of an order (roadmap D3.4 «Snapshot rule», «Price snapshot»): the product's names, SKU, brand and card
@@ -421,6 +422,22 @@ final class OrderItem extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function getOrder(): Order
+    {
+        /** @var Order */
+        return $this->order;
+    }
+
+    /**
+     * The purchase document rows that provided it (S30).
+     *
+     * @return HasMany<OrderPurchaseItem, $this>
+     */
+    public function purchaseItems(): HasMany
+    {
+        return $this->hasMany(OrderPurchaseItem::class);
     }
 
     /**

@@ -962,7 +962,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 **Order pages read only these copies** (owner, 2026-11-14): the profile order list and detail (S29) and the admin order pages render from the order's snapshots, never from the live product, address, coupon or customer.
 
-**provider_purchases**: `provider_id`, `status` (`requested`, `confirmed`, `received`, `partially_received`, `cancelled`), `total_cost`, `requested_at`, `received_at`; **provider_purchase_items**: `provider_purchase_id`, `order_item_id`, `variant_id`, `quantity`, `unit_cost`, `received_quantity`.
+**order_purchases** (S30, owner 2026-11-16; replaces the per-supplier `provider_purchases`): one per order (`order_id` unique), `status` (`draft` until every unit of every item has a row, `registered`, `received` once every row arrived), `total_cost`, `note`, `opened_by`, `registered_at`, `received_at`; **order_purchase_items**: `order_purchase_id`, `order_item_id`, `provider_id`, `provider_name`, `quantity`, `unit_cost` (what was really paid), `received_quantity`, `missing_quantity`, `missing_note`. **orders.sourcing_status** (admin only): null («بدون سند خرید»), `awaiting_receipt`, `partially_received`, `ready_to_pack`.
 
 **return_requests**: `order_id`, `status` (`requested`, `approved`, `rejected`, `received`, `refunded`), `reason`, `refund_amount`; **return_request_items**.
 
@@ -1855,10 +1855,12 @@ As built in S25 (owner, 2026-11-14):
 See D7.2. On verify success: `Payments\Events\PaymentSucceeded` (sent once) → (a) Orders: `MarkOrderPaid` moves the order to `paid` (also from `expired` when verified late) and marks the coupon used (`SettleOrderCoupon`, S25); (b) Pricing: create provider purchase draft (S30); (c) Notifications: SMS `order_paid` (S28). On NOK or cancel: the attempt is `failed` and the order stays `pending`, payable again until it expires; on expiry the order becomes `expired` and the coupon is released (owner, 2026-11-14).
 
 ### D13.6 Sourcing (buying from provider)
-1. Admin → Provider purchases: system groups paid orders' items by cheapest available provider into a draft purchase.
-2. Operator sends the purchase (Excel/print/WhatsApp to Sina's company) → status `requested` → `confirmed`.
-3. Goods arrive → operator ticks received quantities → order items fully received → order `ready_to_pack`.
-4. Missing items → admin chooses: wait, substitute (customer consent by phone), or partial refund (Zarinpal reverse if < 30 min, else panel refund).
+As built in S30 (owner, 2026-11-16):
+1. **The system creates no purchase rows or costs.** On a paid order the admin presses «ثبت سند خرید»: an empty purchase document opens, linked to the order both ways.
+2. The admin adds rows: first the order item (the list shows only items with units left, «۱ از ۳ عدد باقی‌مانده (۲ عدد ثبت شده)»; the customer's paid amount fills in read only), then the supplier, quantity (at most the units left; filled with them) and the unit cost really paid (the supplier's current price is a hint only). An item may be split over suppliers. A cost at or above what the customer paid per unit shows a warning box and a warning after saving; it is still allowed. Rows can be added, changed or removed until **48 hours after the document is registered** (`OrderPurchase::EDIT_WINDOW_HOURS`); after that only receiving is recorded. The order's page shows the document in its own «سند خرید» section (status, edit deadline, cost, final margin, rows) with a link to the document.
+3. «خرید از تأمین‌کننده» lists the rows still to arrive, grouped by supplier, to print or download as Excel.
+4. Goods arrive → the operator records received and missing quantities per row (missing with a note: wait, substitute or refund) → when every row of a fully covered document arrived, the order is «آماده بسته‌بندی». «تحویل به حمل» is disabled until then.
+5. **Final margin** = what the customer paid for the items − the document's rows, per item and per order, shown on the order and the document once every unit has a row; until then the order shows the checkout estimate. `order_items.unit_cost` is never overwritten, and the pricing engine is unchanged.
 
 ### D13.7 Packing and shipping
 1. Operator opens order → system suggests boxes; operator confirms real weight → `packed`.
@@ -2876,6 +2878,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Refs:** D13.6, D3.4 (provider_purchases)
 - **Build:** auto-draft purchases from paid orders grouped by provider, print/Excel export, receive quantities, missing-item handling. **What we actually pay the supplier is recorded on the purchase, never overwriting `order_items.unit_cost`** (owner, 2026-11-14).
 - **Tests:** grouping, partial receive → order stays sourcing, full receive → ready_to_pack.
+- **As built (owner, 2026-11-16):** one purchase document per order, filled by hand, instead of auto-drafted per-supplier purchases (D13.6, D3.4 order_purchases). «اسناد خرید» and «خرید از تأمین‌کننده» in «فروش»; on the order: «ثبت سند خرید» / «سند خرید», «تأمین سفارش» status and the final margin; the order list has a «تأمین» column and filter. Operators get `ViewAny/View/Create/Update:OrderPurchase`; content editors see none. The order keeps its seven statuses (D3.5): sourcing is a separate admin-only field. Tests: no rows on payment, open and link both ways, split rows never past the ordered quantity, registered only when fully covered, partial and full receive, final margin, shipping gated on full receipt, remaining-units list, loss warning, supplier list and Excel, roles.
 
 ### S31 Packing
 - **Refs:** D13.7

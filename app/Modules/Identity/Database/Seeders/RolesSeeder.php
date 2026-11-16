@@ -34,6 +34,8 @@ final class RolesSeeder extends Seeder
             'ViewAny:Customer', 'View:Customer', 'Update:Customer',
             // S29 Orders: look up orders and move their status, cancelling included (refunds are left to super admins).
             'ViewAny:Order', 'View:Order', 'Update:Order',
+            // S30 Orders: open an order's purchase document, type its rows and record what arrived.
+            'ViewAny:OrderPurchase', 'View:OrderPurchase', 'Create:OrderPurchase', 'Update:OrderPurchase',
         ],
         'content_editor' => [
             // S07 Catalog: create and edit brands (deleting is left to super admins).

@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Pricing\Queries;
+
+use App\Modules\Pricing\Models\Provider;
+use App\Modules\Pricing\Models\ProviderPrice;
+
+/**
+ * Suppliers for other modules' admin forms (roadmap S30): their names, and a supplier's current cost of a SKU, which
+ * the order purchase form shows only as a hint (the admin types what was really paid).
+ */
+final readonly class SupplierOptions
+{
+    /**
+     * Active suppliers, by name.
+     *
+     * @return array<int, string> id => name
+     */
+    public function names(): array
+    {
+        /** @var array<int, string> */
+        return Provider::query()
+            ->where(Provider::COLUMN_IS_ACTIVE, true)
+            ->orderBy(Provider::COLUMN_NAME)
+            ->pluck(Provider::COLUMN_NAME, Provider::COLUMN_ID)
+            ->all();
+    }
+
+    /**
+     * The name of a supplier, active or not; null when there is none.
+     */
+    public function name(int $providerId): ?string
+    {
+        $name = Provider::query()->whereKey($providerId)->value(Provider::COLUMN_NAME);
+
+        return $name === null ? null : (string) $name;
+    }
+
+    /**
+     * The supplier's current cost of the SKU (rial), or null when it has no row for it.
+     */
+    public function cost(int $providerId, int $variantId): ?int
+    {
+        $cost = ProviderPrice::query()
+            ->where(ProviderPrice::COLUMN_PROVIDER_ID, $providerId)
+            ->where(ProviderPrice::COLUMN_VARIANT_ID, $variantId)
+            ->value(ProviderPrice::COLUMN_COST);
+
+        return $cost === null ? null : (int) $cost;
+    }
+}

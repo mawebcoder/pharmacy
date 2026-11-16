@@ -7,11 +7,13 @@ namespace App\Modules\Orders\Models;
 use App\Modules\Orders\Database\Factories\OrderFactory;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
+use App\Modules\Orders\Enums\SourcingStatus;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -37,6 +39,8 @@ final class Order extends Model implements HasActivityLogLabel
     public const string COLUMN_STATUS = 'status';
 
     public const string COLUMN_PAYMENT_STATUS = 'payment_status';
+
+    public const string COLUMN_SOURCING_STATUS = 'sourcing_status';
 
     public const string COLUMN_ADDRESS_ID = 'address_id';
 
@@ -145,6 +149,19 @@ final class Order extends Model implements HasActivityLogLabel
     public function setPaymentStatus(PaymentStatus $value): static
     {
         return $this->setAttribute(self::COLUMN_PAYMENT_STATUS, $value);
+    }
+
+    /**
+     * How far its goods have been bought (S30, admin only); null while it has no purchase document.
+     */
+    public function getSourcingStatus(): ?SourcingStatus
+    {
+        return $this->getAttribute(self::COLUMN_SOURCING_STATUS);
+    }
+
+    public function setSourcingStatus(?SourcingStatus $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SOURCING_STATUS, $value);
     }
 
     public function getAddressId(): ?int
@@ -508,6 +525,21 @@ final class Order extends Model implements HasActivityLogLabel
     }
 
     /**
+     * Its purchase document (S30), once an admin opened one.
+     *
+     * @return HasOne<OrderPurchase, $this>
+     */
+    public function purchase(): HasOne
+    {
+        return $this->hasOne(OrderPurchase::class);
+    }
+
+    public function getPurchase(): ?OrderPurchase
+    {
+        return $this->purchase;
+    }
+
+    /**
      * @return HasMany<OrderStatusLog, $this>
      */
     public function statusLogs(): HasMany
@@ -557,6 +589,7 @@ final class Order extends Model implements HasActivityLogLabel
         return [
             self::COLUMN_STATUS => OrderStatus::class,
             self::COLUMN_PAYMENT_STATUS => PaymentStatus::class,
+            self::COLUMN_SOURCING_STATUS => SourcingStatus::class,
             self::COLUMN_ADDRESS_SNAPSHOT => 'array',
             self::COLUMN_CUSTOMER_SNAPSHOT => 'array',
             self::COLUMN_COUPON_SNAPSHOT => 'array',

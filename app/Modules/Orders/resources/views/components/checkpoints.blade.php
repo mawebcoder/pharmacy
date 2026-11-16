@@ -55,9 +55,9 @@
                     'text-ink-500' => ! $checkpoint->isPassed() && ! $checkpoint->isCurrent(),
                 ])>{{ $checkpoint->status->label() }}</p>
                 @if ($checkpoint->isCurrent() && ! $cancelled)
-                    <p class="text-xs text-primary-700">در جریان</p>
+                    <p class="text-xs text-primary-700">{{ $checkpoint->state->label() }}</p>
                 @elseif (! $checkpoint->isPassed() && ! $checkpoint->isCurrent())
-                    <p class="text-xs text-ink-500">در انتظار</p>
+                    <p class="text-xs text-ink-500">{{ $checkpoint->state->label() }}</p>
                 @endif
                 @if ($checkpoint->reachedAt)
                     <p class="text-xs text-ink-500">{{ JalaliDate::display($checkpoint->reachedAt, 'j F، H:i') }}</p>

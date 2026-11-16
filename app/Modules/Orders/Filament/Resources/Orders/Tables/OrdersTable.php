@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Filament\Resources\Orders\Tables;
 
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
+use App\Modules\Orders\Enums\SourcingStatus;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Shared\Support\IranMobile;
@@ -66,6 +67,12 @@ final class OrdersTable
                 ->badge()
                 ->formatStateUsing(fn (PaymentStatus $state): string => $state->label())
                 ->color(fn (PaymentStatus $state): string => $state->color()),
+            TextColumn::make(Order::COLUMN_SOURCING_STATUS)
+                ->label('تأمین')
+                ->badge()
+                ->state(fn (Order $record): ?string => $record->getStatus()->isPurchase() ? ($record->getSourcingStatus()?->label() ?? SourcingStatus::NONE_LABEL) : null)
+                ->color(fn (Order $record): string => $record->getSourcingStatus()?->color() ?? 'gray')
+                ->placeholder('—'),
         ];
     }
 
@@ -83,6 +90,14 @@ final class OrdersTable
                     ->label('پرداخت')
                     ->multiple()
                     ->options(PaymentStatus::options()),
+                SelectFilter::make(Order::COLUMN_SOURCING_STATUS)
+                    ->label('تأمین')
+                    ->options(['none' => SourcingStatus::NONE_LABEL] + SourcingStatus::options())
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        null, '' => $query,
+                        'none' => $query->whereNull(Order::COLUMN_SOURCING_STATUS)->whereIn(Order::COLUMN_STATUS, [OrderStatus::Paid, OrderStatus::Processing, OrderStatus::OnTheWay, OrderStatus::Delivered]),
+                        default => $query->where(Order::COLUMN_SOURCING_STATUS, $data['value']),
+                    }),
                 Filter::make('paid_between')
                     ->label('تاریخ پرداخت')
                     ->schema([

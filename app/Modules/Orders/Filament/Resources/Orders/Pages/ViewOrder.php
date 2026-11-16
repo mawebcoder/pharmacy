@@ -7,14 +7,19 @@ namespace App\Modules\Orders\Filament\Resources\Orders\Pages;
 use App\Modules\Orders\Actions\CancelOrderByAdmin;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Actions\MarkOrderRefunded;
+use App\Modules\Orders\Actions\OpenOrderPurchase;
 use App\Modules\Orders\Actions\SaveAdminNote;
 use App\Modules\Orders\Actions\SendOrderOnItsWay;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
+use App\Modules\Orders\Enums\SourcingStatus;
 use App\Modules\Orders\Exceptions\OrderRefused;
+use App\Modules\Orders\Exceptions\PurchaseRefused;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
+use App\Modules\Orders\Filament\Resources\Purchases\OrderPurchaseResource;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Models\OrderPurchase;
 use App\Modules\Shared\Support\Toman;
 use Closure;
 use Filament\Actions\Action;
@@ -40,6 +45,31 @@ final class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('purchase')
+                ->label('سند خرید')
+                ->icon(Heroicon::OutlinedClipboardDocumentList)
+                ->color('gray')
+                ->visible(fn (): bool => $this->order()->getPurchase() instanceof OrderPurchase
+                    && (auth('admin')->user()?->can('view', $this->order()->getPurchase()) ?? false))
+                ->url(fn (): string => OrderPurchaseResource::getUrl('view', ['record' => $this->order()->getPurchase()?->getId()])),
+            Action::make('openPurchase')
+                ->label('ثبت سند خرید')
+                ->icon(Heroicon::OutlinedClipboardDocumentList)
+                ->color('primary')
+                ->visible(fn (): bool => ! $this->order()->getPurchase() instanceof OrderPurchase
+                    && $this->order()->getStatus()->isPurchase()
+                    && (auth('admin')->user()?->can('create', OrderPurchase::class) ?? false))
+                ->action(function (OpenOrderPurchase $open): void {
+                    try {
+                        $purchase = $open($this->order(), $this->adminId());
+                    } catch (PurchaseRefused $refused) {
+                        Notification::make()->danger()->title($refused->getMessage())->send();
+
+                        return;
+                    }
+
+                    $this->redirect(OrderPurchaseResource::getUrl('view', ['record' => $purchase]));
+                }),
             $this->move('startProcessing', 'شروع آماده‌سازی', OrderStatus::Processing, Heroicon::OutlinedArchiveBox)
                 ->color('primary'),
             Action::make('sendOnItsWay')
@@ -47,6 +77,8 @@ final class ViewOrder extends ViewRecord
                 ->icon(Heroicon::OutlinedTruck)
                 ->color('primary')
                 ->visible(fn (): bool => $this->mayMoveTo(OrderStatus::OnTheWay))
+                ->disabled(fn (): bool => $this->order()->getSourcingStatus() !== SourcingStatus::ReadyToPack)
+                ->tooltip(fn (): ?string => $this->order()->getSourcingStatus() !== SourcingStatus::ReadyToPack ? 'پس از دریافت کامل سند خرید فعال می‌شود.' : null)
                 ->modalHeading('تحویل سفارش به شرکت حمل')
                 ->schema([
                     TextInput::make('tracking_code')

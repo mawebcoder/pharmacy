@@ -7,11 +7,18 @@ namespace App\Modules\Orders\Filament\Resources\Orders\Schemas;
 use App\Modules\Identity\Support\AddressText;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
+use App\Modules\Orders\Enums\SourcingStatus;
+use App\Modules\Orders\Filament\Resources\Purchases\OrderPurchaseResource;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
+use App\Modules\Orders\Models\OrderPurchaseItem;
 use App\Modules\Orders\Models\OrderStatusLog;
+use App\Modules\Orders\Support\PurchaseMargin;
+use App\Modules\Payments\Queries\OrderPayments;
+use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -19,6 +26,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 /**
  * An order's page (roadmap S29), built only from the order's own copies (owner, 2026-11-14): the summary, the items
@@ -45,7 +53,25 @@ final class OrderInfolist
                         ->badge()
                         ->formatStateUsing(fn (PaymentStatus $state): string => $state->label())
                         ->color(fn (PaymentStatus $state): string => $state->color()),
-                    TextEntry::make(Order::COLUMN_TRACKING_CODE)->label('کد رهگیری')->copyable()->placeholder('—')->extraAttributes(['dir' => 'ltr']),
+                    TextEntry::make(Order::COLUMN_SOURCING_STATUS)
+                        ->label('تأمین سفارش')
+                        ->badge()
+                        ->state(fn (Order $record): string => $record->getSourcingStatus()?->label() ?? SourcingStatus::NONE_LABEL)
+                        ->color(fn (Order $record): string => $record->getSourcingStatus()?->color() ?? 'gray')
+                        ->url(fn (Order $record): ?string => $record->getPurchase() === null ? null : OrderPurchaseResource::getUrl('view', ['record' => $record->getPurchase()->getId()]))
+                        ->visible(fn (Order $record): bool => $record->getStatus()->isPurchase() || $record->getPurchase() !== null),
+                    TextEntry::make(Order::COLUMN_TRACKING_CODE)
+                        ->label('کد رهگیری مرسوله')
+                        ->copyable()
+                        ->weight('bold')
+                        ->placeholder('هنوز ثبت نشده')
+                        ->extraAttributes(['dir' => 'ltr']),
+                    TextEntry::make('payment_reference')
+                        ->label('کد پیگیری پرداخت')
+                        ->state(fn (Order $record): ?string => app(OrderPayments::class)->paidReference($record->getId()))
+                        ->copyable()
+                        ->placeholder('—')
+                        ->extraAttributes(['dir' => 'ltr']),
                     self::date(Order::COLUMN_PAID_AT, 'پرداخت'),
                     self::date(Order::COLUMN_PLACED_AT, 'ثبت'),
                     self::date(Order::COLUMN_DELIVERED_AT, 'تحویل'),
@@ -98,9 +124,12 @@ final class OrderInfolist
                                 ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Toman::format($state))
                                 ->placeholder('—'),
                             TextEntry::make('margin')
-                                ->state(fn (OrderItem $record): ?int => self::itemMargin($record))
+                                ->state(fn (OrderItem $record): ?int => PurchaseMargin::itemMargin($record->getOrder(), $record) ?? self::itemMargin($record))
                                 ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Toman::format($state))
                                 ->color(fn (?int $state): ?string => $state !== null && $state < 0 ? 'danger' : null)
+                                ->helperText(fn (OrderItem $record): ?string => PurchaseMargin::itemMargin($record->getOrder(), $record) !== null
+                                    ? 'نهایی، با خرید '.Toman::format((int) PurchaseMargin::itemCost($record))
+                                    : (self::itemMargin($record) !== null ? 'برآورد هنگام خرید مشتری' : null))
                                 ->placeholder('—'),
                         ]),
                     Grid::make(['default' => 2, 'md' => 5])->schema([
@@ -115,13 +144,18 @@ final class OrderInfolist
                             ->helperText(fn (Order $record): ?string => self::shippingDiscountNote($record)),
                         self::money(Order::COLUMN_TOTAL, 'مبلغ پرداختی')->weight('bold'),
                         TextEntry::make('gross_margin')
-                            ->label('سود ناخالص اقلام')
-                            ->state(fn (Order $record): ?int => self::orderMargin($record))
+                            ->label(fn (Order $record): string => PurchaseMargin::orderMargin($record) !== null ? 'سود نهایی اقلام' : 'سود ناخالص اقلام (برآورد)')
+                            ->state(fn (Order $record): ?int => PurchaseMargin::orderMargin($record) ?? self::orderMargin($record))
                             ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Toman::format($state))
-                            ->helperText('بدون اقلامی که قیمت خرید ندارند')
+                            ->color(fn (?int $state): ?string => $state !== null && $state < 0 ? 'danger' : null)
+                            ->helperText(fn (Order $record): string => PurchaseMargin::orderMargin($record) !== null
+                                ? 'پرداختی مشتری برای کالاها منهای هزینه سند خرید ('.Toman::format($record->getPurchase()?->getTotalCost() ?? 0).')'
+                                : 'با قیمت تأمین‌کننده هنگام خرید مشتری؛ بدون اقلامی که قیمت خرید ندارند')
                             ->placeholder('—'),
                     ]),
                 ]),
+
+            self::purchaseSection(),
 
             Section::make('مشتری و ارسال')
                 ->columnSpanFull()
@@ -176,6 +210,83 @@ final class OrderInfolist
                         ]),
                 ]),
         ]);
+    }
+
+    /**
+     * The order's purchase document (S30, owner 2026-11-16): status, edit deadline, cost, final margin and its rows,
+     * read only; rows are added and received on the document's page («باز کردن سند خرید»).
+     */
+    private static function purchaseSection(): Section
+    {
+        return Section::make('سند خرید')
+            ->columnSpanFull()
+            ->visible(fn (Order $record): bool => $record->getStatus()->isPurchase() || $record->getPurchase() !== null)
+            ->description(fn (Order $record): ?string => $record->getPurchase() === null ? 'هنوز سند خریدی ثبت نشده است؛ از دکمه «ثبت سند خرید» بالای صفحه.' : null)
+            ->headerActions([
+                Action::make('openPurchaseDocument')
+                    ->label('باز کردن سند خرید')
+                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                    ->color('gray')
+                    ->visible(fn (Order $record): bool => $record->getPurchase() !== null)
+                    ->url(fn (Order $record): ?string => $record->getPurchase() === null ? null : OrderPurchaseResource::getUrl('view', ['record' => $record->getPurchase()->getId()])),
+            ])
+            ->schema([
+                Grid::make(['default' => 2, 'md' => 5])
+                    ->visible(fn (Order $record): bool => $record->getPurchase() !== null)
+                    ->schema([
+                        TextEntry::make('purchase_number')
+                            ->label('شماره سند')
+                            ->state(fn (Order $record): ?string => $record->getPurchase()?->getNumber())
+                            ->extraAttributes(['dir' => 'ltr']),
+                        TextEntry::make('purchase_status')
+                            ->label('وضعیت سند')
+                            ->badge()
+                            ->state(fn (Order $record): ?string => $record->getPurchase()?->getStatus()->label())
+                            ->color(fn (Order $record): string => $record->getPurchase()?->getStatus()->color() ?? 'gray'),
+                        TextEntry::make('purchase_editable_until')
+                            ->label('ویرایش ردیف‌ها تا')
+                            ->state(fn (Order $record): ?string => ($until = $record->getPurchase()?->getEditableUntil()) === null ? null : JalaliDate::display($until, 'j F Y، H:i'))
+                            ->color(fn (Order $record): ?string => $record->getPurchase()?->isLocked() ? 'danger' : null)
+                            ->placeholder('تا ۴۸ ساعت پس از ثبت سند'),
+                        TextEntry::make('purchase_cost')
+                            ->label('هزینه خرید')
+                            ->state(fn (Order $record): int => $record->getPurchase()?->getTotalCost() ?? 0)
+                            ->formatStateUsing(fn (int $state): string => Toman::format($state)),
+                        TextEntry::make('purchase_margin')
+                            ->label('سود نهایی')
+                            ->state(fn (Order $record): ?int => PurchaseMargin::orderMargin($record))
+                            ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Toman::format($state))
+                            ->color(fn (?int $state): ?string => $state !== null && $state < 0 ? 'danger' : null)
+                            ->weight('bold')
+                            ->placeholder('پس از ثبت همه ردیف‌ها'),
+                    ]),
+                RepeatableEntry::make('purchase.items')
+                    ->hiddenLabel()
+                    ->visible(fn (Order $record): bool => $record->getPurchase()?->items->isNotEmpty() ?? false)
+                    ->table([
+                        TableColumn::make('کالا'),
+                        TableColumn::make('تأمین‌کننده'),
+                        TableColumn::make('تعداد'),
+                        TableColumn::make('قیمت خرید واحد'),
+                        TableColumn::make('جمع خرید'),
+                        TableColumn::make('دریافت‌شده'),
+                        TableColumn::make('کسری'),
+                    ])
+                    ->schema([
+                        TextEntry::make('product')->state(fn (OrderPurchaseItem $record): string => $record->getOrderItem()->getProductName()),
+                        TextEntry::make(OrderPurchaseItem::COLUMN_PROVIDER_NAME),
+                        TextEntry::make(OrderPurchaseItem::COLUMN_QUANTITY)->formatStateUsing(fn (int $state): string => PersianDigits::toPersian($state)),
+                        TextEntry::make(OrderPurchaseItem::COLUMN_UNIT_COST)
+                            ->formatStateUsing(fn (int $state): string => Toman::format($state))
+                            ->color(fn (OrderPurchaseItem $record): ?string => $record->getUnitCost() >= $record->getOrderItem()->getPaidUnit() ? 'danger' : null),
+                        TextEntry::make('row_total')->state(fn (OrderPurchaseItem $record): int => $record->getTotalCost())->formatStateUsing(fn (int $state): string => Toman::format($state)),
+                        TextEntry::make(OrderPurchaseItem::COLUMN_RECEIVED_QUANTITY)
+                            ->formatStateUsing(fn (int $state, OrderPurchaseItem $record): string => PersianDigits::toPersian($state).' از '.PersianDigits::toPersian($record->getQuantity())),
+                        TextEntry::make(OrderPurchaseItem::COLUMN_MISSING_QUANTITY)
+                            ->formatStateUsing(fn (int $state): string => $state > 0 ? PersianDigits::toPersian($state) : '—')
+                            ->helperText(fn (OrderPurchaseItem $record): ?string => $record->getMissingNote()),
+                    ]),
+            ]);
     }
 
     /**

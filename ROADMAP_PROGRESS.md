@@ -29,7 +29,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S20 | Coupons | done | 2026-11-14 | 8472cda |
 | S25 | Checkout wizard | done | 2026-11-14 | e8afe2a |
 | S29 | Order admin and state machine | done | 2026-11-15 | 3db79f7 |
-| S30 | Provider purchases (sourcing) | todo | | |
+| S30 | Provider purchases (sourcing) | done | 2026-11-16 | |
 | S31 | Packing | todo | | |
 | S32 | Returns | todo | | |
 | S33 | Home, banners, deals | todo | | |

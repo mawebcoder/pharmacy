@@ -11,6 +11,7 @@ use App\Modules\Orders\Actions\MarkOrderRefunded;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
+use App\Modules\Orders\Enums\SourcingStatus;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Filament\RelationManagers\CustomerOrdersRelationManager;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
@@ -137,6 +138,15 @@ describe('as an operator', function (): void {
         $this->get(OrderResource::getUrl('view', ['record' => $paidToday]))->assertOk()->assertSee(Toman::format(450_000));
     });
 
+    it('shows the shipping tracking code and the payment reference on the order page', function (): void {
+        $order = Order::factory()->paid()->create([Order::COLUMN_TRACKING_CODE => 'TPX-778812']);
+        payment($order, PaymentAttemptStatus::Paid, 'A0000000000000000000000000000001')->setRefId('88231044')->save();
+
+        $this->get(OrderResource::getUrl('view', ['record' => $order]))
+            ->assertOk()
+            ->assertSee(['کد رهگیری مرسوله', 'TPX-778812', 'کد پیگیری پرداخت', '88231044']);
+    });
+
     it('offers only the moves allowed now and logs them with the admin', function (): void {
         $order = Order::factory()->paid()->create();
 
@@ -156,7 +166,8 @@ describe('as an operator', function (): void {
 
     it('sends a prepared order on its way with its tracking code, then marks it delivered', function (): void {
         $order = Order::factory()->paid()->create();
-        $order->setStatus(OrderStatus::Processing)->save();
+        // Its purchase document has fully arrived (S30).
+        $order->setStatus(OrderStatus::Processing)->setSourcingStatus(SourcingStatus::ReadyToPack)->save();
 
         livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
             ->callAction('sendOnItsWay', ['tracking_code' => ''])

@@ -47,6 +47,11 @@ final class OrderRefused extends BaseException
         return new self('مبلغی برای بازگشت وارد نشده است.', 'order_refund_empty');
     }
 
+    public static function notSourced(): self
+    {
+        return new self('تحویل به حمل فقط پس از دریافت کامل سند خرید این سفارش ممکن است.', 'order_not_sourced');
+    }
+
     public static function nothingToReorder(): self
     {
         return new self('هیچ‌یک از کالاهای این سفارش اکنون موجود نیست.', 'order_nothing_to_reorder');
