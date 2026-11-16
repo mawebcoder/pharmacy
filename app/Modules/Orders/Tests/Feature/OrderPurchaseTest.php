@@ -237,11 +237,12 @@ it('adds rows from the document page, caps the quantity and warns when the cost 
     $rows()->callAction(TestAction::make('addRow')->table(), ['order_item_id' => $this->cream->getId(), 'provider_id' => $this->alborz->getId(), 'quantity' => 4, 'unit_cost' => '45,000'])
         ->assertHasActionErrors(['quantity' => 'max']);
 
-    $rows()->callAction(TestAction::make('addRow')->table(), ['order_item_id' => $this->cream->getId(), 'provider_id' => $this->alborz->getId(), 'quantity' => 3, 'unit_cost' => '50,000'])
+    $rows()->callAction(TestAction::make('addRow')->table(), ['order_item_id' => $this->cream->getId(), 'provider_id' => $this->alborz->getId(), 'quantity' => 3, 'unit_cost' => '50,000', 'expiry_date' => '2027-06-30'])
         ->assertHasNoActionErrors()
         ->assertNotified('قیمت خرید کرم اوره برابر یا بیشتر از پرداختی مشتری برای هر واحد است.');
 
-    expect(OrderPurchaseItem::query()->sole())->getQuantity()->toBe(3)->getUnitCost()->toBe(500_000)->getProviderName()->toBe('پخش البرز');
+    expect(OrderPurchaseItem::query()->sole())->getQuantity()->toBe(3)->getUnitCost()->toBe(500_000)->getProviderName()->toBe('پخش البرز')
+        ->getExpiryDate()->toDateString()->toBe('2027-06-30');
 });
 
 it('offers only the items with units left, says how many, and hides «افزودن» once all are covered', function (): void {

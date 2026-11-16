@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Models;
 
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -32,6 +34,8 @@ final class OrderPurchaseItem extends Model implements HasActivityLogLabel
     public const string COLUMN_QUANTITY = 'quantity';
 
     public const string COLUMN_UNIT_COST = 'unit_cost';
+
+    public const string COLUMN_EXPIRY_DATE = 'expiry_date';
 
     public const string COLUMN_RECEIVED_QUANTITY = 'received_quantity';
 
@@ -104,6 +108,19 @@ final class OrderPurchaseItem extends Model implements HasActivityLogLabel
     public function setUnitCost(int $value): static
     {
         return $this->setAttribute(self::COLUMN_UNIT_COST, $value);
+    }
+
+    /**
+     * The expiry date of the units bought, for reference only (owner, 2026-11-16).
+     */
+    public function getExpiryDate(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_EXPIRY_DATE);
+    }
+
+    public function setExpiryDate(?CarbonInterface $value): static
+    {
+        return $this->setAttribute(self::COLUMN_EXPIRY_DATE, $value?->toDateString());
     }
 
     public function getReceivedQuantity(): int
@@ -185,7 +202,7 @@ final class OrderPurchaseItem extends Model implements HasActivityLogLabel
     {
         return LogOptions::defaults()
             ->useLogName('orders')
-            ->logOnly([self::COLUMN_PROVIDER_NAME, self::COLUMN_QUANTITY, self::COLUMN_UNIT_COST, self::COLUMN_RECEIVED_QUANTITY, self::COLUMN_MISSING_QUANTITY, self::COLUMN_MISSING_NOTE])
+            ->logOnly([self::COLUMN_PROVIDER_NAME, self::COLUMN_QUANTITY, self::COLUMN_UNIT_COST, self::COLUMN_EXPIRY_DATE, self::COLUMN_RECEIVED_QUANTITY, self::COLUMN_MISSING_QUANTITY, self::COLUMN_MISSING_NOTE])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -199,6 +216,7 @@ final class OrderPurchaseItem extends Model implements HasActivityLogLabel
             self::COLUMN_PROVIDER_ID => 'integer',
             self::COLUMN_QUANTITY => 'integer',
             self::COLUMN_UNIT_COST => 'integer',
+            self::COLUMN_EXPIRY_DATE => 'date',
             self::COLUMN_RECEIVED_QUANTITY => 'integer',
             self::COLUMN_MISSING_QUANTITY => 'integer',
         ];

@@ -269,6 +269,7 @@ final class OrderInfolist
                         TableColumn::make('تعداد'),
                         TableColumn::make('قیمت خرید واحد'),
                         TableColumn::make('جمع خرید'),
+                        TableColumn::make('انقضا'),
                         TableColumn::make('دریافت‌شده'),
                         TableColumn::make('کسری'),
                     ])
@@ -280,6 +281,7 @@ final class OrderInfolist
                             ->formatStateUsing(fn (int $state): string => Toman::format($state))
                             ->color(fn (OrderPurchaseItem $record): ?string => $record->getUnitCost() >= $record->getOrderItem()->getPaidUnit() ? 'danger' : null),
                         TextEntry::make('row_total')->state(fn (OrderPurchaseItem $record): int => $record->getTotalCost())->formatStateUsing(fn (int $state): string => Toman::format($state)),
+                        TextEntry::make(OrderPurchaseItem::COLUMN_EXPIRY_DATE)->jalaliDate()->placeholder('—'), // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
                         TextEntry::make(OrderPurchaseItem::COLUMN_RECEIVED_QUANTITY)
                             ->formatStateUsing(fn (int $state, OrderPurchaseItem $record): string => PersianDigits::toPersian($state).' از '.PersianDigits::toPersian($record->getQuantity())),
                         TextEntry::make(OrderPurchaseItem::COLUMN_MISSING_QUANTITY)

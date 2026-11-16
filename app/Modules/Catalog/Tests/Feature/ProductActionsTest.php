@@ -222,17 +222,6 @@ describe('variants', function (): void {
         expect(app(SaveProductVariant::class)($product, variantData())->exists)->toBeTrue();
     });
 
-    it('marks a variant near expiry from its expiry date', function (string $daysAhead, bool $near): void {
-        $product = Product::factory()->create();
-
-        $variant = app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_EXPIRY_DATE => now()->addDays((int) $daysAhead)->toDateString()]));
-
-        expect($variant->isNearExpiry())->toBe($near);
-    })->with([
-        'in 30 days' => ['30', true],
-        'in 200 days' => ['200', false],
-    ]);
-
     it('keeps the last variant of a draft product', function (): void {
         $product = Product::factory()->withVariants()->create();
         $variant = $product->variants()->sole();

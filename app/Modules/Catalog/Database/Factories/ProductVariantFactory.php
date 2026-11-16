@@ -40,8 +40,8 @@ final class ProductVariantFactory extends Factory
         return $this->state(fn (array $attributes): array => [ProductVariant::COLUMN_IS_ACTIVE => false]);
     }
 
-    public function expiringOn(string $date): static
+    public function nearExpiry(): static
     {
-        return $this->state(fn (array $attributes): array => [ProductVariant::COLUMN_EXPIRY_DATE => $date]);
+        return $this->state(fn (array $attributes): array => [ProductVariant::COLUMN_IS_NEAR_EXPIRY => true]);
     }
 }

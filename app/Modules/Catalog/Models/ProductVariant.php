@@ -8,7 +8,6 @@ use App\Modules\Catalog\Database\Factories\ProductVariantFactory;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use App\Modules\Shared\Support\Toman;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,11 +50,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
     public const string COLUMN_STOCK_STATUS = 'stock_status';
 
-    public const string COLUMN_EXPIRY_DATE = 'expiry_date';
-
     public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
-
-    public const string COLUMN_IS_DAMAGED_BOX = 'is_damaged_box';
 
     public const string COLUMN_WEIGHT_G = 'weight_g';
 
@@ -216,21 +211,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public function setIsNearExpiry(bool $value): static
     {
         return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $value);
-    }
-
-    public function isDamagedBox(): bool
-    {
-        return (bool) $this->getAttribute(self::COLUMN_IS_DAMAGED_BOX);
-    }
-
-    public function getIsDamagedBox(): bool
-    {
-        return $this->isDamagedBox();
-    }
-
-    public function setIsDamagedBox(bool $value): static
-    {
-        return $this->setAttribute(self::COLUMN_IS_DAMAGED_BOX, $value);
     }
 
     /**
@@ -399,16 +379,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_STOCK_STATUS, $status);
     }
 
-    public function getExpiryDate(): ?CarbonImmutable
-    {
-        return $this->getAttribute(self::COLUMN_EXPIRY_DATE);
-    }
-
-    public function setExpiryDate(?CarbonImmutable $date): static
-    {
-        return $this->setAttribute(self::COLUMN_EXPIRY_DATE, $date);
-    }
-
     /**
      * Whether the cart may take this SKU now (S19): active product of a type sold online, no prescription, no cold
      * chain, active and in stock. Needs the product loaded. The cart itself checks through PurchasableVariants.
@@ -528,9 +498,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_SALE_PRICE => 'integer',
             self::COLUMN_CURRENT_PRICE_ID => 'integer',
             self::COLUMN_STOCK_STATUS => StockStatus::class,
-            self::COLUMN_EXPIRY_DATE => 'immutable_date',
             self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
-            self::COLUMN_IS_DAMAGED_BOX => 'boolean',
             self::COLUMN_WEIGHT_G => 'integer',
             self::COLUMN_LENGTH_MM => 'integer',
             self::COLUMN_WIDTH_MM => 'integer',

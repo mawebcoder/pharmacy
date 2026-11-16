@@ -125,6 +125,13 @@ final class ProductForm
                                     ->integer()
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_MAX_PER_ORDER))
                                     ->helperText('برای هر تنوع این محصول؛ اگر تنوع عدد خودش را داشته باشد همان اعمال می‌شود. خالی یعنی تنظیم کلی فروشگاه.'),
+                                TextInput::make(Product::COLUMN_MIN_SHELF_LIFE_MONTHS)
+                                    ->label('تضمین اعتبار (ماه)')
+                                    ->numeric()
+                                    ->integer()
+                                    ->suffix('ماه')
+                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_MIN_SHELF_LIFE_MONTHS))
+                                    ->helperText('در صفحه محصول: «تضمین اعتبار: حداقل N ماه». تاریخ انقضای دقیق تضمین نمی‌شود؛ خالی یعنی نمایش داده نمی‌شود.'),
                                 Toggle::make(Product::COLUMN_REQUIRES_PRESCRIPTION)
                                     ->label('نیاز به نسخه')
                                     ->helperText('محصول نیازمند نسخه قابل فعال‌سازی برای فروش نیست.'),

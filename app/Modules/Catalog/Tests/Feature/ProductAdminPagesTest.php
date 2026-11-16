@@ -107,6 +107,22 @@ describe('as a content editor', function (): void {
             ->getMedia(Product::IMAGE_GALLERY)->toHaveCount(1);
     });
 
+    it('saves the shelf-life guarantee in whole months', function (): void {
+        $product = Product::factory()->withVariants()->create();
+
+        livewire(EditProduct::class, ['record' => $product->getRouteKey()])
+            ->fillForm([Product::COLUMN_MIN_SHELF_LIFE_MONTHS => '6'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        expect($product->fresh()->getMinShelfLifeMonths())->toBe(6);
+
+        livewire(EditProduct::class, ['record' => $product->getRouteKey()])
+            ->fillForm([Product::COLUMN_MIN_SHELF_LIFE_MONTHS => '1.5'])
+            ->call('save')
+            ->assertHasFormErrors([Product::COLUMN_MIN_SHELF_LIFE_MONTHS]);
+    });
+
     it('shows what is missing when a product cannot be activated', function (): void {
         $product = Product::factory()->create();
 

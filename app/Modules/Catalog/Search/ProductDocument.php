@@ -85,7 +85,6 @@ final class ProductDocument
             'in_stock' => $default?->isInStock() ?? false,
             'in_stock_rank' => $default?->isInStock() ? 1 : 0,
             'is_near_expiry' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()),
-            'is_damaged_box' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isDamagedBox()),
             'product_type' => $product->getProductType()->value,
             // Orders arrive in S20; until then best-selling sorts like newest.
             'sales_30d' => 0,
@@ -120,7 +119,7 @@ final class ProductDocument
     {
         return [
             'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'category_names', 'attribute_values', 'ingredients', 'codes'],
-            'filterableAttributes' => ['category_ids', 'subcategory_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'is_damaged_box', 'product_type'],
+            'filterableAttributes' => ['category_ids', 'subcategory_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'product_type'],
             'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
             'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [

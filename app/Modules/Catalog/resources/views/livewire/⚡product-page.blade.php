@@ -13,7 +13,7 @@ use Livewire\Component;
 /**
  * Product page (roadmap B5 /products/{slug}, B9.5; layout built ahead of S13 by the owner, 2026-11-14): gallery with
  * swipe, thumbnails, hover and full-screen zoom; info (brand, name, badges, key attributes); a buy box with the SKU
- * picker (only when there is more than one SKU), price, expiry, stock, shipping and add to cart, sticky on desktop
+ * picker (only when there is more than one SKU), price, shelf-life guarantee, stock, shipping and add to cart, sticky on desktop
  * and repeated as a bottom bar on phones and tablets once scrolled past; tabs that show one section at a time
  * (description, ingredients, usage, side effects, drug interactions, warnings, questions); «سؤال خود را اینجا
  * بپرسید» in the buy box (WhatsApp or Telegram from «تنظیمات فروشگاه», after a confirmation); related products. Stock alerts, question submission
@@ -93,6 +93,7 @@ new class extends Component
 ?>
 
 @use('App\Modules\Catalog\Enums\StockStatus')
+@use('App\Modules\Shared\Support\PersianDigits')
 
 @php
     $category = $product->getPrimaryCategory();
@@ -290,8 +291,12 @@ new class extends Component
                         </p>
                         <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="lg" />
                     </div>
-                    @if ($variant->getExpiryDate())
-                        <p class="text-sm text-ink-500">تاریخ انقضا: <span class="text-ink-900">@jalali($variant->getExpiryDate())</span></p>
+                    {{-- Goods are bought after the order is placed, so no exact expiry date is promised: only a minimum (owner, 2026-11-16). --}}
+                    @if ($product->getMinShelfLifeMonths())
+                        <p class="inline-flex items-center gap-1.5 text-sm text-ink-500">
+                            <x-ts-icon icon="calendar-days" class="size-5 text-primary-700" />
+                            تضمین اعتبار: <span class="font-medium text-ink-900">حداقل {{ PersianDigits::toPersian($product->getMinShelfLifeMonths()) }} ماه</span>
+                        </p>
                     @endif
 
                     @if ($isRx)

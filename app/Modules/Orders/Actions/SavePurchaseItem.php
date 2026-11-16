@@ -70,6 +70,7 @@ final readonly class SavePurchaseItem
                 ->setProviderName($supplierName)
                 ->setQuantity($data->quantity)
                 ->setUnitCost($data->unitCost)
+                ->setExpiryDate($data->expiryDate)
                 ->save();
 
             PurchaseProgress::refresh($purchase);

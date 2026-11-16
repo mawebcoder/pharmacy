@@ -166,7 +166,7 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 | `/t/{slug}` | Tag PLP (need/nutrient) | Same as PLP |
 | `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper (like the empty cart, with «مشاهده همه دسته‌بندی‌ها»; owner, 2026-11-15). The empty search box shows «محصولات محبوب» (D21.2). **One search bar** (owner, 2026-11-15): the page has no box of its own; the header's box holds the query, and without a query (the «جستجو» tab) it gets the cursor |
 | `/products/{slug}` | Product detail (PDP) | Gallery + zoom, brand, badges, price, variant picker, expiry, stock, qty, add-to-cart, sticky buy bar (mobile), tabs (description, ingredients, usage, warnings, side effects, FAQ, reviews), related, ask a pharmacist |
-| `/deals` | Deals hub | Flash deals, discount tiers, near-expiry, damaged-box |
+| `/deals` | Deals hub | Flash deals, discount tiers, near-expiry (no damaged-box: removed by the owner, 2026-11-16) |
 | `/bundles/{slug}` | Bundle | Items, saving, add bundle |
 | `/cart` | Cart | Items, coupon, free-shipping progress, summary |
 | `/checkout` | Checkout (steps) | Address (map pin), shipping options (Tipax services / own courier + slot), review, pay |
@@ -233,7 +233,7 @@ What each site teaches, as a design pattern, and the professional standard we ap
 ### B8.5 Sarsoon (sarsoon.com)
 - **Pattern to adopt:** "damaged box" and "near expiry" clearance sections; free-shipping promise in the title; mobile-number login; payment-methods page.
 - **Problems seen:** generic template look, inconsistent product photos.
-- **Our standard:** clearance items carry a clear badge (amber "زودمصرف" with expiry date, gray "کج‌جعبه") and an explanation tooltip; all product photos 1:1 on white (D14.2); free-shipping progress bar in cart instead of a slogan.
+- **Our standard:** near-expiry items carry an amber «زودمصرف» badge set by the admin (no damaged-box items and no exact expiry dates: the store has no warehouse, buys after the order and sells only sound goods; owner, 2026-11-16); all product photos 1:1 on white (D14.2); free-shipping progress bar in cart instead of a slogan.
 
 ### B8.6 Mosbate Sabz (mosbatesabz.com)
 - **Pattern to adopt:** discount tiers (10/20/30/40/50 %, 50 %+); hourly deals; "newly added"; online prescription entry; medical devices and home tests categories; ticket support; scientific team and licences pages; tracking code lookup; cancellation and return policy page.
@@ -287,7 +287,7 @@ Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop
 
 ### B9.4 Product card anatomy (all breakpoints)
 Reshaped like the owner's reference shop (owner, 2026-11-14/15: about 230 × 310 px on desktop; the home rail shows 5 cards). One component, `<x-catalog::product-card>`, is the only source of product cells (lists, home rails, search panel, related products, wishlist) and is shown on the design-system page `/dev/ui`; its placeholder is `<x-ui.product-card-skeleton>`.
-1. Photo contained (not cropped) on the white `media` well, inset 12 px from the card's edges with rounded corners; **fixed height** (96 px on phones, 128 px from tablet up; owner, 2026-11-15: about 230 × 312 px like the reference), so a card is as tall on the home page as in a list; max 1 badge top corner (priority: discount % → near-expiry → damaged-box → new); the heart at the top end.
+1. Photo contained (not cropped) on the white `media` well, inset 12 px from the card's edges with rounded corners; **fixed height** (96 px on phones, 128 px from tablet up; owner, 2026-11-15: about 230 × 312 px like the reference), so a card is as tall on the home page as in a list; max 1 badge top corner (priority: discount % → near-expiry → new); the heart at the top end.
 2. ~~Brand~~: no brand line on cards, and card queries do not load the brand (owner, 2026-11-15).
 3. Name (2 lines, fixed height, 14 px, `ink-900`).
 4. Rating stars + count (only if ≥ 1 review).
@@ -348,7 +348,7 @@ Single centered card (max 400 px): logo, title "ورود یا ثبت‌نام", 
 |---|---|---|
 | Button | primary (teal fill), secondary (teal outline), ghost, danger, deal (coral, deals only) · sizes sm 36 / md 44 / lg 52 px | One primary per view; loading state with spinner and disabled; icon + text where meaning is not obvious |
 | Input / select / textarea | default, error, disabled | Label above (never placeholder-only), helper text below, error text in `danger-600` with icon |
-| Badge | discount (coral), near-expiry (amber), damaged-box (gray), rx (violet), original (teal), new (ink) | Max 1 badge on cards, max 3 on PDP |
+| Badge | discount (coral), near-expiry (amber), rx (violet), original (teal), new (ink) | Max 1 badge on cards, max 3 on PDP |
 | Price | regular, discounted, free | Always Toman, Persian digits, thousands separator; discounted shows old struck + % badge |
 | Card | product, bundle, category tile, info | Radius 12, border `line-200`, padding 12/16 |
 | Chip | filter, tag, applied-filter (with ×) | Height 36, radius full, selected = teal fill + white text |
@@ -837,9 +837,9 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | sale_price | bigint Rial nullable | «قیمت حراج»: typed by the admin, below price. From S15 it lives on the price record |
 | current_price_id | FK nullable | the latest `variant_prices` record (S15) |
 | stock_status | enum | `available`, `on_request`, `out_of_stock` (no own stock; reflects provider availability) |
-| expiry_date | date nullable | shown on PDP |
-| is_near_expiry | bool | feeds "زودمصرف" section |
-| is_damaged_box | bool | feeds "کج‌جعبه" section |
+| is_near_expiry | bool | feeds "زودمصرف" section; **set by hand** in the SKU form (owner, 2026-11-16) |
+
+**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S30 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. The admin product list filters products with a «زودمصرف» SKU, to put them on haraj.
 | weight_g | int | packaged weight |
 | length_mm, width_mm, height_mm | int | packaged dimensions |
 | dimensions_verified | bool | true after someone measured it |
@@ -1339,7 +1339,6 @@ BNPL (Snapp Pay, Torob Pay, Digipay) is phase 2 behind the same `PaymentGateway`
 | TipaxSyncCities | weekly | `shipping` |
 | RecalculateVariantPrice / RecalculatePrices (after supplier price, printed price, haraj, commission or import changes) | on demand + nightly | `pricing` |
 | ParsePriceImport / ApplyPriceImport (supplier Excel) | on upload / on apply | `price-import` |
-| MarkNearExpiry (expiry < 90 days) | daily | `default` |
 | ProcessImage | on upload | `media` |
 | SendSms (Melli Payamak) | on event | `notifications` |
 | RefreshReportingWarehouse | 02:00 and 14:00 Tehran (twiceDaily) + weekly full rebuild Friday 03:00 | `reporting` |
@@ -1688,7 +1687,6 @@ Schedule::job(new ReconcileZarinpalPayments)->everyTenMinutes();
 Schedule::job(new ExpirePendingPayments)->everyFiveMinutes();
 Schedule::job(new PollTipaxTracking)->everyThirtyMinutes();
 Schedule::command('tipax:sync-cities')->weeklyOn(6, '03:00');
-Schedule::job(new MarkNearExpiry)->dailyAt('02:00');
 ```
 
 ### D11.8 Routes summary
@@ -1732,7 +1730,7 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 | subcategories | unique(slug); index(category_id, sort); index(is_active) |
 | brands | unique(slug); index(is_active) |
 | products | unique(slug); index(brand_id); index(primary_category_id); index(status, product_type); fulltext(name_fa, name_en) |
-| product_variants | unique(sku); index(product_id); index(barcode); index(is_active, stock_status); index(is_near_expiry); index(is_damaged_box); index(expiry_date) |
+| product_variants | unique(sku); index(product_id); index(barcode); index(is_active, stock_status); index(is_near_expiry) |
 | provider_prices | unique(provider_id, variant_id); index(variant_id, is_available, cost) |
 | pricing_rules | index(scope_type, scope_id, is_active, priority) |
 | customers | unique(mobile) |
@@ -1882,7 +1880,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 
 ### D13.11 Other flows
 - Stock alert: customer subscribes on out-of-stock variant → when `stock_status` becomes `available`, SMS sent once.
-- Near expiry: daily job flags variants with `expiry_date` < 90 days → appear in "زودمصرف".
+- Near expiry: the admin flags a SKU «زودمصرف» by hand → it appears in "زودمصرف" (owner, 2026-11-16; the daily `MarkNearExpiry` job was removed with `expiry_date`).
 - Review moderation: reviews `pending` → admin approves → visible; verified-buyer badge if linked to delivered order item.
 - Contact form: stored + email/SMS alert to operator.
 
@@ -2010,7 +2008,7 @@ Admin: Filament panel `/admin` (separate guard `admin`, MFA required).
 
 ### D15.2 Shared Livewire / Blade components
 Names below are written `module.component` for readability; in code a module component is referenced as `module::component` (C3 rule 5), e.g. `catalog.product-card` → `catalog::product-card`.
-`layout.app` (header with search, mega menu, mini-cart, bottom nav), `search.instant-box`, `catalog.product-card`, `catalog.quick-view`, `catalog.filters` (desktop sidebar / mobile slide), `catalog.sort`, `catalog.variant-picker`, `cart.mini-cart`, `cart.add-button`, `content.flash-deal-countdown`, `content.banner-slider`, `content.chips`, `checkout.address-form` (map), `checkout.shipping-options`, `orders.tracking-timeline`, `media.picture`, `ui.price`, `ui.badge-*` (discount, near-expiry, damaged-box, rx, original).
+`layout.app` (header with search, mega menu, mini-cart, bottom nav), `search.instant-box`, `catalog.product-card`, `catalog.quick-view`, `catalog.filters` (desktop sidebar / mobile slide), `catalog.sort`, `catalog.variant-picker`, `cart.mini-cart`, `cart.add-button`, `content.flash-deal-countdown`, `content.banner-slider`, `content.chips`, `checkout.address-form` (map), `checkout.shipping-options`, `orders.tracking-timeline`, `media.picture`, `ui.price`, `ui.badge-*` (discount, near-expiry, rx, original).
 
 ### D15.3 Filament resources (per module)
 Catalog: ProductResource (tabs: general, content, SEO, media; relation managers: Variants, FAQs, Relations, Tags), CategoryResource (one level, drag to reorder; relation manager «زیردسته‌ها»), BrandResource, AttributeResource, TagResource, BundleResource, ReviewResource, ProductQuestionResource.
@@ -2171,7 +2169,7 @@ Why not others:
 1. Search Persian and English product names, brand names (Persian and Latin), active ingredients, SKU and barcode.
 2. Treat these as equal: Arabic/Persian letters (ي/ی, ك/ک, ة/ه, أ/إ/ا), Persian/Arabic/Latin digits, ZWNJ (نیم‌فاصله) vs space vs none, diacritics.
 3. Synonyms: «ویتامین دی» = «ویتامین D» = «D3»; «امگا ۳» = «omega 3» = «روغن ماهی»; «ضد آفتاب» = «کرم ضدآفتاب» = «sunscreen».
-4. Filters: category, brand, dosage form, suitable for (age/gender), price range, in stock, discount %, near-expiry, damaged-box.
+4. Filters: category, brand, dosage form, suitable for (age/gender), price range, in stock, discount %, near-expiry.
 5. Sort: relevance, best selling, newest, cheapest, most expensive, highest discount.
 6. Autocomplete under the search box: up to 6 products, 3 brands, 3 categories, 3 tags, in < 150 ms (brands and categories: up to 8 each as icon rows since 2026-11-15, item 10).
 7. Zero-result page with popular tags/categories and logging of the query.
@@ -2892,7 +2890,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S33 Home, banners, deals
 - **Refs:** B1, B5 (home, deals), D3.6 (content), D14.3 (hero), B7–B13
-- **Build:** flash deals + countdown and `flash_deal` / `bundles` home widget types (the builder, banners and sliders come in S13b), deals hub (tiers, near-expiry, damaged-box), bundles page, `MarkNearExpiry` job.
+- **Build:** flash deals + countdown and `flash_deal` / `bundles` home widget types (the builder, banners and sliders come in S13b), deals hub (tiers, near-expiry), bundles page. (Damaged-box and the `MarkNearExpiry` job were removed by the owner, 2026-11-16.)
 - **Tests:** scheduling windows, flash deal sold-count lock, near-expiry flagging.
 
 ### S34 Static pages, FAQ, contact, menus
@@ -3132,7 +3130,7 @@ Update `ROADMAP_PROGRESS.md`: step id, title, status `done`, date, commit hash (
 | IRC | IFDA product registration code |
 | e-Namad | Iranian e-commerce trust seal |
 | COD | Cash on delivery |
-| زودمصرف / کج‌جعبه | Near-expiry / damaged-box clearance items |
+| زودمصرف | Near-expiry items (set by hand; «کج‌جعبه» removed, owner 2026-11-16) |
 
 ## Sources
 - Competitor sites reviewed 2026-11-06: darunet.com, darukade.com, daroodrug.com, darochi.com, sarsoon.com, mosbatesabz.com

@@ -9,7 +9,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 
 /**
  * What a product card shows (roadmap B9.4): the default SKU (Product::getDefaultVariant()) with its price, the
- * struck-through price and stock, and at most one badge in priority order: discount % → near expiry → damaged box →
+ * struck-through price and stock, and at most one badge in priority order: discount % → near expiry →
  * new. $variantId is the SKU «افزودن به سبد» adds (S19). Needs the product's active variants loaded.
  */
 final readonly class ProductCardData
@@ -33,7 +33,6 @@ final readonly class ProductCardData
         [$badge, $tone] = match (true) {
             ($default?->discountPercent() ?? 0) > 0 => [null, 'discount'],
             $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()) => ['زودمصرف', 'near-expiry'],
-            $variants->contains(fn (ProductVariant $variant): bool => $variant->isDamagedBox()) => ['کج‌جعبه', 'damaged-box'],
             ($product->getCreatedAt()?->diffInDays(now()) ?? PHP_INT_MAX) <= self::NEW_FOR_DAYS => ['جدید', 'new'],
             default => [null, null],
         };

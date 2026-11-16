@@ -10,9 +10,11 @@ use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -23,7 +25,7 @@ final class ProductsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['brand', 'primaryCategory', 'media'])->withCount('variants'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['brand', 'primaryCategory', 'media'])->withCount('variants')->withExists(['variants as has_near_expiry' => fn (Builder $variants): Builder => $variants->where(ProductVariant::COLUMN_IS_NEAR_EXPIRY, true)]))
             ->columns([
                 ImageThumbnail::make(Product::IMAGE_GALLERY, 'product'),
                 TextColumn::make(Product::COLUMN_NAME_FA)
@@ -47,6 +49,13 @@ final class ProductsTable
                     ->badge()
                     ->formatStateUsing(fn (ProductStatus $state): string => $state->label())
                     ->color(fn (ProductStatus $state): string => $state->color()),
+                TextColumn::make('has_near_expiry')
+                    ->label('زودمصرف')
+                    ->badge()
+                    ->state(fn (Product $record): ?string => $record->getAttribute('has_near_expiry') ? 'زودمصرف' : null)
+                    ->color('warning')
+                    ->placeholder('—')
+                    ->toggleable(),
                 TextColumn::make('variants_count')
                     ->label('تنوع')
                     ->numeric()
@@ -70,6 +79,11 @@ final class ProductsTable
                     ->relationship('primaryCategory', Category::COLUMN_NAME_FA)
                     ->searchable()
                     ->preload(),
+                // To find the products to put on haraj (owner, 2026-11-16): any SKU flagged «زودمصرف».
+                Filter::make('near_expiry')
+                    ->label('زودمصرف')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->whereHas('variants', fn (Builder $variants): Builder => $variants->where(ProductVariant::COLUMN_IS_NEAR_EXPIRY, true))),
                 TrashedFilter::make(),
             ])
             ->recordActions([

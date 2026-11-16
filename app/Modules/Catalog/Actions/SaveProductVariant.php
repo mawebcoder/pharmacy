@@ -12,7 +12,6 @@ use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Search\ProductSearchIndex;
-use App\Modules\Catalog\Support\NearExpiry;
 use App\Modules\Catalog\Support\VariantPricing;
 use App\Modules\Catalog\Support\VariantSku;
 use Illuminate\Support\Facades\DB;
@@ -54,9 +53,7 @@ final class SaveProductVariant
                 ->setOfficialPrice($data->officialPrice)
                 ->setSalePrice($data->salePrice)
                 ->setStockStatus($stock)
-                ->setExpiryDate($data->expiryDate)
-                ->setIsNearExpiry(NearExpiry::isNear($data->expiryDate))
-                ->setIsDamagedBox($data->isDamagedBox)
+                ->setIsNearExpiry($data->isNearExpiry)
                 ->setWeightG($data->weightG)
                 ->setLengthMm($data->lengthMm)
                 ->setWidthMm($data->widthMm)

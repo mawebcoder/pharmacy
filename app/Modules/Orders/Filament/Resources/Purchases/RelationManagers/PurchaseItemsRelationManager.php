@@ -17,6 +17,7 @@ use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -74,6 +75,10 @@ final class PurchaseItemsRelationManager extends RelationManager
                     ->description(fn (OrderPurchaseItem $record): ?string => self::isAtLoss($record->getOrderItem(), $record->getUnitCost())
                         ? 'برابر یا بیشتر از پرداختی مشتری برای هر واحد ('.Toman::format($record->getOrderItem()->getPaidUnit()).')'
                         : null),
+                TextColumn::make(OrderPurchaseItem::COLUMN_EXPIRY_DATE)
+                    ->label('انقضا')
+                    ->jalaliDate() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
+                    ->placeholder('—'),
                 TextColumn::make('row_total')
                     ->label('جمع خرید')
                     ->state(fn (OrderPurchaseItem $record): int => $record->getTotalCost())
@@ -127,6 +132,7 @@ final class PurchaseItemsRelationManager extends RelationManager
                         'provider_id' => $record->getProviderId(),
                         'quantity' => $record->getQuantity(),
                         'unit_cost' => $record->getUnitCost(),
+                        'expiry_date' => $record->getExpiryDate()?->toDateString(),
                     ])
                     ->schema(fn (OrderPurchaseItem $record): array => $this->rowForm($record))
                     ->action(fn (array $data, OrderPurchaseItem $record) => $this->attempt(fn () => $this->warnIfAtLoss(app(SavePurchaseItem::class)($this->purchase(), $this->rowData($data), $record)), 'ردیف خرید ذخیره شد.')),
@@ -144,7 +150,7 @@ final class PurchaseItemsRelationManager extends RelationManager
      * Order item (with how many units still have no row), supplier, quantity and unit cost in toman. The supplier's
      * current price shows under the cost as a hint only.
      *
-     * @return list<Select|TextInput|Callout>
+     * @return list<Select|TextInput|DatePicker|Callout>
      */
     private function rowForm(?OrderPurchaseItem $editing = null): array
     {
@@ -188,6 +194,11 @@ final class PurchaseItemsRelationManager extends RelationManager
                 ->disabled($noItem)
                 ->live(onBlur: true)
                 ->helperText(fn (Get $get): ?string => $this->costHint($get('order_item_id'), $get('provider_id'))),
+            DatePicker::make('expiry_date')
+                ->label('تاریخ انقضای کالای خریداری‌شده')
+                ->jalali() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
+                ->disabled($noItem)
+                ->helperText('فقط برای ثبت؛ تاریخ دقیق انقضا به مشتری تضمین نمی‌شود.'),
             Callout::make('بدون سود')
                 ->key('loss_warning')
                 ->warning()

@@ -40,7 +40,7 @@ it('shows the buy box, shipping line and a tab for each section that has content
 
 it('switches the buy box to the picked SKU and ignores SKUs of other products', function (): void {
     $small = ProductVariant::factory()->for($this->product)->create([ProductVariant::COLUMN_TITLE_FA => '۵۰ گرمی', ProductVariant::COLUMN_PRICE => 200_000, ProductVariant::COLUMN_OFFICIAL_PRICE => 200_000]);
-    $large = ProductVariant::factory()->for($this->product)->expiringOn('2027-03-21')->create([ProductVariant::COLUMN_TITLE_FA => '۱۰۰ گرمی', ProductVariant::COLUMN_PRICE => 350_000, ProductVariant::COLUMN_OFFICIAL_PRICE => 350_000]);
+    $large = ProductVariant::factory()->for($this->product)->create([ProductVariant::COLUMN_TITLE_FA => '۱۰۰ گرمی', ProductVariant::COLUMN_PRICE => 350_000, ProductVariant::COLUMN_OFFICIAL_PRICE => 350_000]);
     $other = ProductVariant::factory()->create();
 
     livewire('catalog::product-page', ['slug' => 'urea-cream'])
@@ -48,9 +48,20 @@ it('switches the buy box to the picked SKU and ignores SKUs of other products', 
         ->assertSee('انتخاب نوع')
         ->set('variantId', $large->getId())
         ->assertSee('۳۵٬۰۰۰ تومان')
-        ->assertSee('تاریخ انقضا')
+        // No exact expiry date is promised (owner, 2026-11-16).
+        ->assertDontSee('تاریخ انقضا')
         ->set('variantId', $other->getId())
         ->assertSet('variantId', $small->getId());
+});
+
+it('shows the product\'s shelf-life guarantee in months, and nothing when it has none', function (): void {
+    ProductVariant::factory()->for($this->product)->create();
+
+    livewire('catalog::product-page', ['slug' => 'urea-cream'])->assertDontSee('تضمین اعتبار');
+
+    $this->product->setMinShelfLifeMonths(6)->save();
+
+    livewire('catalog::product-page', ['slug' => 'urea-cream'])->assertSee(['تضمین اعتبار', 'حداقل ۶ ماه']);
 });
 
 it('replaces add to cart with the coming-soon note on prescription products', function (): void {

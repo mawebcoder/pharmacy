@@ -98,6 +98,7 @@ final class UpdateProduct
             ->setRequiresPrescription($data->requiresPrescription || $data->productType === ProductType::Rx)
             ->setIrcCode($data->ircCode)
             ->setMaxPerOrder($data->maxPerOrder)
+            ->setMinShelfLifeMonths($data->minShelfLifeMonths)
             ->setShortDescription($data->shortDescription)
             ->setDescription($data->description)
             ->setIngredients($data->ingredients)

@@ -7,7 +7,6 @@ namespace App\Modules\Catalog\Data;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Shared\Support\PersianNormalizer;
-use Carbon\CarbonImmutable;
 
 /**
  * Input for creating or updating a variant. Prices in rial, weight in grams, sizes in millimetres. A null SKU is
@@ -23,8 +22,7 @@ final readonly class ProductVariantData
         public ?int $officialPrice,
         public ?int $salePrice,
         public StockStatus $stockStatus,
-        public ?CarbonImmutable $expiryDate,
-        public bool $isDamagedBox,
+        public bool $isNearExpiry,
         public ?int $weightG,
         public ?int $lengthMm,
         public ?int $widthMm,
@@ -46,7 +44,6 @@ final readonly class ProductVariantData
     public static function fromArray(array $data): self
     {
         $stock = $data[ProductVariant::COLUMN_STOCK_STATUS] ?? StockStatus::Available;
-        $expiry = $data[ProductVariant::COLUMN_EXPIRY_DATE] ?? null;
 
         return new self(
             titleFa: PersianNormalizer::letters(trim((string) ($data[ProductVariant::COLUMN_TITLE_FA] ?? ''))),
@@ -55,8 +52,7 @@ final readonly class ProductVariantData
             officialPrice: self::number($data[ProductVariant::COLUMN_OFFICIAL_PRICE] ?? null),
             salePrice: self::number($data[ProductVariant::COLUMN_SALE_PRICE] ?? null),
             stockStatus: $stock instanceof StockStatus ? $stock : StockStatus::from((string) $stock),
-            expiryDate: blank($expiry) ? null : CarbonImmutable::parse($expiry instanceof \DateTimeInterface ? $expiry->format('Y-m-d') : (string) $expiry)->startOfDay(),
-            isDamagedBox: (bool) ($data[ProductVariant::COLUMN_IS_DAMAGED_BOX] ?? false),
+            isNearExpiry: (bool) ($data[ProductVariant::COLUMN_IS_NEAR_EXPIRY] ?? false),
             weightG: self::number($data[ProductVariant::COLUMN_WEIGHT_G] ?? null),
             lengthMm: self::number($data[ProductVariant::COLUMN_LENGTH_MM] ?? null),
             widthMm: self::number($data[ProductVariant::COLUMN_WIDTH_MM] ?? null),

@@ -16,7 +16,6 @@
     $card = ProductCardData::for($product);
     $badgeClasses = [
         'near-expiry' => 'bg-warning-500 text-ink-900',
-        'damaged-box' => 'bg-line-200 text-ink-900',
         'new' => 'bg-ink-900 text-card',
     ];
 @endphp

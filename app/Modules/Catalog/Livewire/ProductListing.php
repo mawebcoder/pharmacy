@@ -92,9 +92,6 @@ final class ProductListing extends Component
     #[Url(as: 'expiry')]
     public bool $nearExpiry = false;
 
-    #[Url(as: 'damaged')]
-    public bool $damagedBox = false;
-
     #[Url(except: '')]
     public string $sort = '';
 
@@ -152,7 +149,7 @@ final class ProductListing extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('brands', 'filters', 'minPrice', 'maxPrice', 'inStock', 'discount', 'nearExpiry', 'damagedBox');
+        $this->reset('brands', 'filters', 'minPrice', 'maxPrice', 'inStock', 'discount', 'nearExpiry');
         $this->updated('filters');
     }
 
@@ -209,7 +206,7 @@ final class ProductListing extends Component
             $chips[] = ['label' => PersianDigits::toPersian($this->discount).'٪ تخفیف و بیشتر', 'action' => '$set(\'discount\', null)'];
         }
 
-        foreach (['inStock' => 'فقط موجود', 'nearExpiry' => 'زودمصرف', 'damagedBox' => 'کج‌جعبه'] as $property => $label) {
+        foreach (['inStock' => 'فقط موجود', 'nearExpiry' => 'زودمصرف'] as $property => $label) {
             if ($this->{$property}) {
                 $chips[] = ['label' => $label, 'action' => "\$set('{$property}', false)"];
             }
@@ -292,7 +289,6 @@ final class ProductListing extends Component
             inStock: $this->inStock,
             minDiscount: in_array($this->discount, self::DISCOUNT_STEPS, true) ? $this->discount : null,
             nearExpiry: $this->nearExpiry,
-            damagedBox: $this->damagedBox,
             sort: $this->sortOrder(),
             page: $isDesktopPage ? $this->getPage() : 1,
             perPage: $this->shown,

@@ -49,6 +49,7 @@ final class StoreProductRequest extends FormRequest
             Product::COLUMN_REQUIRES_PRESCRIPTION => ['boolean'],
             Product::COLUMN_IRC_CODE => ['nullable', 'string', 'max:32'],
             Product::COLUMN_MAX_PER_ORDER => ['nullable', 'integer', 'min:1', 'max:999'],
+            Product::COLUMN_MIN_SHELF_LIFE_MONTHS => ['nullable', 'integer', 'min:1', 'max:60'],
             Product::COLUMN_SHORT_DESCRIPTION => ['nullable', 'string', 'max:1000'],
             Product::COLUMN_DESCRIPTION => $text,
             Product::COLUMN_INGREDIENTS => $text,

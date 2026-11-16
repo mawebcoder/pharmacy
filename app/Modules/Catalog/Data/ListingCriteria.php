@@ -30,7 +30,6 @@ final readonly class ListingCriteria
         public bool $inStock = false,
         public ?int $minDiscount = null,
         public bool $nearExpiry = false,
-        public bool $damagedBox = false,
         public ListingSort $sort = ListingSort::Newest,
         public int $page = 1,
         public int $perPage = 24,

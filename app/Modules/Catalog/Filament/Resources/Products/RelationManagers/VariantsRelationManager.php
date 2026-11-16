@@ -24,7 +24,6 @@ use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -127,11 +126,9 @@ final class VariantsRelationManager extends RelationManager
                             ->dehydrated()
                             ->helperText('خودکار: با تأمین‌کننده فعال یا قیمت روی جعبه «موجود»، بدون هیچ‌کدام «ناموجود».')
                             ->required(),
-                        DatePicker::make(ProductVariant::COLUMN_EXPIRY_DATE)
-                            ->label('تاریخ انقضا')
-                            ->helperText('کمتر از ۹۰ روز مانده: خودکار «زودمصرف» می‌شود.'),
-                        Toggle::make(ProductVariant::COLUMN_IS_DAMAGED_BOX)
-                            ->label('کج‌جعبه')
+                        Toggle::make(ProductVariant::COLUMN_IS_NEAR_EXPIRY)
+                            ->label('زودمصرف')
+                            ->helperText('با دست تنظیم می‌شود؛ در فیلتر و بخش «زودمصرف» سایت نمایش داده می‌شود.')
                             ->inline(false),
                     ]),
                 Section::make('ارسال')
@@ -197,11 +194,12 @@ final class VariantsRelationManager extends RelationManager
                     ->badge()
                     ->formatStateUsing(fn (StockStatus $state): string => $state->label())
                     ->color(fn (StockStatus $state): string => $state->color()),
-                TextColumn::make(ProductVariant::COLUMN_EXPIRY_DATE)
-                    ->label('انقضا')
-                    ->jalaliDate() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
-                    ->placeholder('—')
-                    ->color(fn (ProductVariant $record): ?string => $record->isNearExpiry() ? 'warning' : null),
+                TextColumn::make('near_expiry')
+                    ->label('زودمصرف')
+                    ->badge()
+                    ->state(fn (ProductVariant $record): ?string => $record->isNearExpiry() ? 'زودمصرف' : null)
+                    ->color('warning')
+                    ->placeholder('—'),
                 IconColumn::make(ProductVariant::COLUMN_IS_ACTIVE)->label('فعال')->boolean(),
             ])
             ->headerActions([

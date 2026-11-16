@@ -17,15 +17,4 @@ return [
 
     'unsellable_product_types' => ['rx'],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Near expiry
-    |--------------------------------------------------------------------------
-    |
-    | A variant whose expiry date is within this many days is marked near-expiry ("زودمصرف", roadmap D9).
-    |
-    */
-
-    'near_expiry_days' => 90,
-
 ];

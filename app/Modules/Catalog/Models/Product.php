@@ -66,6 +66,8 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_MAX_PER_ORDER = 'max_per_order';
 
+    public const string COLUMN_MIN_SHELF_LIFE_MONTHS = 'min_shelf_life_months';
+
     public const string COLUMN_SHORT_DESCRIPTION = 'short_description';
 
     public const string COLUMN_DESCRIPTION = 'description';
@@ -160,6 +162,21 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function setMaxPerOrder(?int $value): static
     {
         return $this->setAttribute(self::COLUMN_MAX_PER_ORDER, $value);
+    }
+
+    /**
+     * The shelf-life guarantee shown on the product page, in months (owner, 2026-11-16); null shows none.
+     */
+    public function getMinShelfLifeMonths(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_MIN_SHELF_LIFE_MONTHS);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setMinShelfLifeMonths(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_MIN_SHELF_LIFE_MONTHS, $value);
     }
 
     public function getShortDescription(): ?string
@@ -690,7 +707,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             ->useLogName('catalog')
             ->logOnly([
                 self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_PRIMARY_SUBCATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
-                self::COLUMN_PRODUCT_TYPE, self::COLUMN_REQUIRES_PRESCRIPTION, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_SHORT_DESCRIPTION,
+                self::COLUMN_PRODUCT_TYPE, self::COLUMN_REQUIRES_PRESCRIPTION, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_MIN_SHELF_LIFE_MONTHS, self::COLUMN_SHORT_DESCRIPTION,
                 self::COLUMN_DESCRIPTION, self::COLUMN_INGREDIENTS, self::COLUMN_USAGE, self::COLUMN_WARNINGS, self::COLUMN_SIDE_EFFECTS,
                 self::COLUMN_INTERACTIONS, self::COLUMN_STATUS, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
             ])
@@ -717,6 +734,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
             self::COLUMN_REQUIRES_PRESCRIPTION => 'boolean',
             self::COLUMN_MAX_PER_ORDER => 'integer',
+            self::COLUMN_MIN_SHELF_LIFE_MONTHS => 'integer',
             self::COLUMN_STATUS => ProductStatus::class,
         ];
     }

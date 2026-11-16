@@ -115,7 +115,6 @@ new #[Title('اجزای رابط کاربری')] class extends Component
         <div class="flex flex-wrap gap-2">
             <x-ts-badge text="۲۰٪ تخفیف" color="red" />
             <x-ts-badge text="زودمصرف" color="amber" light />
-            <x-ts-badge text="کج‌جعبه" color="gray" light />
             <x-ts-badge text="نسخه‌ای" color="violet" light />
             <x-ts-badge text="اصالت کالا" icon="check-badge" />
         </div>
