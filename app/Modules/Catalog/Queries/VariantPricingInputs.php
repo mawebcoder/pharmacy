@@ -53,6 +53,8 @@ final readonly class VariantPricingInputs
                 brandId: $product?->getBrandId(),
                 productCommission: $productCommission,
                 brandCommission: $brandCommission,
+                harajPercent: $variant->getHarajPercent(),
+                productHarajPercent: $product?->getHarajPercent(),
             );
         }
 

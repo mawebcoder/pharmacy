@@ -34,6 +34,7 @@ final class UpdateProduct
         return DB::transaction(function () use ($product, $data): Product {
             self::fill($product, $data)->setStatus($data->status);
             $commissionMayChange = $product->isDirty([Product::COLUMN_COMMISSION_PERCENT, Product::COLUMN_BRAND_ID]);
+            $harajChanged = $product->exists && $product->isDirty(Product::COLUMN_HARAJ_PERCENT);
 
             if ($data->status === ProductStatus::Active) {
                 ProductActivation::assertAllowed($product);
@@ -46,6 +47,9 @@ final class UpdateProduct
 
             if ($commissionMayChange) {
                 event(new PricingInputsChanged(app(VariantPricingInputs::class)->variantIdsOfProduct($product->getId()), PricingInputChange::Commission, self::adminId()));
+            } elseif ($harajChanged) {
+                // The product's haraj percentage reprices its SKUs that inherit it (owner, 2026-11-17).
+                event(new PricingInputsChanged(app(VariantPricingInputs::class)->variantIdsOfProduct($product->getId()), PricingInputChange::Haraj, self::adminId()));
             }
 
             return $product;
@@ -97,6 +101,7 @@ final class UpdateProduct
             ->setMaxPerOrder($data->maxPerOrder)
             ->setMinShelfLifeMonths($data->minShelfLifeMonths)
             ->setIsNearExpiry($data->isNearExpiry)
+            ->setHarajPercent($data->harajPercent)
             ->setShortDescription($data->shortDescription)
             ->setDescription($data->description)
             ->setIngredients($data->ingredients)

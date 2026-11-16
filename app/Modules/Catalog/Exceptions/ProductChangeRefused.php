@@ -24,9 +24,9 @@ final class ProductChangeRefused extends RuntimeException
         return new self('برای محصول یک زیردسته انتخاب کنید.');
     }
 
-    public static function salePriceNotBelowPrice(): self
+    public static function harajPercentOutOfRange(): self
     {
-        return new self('قیمت حراج باید کمتر از قیمت فروش باشد.');
+        return new self('درصد حراج باید بین ۰ و ۹۰ باشد.');
     }
 
     public static function officialPriceRequired(): self

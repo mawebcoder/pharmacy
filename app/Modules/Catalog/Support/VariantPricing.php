@@ -18,7 +18,8 @@ final class VariantPricing
 {
     /**
      * The admin's price inputs of a SKU (roadmap D3.2): the product or its brand must have a commission, medicines
-     * need a printed price, and a haraj must be below the SKU's current selling price (a new SKU has none yet).
+     * need a printed price, and a haraj percentage (0–90; owner, 2026-11-17) needs a selling price to apply to (a new
+     * SKU has none yet).
      *
      * @throws ProductChangeRefused
      */
@@ -34,12 +35,12 @@ final class VariantPricing
 
         $price = $variant?->getPrice() ?? 0;
 
-        if ($data->salePrice !== null && $price === 0) {
+        if ($data->harajPercent !== null && $data->harajPercent > 0 && $price === 0) {
             throw ProductChangeRefused::harajNeedsPrice();
         }
 
-        if ($data->salePrice !== null && $data->salePrice >= $price) {
-            throw ProductChangeRefused::salePriceNotBelowPrice();
+        if ($data->harajPercent !== null && ($data->harajPercent < 0 || $data->harajPercent > 90)) {
+            throw ProductChangeRefused::harajPercentOutOfRange();
         }
     }
 }

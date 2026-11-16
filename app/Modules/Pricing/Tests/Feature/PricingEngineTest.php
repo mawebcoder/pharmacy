@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Search\ProductDocument;
+use App\Modules\Pricing\Actions\CalculateVariantPrice;
 use App\Modules\Pricing\Actions\DeleteProviderPrice;
 use App\Modules\Pricing\Actions\SaveProvider;
 use App\Modules\Pricing\Actions\SaveProviderPrice;
@@ -197,15 +198,39 @@ describe('selling price', function (): void {
             ->and(latestRecord($sku)->hasFlag(VariantPrice::FLAG_CAPPED_BY_PRINTED))->toBeTrue();
     });
 
-    it('removes a haraj that is no longer below the selling price', function (): void {
+    it('works the haraj price out of the percentage again whenever the supplier cost changes', function (): void {
         $sku = pricedSku();
-        $sku->setSalePrice(9_000_000)->save();
+        $sku->setHarajPercent(10)->save();
+        $supplier = Provider::factory()->create();
+
+        supplierPrice($sku, 7_000_000, provider: $supplier);
+
+        // 700,000 × 1.10 = 770,000 toman; 10% haraj → 693,000 toman.
+        expect($sku->fresh())->getPrice()->toBe(7_700_000)->getSalePrice()->toBe(6_930_000)
+            ->and(latestRecord($sku)->getSalePrice())->toBe(6_930_000);
+
+        supplierPrice($sku, 8_000_000, provider: $supplier);
+
+        // 800,000 × 1.10 = 880,000 toman; the haraj follows: 792,000 toman.
+        expect($sku->fresh())->getPrice()->toBe(8_800_000)->getSalePrice()->toBe(7_920_000);
+    });
+
+    it('takes the product\'s haraj percentage unless the SKU has its own, and 0 means no haraj', function (?float $own, ?int $sale): void {
+        $sku = pricedSku();
+        $sku->getProduct()->setHarajPercent(15)->save();
+        $sku->setHarajPercent($own)->save();
 
         supplierPrice($sku, 7_000_000);
 
-        // 700,000 × 1.10 = 770,000 toman, below the 900,000 haraj.
-        expect($sku->fresh())->getPrice()->toBe(7_700_000)->getSalePrice()->toBeNull()
-            ->and(latestRecord($sku)->hasFlag(VariantPrice::FLAG_HARAJ_REMOVED))->toBeTrue();
+        expect($sku->fresh()->getSalePrice())->toBe($sale);
+    })->with([
+        'inherits 15%' => [null, 6_545_000],
+        'own 20%' => [20, 6_160_000],
+        'own 0: no haraj' => [0, null],
+    ]);
+
+    it('rounds the haraj price down to whole toman', function (): void {
+        expect(CalculateVariantPrice::harajPrice(1_234_565, 12.5))->toBe(1_080_240);
     });
 
     it('flags a change of more than 15 %', function (): void {

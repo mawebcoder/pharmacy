@@ -13,7 +13,8 @@ use App\Modules\Pricing\Models\VariantPrice;
 /**
  * The pricing engine (roadmap D3.2): selling price = the chosen supplier's cost × (1 + its commission %), rounded up
  * to 1,000 toman, never above the printed price (ActiveSuppliers picks the supplier and its commission level, S15b);
- * the haraj is kept only while it is below the selling price.
+ * the haraj price is the haraj percentage (the SKU's own, else the product's) off the selling price, rounded down to
+ * whole toman (owner, 2026-11-17), so it follows every cost and commission change.
  *
  * Example: cost 850,000 toman, commission 10 % → 935,000 toman; printed 900,000 → 900,000 (capped, flagged).
  *
@@ -63,9 +64,11 @@ final class CalculateVariantPrice
             }
         }
 
-        $salePrice = $input->salePrice;
+        // Haraj is a percentage of the selling price, worked out again at every recalculation (owner, 2026-11-17).
+        $harajPercent = $input->effectiveHarajPercent();
+        $salePrice = $harajPercent === null ? null : self::harajPrice($price, $harajPercent);
 
-        if ($salePrice !== null && $salePrice >= $price) {
+        if ($salePrice !== null && ($salePrice >= $price || $salePrice <= 0)) {
             $salePrice = null;
             $flags[] = VariantPrice::FLAG_HARAJ_REMOVED;
         }
@@ -87,6 +90,14 @@ final class CalculateVariantPrice
             salePrice: $salePrice,
             flags: $flags,
         );
+    }
+
+    /**
+     * The haraj price: the selling price less the percentage, rounded down to whole toman (10 rial).
+     */
+    public static function harajPrice(int $price, float $percent): int
+    {
+        return intdiv((int) floor($price * (100 - $percent) / 100), 10) * 10;
     }
 
     /**

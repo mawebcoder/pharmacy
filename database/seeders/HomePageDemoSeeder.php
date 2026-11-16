@@ -25,6 +25,7 @@ use App\Modules\Content\Models\HomeWidget;
 use App\Modules\Media\Actions\AttachImage;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Models\Media;
+use App\Modules\Pricing\Actions\CalculateVariantPrice;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
 use Imagick;
@@ -133,8 +134,9 @@ final class HomePageDemoSeeder extends Seeder
                 ProductVariant::COLUMN_SKU => sprintf('DEMO-%04d-01', $number),
                 ProductVariant::COLUMN_OFFICIAL_PRICE => $price,
                 ProductVariant::COLUMN_PRICE => $price,
-                // Every third product is on sale, so the cards show a discount.
-                ProductVariant::COLUMN_SALE_PRICE => $index % 3 === 0 ? (int) ($price * 0.85) : null,
+                // Every third product is on sale (15% haraj), so the cards show a discount.
+                ProductVariant::COLUMN_HARAJ_PERCENT => $index % 3 === 0 ? 15 : null,
+                ProductVariant::COLUMN_SALE_PRICE => $index % 3 === 0 ? CalculateVariantPrice::harajPrice($price, 15) : null,
             ]);
             $product->setDefaultVariantId($variant->getId())->save();
 

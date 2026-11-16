@@ -47,6 +47,7 @@ final readonly class ProductData
         public array $subcategoryIds = [],
         public ?int $minShelfLifeMonths = null,
         public bool $isNearExpiry = false,
+        public ?float $harajPercent = null,
     ) {}
 
     /**
@@ -87,6 +88,7 @@ final readonly class ProductData
             primarySubcategoryId: blank($data[Product::COLUMN_PRIMARY_SUBCATEGORY_ID] ?? null) ? null : (int) $data[Product::COLUMN_PRIMARY_SUBCATEGORY_ID],
             subcategoryIds: self::ids($data['subcategory_ids'] ?? []),
             isNearExpiry: (bool) ($data[Product::COLUMN_IS_NEAR_EXPIRY] ?? false),
+            harajPercent: blank($data[Product::COLUMN_HARAJ_PERCENT] ?? null) ? null : (float) $data[Product::COLUMN_HARAJ_PERCENT],
             minShelfLifeMonths: blank($data[Product::COLUMN_MIN_SHELF_LIFE_MONTHS] ?? null) ? null : (int) PersianNormalizer::digits((string) $data[Product::COLUMN_MIN_SHELF_LIFE_MONTHS]),
         );
     }

@@ -52,6 +52,8 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_COMMISSION_PERCENT = 'commission_percent';
 
+    public const string COLUMN_HARAJ_PERCENT = 'haraj_percent';
+
     public const string COLUMN_PRIMARY_CATEGORY_ID = 'primary_category_id';
 
     public const string COLUMN_PRIMARY_SUBCATEGORY_ID = 'primary_subcategory_id';
@@ -314,6 +316,21 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function setCommissionPercent(?float $commissionPercent): static
     {
         return $this->setAttribute(self::COLUMN_COMMISSION_PERCENT, $commissionPercent);
+    }
+
+    /**
+     * The haraj percentage its SKUs inherit (owner, 2026-11-17); a SKU's own percentage overrides it.
+     */
+    public function getHarajPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_HARAJ_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setHarajPercent(?float $value): static
+    {
+        return $this->setAttribute(self::COLUMN_HARAJ_PERCENT, $value);
     }
 
     public function getBrandId(): int
@@ -713,7 +730,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return LogOptions::defaults()
             ->useLogName('catalog')
             ->logOnly([
-                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_PRIMARY_SUBCATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
+                self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_HARAJ_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_PRIMARY_SUBCATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
                 self::COLUMN_PRODUCT_TYPE, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_MIN_SHELF_LIFE_MONTHS, self::COLUMN_IS_NEAR_EXPIRY, self::COLUMN_SHORT_DESCRIPTION,
                 self::COLUMN_DESCRIPTION, self::COLUMN_INGREDIENTS, self::COLUMN_USAGE, self::COLUMN_WARNINGS, self::COLUMN_SIDE_EFFECTS,
                 self::COLUMN_INTERACTIONS, self::COLUMN_STATUS, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
@@ -735,6 +752,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return [
             self::COLUMN_BRAND_ID => 'integer',
             self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
+            self::COLUMN_HARAJ_PERCENT => 'decimal:2',
             self::COLUMN_PRIMARY_CATEGORY_ID => 'integer',
             self::COLUMN_PRIMARY_SUBCATEGORY_ID => 'integer',
             self::COLUMN_DEFAULT_VARIANT_ID => 'integer',

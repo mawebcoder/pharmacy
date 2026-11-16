@@ -210,6 +210,8 @@ describe('the checkout page', function (): void {
 
 describe('placing the order', function (): void {
     it('creates a pending order with copies of the address, customer, items, supplier and coupon', function (): void {
+        // The expiry is compared to the second; a clock tick between placing and checking made this flaky.
+        $this->freezeSecond();
         $cream = checkoutSku(1_000_000, 'کرم اوره');
         $serum = checkoutSku(3_000_005, 'سرم ویتامین C');
         fillCart($this->customer, [$cream->getId() => 2, $serum->getId() => 1]);

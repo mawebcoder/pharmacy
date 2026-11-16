@@ -21,6 +21,7 @@ use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Queries\ActiveSuppliers;
 use App\Modules\Pricing\Queries\SupplierOptions;
 use App\Modules\Pricing\Queries\SupplierPrices;
+use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -32,6 +33,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -109,13 +111,20 @@ final class VariantsRelationManager extends RelationManager
                             ->label('قیمت فروش (محاسبه خودکار)')
                             ->state(fn (Get $get, ?ProductVariant $record): string => $this->expectedPrice($record, Toman::rialFromInput($get(ProductVariant::COLUMN_OFFICIAL_PRICE))))
                             ->helperText('قابل ویرایش نیست: قیمت خرید تأمین‌کننده فعال × (۱ + کمیسیون).'),
-                        TextInput::make(ProductVariant::COLUMN_SALE_PRICE)
-                            ->label('قیمت حراج')
-                            ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                        TextInput::make(ProductVariant::COLUMN_HARAJ_PERCENT)
+                            ->label('تخفیف حراج')
+                            ->numeric()
+                            ->suffix('٪')
+                            ->live(onBlur: true)
+                            ->placeholder(fn (): string => $this->product()->getHarajPercent() === null ? 'بدون حراج' : 'از محصول: '.PersianDigits::toPersian(self::percentText($this->product()->getHarajPercent())).'٪')
                             ->disabled(fn (?ProductVariant $record): bool => ($record?->getPrice() ?? 0) === 0)
-                            ->helperText(fn (?ProductVariant $record): string => ($record?->getPrice() ?? 0) === 0
-                                ? 'بعد از محاسبه قیمت فروش (افزودن تأمین‌کننده) قابل وارد کردن است.'
-                                : 'خالی یعنی بدون حراج؛ باید کمتر از قیمت فروش باشد.'),
+                            ->helperText(fn (Get $get, ?ProductVariant $record): string => $this->harajPreview($record, $get(ProductVariant::COLUMN_HARAJ_PERCENT))),
+                        Callout::make('حراج زیر قیمت خرید')
+                            ->key('haraj_loss')
+                            ->warning()
+                            ->columnSpanFull()
+                            ->description('با این درصد، قیمت حراج از قیمت خرید تأمین‌کننده فعال کمتر می‌شود و این تنوع با ضرر فروخته می‌شود.')
+                            ->visible(fn (Get $get, ?ProductVariant $record): bool => $this->harajBelowCost($record, $get(ProductVariant::COLUMN_HARAJ_PERCENT))),
                     ]),
                 Section::make('موجودی و تاریخ انقضا')
                     ->columns(3)
@@ -181,7 +190,11 @@ final class VariantsRelationManager extends RelationManager
                 TextColumn::make(ProductVariant::COLUMN_SKU)->label('SKU')->searchable()->copyable(),
                 TextColumn::make(ProductVariant::COLUMN_OFFICIAL_PRICE)->label('روی جعبه')->toman()->placeholder('—'), // @phpstan-ignore method.notFound (macro)
                 TextColumn::make(ProductVariant::COLUMN_PRICE)->label('قیمت فروش')->toman(), // @phpstan-ignore method.notFound (macro)
-                TextColumn::make(ProductVariant::COLUMN_SALE_PRICE)->label('قیمت حراج')->toman()->placeholder('—'), // @phpstan-ignore method.notFound (macro)
+                TextColumn::make(ProductVariant::COLUMN_SALE_PRICE)
+                    ->label('قیمت حراج')
+                    ->toman() // @phpstan-ignore method.notFound (macro)
+                    ->description(fn (ProductVariant $record): ?string => $this->harajLabel($record))
+                    ->placeholder('—'),
                 TextColumn::make('active_supplier')
                     ->label('تأمین‌کننده فعال')
                     ->visible(fn (): bool => $this->canSeeSuppliers())
@@ -271,6 +284,62 @@ final class VariantsRelationManager extends RelationManager
         $capped = $officialPrice !== null && $officialPrice > 0 && $price > $officialPrice;
 
         return Toman::format($capped ? $officialPrice : $price).($capped ? ' (سقف روی جعبه)' : '');
+    }
+
+    /**
+     * «۱۵٪ (از محصول)» / «۱۰٪ (اختصاصی)» under the haraj price; null without a haraj.
+     */
+    private function harajLabel(ProductVariant $variant): ?string
+    {
+        $own = $variant->getHarajPercent();
+        $percent = $own ?? $this->product()->getHarajPercent();
+
+        if ($percent === null || $percent <= 0) {
+            return null;
+        }
+
+        return PersianDigits::toPersian(self::percentText($percent)).'٪ ('.($own === null ? 'از محصول' : 'اختصاصی').')';
+    }
+
+    /**
+     * What the haraj price will be with the typed (or inherited) percentage, at today's selling price.
+     */
+    private function harajPreview(?ProductVariant $variant, mixed $typed): string
+    {
+        $price = $variant?->getPrice() ?? 0;
+
+        if ($price === 0) {
+            return 'بعد از محاسبه قیمت فروش (افزودن تأمین‌کننده) قابل وارد کردن است.';
+        }
+
+        $percent = $this->typedOrInheritedHaraj($typed);
+
+        $preview = $percent === null
+            ? 'بدون حراج.'
+            : 'قیمت حراج: '.Toman::format(CalculateVariantPrice::harajPrice($price, $percent)).' (از قیمت فروش '.Toman::format($price).').';
+
+        return $preview.' خالی: درصد محصول؛ ۰: بدون حراج برای همین تنوع. با تغییر قیمت خرید یا کمیسیون خودکار دوباره حساب می‌شود.';
+    }
+
+    private function harajBelowCost(?ProductVariant $variant, mixed $typed): bool
+    {
+        $percent = $this->typedOrInheritedHaraj($typed);
+        $chosen = $variant instanceof ProductVariant ? (app(ActiveSuppliers::class)->forVariants([$variant->getId()])[$variant->getId()] ?? null) : null;
+
+        return $percent !== null && $chosen !== null && $variant->getPrice() > 0
+            && CalculateVariantPrice::harajPrice($variant->getPrice(), $percent) < $chosen->offer->price->getCost();
+    }
+
+    private function typedOrInheritedHaraj(mixed $typed): ?float
+    {
+        $percent = blank($typed) ? $this->product()->getHarajPercent() : (float) $typed;
+
+        return $percent !== null && $percent > 0 ? $percent : null;
+    }
+
+    private static function percentText(float $percent): string
+    {
+        return rtrim(rtrim(number_format($percent, 2, '.', ''), '0'), '.');
     }
 
     private function canSeeSuppliers(): bool

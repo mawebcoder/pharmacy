@@ -82,6 +82,12 @@ final class ProductForm
                                     ->suffix('٪')
                                     ->placeholder(fn (Get $get): string => self::brandCommissionHint($get(Product::COLUMN_BRAND_ID)))
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_COMMISSION_PERCENT)),
+                                TextInput::make(Product::COLUMN_HARAJ_PERCENT)
+                                    ->label('تخفیف حراج')
+                                    ->numeric()
+                                    ->suffix('٪')
+                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_HARAJ_PERCENT))
+                                    ->helperText('برای همه تنوع‌ها، از قیمت فروش؛ با تغییر قیمت خرید یا کمیسیون خودکار دوباره حساب می‌شود. هر تنوع می‌تواند درصد خودش را داشته باشد.'),
                                 PricingGuide::productCommission()->columnSpanFull(),
                                 Livewire::make(ProductProvidersTable::class, fn (?Product $record): array => ['product' => $record?->getId()])
                                     ->key('product-providers')

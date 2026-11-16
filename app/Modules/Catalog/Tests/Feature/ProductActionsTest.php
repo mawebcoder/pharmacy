@@ -200,17 +200,17 @@ describe('variants', function (): void {
     it('enforces the price input rules', function (Closure $makeProduct, array $input, string $reason): void {
         expect(fn () => app(SaveProductVariant::class)($makeProduct(), variantData($input)))->toThrow(ProductChangeRefused::class, $reason);
     })->with([
-        'haraj before a selling price exists' => [fn () => Product::factory()->create(), [ProductVariant::COLUMN_SALE_PRICE => 4_000_000], 'هنوز محاسبه نشده'],
+        'haraj before a selling price exists' => [fn () => Product::factory()->create(), [ProductVariant::COLUMN_HARAJ_PERCENT => 10], 'هنوز محاسبه نشده'],
         'medicine without a box price' => [fn () => Product::factory()->otc()->create(), [ProductVariant::COLUMN_OFFICIAL_PRICE => null], 'قیمت مصرف‌کننده'],
         'no commission on the product or brand' => [fn () => Product::factory()->for(Brand::factory()->withoutCommission())->create(), [], 'کمیسیون'],
     ]);
 
-    it('refuses a haraj that is not below the current selling price', function (): void {
+    it('refuses a haraj percentage outside 0 to 90', function (): void {
         $product = Product::factory()->withVariants()->create();
         $variant = $product->variants()->sole();
 
-        expect(fn () => app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_SALE_PRICE => $variant->getPrice()]), $variant))
-            ->toThrow(ProductChangeRefused::class, 'قیمت حراج');
+        expect(fn () => app(SaveProductVariant::class)($product, variantData([ProductVariant::COLUMN_HARAJ_PERCENT => 95]), $variant))
+            ->toThrow(ProductChangeRefused::class, 'درصد حراج');
     });
 
     it('saves a SKU when only the product has a commission', function (): void {

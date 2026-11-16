@@ -31,7 +31,7 @@ final class StoreProductVariantRequest extends FormRequest
             ProductVariant::COLUMN_SKU => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique(ProductVariant::class, ProductVariant::COLUMN_SKU)->ignore($variantId)],
             ProductVariant::COLUMN_BARCODE => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z-]+$/'],
             ProductVariant::COLUMN_OFFICIAL_PRICE => ['nullable', 'integer', 'min:0'],
-            ProductVariant::COLUMN_SALE_PRICE => ['nullable', 'integer', 'min:1'],
+            ProductVariant::COLUMN_HARAJ_PERCENT => ['nullable', 'numeric', 'min:0', 'max:90'],
             ProductVariant::COLUMN_STOCK_STATUS => ['required', Rule::enum(StockStatus::class)],
             ProductVariant::COLUMN_WEIGHT_G => ['nullable', 'integer', 'min:1', 'max:100000'],
             ProductVariant::COLUMN_LENGTH_MM => $size,

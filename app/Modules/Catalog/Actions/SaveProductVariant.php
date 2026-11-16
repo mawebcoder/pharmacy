@@ -51,7 +51,7 @@ final class SaveProductVariant
                 ->setBarcode($data->barcode)
                 ->setTitleFa($data->titleFa)
                 ->setOfficialPrice($data->officialPrice)
-                ->setSalePrice($data->salePrice)
+                ->setHarajPercent($data->harajPercent)
                 ->setStockStatus($stock)
                 ->setWeightG($data->weightG)
                 ->setLengthMm($data->lengthMm)
@@ -68,7 +68,7 @@ final class SaveProductVariant
             $change = match (true) {
                 $isNew => PricingInputChange::Created,
                 $variant->isDirty(ProductVariant::COLUMN_OFFICIAL_PRICE) => PricingInputChange::Printed,
-                $variant->isDirty(ProductVariant::COLUMN_SALE_PRICE) => PricingInputChange::Haraj,
+                $variant->isDirty(ProductVariant::COLUMN_HARAJ_PERCENT) => PricingInputChange::Haraj,
                 default => null,
             };
 

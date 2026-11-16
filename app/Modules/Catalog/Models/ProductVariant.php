@@ -46,6 +46,8 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
     public const string COLUMN_SALE_PRICE = 'sale_price';
 
+    public const string COLUMN_HARAJ_PERCENT = 'haraj_percent';
+
     public const string COLUMN_CURRENT_PRICE_ID = 'current_price_id';
 
     public const string COLUMN_FLASH_DEAL_PRICE = 'flash_deal_price';
@@ -198,6 +200,22 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public function setSalePrice(?int $value): static
     {
         return $this->setAttribute(self::COLUMN_SALE_PRICE, $value);
+    }
+
+    /**
+     * The SKU's own haraj percentage (owner, 2026-11-17): overrides the product's; 0 means no haraj on this SKU; null
+     * inherits the product's. The pricing engine turns it into sale_price.
+     */
+    public function getHarajPercent(): ?float
+    {
+        $value = $this->getAttribute(self::COLUMN_HARAJ_PERCENT);
+
+        return $value === null ? null : (float) $value;
+    }
+
+    public function setHarajPercent(?float $value): static
+    {
+        return $this->setAttribute(self::COLUMN_HARAJ_PERCENT, $value);
     }
 
     /**
@@ -521,6 +539,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_OFFICIAL_PRICE => 'integer',
             self::COLUMN_PRICE => 'integer',
             self::COLUMN_SALE_PRICE => 'integer',
+            self::COLUMN_HARAJ_PERCENT => 'decimal:2',
             self::COLUMN_FLASH_DEAL_PRICE => 'integer',
             self::COLUMN_FLASH_DEAL_ID => 'integer',
             self::COLUMN_CURRENT_PRICE_ID => 'integer',

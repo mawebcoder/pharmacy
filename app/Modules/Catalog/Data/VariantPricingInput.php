@@ -26,5 +26,17 @@ final readonly class VariantPricingInput
         public ?int $brandId = null,
         public ?float $productCommission = null,
         public ?float $brandCommission = null,
+        public ?float $harajPercent = null,
+        public ?float $productHarajPercent = null,
     ) {}
+
+    /**
+     * The haraj percentage that applies (owner, 2026-11-17): the SKU's own, else its product's; null or 0 is none.
+     */
+    public function effectiveHarajPercent(): ?float
+    {
+        $percent = $this->harajPercent ?? $this->productHarajPercent;
+
+        return $percent !== null && $percent > 0 ? $percent : null;
+    }
 }
