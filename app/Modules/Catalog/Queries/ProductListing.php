@@ -77,7 +77,7 @@ final readonly class ProductListing
                 ->setIndexUid($index)
                 ->setQuery($text)
                 ->setFilter($this->filtersExcept($criteria, $groups, null))
-                ->setFacets(['brand_id', 'attribute_value_ids', 'price', 'in_stock', 'is_near_expiry'])
+                ->setFacets(['brand_id', 'attribute_value_ids', 'price', 'in_stock', 'is_near_expiry', 'has_flash_deal'])
                 ->setSort($sort->meilisearchSort())
                 ->setAttributesToRetrieve(['id']),
         ];
@@ -125,6 +125,7 @@ final readonly class ProductListing
             flagCounts: [
                 'in_stock' => (int) ($main['facetDistribution']['in_stock']['true'] ?? 0),
                 'near_expiry' => (int) ($main['facetDistribution']['is_near_expiry']['true'] ?? 0),
+                'flash_deal' => (int) ($main['facetDistribution']['has_flash_deal']['true'] ?? 0),
             ],
             degraded: false,
         );
@@ -177,6 +178,7 @@ final readonly class ProductListing
             $criteria->inStock ? 'in_stock = true' : null,
             $criteria->minDiscount === null ? null : 'discount_pct >= '.$criteria->minDiscount,
             $criteria->nearExpiry ? 'is_near_expiry = true' : null,
+            $criteria->flashDeal ? 'has_flash_deal = true' : null,
         ]));
 
         foreach ($groups as $group => $filter) {
@@ -308,7 +310,7 @@ final readonly class ProductListing
         /** @var LengthAwarePaginator<int, Product> $page */
         $page = $query->paginate($criteria->perPage, page: max(1, $criteria->page));
 
-        return new ListingResult($page, [], null, null, ['in_stock' => 0, 'near_expiry' => 0], $degraded);
+        return new ListingResult($page, [], null, null, ['in_stock' => 0, 'near_expiry' => 0, 'flash_deal' => 0], $degraded);
     }
 
     /**

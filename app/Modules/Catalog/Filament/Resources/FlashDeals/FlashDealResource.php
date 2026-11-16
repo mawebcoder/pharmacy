@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * «پیشنهاد لحظه‌ای» (roadmap S33, B6 Content): a SKU at a deal price between two times, optionally for a limited number
+ * «پیشنهاد لحظه‌ای» (roadmap S33; in «فروش», owner 2026-11-17): a SKU at a deal price between two times, optionally for a limited number
  * of units. While it runs and has units left, the SKU sells at the deal price everywhere; then it goes back to its
  * regular price on its own.
  */
@@ -52,7 +52,7 @@ final class FlashDealResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBolt;
 
-    protected static string|UnitEnum|null $navigationGroup = 'محتوا';
+    protected static string|UnitEnum|null $navigationGroup = 'فروش';
 
     protected static ?int $navigationSort = 3;
 

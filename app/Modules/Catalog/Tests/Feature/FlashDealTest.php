@@ -137,6 +137,9 @@ it('shows the flash deal widget only while a deal is live', function (): void {
 
     expect($items->for($widget)->modelKeys())->toBe([$this->product->getId()])
         ->and($items->hiddenReason($widget))->toBeNull();
+
+    // «مشاهده همه» opens the product list filtered to live deals, with all its filters.
+    $this->get(route('home'))->assertSee(route('products.index', ['deal' => 1]), false);
 });
 
 it('shows live deals, discount tiers and «زودمصرف» on /deals', function (): void {
@@ -147,6 +150,7 @@ it('shows live deals, discount tiers and «زودمصرف» on /deals', function
     $this->get(route('deals'))
         ->assertOk()
         ->assertSee(['تخفیف‌ها', 'پیشنهاد لحظه‌ای', $this->product->getNameFa(), '۸۰٬۰۰۰ تومان', '۲۰٪ تخفیف و بیشتر', 'زودمصرف', $nearExpiry->getNameFa()])
+        ->assertSee(route('products.index', ['deal' => 1]), false)
         ->assertSee(route('products.index', ['off' => 20]), false)
         ->assertSee(route('products.index', ['expiry' => 1]), false);
 });

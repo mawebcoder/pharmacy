@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Exceptions\FlashDealRefused;
+use App\Modules\Catalog\Jobs\SyncFlashDeals;
 use App\Modules\Catalog\Models\FlashDeal;
 
 /**
  * Deletes a flash deal that sold nothing (roadmap S33); one with sales is switched off instead, so orders keep
- * pointing at it. The SKU's price follows at once.
+ * pointing at it. The SKU's price follows in the background (SyncFlashDeals).
  */
 final readonly class DeleteFlashDeal
 {
-    public function __construct(private SyncFlashDealPrices $syncPrices) {}
-
     /**
      * @throws FlashDealRefused
      */
@@ -27,6 +26,6 @@ final readonly class DeleteFlashDeal
         $variantId = $deal->getVariantId();
         $deal->delete();
 
-        ($this->syncPrices)([$variantId]);
+        SyncFlashDeals::dispatch([$variantId])->afterCommit();
     }
 }

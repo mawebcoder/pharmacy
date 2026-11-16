@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Modules\Catalog\Actions\SaveFlashDeal;
+use App\Modules\Catalog\Actions\SyncFlashDealPrices;
 use App\Modules\Catalog\Data\FlashDealData;
 use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\Product;
@@ -35,7 +36,7 @@ final class FlashDealsDemoSeeder extends Seeder
 
     public const int UNITS = 20;
 
-    public function run(SaveProvider $saveProvider, SaveProviderPrice $savePrice, SaveFlashDeal $saveDeal, SetFlashDealWidget $setWidget, SupplierOptions $suppliers): void
+    public function run(SaveProvider $saveProvider, SaveProviderPrice $savePrice, SaveFlashDeal $saveDeal, SetFlashDealWidget $setWidget, SupplierOptions $suppliers, SyncFlashDealPrices $syncPrices): void
     {
         if (app()->isProduction()) {
             throw new RuntimeException('FlashDealsDemoSeeder adds sample deals and does not run in production.');
@@ -95,6 +96,8 @@ final class FlashDealsDemoSeeder extends Seeder
             ));
         }
 
+        // Deal prices are synced by a queued job; a seeder is not a request, so it puts them on the SKUs now.
+        $syncPrices();
         $setWidget(true);
 
         $this->command?->info('Flash deals added for '.$products->count().' products; the home page «پیشنهاد لحظه‌ای» row is on.');

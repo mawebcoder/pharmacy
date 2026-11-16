@@ -62,6 +62,10 @@ new #[Title('تخفیف‌ها')] class extends Component
                 <x-ts-icon icon="bolt" class="size-6 text-accent-600" />
                 پیشنهاد لحظه‌ای
             </h2>
+            <a href="{{ route('products.index', ['deal' => 1]) }}" wire:navigate class="ms-auto order-last flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
+                مشاهده همه با فیلتر
+                <x-ts-icon icon="chevron-left" class="size-4" />
+            </a>
             @if ($this->endsAt)
                 <p class="inline-flex items-center gap-1.5 rounded-full bg-accent-500/10 px-3 text-sm leading-8 text-accent-600" x-data="countdown(@js($this->endsAt->toIso8601String()), () => $wire.$refresh())">
                     <x-ts-icon icon="clock" class="size-4" />

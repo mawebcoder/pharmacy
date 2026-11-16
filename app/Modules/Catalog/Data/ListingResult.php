@@ -16,7 +16,7 @@ final readonly class ListingResult
     /**
      * @param  LengthAwarePaginator<int, Product>  $products
      * @param  list<FacetGroup>  $facets  brands first, then attributes in their order
-     * @param  array{in_stock: int, near_expiry: int}  $flagCounts
+     * @param  array{in_stock: int, near_expiry: int, flash_deal: int}  $flagCounts
      */
     public function __construct(
         public LengthAwarePaginator $products,

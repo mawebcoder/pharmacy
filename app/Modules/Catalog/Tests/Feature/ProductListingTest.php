@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Actions\SyncFlashDealPrices;
 use App\Modules\Catalog\Data\ListingCriteria;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Enums\ProductType;
@@ -11,6 +12,7 @@ use App\Modules\Catalog\Models\Attribute;
 use App\Modules\Catalog\Models\AttributeValue;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Subcategory;
@@ -139,12 +141,15 @@ describe('filters', function (): void {
             ->attributeValues()->attach($this->cream);
         sellable([Product::COLUMN_NAME_FA => 'ژل اوسرین', Product::COLUMN_BRAND_ID => $this->eucerin->getId()], [ProductVariant::COLUMN_PRICE => 2_000_000, ProductVariant::COLUMN_STOCK_STATUS => StockStatus::OutOfStock])
             ->attributeValues()->attach($this->gel);
-        sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId(), Product::COLUMN_IS_NEAR_EXPIRY => true], [ProductVariant::COLUMN_PRICE => 1_000_000])
-            ->attributeValues()->attach($this->cream);
+        $cinereCream = sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId(), Product::COLUMN_IS_NEAR_EXPIRY => true], [ProductVariant::COLUMN_PRICE => 1_000_000]);
+        $cinereCream->attributeValues()->attach($this->cream);
+        // A live flash deal (S33) at 10% off.
+        FlashDeal::factory()->create([FlashDeal::COLUMN_VARIANT_ID => $cinereCream->variants()->sole()->getId(), FlashDeal::COLUMN_DEAL_PRICE => 900_000]);
+        app(SyncFlashDealPrices::class)();
         indexProductsForSearch();
     });
 
-    it('filters by brand, attribute, price, stock, discount and near expiry', function (array $filters, array $expected): void {
+    it('filters by brand, attribute, price, stock, discount, near expiry and flash deal', function (array $filters, array $expected): void {
         expect(listedNames(new ListingCriteria(...$filters)))->toEqualCanonicalizing($expected);
     })->with([
         'brand' => [fn (): array => ['brandIds' => [test()->eucerin->getId()]], ['کرم اوسرین', 'ژل اوسرین']],
@@ -154,6 +159,7 @@ describe('filters', function (): void {
         'in stock' => [fn (): array => ['inStock' => true], ['کرم اوسرین', 'کرم سینره']],
         'discount' => [fn (): array => ['minDiscount' => 20], ['کرم اوسرین']],
         'near expiry' => [fn (): array => ['nearExpiry' => true], ['کرم سینره']],
+        'flash deal' => [fn (): array => ['flashDeal' => true], ['کرم سینره']],
     ]);
 
     it('offers the same list without filters when they leave nothing, and the shop when nothing was filtered', function (): void {

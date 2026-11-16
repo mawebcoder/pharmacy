@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Exceptions\FlashDealRefused;
+use App\Modules\Catalog\Jobs\SyncFlashDeals;
 use App\Modules\Catalog\Models\FlashDeal;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Counts units against a flash deal when an order is placed (roadmap S33, owner 2026-11-16), locked so two buyers can
  * never take the same last units: refused once the deal ended or the units would pass its limit. When the limit is
- * reached the SKU goes back to its regular price. `force` counts the units anyway: a late payment for an expired
+ * reached the SKU goes back to its regular price in the background. `force` counts the units anyway: a late payment for an expired
  * order whose units were released.
  */
 final readonly class ReserveFlashDealUnits
 {
-    public function __construct(private SyncFlashDealPrices $syncPrices) {}
-
     /**
      * @throws FlashDealRefused
      */
@@ -46,7 +45,7 @@ final readonly class ReserveFlashDealUnits
         });
 
         if ($deal instanceof FlashDeal && $deal->isSoldOut()) {
-            ($this->syncPrices)([$deal->getVariantId()]);
+            SyncFlashDeals::dispatch([$deal->getVariantId()])->afterCommit();
         }
     }
 }

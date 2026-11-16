@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\FlashDealData;
 use App\Modules\Catalog\Exceptions\FlashDealRefused;
+use App\Modules\Catalog\Jobs\SyncFlashDeals;
 use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Pricing\Queries\SupplierOptions;
@@ -15,14 +16,11 @@ use Illuminate\Support\Facades\DB;
  * Creates or changes a flash deal (roadmap S33): the deal price must be below the SKU's regular price (sale price
  * when set, else the price), a SKU has at most one active deal at a time, and the unit limit never drops below what
  * has been sold. The admin always chooses the supplier, which must carry the SKU (owner, 2026-11-17: for deals the
- * supplier is never inherited). The SKU's price follows at once (SyncFlashDealPrices).
+ * supplier is never inherited). The SKU's price follows in the background (SyncFlashDeals).
  */
 final readonly class SaveFlashDeal
 {
-    public function __construct(
-        private SyncFlashDealPrices $syncPrices,
-        private SupplierOptions $suppliers,
-    ) {}
+    public function __construct(private SupplierOptions $suppliers) {}
 
     /**
      * @throws FlashDealRefused
@@ -76,7 +74,7 @@ final readonly class SaveFlashDeal
             return $deal;
         });
 
-        ($this->syncPrices)(array_values(array_unique(array_filter([$saved->getVariantId(), $previousVariantId]))));
+        SyncFlashDeals::dispatch(array_values(array_unique(array_filter([$saved->getVariantId(), $previousVariantId]))))->afterCommit();
 
         return $saved;
     }
