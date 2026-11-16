@@ -208,7 +208,10 @@ final class DemoOrdersSeeder extends Seeder
                 ->setListPrice($variant->compareAtPrice ?? $variant->price)
                 ->setSalePrice($variant->isOnSale ? $variant->price : null)
                 ->setUnitPrice($variant->price)
-                ->setTotal($variant->price)
+                ->setHarajDiscountUnit(max(0, ($variant->compareAtPrice ?? $variant->price) - $variant->price))
+                ->setHarajDiscountTotal(max(0, ($variant->compareAtPrice ?? $variant->price) - $variant->price))
+                ->setPaidUnit($variant->price)
+                ->setPaidTotal($variant->price)
                 ->save();
         }
 

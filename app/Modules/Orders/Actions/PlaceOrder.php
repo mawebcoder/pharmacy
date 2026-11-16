@@ -224,6 +224,10 @@ final readonly class PlaceOrder
     private function addItem(Order $order, CartLineData $line, ?PriceRecordData $price, array $snapshot, int $discount): void
     {
         $variant = $line->variant;
+        $listPrice = $price->listPrice ?? $variant->price;
+        $harajUnit = max(0, $listPrice - $variant->price);
+        $paidTotal = $line->lineTotal - $discount;
+        $paidUnit = intdiv($paidTotal, max(1, $line->quantity));
 
         $item = (new OrderItem)
             ->setOrderId($order->getId())
@@ -246,11 +250,15 @@ final readonly class PlaceOrder
             ->setCommissionSource($price?->commissionSource)
             ->setProviderChoice($price?->providerChoice)
             ->setOfficialPrice($price?->officialPrice)
-            ->setListPrice($price->listPrice ?? $variant->price)
+            ->setListPrice($listPrice)
             ->setSalePrice($price?->salePrice)
             ->setUnitPrice($variant->price)
-            ->setDiscount($discount)
-            ->setTotal($line->lineTotal - $discount);
+            ->setHarajDiscountUnit($harajUnit)
+            ->setHarajDiscountTotal($harajUnit * $line->quantity)
+            ->setCouponDiscountUnit($variant->price - $paidUnit)
+            ->setCouponDiscountTotal($discount)
+            ->setPaidUnit($paidUnit)
+            ->setPaidTotal($paidTotal);
         $item->save();
     }
 }

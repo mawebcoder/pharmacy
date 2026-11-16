@@ -12,8 +12,8 @@ use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The admin cancels an order while it is «پرداخت‌شده» or «در حال آماده‌سازی» (roadmap D3.5), with a reason kept in
- * the status log. The money is marked «در انتظار بازگشت وجه» for a super admin to refund (by hand until Zarinpal).
+ * The admin cancels an order while it is «پرداخت‌شده», «در حال آماده‌سازی» or «تحویل شد» (roadmap D3.5; never «در راه»,
+ * owner 2026-11-16), with a reason kept in the status log. The money is marked «در انتظار بازگشت وجه» for a super admin to refund (by hand until Zarinpal).
  */
 final readonly class CancelOrderByAdmin
 {

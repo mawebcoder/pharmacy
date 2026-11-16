@@ -88,6 +88,10 @@ final class Order extends Model implements HasActivityLogLabel
      */
     public const string COLUMN_REFUND_REFERENCE = 'refund_reference';
 
+    public const string COLUMN_REFUND_ITEMS_AMOUNT = 'refund_items_amount';
+
+    public const string COLUMN_REFUND_SHIPPING_AMOUNT = 'refund_shipping_amount';
+
     public const string COLUMN_CREATED_AT = 'created_at';
 
     public function getId(): int
@@ -404,6 +408,38 @@ final class Order extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_REFUND_REFERENCE, $value);
     }
 
+    public function getRefundItemsAmount(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_REFUND_ITEMS_AMOUNT);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setRefundItemsAmount(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUND_ITEMS_AMOUNT, $value);
+    }
+
+    public function getRefundShippingAmount(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_REFUND_SHIPPING_AMOUNT);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setRefundShippingAmount(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUND_SHIPPING_AMOUNT, $value);
+    }
+
+    /**
+     * What the customer paid for the products: the subtotal after the coupon (the items' paid totals add up to it).
+     */
+    public function getItemsPaidTotal(): int
+    {
+        return $this->getSubtotal() - $this->getDiscountTotal();
+    }
+
     public function getCreatedAt(): ?Carbon
     {
         return $this->getAttribute(self::COLUMN_CREATED_AT);
@@ -454,7 +490,7 @@ final class Order extends Model implements HasActivityLogLabel
     {
         return LogOptions::defaults()
             ->useLogName('orders')
-            ->logOnly([self::COLUMN_PAYMENT_STATUS, self::COLUMN_TRACKING_CODE, self::COLUMN_REFUND_REFERENCE, self::COLUMN_ADMIN_NOTE])
+            ->logOnly([self::COLUMN_PAYMENT_STATUS, self::COLUMN_TRACKING_CODE, self::COLUMN_REFUND_REFERENCE, self::COLUMN_REFUND_ITEMS_AMOUNT, self::COLUMN_REFUND_SHIPPING_AMOUNT, self::COLUMN_ADMIN_NOTE])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

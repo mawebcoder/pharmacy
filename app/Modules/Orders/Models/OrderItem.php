@@ -11,7 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * One line of an order (roadmap D3.4 «Snapshot rule», «Price snapshot»): the product's names, SKU, brand and card
  * image, and the price record of that moment (supplier and cost, commission and its source, printed, list, haraj
  * and paid price), plus its share of the coupon discount. Items have no status of their own (owner, 2026-11-14): the
- * order's status covers them. An order line, not an admin record: not in the audit log.
+ * order's status covers them.
+ *
+ * Money per unit and for the item (owner, 2026-11-16, for returns): the haraj discount (list price − unit price), the
+ * coupon discount and what the customer paid. A coupon share does not always split evenly over the units, so the
+ * per-unit paid price is rounded down (a return never refunds more than was paid), the per-unit coupon discount is
+ * the rest of the unit price, and the item totals stay exact. Returning n units refunds n × paid_unit, and the last
+ * units returned also take the remainder (paid_total − paid_unit × quantity, under quantity rial), so an item's
+ * returns add up to what was paid for it. An order line, not an admin record: not in the audit log.
  */
 final class OrderItem extends Model
 {
@@ -63,9 +70,17 @@ final class OrderItem extends Model
 
     public const string COLUMN_UNIT_PRICE = 'unit_price';
 
-    public const string COLUMN_DISCOUNT = 'discount';
+    public const string COLUMN_HARAJ_DISCOUNT_UNIT = 'haraj_discount_unit';
 
-    public const string COLUMN_TOTAL = 'total';
+    public const string COLUMN_HARAJ_DISCOUNT_TOTAL = 'haraj_discount_total';
+
+    public const string COLUMN_COUPON_DISCOUNT_UNIT = 'coupon_discount_unit';
+
+    public const string COLUMN_COUPON_DISCOUNT_TOTAL = 'coupon_discount_total';
+
+    public const string COLUMN_PAID_UNIT = 'paid_unit';
+
+    public const string COLUMN_PAID_TOTAL = 'paid_total';
 
     public function getId(): int
     {
@@ -340,24 +355,64 @@ final class OrderItem extends Model
         return $this->setAttribute(self::COLUMN_UNIT_PRICE, $value);
     }
 
-    public function getDiscount(): int
+    public function getHarajDiscountUnit(): int
     {
-        return (int) $this->getAttribute(self::COLUMN_DISCOUNT);
+        return (int) $this->getAttribute(self::COLUMN_HARAJ_DISCOUNT_UNIT);
     }
 
-    public function setDiscount(int $value): static
+    public function setHarajDiscountUnit(int $value): static
     {
-        return $this->setAttribute(self::COLUMN_DISCOUNT, $value);
+        return $this->setAttribute(self::COLUMN_HARAJ_DISCOUNT_UNIT, $value);
     }
 
-    public function getTotal(): int
+    public function getHarajDiscountTotal(): int
     {
-        return (int) $this->getAttribute(self::COLUMN_TOTAL);
+        return (int) $this->getAttribute(self::COLUMN_HARAJ_DISCOUNT_TOTAL);
     }
 
-    public function setTotal(int $value): static
+    public function setHarajDiscountTotal(int $value): static
     {
-        return $this->setAttribute(self::COLUMN_TOTAL, $value);
+        return $this->setAttribute(self::COLUMN_HARAJ_DISCOUNT_TOTAL, $value);
+    }
+
+    public function getCouponDiscountUnit(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_COUPON_DISCOUNT_UNIT);
+    }
+
+    public function setCouponDiscountUnit(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_COUPON_DISCOUNT_UNIT, $value);
+    }
+
+    public function getCouponDiscountTotal(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_COUPON_DISCOUNT_TOTAL);
+    }
+
+    public function setCouponDiscountTotal(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_COUPON_DISCOUNT_TOTAL, $value);
+    }
+
+    public function getPaidUnit(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_PAID_UNIT);
+    }
+
+    public function setPaidUnit(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PAID_UNIT, $value);
+    }
+
+    public function getPaidTotal(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_PAID_TOTAL);
+    }
+
+    public function setPaidTotal(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PAID_TOTAL, $value);
     }
 
     /**
@@ -379,8 +434,12 @@ final class OrderItem extends Model
             self::COLUMN_QUANTITY => 'integer',
             self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
             self::COLUMN_UNIT_PRICE => 'integer',
-            self::COLUMN_DISCOUNT => 'integer',
-            self::COLUMN_TOTAL => 'integer',
+            self::COLUMN_HARAJ_DISCOUNT_UNIT => 'integer',
+            self::COLUMN_HARAJ_DISCOUNT_TOTAL => 'integer',
+            self::COLUMN_COUPON_DISCOUNT_UNIT => 'integer',
+            self::COLUMN_COUPON_DISCOUNT_TOTAL => 'integer',
+            self::COLUMN_PAID_UNIT => 'integer',
+            self::COLUMN_PAID_TOTAL => 'integer',
         ];
     }
 }

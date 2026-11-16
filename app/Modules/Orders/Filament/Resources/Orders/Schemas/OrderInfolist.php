@@ -57,6 +57,14 @@ final class OrderInfolist
                         ->copyable()
                         ->extraAttributes(['dir' => 'ltr'])
                         ->visible(fn (Order $record): bool => $record->getRefundReference() !== null),
+                    TextEntry::make(Order::COLUMN_REFUND_ITEMS_AMOUNT)
+                        ->label('بازگشت وجه کالاها')
+                        ->formatStateUsing(fn (int $state): string => Toman::format($state))
+                        ->visible(fn (Order $record): bool => $record->getRefundItemsAmount() !== null),
+                    TextEntry::make(Order::COLUMN_REFUND_SHIPPING_AMOUNT)
+                        ->label('بازگشت وجه هزینه ارسال')
+                        ->formatStateUsing(fn (int $state): string => Toman::format($state))
+                        ->visible(fn (Order $record): bool => $record->getRefundShippingAmount() !== null),
                 ]),
 
             Section::make('اقلام')
@@ -68,9 +76,10 @@ final class OrderInfolist
                             TableColumn::make('')->width('56px'),
                             TableColumn::make('کالا'),
                             TableColumn::make('تعداد'),
-                            TableColumn::make('قیمت واحد'),
-                            TableColumn::make('تخفیف'),
-                            TableColumn::make('جمع'),
+                            TableColumn::make('قیمت پایه'),
+                            TableColumn::make('تخفیف حراج'),
+                            TableColumn::make('تخفیف کوپن'),
+                            TableColumn::make('پرداختی مشتری'),
                             TableColumn::make('تأمین‌کننده'),
                             TableColumn::make('قیمت خرید'),
                             TableColumn::make('سود ناخالص'),
@@ -80,9 +89,10 @@ final class OrderInfolist
                             TextEntry::make(OrderItem::COLUMN_PRODUCT_NAME)
                                 ->helperText(fn (OrderItem $record): string => trim(($record->getVariantTitle() ?? '').' · '.$record->getSku(), ' ·')),
                             TextEntry::make(OrderItem::COLUMN_QUANTITY)->formatStateUsing(fn (int $state): string => PersianDigits::toPersian($state)),
-                            TextEntry::make(OrderItem::COLUMN_UNIT_PRICE)->formatStateUsing(fn (int $state): string => Toman::format($state)),
-                            TextEntry::make(OrderItem::COLUMN_DISCOUNT)->formatStateUsing(fn (int $state): string => $state > 0 ? Toman::format($state) : '—'),
-                            TextEntry::make(OrderItem::COLUMN_TOTAL)->weight('bold')->formatStateUsing(fn (int $state): string => Toman::format($state)),
+                            TextEntry::make(OrderItem::COLUMN_LIST_PRICE)->formatStateUsing(fn (int $state): string => Toman::format($state))->helperText('هر واحد'),
+                            self::perUnitAndTotal(OrderItem::COLUMN_HARAJ_DISCOUNT_UNIT, fn (OrderItem $record): int => $record->getHarajDiscountTotal()),
+                            self::perUnitAndTotal(OrderItem::COLUMN_COUPON_DISCOUNT_UNIT, fn (OrderItem $record): int => $record->getCouponDiscountTotal()),
+                            self::perUnitAndTotal(OrderItem::COLUMN_PAID_UNIT, fn (OrderItem $record): int => $record->getPaidTotal())->weight('bold'),
                             TextEntry::make(OrderItem::COLUMN_PROVIDER_NAME)->placeholder('قیمت درج‌شده'),
                             TextEntry::make(OrderItem::COLUMN_UNIT_COST)
                                 ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Toman::format($state))
@@ -174,7 +184,7 @@ final class OrderInfolist
      */
     public static function itemMargin(OrderItem $item): ?int
     {
-        return $item->getUnitCost() === null ? null : $item->getTotal() - $item->getUnitCost() * $item->getQuantity();
+        return $item->getUnitCost() === null ? null : $item->getPaidTotal() - $item->getUnitCost() * $item->getQuantity();
     }
 
     public static function orderMargin(Order $order): ?int
@@ -187,6 +197,20 @@ final class OrderInfolist
     private static function date(string $column, string $label): TextEntry
     {
         return TextEntry::make($column)->label($label)->jalaliDateTime()->placeholder('—'); // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
+    }
+
+    /**
+     * An item's amount per unit, with the item's total under it («جمع ۳ عدد: …»); «—» when there is none.
+     *
+     * @param  callable(OrderItem): int  $total
+     */
+    private static function perUnitAndTotal(string $column, callable $total): TextEntry
+    {
+        return TextEntry::make($column)
+            ->formatStateUsing(fn (int $state): string => $state > 0 ? Toman::format($state) : '—')
+            ->helperText(fn (OrderItem $record): ?string => $total($record) > 0
+                ? 'جمع '.PersianDigits::toPersian($record->getQuantity()).' عدد: '.Toman::format($total($record))
+                : null);
     }
 
     private static function money(string $column, string $label): TextEntry

@@ -9,8 +9,9 @@ use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
  * Order statuses (roadmap D3.5, owner 2026-11-14). The system moves pending orders to paid or expired; the admin
- * moves paid → processing → on the way → delivered (Tipax webhooks may set the last two from S27); the customer and the
- * admin may cancel a paid or processing order, never one on its way (owner, 2026-11-16).
+ * moves paid → processing → on the way → delivered (Tipax webhooks may set the last two from S27). The customer may
+ * cancel a paid or processing order; the admin a paid, processing or delivered one (a return); nobody one on its way
+ * (owner, 2026-11-16).
  */
 enum OrderStatus: string implements HasLabel
 {
@@ -66,6 +67,7 @@ enum OrderStatus: string implements HasLabel
             [self::Paid, OrderActor::Customer], [self::Processing, OrderActor::Customer] => [self::Cancelled],
             [self::Processing, OrderActor::Admin] => [self::OnTheWay, self::Cancelled],
             [self::OnTheWay, OrderActor::Admin], [self::OnTheWay, OrderActor::Carrier] => [self::Delivered],
+            [self::Delivered, OrderActor::Admin] => [self::Cancelled],
             [self::Processing, OrderActor::Carrier] => [self::OnTheWay],
             default => [],
         };

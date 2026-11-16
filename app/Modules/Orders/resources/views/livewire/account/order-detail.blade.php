@@ -109,7 +109,7 @@
                                 <p class="mt-0.5 text-xs text-ink-500">{{ collect([$item->getVariantTitle(), $item->getBrandName()])->filter()->join(' · ') }}</p>
                                 <p class="mt-1 text-xs text-ink-500">{{ PersianDigits::toPersian($item->getQuantity()) }} × @toman($item->getUnitPrice())</p>
                             </div>
-                            <p class="shrink-0 text-sm font-bold text-ink-900">@toman($item->getTotal())</p>
+                            <p class="shrink-0 text-sm font-bold text-ink-900">@toman($item->getPaidTotal())</p>
                         </li>
                     @endforeach
                 </ul>

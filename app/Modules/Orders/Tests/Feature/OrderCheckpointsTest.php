@@ -70,6 +70,13 @@ it('keeps the checkpoints a cancelled order passed and ends on the cancellation'
         [OrderStatus::Processing, CheckpointState::Passed],
         [OrderStatus::Cancelled, CheckpointState::Current],
     ]],
+    'cancelled after delivery' => [[OrderStatus::Processing, OrderStatus::OnTheWay, OrderStatus::Delivered, OrderStatus::Cancelled], [
+        [OrderStatus::Paid, CheckpointState::Passed],
+        [OrderStatus::Processing, CheckpointState::Passed],
+        [OrderStatus::OnTheWay, CheckpointState::Passed],
+        [OrderStatus::Delivered, CheckpointState::Passed],
+        [OrderStatus::Cancelled, CheckpointState::Current],
+    ]],
 ]);
 
 it('waits on every checkpoint before payment and shows none for an expired order', function (): void {

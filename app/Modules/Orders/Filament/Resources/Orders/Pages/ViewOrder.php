@@ -15,6 +15,7 @@ use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Shared\Support\Toman;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -77,11 +78,32 @@ final class ViewOrder extends ViewRecord
                 ->visible(fn (): bool => $this->order()->getPaymentStatus() === PaymentStatus::RefundPending
                     && (auth('admin')->user()?->can('refund', $this->order()) ?? false))
                 ->modalHeading('ثبت بازگشت وجه')
-                ->modalDescription('وقتی مبلغ را از بانک یا پنل درگاه به مشتری برگرداندید، شماره پیگیری آن را وارد کنید.')
+                ->modalDescription('وقتی مبلغ را از بانک یا پنل درگاه به مشتری برگرداندید، مبلغ کالاها و هزینه ارسالِ برگشتی و شماره پیگیری آن را وارد کنید.')
+                ->fillForm(fn (): array => [
+                    'items_amount' => $this->order()->getItemsPaidTotal(),
+                    'shipping_amount' => $this->order()->getShippingTotal(),
+                ])
                 ->schema([
+                    TextInput::make('items_amount')
+                        ->label('مبلغ بازگشتی کالاها')
+                        ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                        ->required()
+                        ->maxValue(fn (): int => Toman::fromRial($this->order()->getItemsPaidTotal()))
+                        ->helperText(fn (): string => 'پرداختی مشتری برای کالاها (پس از تخفیف کوپن): '.Toman::format($this->order()->getItemsPaidTotal())),
+                    TextInput::make('shipping_amount')
+                        ->label('مبلغ بازگشتی هزینه ارسال')
+                        ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                        ->required()
+                        ->maxValue(fn (): int => Toman::fromRial($this->order()->getShippingTotal()))
+                        ->helperText(fn (): string => 'هزینه ارسال پرداختی: '.Toman::format($this->order()->getShippingTotal())),
                     TextInput::make('reference')->label('شماره پیگیری بازگشت وجه')->required()->maxLength(64)->extraInputAttributes(['dir' => 'ltr']),
                 ])
-                ->action(fn (array $data, MarkOrderRefunded $refund) => $this->attempt(fn () => $refund($this->order(), (string) $data['reference']))),
+                ->action(fn (array $data, MarkOrderRefunded $refund) => $this->attempt(fn () => $refund(
+                    $this->order(),
+                    (string) $data['reference'],
+                    self::refundRial($data['items_amount'] ?? null, $this->order()->getItemsPaidTotal()),
+                    self::refundRial($data['shipping_amount'] ?? null, $this->order()->getShippingTotal()),
+                ))),
             Action::make('adminNote')
                 ->label('یادداشت مدیر')
                 ->icon(Heroicon::OutlinedPencilSquare)
@@ -93,6 +115,17 @@ final class ViewOrder extends ViewRecord
                 ])
                 ->action(fn (array $data, SaveAdminNote $save) => $this->attempt(fn () => $save($this->order(), $data['note'] ?? null), 'یادداشت ذخیره شد.')),
         ];
+    }
+
+    /**
+     * Refund amounts are typed in whole toman while what was paid is in rial: typing the full toman amount means the
+     * full rial amount (12,345,675 rial shows as 1,234,568 toman, which would otherwise read 5 rial too much).
+     */
+    private static function refundRial(int|string|null $typed, int $paid): int
+    {
+        $rial = (int) $typed;
+
+        return Toman::fromRial($rial) === Toman::fromRial($paid) ? $paid : $rial;
     }
 
     /**

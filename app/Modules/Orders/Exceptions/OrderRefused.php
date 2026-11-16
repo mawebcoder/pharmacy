@@ -37,6 +37,16 @@ final class OrderRefused extends BaseException
         return new self('بازگشت وجه فقط برای سفارش لغوشده‌ای که در انتظار بازگشت وجه است ثبت می‌شود.', 'order_not_refundable');
     }
 
+    public static function refundTooLarge(string $part, string $paid): self
+    {
+        return new self("مبلغ بازگشتی {$part} از مبلغ پرداختی آن ({$paid}) بیشتر است.", 'order_refund_too_large');
+    }
+
+    public static function emptyRefund(): self
+    {
+        return new self('مبلغی برای بازگشت وارد نشده است.', 'order_refund_empty');
+    }
+
     public static function nothingToReorder(): self
     {
         return new self('هیچ‌یک از کالاهای این سفارش اکنون موجود نیست.', 'order_nothing_to_reorder');

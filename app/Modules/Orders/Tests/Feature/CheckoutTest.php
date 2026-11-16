@@ -253,8 +253,41 @@ describe('placing the order', function (): void {
         $order = Order::query()->with('items')->findOrFail(placeOrder($this->customer, $subtotal - $discount + 500_000, 'SEVEN')->orderId);
 
         expect($order->getDiscountTotal())->toBe($discount)
-            ->and($order->items->sum(fn (OrderItem $item): int => $item->getDiscount()))->toBe($discount)
-            ->and($order->items->every(fn (OrderItem $item): bool => $item->getTotal() === $item->getUnitPrice() * $item->getQuantity() - $item->getDiscount()))->toBeTrue();
+            ->and($order->items->sum(fn (OrderItem $item): int => $item->getCouponDiscountTotal()))->toBe($discount)
+            ->and($order->items->every(fn (OrderItem $item): bool => $item->getPaidTotal() === $item->getUnitPrice() * $item->getQuantity() - $item->getCouponDiscountTotal()))->toBeTrue();
+    });
+
+    it('keeps each item\'s haraj, coupon and paid amounts per unit and in total, adding up to the order\'s', function (): void {
+        $onHaraj = checkoutSku(1_000_000);
+        VariantPrice::query()->where(VariantPrice::COLUMN_VARIANT_ID, $onHaraj->getId())->update([VariantPrice::COLUMN_PRICE => 1_250_000, VariantPrice::COLUMN_SALE_PRICE => 1_000_000]);
+        $variants = [$onHaraj, checkoutSku(2_000_007), checkoutSku(3_333_333)];
+        fillCart($this->customer, [$variants[0]->getId() => 3, $variants[1]->getId() => 7, $variants[2]->getId() => 1]);
+        homeAddress($this->customer);
+        Coupon::factory()->percent(7)->create([Coupon::COLUMN_CODE => 'SEVEN']);
+        $subtotal = 3 * 1_000_000 + 7 * 2_000_007 + 3_333_333;
+        $discount = intdiv(intdiv($subtotal * 7, 100), 10) * 10;
+
+        $order = Order::query()->with('items')->findOrFail(placeOrder($this->customer, $subtotal - $discount + 500_000, 'SEVEN')->orderId);
+        $haraj = $order->items->first(fn (OrderItem $item): bool => $item->getVariantId() === $onHaraj->getId());
+
+        expect($order->items->sum(fn (OrderItem $item): int => $item->getUnitPrice() * $item->getQuantity()))->toBe($order->getSubtotal())
+            ->and($order->items->sum(fn (OrderItem $item): int => $item->getCouponDiscountTotal()))->toBe($order->getDiscountTotal())
+            ->and($order->items->sum(fn (OrderItem $item): int => $item->getPaidTotal()))->toBe($order->getSubtotal() - $order->getDiscountTotal())
+            ->and($order->items->sum(fn (OrderItem $item): int => $item->getPaidTotal()) + $order->getShippingTotal())->toBe($order->getTotal())
+            ->and($haraj->getHarajDiscountUnit())->toBe(250_000)
+            ->and($haraj->getHarajDiscountTotal())->toBe(750_000);
+
+        foreach ($order->items as $item) {
+            $quantity = $item->getQuantity();
+
+            expect($item->getHarajDiscountTotal())->toBe($item->getHarajDiscountUnit() * $quantity)
+                ->and($item->getListPrice() - $item->getHarajDiscountUnit())->toBe($item->getUnitPrice())
+                ->and($item->getPaidUnit())->toBe(intdiv($item->getPaidTotal(), $quantity))
+                ->and($item->getCouponDiscountUnit())->toBe($item->getUnitPrice() - $item->getPaidUnit())
+                ->and($item->getPaidTotal())->toBe($item->getUnitPrice() * $quantity - $item->getCouponDiscountTotal())
+                // Paid rounded down per unit: returns never refund more; the last ones take the remainder (under quantity rial).
+                ->and($item->getPaidTotal() - $item->getPaidUnit() * $quantity)->toBeGreaterThanOrEqual(0)->toBeLessThan($quantity);
+        }
     });
 
     it('reserves the coupon, empties the cart, logs the status and opens one payment link', function (): void {
@@ -471,7 +504,7 @@ describe('the customer\'s orders', function (): void {
         $order = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId()]);
         foreach ([[$available, 3], [$gone, 1]] as [$variant, $quantity]) {
             (new OrderItem)->setOrderId($order->getId())->setVariantId($variant->getId())->setProductName($variant->product?->getNameFa() ?? '')->setSku($variant->getSku())
-                ->setQuantity($quantity)->setListPrice(500_000)->setUnitPrice(500_000)->setTotal(500_000 * $quantity)->setProductSnapshot([])->save();
+                ->setQuantity($quantity)->setListPrice(500_000)->setUnitPrice(500_000)->setPaidTotal(500_000 * $quantity)->setProductSnapshot([])->save();
         }
         $gone->setStockStatus(StockStatus::OutOfStock)->save();
 
@@ -506,7 +539,7 @@ describe('the customer\'s orders', function (): void {
             Order::COLUMN_ADDRESS_SNAPSHOT => ['title' => 'خانه', 'province' => 'تهران', 'city' => 'تهران', 'main_street' => 'ولیعصر', 'plaque' => '12', 'receiver_name' => 'سارا رضایی', 'receiver_mobile' => '09123456789', 'postal_code' => '1415934571'],
         ]);
         (new OrderItem)->setOrderId($order->getId())->setProductName('کرم اوره قدیمی')->setSku('SKU-1')->setQuantity(2)
-            ->setListPrice(500_000)->setUnitPrice(500_000)->setTotal(1_000_000)->setProductSnapshot([])->save();
+            ->setListPrice(500_000)->setUnitPrice(500_000)->setPaidTotal(1_000_000)->setProductSnapshot([])->save();
 
         livewire(OrderList::class)->assertSee(route('account.orders.show', $order->getId()), false);
         livewire(OrderDetail::class, ['order' => $order->getId()])
@@ -542,6 +575,8 @@ describe('order statuses', function (): void {
         'customer cannot cancel on the way' => [OrderStatus::OnTheWay, OrderStatus::Cancelled, OrderActor::Customer, false],
         'admin cancels processing' => [OrderStatus::Processing, OrderStatus::Cancelled, OrderActor::Admin, true],
         'admin cannot cancel on the way' => [OrderStatus::OnTheWay, OrderStatus::Cancelled, OrderActor::Admin, false],
+        'admin cancels delivered' => [OrderStatus::Delivered, OrderStatus::Cancelled, OrderActor::Admin, true],
+        'customer cannot cancel delivered' => [OrderStatus::Delivered, OrderStatus::Cancelled, OrderActor::Customer, false],
         'customer cannot mark processing' => [OrderStatus::Paid, OrderStatus::Processing, OrderActor::Customer, false],
         'admin delivers' => [OrderStatus::OnTheWay, OrderStatus::Delivered, OrderActor::Admin, true],
     ]);
