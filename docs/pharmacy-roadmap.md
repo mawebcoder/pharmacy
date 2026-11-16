@@ -765,7 +765,7 @@ Filament form validation rules come from the same source as the Form Request (`S
 6. **Idempotency:** payment verification, order placement and shipment creation must be safe to run twice.
 7. **Persian first:** all user-facing text is Persian, RTL, with Shamsi (Jalali) dates in the UI. Store timestamps in UTC.
 8. **Request → DTO → Action → Resource** (C5) for every write and every JSON response: Form Requests validate, `toDto()` builds a readonly DTO, the controller/Livewire/Filament passes the DTO to an Action, JSON is returned through an API Resource.
-9. **Prescription medicines are out of MVP scope.** Products with `requires_prescription = true` (always true for `product_type = rx`) cannot be activated for sale or added to the cart until phase 2. **OTC medicines are sellable in the MVP** (owner's decision, 2026-11-07, S10); the unsellable types are `config('catalog.unsellable_product_types')` (`['rx']`), so OTC can be switched off again with one line. The legal check is still open (D10 #8).
+9. **Prescription medicines are out of MVP scope.** Products of type `rx` («نسخه‌ای»; the separate `requires_prescription` switch was removed by the owner, 2026-11-16) cannot be activated for sale or added to the cart until phase 2. **OTC medicines are sellable in the MVP** (owner's decision, 2026-11-07, S10); the unsellable types are `config('catalog.unsellable_product_types')` (`['rx']`), so OTC can be switched off again with one line. The legal check is still open (D10 #8).
 
 ---
 
@@ -817,7 +817,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | primary_category_id | FK | always the main subcategory's category (set on save); the pivot `category_product` is no longer filled |
 | default_variant_id | FK nullable | the admin's default SKU (decided 2026-11-07, S12); see «Default SKU» below |
 | product_type | enum | `cosmetic`, `personal_care`, `supplement`, `otc`, `rx`, `medical_device` |
-| requires_prescription | bool | blocks add-to-cart in MVP |
+| ~~requires_prescription~~ | — | removed (owner, 2026-11-16): a product needs a prescription exactly when `product_type = rx` |
 | irc_code | string | IFDA registration code, shown on PDP |
 | short_description, description | text | |
 | ingredients, usage, warnings, side_effects, interactions | text | PDP tabs |
@@ -837,9 +837,8 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | sale_price | bigint Rial nullable | «قیمت حراج»: typed by the admin, below price. From S15 it lives on the price record |
 | current_price_id | FK nullable | the latest `variant_prices` record (S15) |
 | stock_status | enum | `available`, `on_request`, `out_of_stock` (no own stock; reflects provider availability) |
-| is_near_expiry | bool | feeds "زودمصرف" section; **set by hand** in the SKU form (owner, 2026-11-16) |
 
-**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S30 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. The admin product list filters products with a «زودمصرف» SKU, to put them on haraj.
+**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S30 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. **«زودمصرف» is on the product** (`products.is_near_expiry`, owner 2026-11-16; moved from the SKUs): a switch in the product form set by hand; it drives the card and product page badge, the storefront filter and search facet, and the admin product list filter used to find products to put on haraj.
 | weight_g | int | packaged weight |
 | length_mm, width_mm, height_mm | int | packaged dimensions |
 | dimensions_verified | bool | true after someone measured it |
@@ -954,7 +953,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 **order_items** (as built in S25): `order_id`, `variant_id`, `product_id`, `variant_price_id` (the price record it was sold at, D3.2), `product_name`, `variant_title`, `sku`, `brand_name`, `image_url`, `product_type`, `requires_prescription`, `quantity`, `product_snapshot` (JSON: product and SKU details), `provider_id`, `provider_name`, `unit_cost`, `commission_percent`, `commission_source`, `provider_choice`, `official_price`, `list_price`, `sale_price`, `unit_price`, `haraj_discount_unit` / `haraj_discount_total` (list price − unit price), `coupon_discount_unit` / `coupon_discount_total` (the item's share of the coupon discount; was `discount`), `paid_unit` / `paid_total` (what the customer paid; was `total`). **Order items have no status** (owner, 2026-11-14). **Item coupon discounts add up to the order's `discount_total`, and item paid totals to `subtotal − discount_total`** (owner, 2026-11-16). Per-unit amounts are kept for returns (owner, 2026-11-16): `paid_unit` is rounded down (a return never refunds more than was paid) and `coupon_discount_unit = unit_price − paid_unit`; returning n units refunds n × `paid_unit`, and the item's last returned units also take the remainder (`paid_total − paid_unit × quantity`, under `quantity` rial). The admin order page shows each item's list price, haraj and coupon discounts and paid amount, per unit with the item total.
 
-**Snapshot rule** (owner, 2026-11-14, S18): an order keeps a JSON or column copy of **everything that can change later**, so editing a product, price, supplier, commission, coupon, address, city or customer never changes a past order or its reports. Order items also copy `product_name`, `variant_title`, `sku`, `brand_name`, `image_url` (the card size), `product_type` and `requires_prescription`, besides the prices below.
+**Snapshot rule** (owner, 2026-11-14, S18): an order keeps a JSON or column copy of **everything that can change later**, so editing a product, price, supplier, commission, coupon, address, city or customer never changes a past order or its reports. Order items also copy `product_name`, `variant_title`, `sku`, `brand_name`, `image_url` (the card size), `product_type` and `requires_prescription` (now taken from `product_type = rx`), besides the prices below.
 
 **Price snapshot on every order item** (owner, 2026-11-14): the commission lives on products and brands and supplier costs change, so when the customer places the order (`PlaceOrder`, S25) each item copies the values of that moment onto itself, not only the `variant_price_id`: `provider_id` and `unit_cost` (the active supplier and its cost, null when sold at the printed price), `commission_percent` and `commission_source` (one of the five levels), `provider_choice` (preferred or cheapest), `official_price` (printed), `list_price` (selling price before haraj), `sale_price` (haraj), `unit_price` (what the customer pays). Gross and net margin reports (S41, S42) read these columns, so later changes to a commission, a supplier cost or a price record never change a past order.
 
@@ -1730,7 +1729,7 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 | subcategories | unique(slug); index(category_id, sort); index(is_active) |
 | brands | unique(slug); index(is_active) |
 | products | unique(slug); index(brand_id); index(primary_category_id); index(status, product_type); fulltext(name_fa, name_en) |
-| product_variants | unique(sku); index(product_id); index(barcode); index(is_active, stock_status); index(is_near_expiry) |
+| product_variants | unique(sku); index(product_id); index(barcode); index(is_active, stock_status) |
 | provider_prices | unique(provider_id, variant_id); index(variant_id, is_available, cost) |
 | pricing_rules | index(scope_type, scope_id, is_active, priority) |
 | customers | unique(mobile) |
@@ -1837,7 +1836,7 @@ Casts: enums (`ProductType`, `ProductStatus`, `StockStatus`, `OrderStatus`, `Pay
 3. Zero results → show popular tags/categories + "notify me" option.
 
 ### D13.3 Cart
-1. Add to cart: validates variant active, not `requires_prescription`, not cold-chain, qty ≤ max_per_order; price snapshot taken.
+1. Add to cart: validates variant active, not a prescription medicine (`product_type = rx`), not cold-chain, qty ≤ max_per_order; price snapshot taken.
 2. Cart recalculates on every change: current price, flash deal, coupon, free-shipping progress.
 3. Guest cart keyed by `session_token` cookie (30 days); merged on login.
 
@@ -1880,7 +1879,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 
 ### D13.11 Other flows
 - Stock alert: customer subscribes on out-of-stock variant → when `stock_status` becomes `available`, SMS sent once.
-- Near expiry: the admin flags a SKU «زودمصرف» by hand → it appears in "زودمصرف" (owner, 2026-11-16; the daily `MarkNearExpiry` job was removed with `expiry_date`).
+- Near expiry: the admin flags a product «زودمصرف» by hand → it appears in "زودمصرف" (owner, 2026-11-16; the daily `MarkNearExpiry` job was removed with `expiry_date`).
 - Review moderation: reviews `pending` → admin approves → visible; verified-buyer badge if linked to delivered order item.
 - Contact form: stored + email/SMS alert to operator.
 

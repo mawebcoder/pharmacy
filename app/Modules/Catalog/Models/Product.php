@@ -60,13 +60,13 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_PRODUCT_TYPE = 'product_type';
 
-    public const string COLUMN_REQUIRES_PRESCRIPTION = 'requires_prescription';
-
     public const string COLUMN_IRC_CODE = 'irc_code';
 
     public const string COLUMN_MAX_PER_ORDER = 'max_per_order';
 
     public const string COLUMN_MIN_SHELF_LIFE_MONTHS = 'min_shelf_life_months';
+
+    public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
 
     public const string COLUMN_SHORT_DESCRIPTION = 'short_description';
 
@@ -177,6 +177,20 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public function setMinShelfLifeMonths(?int $value): static
     {
         return $this->setAttribute(self::COLUMN_MIN_SHELF_LIFE_MONTHS, $value);
+    }
+
+    /**
+     * «زودمصرف»: set by hand on the product (owner, 2026-11-16); badge, storefront filter and the admin filter for
+     * products to put on haraj.
+     */
+    public function isNearExpiry(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_IS_NEAR_EXPIRY);
+    }
+
+    public function setIsNearExpiry(bool $value): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $value);
     }
 
     public function getShortDescription(): ?string
@@ -362,19 +376,12 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return $this->setAttribute(self::COLUMN_PRODUCT_TYPE, $type);
     }
 
+    /**
+     * A prescription medicine: its type is «نسخه‌ای» (owner, 2026-11-16; no separate switch).
+     */
     public function requiresPrescription(): bool
     {
-        return (bool) $this->getAttribute(self::COLUMN_REQUIRES_PRESCRIPTION);
-    }
-
-    public function getRequiresPrescription(): bool
-    {
-        return $this->requiresPrescription();
-    }
-
-    public function setRequiresPrescription(bool $requiresPrescription): static
-    {
-        return $this->setAttribute(self::COLUMN_REQUIRES_PRESCRIPTION, $requiresPrescription);
+        return $this->getProductType() === ProductType::Rx;
     }
 
     public function getStatus(): ProductStatus
@@ -658,7 +665,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
         return $query
             ->where(self::COLUMN_STATUS, ProductStatus::Active)
-            ->where(self::COLUMN_REQUIRES_PRESCRIPTION, false)
+            ->where(self::COLUMN_PRODUCT_TYPE, '!=', ProductType::Rx)
             ->whereNotIn(self::COLUMN_PRODUCT_TYPE, $unsellable)
             ->whereHas('variants', fn (Builder $variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true));
     }
@@ -707,7 +714,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             ->useLogName('catalog')
             ->logOnly([
                 self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_PRIMARY_SUBCATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
-                self::COLUMN_PRODUCT_TYPE, self::COLUMN_REQUIRES_PRESCRIPTION, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_MIN_SHELF_LIFE_MONTHS, self::COLUMN_SHORT_DESCRIPTION,
+                self::COLUMN_PRODUCT_TYPE, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_MIN_SHELF_LIFE_MONTHS, self::COLUMN_IS_NEAR_EXPIRY, self::COLUMN_SHORT_DESCRIPTION,
                 self::COLUMN_DESCRIPTION, self::COLUMN_INGREDIENTS, self::COLUMN_USAGE, self::COLUMN_WARNINGS, self::COLUMN_SIDE_EFFECTS,
                 self::COLUMN_INTERACTIONS, self::COLUMN_STATUS, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
             ])
@@ -732,9 +739,9 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_PRIMARY_SUBCATEGORY_ID => 'integer',
             self::COLUMN_DEFAULT_VARIANT_ID => 'integer',
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
-            self::COLUMN_REQUIRES_PRESCRIPTION => 'boolean',
             self::COLUMN_MAX_PER_ORDER => 'integer',
             self::COLUMN_MIN_SHELF_LIFE_MONTHS => 'integer',
+            self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
             self::COLUMN_STATUS => ProductStatus::class,
         ];
     }

@@ -52,7 +52,6 @@ final readonly class OrderItemSnapshots
                     'sku' => $variant->getSku(),
                     'barcode' => $variant->getBarcode(),
                     'title' => $variant->getTitleFa(),
-                    'is_near_expiry' => $variant->isNearExpiry(),
                     'weight_g' => $variant->getWeightG(),
                     'length_mm' => $variant->getLengthMm(),
                     'width_mm' => $variant->getWidthMm(),

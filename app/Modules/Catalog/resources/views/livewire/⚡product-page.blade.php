@@ -235,7 +235,7 @@ new class extends Component
                 @if ($isRx)
                     <li class="inline-flex items-center gap-1 rounded-full border border-rx-600 px-2.5 leading-6 text-rx-600"><x-ts-icon icon="document-text" class="size-4" />نسخه‌ای</li>
                 @endif
-                @if ($variant?->isNearExpiry())
+                @if ($product->isNearExpiry())
                     <li class="inline-flex items-center gap-1 rounded-full bg-warning-500 px-2.5 leading-7 text-ink-900">زودمصرف</li>
                 @endif
                 @if ($product->getIrcCode())

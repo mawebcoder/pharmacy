@@ -132,9 +132,9 @@ final class ProductForm
                                     ->suffix('ماه')
                                     ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_MIN_SHELF_LIFE_MONTHS))
                                     ->helperText('در صفحه محصول: «تضمین اعتبار: حداقل N ماه». تاریخ انقضای دقیق تضمین نمی‌شود؛ خالی یعنی نمایش داده نمی‌شود.'),
-                                Toggle::make(Product::COLUMN_REQUIRES_PRESCRIPTION)
-                                    ->label('نیاز به نسخه')
-                                    ->helperText('محصول نیازمند نسخه قابل فعال‌سازی برای فروش نیست.'),
+                                Toggle::make(Product::COLUMN_IS_NEAR_EXPIRY)
+                                    ->label('زودمصرف')
+                                    ->helperText('نشان «زودمصرف» روی کارت و صفحه محصول، و در فیلتر و بخش «زودمصرف» سایت.'),
                                 Select::make(Product::COLUMN_STATUS)
                                     ->label('وضعیت')
                                     ->options(ProductStatus::options())

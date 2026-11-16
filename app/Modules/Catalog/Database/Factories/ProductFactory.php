@@ -39,7 +39,6 @@ final class ProductFactory extends Factory
             Product::COLUMN_PRIMARY_SUBCATEGORY_ID => Subcategory::factory(),
             Product::COLUMN_PRIMARY_CATEGORY_ID => fn (array $attributes): int => (int) Subcategory::query()->whereKey($attributes[Product::COLUMN_PRIMARY_SUBCATEGORY_ID])->value(Subcategory::COLUMN_CATEGORY_ID),
             Product::COLUMN_PRODUCT_TYPE => ProductType::Cosmetic,
-            Product::COLUMN_REQUIRES_PRESCRIPTION => false,
             Product::COLUMN_STATUS => ProductStatus::Draft,
         ];
     }
@@ -52,12 +51,14 @@ final class ProductFactory extends Factory
         return $this->state(fn (array $attributes): array => [Product::COLUMN_STATUS => ProductStatus::Active]);
     }
 
+    public function nearExpiry(): static
+    {
+        return $this->state(fn (array $attributes): array => [Product::COLUMN_IS_NEAR_EXPIRY => true]);
+    }
+
     public function rx(): static
     {
-        return $this->state(fn (array $attributes): array => [
-            Product::COLUMN_PRODUCT_TYPE => ProductType::Rx,
-            Product::COLUMN_REQUIRES_PRESCRIPTION => true,
-        ]);
+        return $this->state(fn (array $attributes): array => [Product::COLUMN_PRODUCT_TYPE => ProductType::Rx]);
     }
 
     public function otc(): static

@@ -32,7 +32,7 @@ final readonly class ProductCardData
 
         [$badge, $tone] = match (true) {
             ($default?->discountPercent() ?? 0) > 0 => [null, 'discount'],
-            $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()) => ['زودمصرف', 'near-expiry'],
+            $product->isNearExpiry() => ['زودمصرف', 'near-expiry'],
             ($product->getCreatedAt()?->diffInDays(now()) ?? PHP_INT_MAX) <= self::NEW_FOR_DAYS => ['جدید', 'new'],
             default => [null, null],
         };

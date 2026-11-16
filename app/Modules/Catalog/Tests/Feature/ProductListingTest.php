@@ -80,7 +80,7 @@ it('keeps products that are not for sale out of the index', function (): void {
     sellable([Product::COLUMN_NAME_FA => 'محصول فعال']);
     Product::factory()->withVariants()->create([Product::COLUMN_NAME_FA => 'پیش‌نویس']);
     Product::factory()->active()->create([Product::COLUMN_NAME_FA => 'بدون تنوع']);
-    sellable([Product::COLUMN_NAME_FA => 'داروی نسخه‌ای', Product::COLUMN_PRODUCT_TYPE => ProductType::Rx, Product::COLUMN_REQUIRES_PRESCRIPTION => true]);
+    sellable([Product::COLUMN_NAME_FA => 'داروی نسخه‌ای', Product::COLUMN_PRODUCT_TYPE => ProductType::Rx]);
     sellable([Product::COLUMN_NAME_FA => 'حذف‌شده'])->delete();
     indexProductsForSearch();
 
@@ -139,7 +139,7 @@ describe('filters', function (): void {
             ->attributeValues()->attach($this->cream);
         sellable([Product::COLUMN_NAME_FA => 'ژل اوسرین', Product::COLUMN_BRAND_ID => $this->eucerin->getId()], [ProductVariant::COLUMN_PRICE => 2_000_000, ProductVariant::COLUMN_STOCK_STATUS => StockStatus::OutOfStock])
             ->attributeValues()->attach($this->gel);
-        sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId()], [ProductVariant::COLUMN_PRICE => 1_000_000, ProductVariant::COLUMN_IS_NEAR_EXPIRY => true])
+        sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId(), Product::COLUMN_IS_NEAR_EXPIRY => true], [ProductVariant::COLUMN_PRICE => 1_000_000])
             ->attributeValues()->attach($this->cream);
         indexProductsForSearch();
     });

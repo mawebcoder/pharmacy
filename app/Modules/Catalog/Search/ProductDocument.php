@@ -84,7 +84,7 @@ final class ProductDocument
             'discount_pct' => $default?->discountPercent() ?? 0,
             'in_stock' => $default?->isInStock() ?? false,
             'in_stock_rank' => $default?->isInStock() ? 1 : 0,
-            'is_near_expiry' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()),
+            'is_near_expiry' => $product->isNearExpiry(),
             'product_type' => $product->getProductType()->value,
             // Orders arrive in S20; until then best-selling sorts like newest.
             'sales_30d' => 0,

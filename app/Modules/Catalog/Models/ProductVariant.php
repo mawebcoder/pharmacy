@@ -50,8 +50,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
     public const string COLUMN_STOCK_STATUS = 'stock_status';
 
-    public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
-
     public const string COLUMN_WEIGHT_G = 'weight_g';
 
     public const string COLUMN_LENGTH_MM = 'length_mm';
@@ -196,21 +194,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public function setSalePrice(?int $value): static
     {
         return $this->setAttribute(self::COLUMN_SALE_PRICE, $value);
-    }
-
-    public function isNearExpiry(): bool
-    {
-        return (bool) $this->getAttribute(self::COLUMN_IS_NEAR_EXPIRY);
-    }
-
-    public function getIsNearExpiry(): bool
-    {
-        return $this->isNearExpiry();
-    }
-
-    public function setIsNearExpiry(bool $value): static
-    {
-        return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $value);
     }
 
     /**
@@ -498,7 +481,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_SALE_PRICE => 'integer',
             self::COLUMN_CURRENT_PRICE_ID => 'integer',
             self::COLUMN_STOCK_STATUS => StockStatus::class,
-            self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
             self::COLUMN_WEIGHT_G => 'integer',
             self::COLUMN_LENGTH_MM => 'integer',
             self::COLUMN_WIDTH_MM => 'integer',

@@ -7,7 +7,6 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Data\ProductData;
 use App\Modules\Catalog\Enums\PricingInputChange;
 use App\Modules\Catalog\Enums\ProductStatus;
-use App\Modules\Catalog\Enums\ProductType;
 use App\Modules\Catalog\Events\PricingInputsChanged;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
@@ -94,11 +93,10 @@ final class UpdateProduct
             ->setPrimaryCategoryId((int) $categoryId)
             ->setPrimarySubcategoryId($data->primarySubcategoryId)
             ->setProductType($data->productType)
-            // Prescription medicines always need a prescription.
-            ->setRequiresPrescription($data->requiresPrescription || $data->productType === ProductType::Rx)
             ->setIrcCode($data->ircCode)
             ->setMaxPerOrder($data->maxPerOrder)
             ->setMinShelfLifeMonths($data->minShelfLifeMonths)
+            ->setIsNearExpiry($data->isNearExpiry)
             ->setShortDescription($data->shortDescription)
             ->setDescription($data->description)
             ->setIngredients($data->ingredients)

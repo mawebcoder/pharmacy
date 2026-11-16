@@ -33,7 +33,6 @@ final class StoreProductVariantRequest extends FormRequest
             ProductVariant::COLUMN_OFFICIAL_PRICE => ['nullable', 'integer', 'min:0'],
             ProductVariant::COLUMN_SALE_PRICE => ['nullable', 'integer', 'min:1'],
             ProductVariant::COLUMN_STOCK_STATUS => ['required', Rule::enum(StockStatus::class)],
-            ProductVariant::COLUMN_IS_NEAR_EXPIRY => ['boolean'],
             ProductVariant::COLUMN_WEIGHT_G => ['nullable', 'integer', 'min:1', 'max:100000'],
             ProductVariant::COLUMN_LENGTH_MM => $size,
             ProductVariant::COLUMN_WIDTH_MM => $size,

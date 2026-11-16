@@ -126,10 +126,6 @@ final class VariantsRelationManager extends RelationManager
                             ->dehydrated()
                             ->helperText('خودکار: با تأمین‌کننده فعال یا قیمت روی جعبه «موجود»، بدون هیچ‌کدام «ناموجود».')
                             ->required(),
-                        Toggle::make(ProductVariant::COLUMN_IS_NEAR_EXPIRY)
-                            ->label('زودمصرف')
-                            ->helperText('با دست تنظیم می‌شود؛ در فیلتر و بخش «زودمصرف» سایت نمایش داده می‌شود.')
-                            ->inline(false),
                     ]),
                 Section::make('ارسال')
                     ->description('ابعاد و وزن بسته‌بندی‌شده؛ برای محاسبه هزینه ارسال تیپاکس.')
@@ -194,12 +190,6 @@ final class VariantsRelationManager extends RelationManager
                     ->badge()
                     ->formatStateUsing(fn (StockStatus $state): string => $state->label())
                     ->color(fn (StockStatus $state): string => $state->color()),
-                TextColumn::make('near_expiry')
-                    ->label('زودمصرف')
-                    ->badge()
-                    ->state(fn (ProductVariant $record): ?string => $record->isNearExpiry() ? 'زودمصرف' : null)
-                    ->color('warning')
-                    ->placeholder('—'),
                 IconColumn::make(ProductVariant::COLUMN_IS_ACTIVE)->label('فعال')->boolean(),
             ])
             ->headerActions([

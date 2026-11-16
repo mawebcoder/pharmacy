@@ -36,7 +36,6 @@ function productData(Product $product, array $overrides = []): ProductData
         Product::COLUMN_BRAND_ID => $product->getBrandId(),
         Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $product->getPrimarySubcategoryId(),
         Product::COLUMN_PRODUCT_TYPE => $product->getProductType(),
-        Product::COLUMN_REQUIRES_PRESCRIPTION => $product->requiresPrescription(),
         Product::COLUMN_STATUS => $product->getStatus(),
         ...$overrides,
     ]);
@@ -129,12 +128,11 @@ describe('creating', function (): void {
             ->and(ProductVariant::withTrashed()->count())->toBe(0);
     });
 
-    it('always needs a prescription for a prescription medicine', function (): void {
+    it('needs a prescription exactly when the product is a prescription medicine', function (): void {
         $product = Product::factory()->create();
 
-        $updated = app(UpdateProduct::class)($product, productData($product, [Product::COLUMN_PRODUCT_TYPE => 'rx', Product::COLUMN_REQUIRES_PRESCRIPTION => false]));
-
-        expect($updated->requiresPrescription())->toBeTrue();
+        expect($product->requiresPrescription())->toBeFalse()
+            ->and(app(UpdateProduct::class)($product, productData($product, [Product::COLUMN_PRODUCT_TYPE => 'rx']))->requiresPrescription())->toBeTrue();
     });
 });
 
@@ -155,8 +153,7 @@ describe('activating', function (): void {
 
         expect($product->fresh()->getStatus())->toBe(ProductStatus::Draft);
     })->with([
-        'prescription medicine' => [fn (): Product => readyProduct([Product::COLUMN_PRODUCT_TYPE => ProductType::Rx, Product::COLUMN_REQUIRES_PRESCRIPTION => true]), 'داروهای نیازمند نسخه'],
-        'needs a prescription' => [fn (): Product => readyProduct([Product::COLUMN_REQUIRES_PRESCRIPTION => true]), 'داروهای نیازمند نسخه'],
+        'prescription medicine' => [fn (): Product => readyProduct([Product::COLUMN_PRODUCT_TYPE => ProductType::Rx]), 'داروهای نیازمند نسخه'],
         'no variant' => [fn (): Product => Product::factory()->create(), 'تنوع فعال'],
         'only inactive variants' => [fn (): Product => Product::factory()->has(ProductVariant::factory()->inactive(), 'variants')->create(), 'تنوع فعال'],
         'no photo' => [fn (): Product => Product::factory()->withVariants()->create(), 'تصویر'],

@@ -53,7 +53,6 @@ final class SaveProductVariant
                 ->setOfficialPrice($data->officialPrice)
                 ->setSalePrice($data->salePrice)
                 ->setStockStatus($stock)
-                ->setIsNearExpiry($data->isNearExpiry)
                 ->setWeightG($data->weightG)
                 ->setLengthMm($data->lengthMm)
                 ->setWidthMm($data->widthMm)

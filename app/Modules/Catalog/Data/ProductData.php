@@ -29,7 +29,6 @@ final readonly class ProductData
         public int $primaryCategoryId,
         public array $categoryIds,
         public ProductType $productType,
-        public bool $requiresPrescription,
         public ?string $ircCode,
         public ?string $shortDescription,
         public ?string $description,
@@ -47,6 +46,7 @@ final readonly class ProductData
         public ?int $primarySubcategoryId = null,
         public array $subcategoryIds = [],
         public ?int $minShelfLifeMonths = null,
+        public bool $isNearExpiry = false,
     ) {}
 
     /**
@@ -70,7 +70,6 @@ final readonly class ProductData
             primaryCategoryId: (int) ($data[Product::COLUMN_PRIMARY_CATEGORY_ID] ?? 0),
             categoryIds: self::ids($categoryIds),
             productType: $type instanceof ProductType ? $type : ProductType::from((string) $type),
-            requiresPrescription: (bool) ($data[Product::COLUMN_REQUIRES_PRESCRIPTION] ?? false),
             ircCode: self::text($data[Product::COLUMN_IRC_CODE] ?? null),
             shortDescription: self::text($data[Product::COLUMN_SHORT_DESCRIPTION] ?? null),
             description: self::text($data[Product::COLUMN_DESCRIPTION] ?? null),
@@ -87,6 +86,7 @@ final readonly class ProductData
             maxPerOrder: blank($data[Product::COLUMN_MAX_PER_ORDER] ?? null) ? null : (int) PersianNormalizer::digits((string) $data[Product::COLUMN_MAX_PER_ORDER]),
             primarySubcategoryId: blank($data[Product::COLUMN_PRIMARY_SUBCATEGORY_ID] ?? null) ? null : (int) $data[Product::COLUMN_PRIMARY_SUBCATEGORY_ID],
             subcategoryIds: self::ids($data['subcategory_ids'] ?? []),
+            isNearExpiry: (bool) ($data[Product::COLUMN_IS_NEAR_EXPIRY] ?? false),
             minShelfLifeMonths: blank($data[Product::COLUMN_MIN_SHELF_LIFE_MONTHS] ?? null) ? null : (int) PersianNormalizer::digits((string) $data[Product::COLUMN_MIN_SHELF_LIFE_MONTHS]),
         );
     }
