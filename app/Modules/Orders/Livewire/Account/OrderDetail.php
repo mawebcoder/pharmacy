@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Livewire\Account;
 
 use App\Modules\Orders\Livewire\Concerns\HandlesOrderActions;
+use App\Modules\Orders\Support\OrderCheckpoints;
 use App\Modules\Payments\Queries\OrderPayments;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;
@@ -13,7 +14,7 @@ use TallStackUi\Traits\Interactions;
 
 /**
  * One order in «سفارش‌ها» (owner, 2026-11-14; the full tracking page stays in S29): number, date, status with its
- * history, items, address, totals and payment, with «پرداخت», «لغو سفارش» or «سفارش دوباره». Everything is read from
+ * checkpoint tracker (OrderCheckpoints, owner 2026-11-16), items, address, totals and payment, with «پرداخت», «لغو سفارش» or «سفارش دوباره». Everything is read from
  * the order's own copies (roadmap D3.4 «Order pages read only these copies»), and only the owner can open it.
  */
 final class OrderDetail extends Component
@@ -35,6 +36,7 @@ final class OrderDetail extends Component
 
         return view('orders::livewire.account.order-detail', [
             'order' => $order,
+            'checkpoints' => OrderCheckpoints::for($order),
             'reference' => $payments->paidReference($order->getId()),
         ])->title('سفارش '.$order->getNumber());
     }

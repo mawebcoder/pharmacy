@@ -75,6 +75,14 @@
         @endif
     </div>
 
+    {{-- The tracker (owner, 2026-11-16): an expired order never started, so it has none. --}}
+    @if ($checkpoints !== [])
+        <section aria-labelledby="order-progress" class="{{ $card }}">
+            <h2 id="order-progress" class="font-bold text-ink-900">روند سفارش</h2>
+            <x-orders::checkpoints :checkpoints="$checkpoints" class="mt-4" />
+        </section>
+    @endif
+
     <div class="grid gap-4 xl:grid-cols-3 xl:items-start">
         <div class="space-y-4 xl:col-span-2">
             <section aria-labelledby="order-items" class="{{ $card }}">
@@ -98,22 +106,6 @@
                 </ul>
             </section>
 
-            <section aria-labelledby="order-history" class="{{ $card }}">
-                <h2 id="order-history" class="font-bold text-ink-900">روند سفارش</h2>
-                <ol class="mt-3 space-y-3">
-                    @foreach ($order->statusLogs as $log)
-                        <li class="flex gap-3">
-                            <span @class(['mt-1.5 size-2.5 shrink-0 rounded-full', 'bg-primary-700' => $loop->last, 'bg-line-300' => ! $loop->last])></span>
-                            <div>
-                                <p @class(['text-sm', 'font-bold text-ink-900' => $loop->last, 'text-ink-900' => ! $loop->last])>{{ $log->getToStatus()->label() }}</p>
-                                @if ($log->getCreatedAt())
-                                    <p class="text-xs text-ink-500">{{ JalaliDate::display($log->getCreatedAt(), 'j F Y، H:i') }}</p>
-                                @endif
-                            </div>
-                        </li>
-                    @endforeach
-                </ol>
-            </section>
         </div>
 
         <div class="space-y-4">
