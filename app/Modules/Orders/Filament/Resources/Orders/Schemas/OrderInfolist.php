@@ -46,8 +46,8 @@ final class OrderInfolist
                         ->formatStateUsing(fn (PaymentStatus $state): string => $state->label())
                         ->color(fn (PaymentStatus $state): string => $state->color()),
                     TextEntry::make(Order::COLUMN_TRACKING_CODE)->label('کد رهگیری')->copyable()->placeholder('—')->extraAttributes(['dir' => 'ltr']),
-                    self::date(Order::COLUMN_PLACED_AT, 'ثبت'),
                     self::date(Order::COLUMN_PAID_AT, 'پرداخت'),
+                    self::date(Order::COLUMN_PLACED_AT, 'ثبت'),
                     self::date(Order::COLUMN_DELIVERED_AT, 'تحویل'),
                     self::date(Order::COLUMN_CANCELLED_AT, 'لغو'),
                     self::date(Order::COLUMN_EXPIRES_AT, 'مهلت پرداخت')->visible(fn (Order $record): bool => $record->getStatus() === OrderStatus::Pending),
@@ -131,7 +131,15 @@ final class OrderInfolist
                         ->state(fn (Order $record): string => PersianDigits::toPersian((string) ($record->getAddressSnapshot()['postal_code'] ?? '')) ?: '—'),
                     TextEntry::make(Order::COLUMN_SHIPPING_METHOD)
                         ->label('روش ارسال')
-                        ->formatStateUsing(fn (string $state): string => $state === 'own_courier' ? 'پیک فروشگاه' : 'تیپاکس'),
+                        ->formatStateUsing(fn (string $state, Order $record): string => match ($state) {
+                            'own_courier' => 'پیک فروشگاه',
+                            'tipax' => 'تیپاکس',
+                            default => (string) ($record->getShippingQuoteSnapshot()['label'] ?? 'ارسال'),
+                        }),
+                    TextEntry::make('shipping_price')
+                        ->label('هزینه ارسال')
+                        ->state(fn (Order $record): int => $record->getShippingTotal())
+                        ->formatStateUsing(fn (int $state): string => $state > 0 ? Toman::format($state) : 'رایگان'),
                     TextEntry::make(Order::COLUMN_CUSTOMER_NOTE)->label('توضیح مشتری')->placeholder('—')->columnSpanFull(),
                     TextEntry::make(Order::COLUMN_ADMIN_NOTE)->label('یادداشت مدیر')->placeholder('—')->columnSpanFull(),
                 ]),

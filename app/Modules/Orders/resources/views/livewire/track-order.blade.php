@@ -53,7 +53,7 @@
                     <h2 id="tracked-order" class="font-bold text-ink-900" dir="ltr">{{ $order->getNumber() }}</h2>
                     <x-orders::status-badge :status="$order->getStatus()" />
                 </div>
-                <p class="mt-1 text-sm text-ink-500">ثبت در {{ JalaliDate::display($order->getPlacedAt(), 'j F Y') }}</p>
+                <p class="mt-1 text-sm text-ink-500">{{ $order->getPaidAt() ? 'پرداخت در' : 'ثبت در' }} {{ JalaliDate::display($order->getOrderDate(), 'j F Y') }}</p>
 
                 @if ($order->getTrackingCode())
                     <p class="mt-3 rounded-md bg-primary-50 px-3 py-2 text-sm text-primary-800">

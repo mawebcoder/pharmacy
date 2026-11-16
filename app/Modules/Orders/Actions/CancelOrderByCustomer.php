@@ -12,7 +12,8 @@ use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The customer cancels their order while it is «پرداخت‌شده» (owner, 2026-11-14; once processing, only the admin can).
+ * The customer cancels their order while it is «پرداخت‌شده» or «در حال آماده‌سازی» (owner, 2026-11-16; once on its way,
+ * nobody can).
  * The money is marked «در انتظار بازگشت وجه» for the admin to refund (by hand until Zarinpal, S26).
  */
 final readonly class CancelOrderByCustomer

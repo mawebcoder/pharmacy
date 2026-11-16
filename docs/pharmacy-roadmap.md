@@ -977,7 +977,7 @@ Seven statuses (owner, 2026-11-14; replaces the longer machine), `Orders\Enums\O
 | `processing` | the store is preparing it | admin only |
 | `on_the_way` | handed to the carrier | admin; Tipax from S27 (actor `carrier`) |
 | `delivered` | received | admin; Tipax from S27 (actor `carrier`) |
-| `cancelled` | cancelled (payment marked for refund) | customer while `paid`; admin while `paid` or `processing` |
+| `cancelled` | cancelled (payment marked for refund) | customer or admin while `paid` or `processing`, never once `on_the_way` (customer while `processing` added by the owner, 2026-11-16) |
 
 Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_status_logs` (actor `system`, `admin`, `customer` or `carrier`); it may send an SMS (S28). A failed payment leaves the order `pending` until it expires.
 

@@ -101,6 +101,18 @@ describe('as an operator', function (): void {
             ->assertSee(Toman::format(300_000));
     });
 
+    it('dates orders by their payment and filters by it, and shows the shipping price', function (): void {
+        $paidToday = Order::factory()->paid()->create([Order::COLUMN_PLACED_AT => now()->subDays(3), Order::COLUMN_SHIPPING_TOTAL => 450_000]);
+        $paidBefore = Order::factory()->paid()->create([Order::COLUMN_PLACED_AT => now()->subDays(3), Order::COLUMN_PAID_AT => now()->subDays(3)]);
+
+        livewire(ListOrders::class)
+            ->assertTableColumnExists(Order::COLUMN_PAID_AT)
+            ->filterTable('paid_between', ['from' => now()->toDateString()])
+            ->assertCanSeeTableRecords([$paidToday])
+            ->assertCanNotSeeTableRecords([$paidBefore]);
+        $this->get(OrderResource::getUrl('view', ['record' => $paidToday]))->assertOk()->assertSee(Toman::format(450_000));
+    });
+
     it('offers only the moves allowed now and logs them with the admin', function (): void {
         $order = Order::factory()->paid()->create();
 

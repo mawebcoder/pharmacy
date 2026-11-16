@@ -433,18 +433,36 @@ describe('the customer\'s orders', function (): void {
             ->assertSee('لغو سفارش');
     });
 
-    it('lets the customer cancel only a paid order, marking the money to refund', function (): void {
+    it('lets the customer cancel a paid or processing order, marking the money to refund, but not one on its way', function (): void {
         $this->actingAs($this->customer, 'customer');
         $paid = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId()]);
         $processing = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_STATUS => OrderStatus::Processing]);
+        $onTheWay = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_STATUS => OrderStatus::OnTheWay]);
 
         livewire(OrderList::class)->call('cancel', $paid->getId());
         livewire(OrderList::class)->call('cancel', $processing->getId());
+        livewire(OrderList::class)->call('cancel', $onTheWay->getId());
 
         expect($paid->refresh()->getStatus())->toBe(OrderStatus::Cancelled)
             ->and($paid->getPaymentStatus())->toBe(PaymentStatus::RefundPending)
-            ->and($processing->refresh()->getStatus())->toBe(OrderStatus::Processing);
+            ->and($processing->refresh()->getStatus())->toBe(OrderStatus::Cancelled)
+            ->and($processing->getPaymentStatus())->toBe(PaymentStatus::RefundPending)
+            ->and($onTheWay->refresh()->getStatus())->toBe(OrderStatus::OnTheWay);
     });
+
+    it('offers «لغو سفارش» on the order page only until the order is on its way', function (OrderStatus $status, bool $offered): void {
+        $this->actingAs($this->customer, 'customer');
+        $order = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_STATUS => $status]);
+
+        $page = livewire(OrderDetail::class, ['order' => $order->getId()]);
+
+        $offered ? $page->assertSee('لغو سفارش') : $page->assertDontSee('لغو سفارش');
+    })->with([
+        'paid' => [OrderStatus::Paid, true],
+        'processing' => [OrderStatus::Processing, true],
+        'on the way' => [OrderStatus::OnTheWay, false],
+        'delivered' => [OrderStatus::Delivered, false],
+    ]);
 
     it('puts the still-available items back into the cart at today\'s price and reports the rest', function (): void {
         $this->actingAs($this->customer, 'customer');
@@ -492,6 +510,8 @@ describe('the customer\'s orders', function (): void {
 
         livewire(OrderList::class)->assertSee(route('account.orders.show', $order->getId()), false);
         livewire(OrderDetail::class, ['order' => $order->getId()])
+            ->assertSee('همه سفارش‌ها')
+            ->assertDontSee('حساب من')
             ->assertSee(['PH-140508-000777', 'کرم اوره قدیمی', 'تهران، تهران، خیابان ولیعصر، پلاک ۱۲', 'سارا رضایی', 'لغو سفارش']);
     });
 
@@ -518,7 +538,8 @@ describe('order statuses', function (): void {
         'system expires a pending order' => [OrderStatus::Pending, OrderStatus::Expired, OrderActor::System, true],
         'admin processes a paid order' => [OrderStatus::Paid, OrderStatus::Processing, OrderActor::Admin, true],
         'customer cancels a paid order' => [OrderStatus::Paid, OrderStatus::Cancelled, OrderActor::Customer, true],
-        'customer cannot cancel processing' => [OrderStatus::Processing, OrderStatus::Cancelled, OrderActor::Customer, false],
+        'customer cancels a processing order' => [OrderStatus::Processing, OrderStatus::Cancelled, OrderActor::Customer, true],
+        'customer cannot cancel on the way' => [OrderStatus::OnTheWay, OrderStatus::Cancelled, OrderActor::Customer, false],
         'admin cancels processing' => [OrderStatus::Processing, OrderStatus::Cancelled, OrderActor::Admin, true],
         'admin cannot cancel on the way' => [OrderStatus::OnTheWay, OrderStatus::Cancelled, OrderActor::Admin, false],
         'customer cannot mark processing' => [OrderStatus::Paid, OrderStatus::Processing, OrderActor::Customer, false],

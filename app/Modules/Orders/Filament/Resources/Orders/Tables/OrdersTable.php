@@ -39,9 +39,10 @@ final class OrdersTable
                 ->weight('bold')
                 ->copyable()
                 ->searchable(query: fn (Builder $query, string $search): Builder => self::search($query, $search)),
-            TextColumn::make(Order::COLUMN_PLACED_AT)
-                ->label('تاریخ')
+            TextColumn::make(Order::COLUMN_PAID_AT)
+                ->label('تاریخ پرداخت')
                 ->jalaliDateTime() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
+                ->placeholder('پرداخت نشده')
                 ->sortable(),
             TextColumn::make(Order::COLUMN_CUSTOMER_SNAPSHOT)
                 ->label('مشتری')
@@ -82,15 +83,15 @@ final class OrdersTable
                     ->label('پرداخت')
                     ->multiple()
                     ->options(PaymentStatus::class),
-                Filter::make('placed_between')
-                    ->label('تاریخ')
+                Filter::make('paid_between')
+                    ->label('تاریخ پرداخت')
                     ->schema([
                         DatePicker::make('from')->label('از تاریخ')->jalali(), // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
                         DatePicker::make('until')->label('تا تاریخ')->jalali(), // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $query, string $from): Builder => $query->whereDate(Order::COLUMN_PLACED_AT, '>=', $from))
-                        ->when($data['until'] ?? null, fn (Builder $query, string $until): Builder => $query->whereDate(Order::COLUMN_PLACED_AT, '<=', $until))),
+                        ->when($data['from'] ?? null, fn (Builder $query, string $from): Builder => $query->whereDate(Order::COLUMN_PAID_AT, '>=', $from))
+                        ->when($data['until'] ?? null, fn (Builder $query, string $until): Builder => $query->whereDate(Order::COLUMN_PAID_AT, '<=', $until))),
             ])
             ->recordUrl(fn (Order $record): string => OrderResource::getUrl('view', ['record' => $record]));
     }

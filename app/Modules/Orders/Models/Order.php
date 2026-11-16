@@ -316,6 +316,15 @@ final class Order extends Model implements HasActivityLogLabel
         return $this->getAttribute(self::COLUMN_PLACED_AT);
     }
 
+    /**
+     * The order's date as shown to customers and admins (owner, 2026-11-16): when it was paid, or when it was placed
+     * while still unpaid.
+     */
+    public function getOrderDate(): Carbon
+    {
+        return $this->getPaidAt() ?? $this->getPlacedAt();
+    }
+
     public function setPlacedAt(Carbon $value): static
     {
         return $this->setAttribute(self::COLUMN_PLACED_AT, $value);

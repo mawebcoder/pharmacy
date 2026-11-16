@@ -1,8 +1,9 @@
 {{--
     Account area frame (roadmap B9.9). Desktop: sidebar 3/12 with the customer and menu + content 9/12.
     Mobile and tablet: the dashboard shows the menu as a list; other pages show a back link to «حساب من».
+    A page inside a section (an order) passes :back and back-label: that link then goes to the section, on every size.
 --}}
-@props(['active', 'title'])
+@props(['active', 'title', 'back' => null, 'backLabel' => null])
 
 @php
     $customer = auth('customer')->user();
@@ -38,9 +39,9 @@
                 <x-identity::account-menu :items="array_slice($items, 1)" :active="$active" />
             </div>
         @else
-            <a href="{{ route('account') }}" wire:navigate class="inline-flex min-h-11 items-center gap-1 text-sm text-primary-700 hover:underline xl:hidden">
+            <a href="{{ $back ?? route('account') }}" wire:navigate @class(['inline-flex min-h-11 items-center gap-1 text-sm text-primary-700 hover:underline', 'xl:hidden' => $back === null])>
                 <x-ts-icon icon="chevron-right" class="size-4" />
-                حساب من
+                {{ $backLabel ?? 'حساب من' }}
             </a>
         @endif
 

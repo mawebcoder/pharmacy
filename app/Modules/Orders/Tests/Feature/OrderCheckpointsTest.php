@@ -11,6 +11,8 @@ use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Livewire\Account\OrderDetail;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Support\OrderCheckpoints;
+use App\Modules\Shared\Support\JalaliDate;
+use App\Modules\Shared\Support\Toman;
 
 use function Pest\Livewire\livewire;
 
@@ -85,5 +87,32 @@ it('shows the tracker on the customer\'s order page with the current checkpoint 
 
     livewire(OrderDetail::class, ['order' => $order->getId()])
         ->assertSeeInOrder(['روند سفارش', 'پرداخت‌شده', 'در حال آماده‌سازی', 'در جریان', 'در راه', 'در انتظار', 'تحویل شد'])
-        ->assertSee('aria-current="step"', false);
+        ->assertSee('aria-current="step"', false)
+        ->assertDontSee('کد رهگیری مرسوله');
+});
+
+it('shows the shipping tracking code once the order is on its way, or says it is coming', function (?string $code, string $shown): void {
+    $order = Order::factory()->paid()->create();
+    app(ChangeOrderStatus::class)($order, OrderStatus::Processing, OrderActor::Admin, 1);
+    app(ChangeOrderStatus::class)($order, OrderStatus::OnTheWay, OrderActor::Carrier);
+    $order->setTrackingCode($code)->save();
+    $this->actingAs(Customer::query()->findOrFail($order->getCustomerId()), 'customer');
+
+    livewire(OrderDetail::class, ['order' => $order->getId()])->assertSee(['کد رهگیری مرسوله', $shown]);
+})->with([
+    'code given' => ['TPX000000042', 'TPX000000042'],
+    'no code yet' => [null, 'کد رهگیری به‌زودی ثبت می‌شود.'],
+]);
+
+it('dates the order by its payment, not its placing, and shows the shipping price', function (): void {
+    $order = Order::factory()->paid()->create([
+        Order::COLUMN_PLACED_AT => now()->subDays(3),
+        Order::COLUMN_PAID_AT => now(),
+        Order::COLUMN_SHIPPING_TOTAL => 450_000,
+    ]);
+    $this->actingAs(Customer::query()->findOrFail($order->getCustomerId()), 'customer');
+
+    livewire(OrderDetail::class, ['order' => $order->getId()])
+        ->assertSee(['تاریخ پرداخت', JalaliDate::display($order->getPaidAt(), 'j F Y، H:i'), 'هزینه ارسال', Toman::format(450_000)])
+        ->assertDontSee(JalaliDate::display($order->getPlacedAt(), 'j F Y، H:i'));
 });

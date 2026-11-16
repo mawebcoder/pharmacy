@@ -16,7 +16,7 @@
                         <a href="{{ route('account.orders.show', $order->getId()) }}" wire:navigate class="font-bold text-ink-900 after:absolute after:inset-0 after:rounded-card focus-visible:outline-none after:focus-visible:outline-2 after:focus-visible:outline-primary-700" dir="ltr">{{ $order->getNumber() }}<span class="sr-only"> — جزئیات سفارش</span></a>
                         <x-orders::status-badge :status="$status" />
                     </div>
-                    <p class="mt-1 text-sm text-ink-500">{{ JalaliDate::display($order->getPlacedAt(), 'j F Y، H:i') }}</p>
+                    <p class="mt-1 text-sm text-ink-500">{{ JalaliDate::display($order->getOrderDate(), 'j F Y، H:i') }}</p>
 
                     <div class="mt-3 flex items-center justify-between gap-3">
                         <div class="flex -space-x-2" aria-label="{{ PersianDigits::toPersian($order->items->count()) }} کالا">
@@ -42,7 +42,7 @@
                             </button>
                             <span class="text-xs text-ink-500">مهلت پرداخت تا {{ JalaliDate::display($order->getExpiresAt(), 'H:i') }}</span>
                         @else
-                            @if ($status === OrderStatus::Paid)
+                            @if ($status->isCancellableByCustomer())
                                 <button type="button" x-data="{ working: false }" x-bind:disabled="working" x-bind:aria-busy="working" x-on:click="$store.confirm.ask({ title: 'لغو سفارش', message: @js('سفارش '.$order->getNumber().' لغو شود؟ مبلغ پرداختی بازگردانده می‌شود.'), confirm: 'لغو سفارش', cancel: 'منصرف شدم', icon: 'cancel' }).then((ok) => { if (! ok) return; working = true; $wire.cancel({{ $order->getId() }}).finally(() => (working = false)); })" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 disabled:cursor-wait disabled:opacity-60">
                                     <x-ts-icon icon="x-circle" class="size-5" x-show="! working" />
                                     <x-ui.spinner class="size-5" x-show="working" x-cloak />
