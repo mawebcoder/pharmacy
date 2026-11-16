@@ -24,6 +24,7 @@ use App\Modules\Payments\Filament\RelationManagers\OrderPaymentsRelationManager;
 use App\Modules\Payments\Models\Payment;
 use App\Modules\Shared\Support\Toman;
 use Filament\Facades\Filament;
+use Filament\Tables\Filters\SelectFilter;
 
 use function Pest\Livewire\livewire;
 
@@ -114,6 +115,14 @@ describe('as an operator', function (): void {
             ->assertSee('پخش سینا')
             ->assertSee('سارا رضایی')
             ->assertSee(Toman::format(300_000));
+    });
+
+    it('labels the status and payment filters in Persian', function (): void {
+        livewire(ListOrders::class)
+            ->assertTableFilterExists(Order::COLUMN_STATUS, fn (SelectFilter $filter): bool => $filter->getOptions() === OrderStatus::options()
+                && in_array('پرداخت‌شده', $filter->getOptions(), true))
+            ->assertTableFilterExists(Order::COLUMN_PAYMENT_STATUS, fn (SelectFilter $filter): bool => $filter->getOptions() === PaymentStatus::options()
+                && in_array('در انتظار بازگشت وجه', $filter->getOptions(), true));
     });
 
     it('dates orders by their payment and filters by it, and shows the shipping price', function (): void {

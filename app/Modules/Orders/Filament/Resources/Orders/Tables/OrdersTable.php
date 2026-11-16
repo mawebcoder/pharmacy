@@ -78,11 +78,11 @@ final class OrdersTable
                 SelectFilter::make(Order::COLUMN_STATUS)
                     ->label('وضعیت')
                     ->multiple()
-                    ->options(OrderStatus::class),
+                    ->options(OrderStatus::options()),
                 SelectFilter::make(Order::COLUMN_PAYMENT_STATUS)
                     ->label('پرداخت')
                     ->multiple()
-                    ->options(PaymentStatus::class),
+                    ->options(PaymentStatus::options()),
                 Filter::make('paid_between')
                     ->label('تاریخ پرداخت')
                     ->schema([
