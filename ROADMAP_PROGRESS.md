@@ -34,7 +34,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S32 | Returns | todo | | |
 | S33 | Home, banners, deals (flash deals, /deals; bundles in S33b) | done | 2026-11-17 | 5be9dc0 |
 | S34 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
-| S35 | Settings and trust | in progress (built, awaiting commit) | | |
+| S35 | Settings and trust | done | 2026-11-17 | 19e2024 |
 | S21 | Shipping foundation | todo | | |
 | S24 | Own courier zones | todo | | |
 | S22 | Tipax client and reference sync | todo | | |
