@@ -130,6 +130,22 @@ describe('as a super admin', function (): void {
             ->and(ProviderPrice::query()->count())->toBe(1);
     });
 
+    it('asks for the expiry date of a supplier\'s «زودمصرف» stock and marks the SKU with it', function (): void {
+        $provider = Provider::factory()->create();
+        $sku = skuOfBrandWithCommission();
+        $fields = [ProviderPrice::COLUMN_VARIANT_ID => $sku->getId(), ProviderPrice::COLUMN_COST => '850,000', ProviderPrice::COLUMN_IS_NEAR_EXPIRY => true];
+
+        livewire(ProviderPricesRelationManager::class, ['ownerRecord' => $provider, 'pageClass' => ViewProvider::class])
+            ->callAction(TestAction::make(CreateAction::class)->table(), $fields)
+            ->assertHasFormErrors([ProviderPrice::COLUMN_EXPIRY_DATE => 'required']);
+
+        livewire(ProviderPricesRelationManager::class, ['ownerRecord' => $provider, 'pageClass' => ViewProvider::class])
+            ->callAction(TestAction::make(CreateAction::class)->table(), [...$fields, ProviderPrice::COLUMN_EXPIRY_DATE => '2027-02-10'])
+            ->assertHasNoFormErrors();
+
+        expect($sku->fresh())->isNearExpiry()->toBeTrue()->getExpiryDate()?->toDateString()->toBe('2027-02-10');
+    });
+
     it('lists the SKUs that have no supplier', function (): void {
         $without = skuOfBrandWithCommission();
         $with = skuOfBrandWithCommission();

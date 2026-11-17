@@ -137,11 +137,11 @@ describe('filters', function (): void {
         $this->cream = AttributeValue::factory()->for($this->form)->create([AttributeValue::COLUMN_VALUE_FA => 'کرم']);
         $this->gel = AttributeValue::factory()->for($this->form)->create([AttributeValue::COLUMN_VALUE_FA => 'ژل']);
 
-        sellable([Product::COLUMN_NAME_FA => 'کرم اوسرین', Product::COLUMN_BRAND_ID => $this->eucerin->getId()], [ProductVariant::COLUMN_PRICE => 4_000_000, ProductVariant::COLUMN_SALE_PRICE => 3_000_000])
+        sellable([Product::COLUMN_NAME_FA => 'کرم اوسرین', Product::COLUMN_BRAND_ID => $this->eucerin->getId()], [ProductVariant::COLUMN_PRICE => 4_000_000, ProductVariant::COLUMN_SALE_PRICE => 3_000_000, ProductVariant::COLUMN_IS_NEAR_EXPIRY => true, ProductVariant::COLUMN_EXPIRY_DATE => '2027-02-10'])
             ->attributeValues()->attach($this->cream);
         sellable([Product::COLUMN_NAME_FA => 'ژل اوسرین', Product::COLUMN_BRAND_ID => $this->eucerin->getId()], [ProductVariant::COLUMN_PRICE => 2_000_000, ProductVariant::COLUMN_STOCK_STATUS => StockStatus::OutOfStock])
             ->attributeValues()->attach($this->gel);
-        $cinereCream = sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId(), Product::COLUMN_IS_NEAR_EXPIRY => true], [ProductVariant::COLUMN_PRICE => 1_000_000]);
+        $cinereCream = sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId()], [ProductVariant::COLUMN_PRICE => 1_000_000]);
         $cinereCream->attributeValues()->attach($this->cream);
         // A live flash deal (S33) at 10% off.
         FlashDeal::factory()->create([FlashDeal::COLUMN_VARIANT_ID => $cinereCream->variants()->sole()->getId(), FlashDeal::COLUMN_DEAL_PRICE => 900_000]);
@@ -158,7 +158,7 @@ describe('filters', function (): void {
         'price range (rial)' => [fn (): array => ['minPrice' => 1_500_000, 'maxPrice' => 3_000_000], ['کرم اوسرین', 'ژل اوسرین']],
         'in stock' => [fn (): array => ['inStock' => true], ['کرم اوسرین', 'کرم سینره']],
         'discount' => [fn (): array => ['minDiscount' => 20], ['کرم اوسرین']],
-        'near expiry' => [fn (): array => ['nearExpiry' => true], ['کرم سینره']],
+        'near expiry' => [fn (): array => ['nearExpiry' => true], ['کرم اوسرین']],
         'flash deal' => [fn (): array => ['flashDeal' => true], ['کرم سینره']],
     ]);
 

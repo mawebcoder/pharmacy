@@ -45,6 +45,9 @@ final readonly class ApplyPriceImport
                 ProviderPrice::COLUMN_LEAD_TIME_HOURS => $row->getLeadTimeHours(),
                 ProviderPrice::COLUMN_COMMISSION_PERCENT => $row->getCommissionPercent(),
                 ProviderPrice::COLUMN_IS_PREFERRED => $row->getIsPreferred(),
+                // The file has no «زودمصرف» columns yet: a row keeps what the admin set.
+                ProviderPrice::COLUMN_IS_NEAR_EXPIRY => $existing?->isNearExpiry() ?? false,
+                ProviderPrice::COLUMN_EXPIRY_DATE => $existing?->getExpiryDate()?->toDateString(),
             ]), $existing, $import->getAdminId(), PriceChangeReason::Import)->exists) {
                 $updated++;
             }

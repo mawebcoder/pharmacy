@@ -6,6 +6,8 @@ namespace App\Modules\Pricing\Models;
 
 use App\Modules\Pricing\Database\Factories\ProviderPriceFactory;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +46,10 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
     public const string COLUMN_IS_PREFERRED = 'is_preferred';
 
     public const string COLUMN_LEAD_TIME_HOURS = 'lead_time_hours';
+
+    public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
+
+    public const string COLUMN_EXPIRY_DATE = 'expiry_date';
 
     public const string COLUMN_UPDATED_AT = 'updated_at';
 
@@ -133,6 +139,28 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_IS_PREFERRED, $isPreferred);
     }
 
+    /**
+     * This supplier's stock of the SKU is «زودمصرف» (owner, 2026-11-17), with its expiry date.
+     */
+    public function isNearExpiry(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_IS_NEAR_EXPIRY);
+    }
+
+    public function getExpiryDate(): ?CarbonImmutable
+    {
+        return $this->getAttribute(self::COLUMN_EXPIRY_DATE);
+    }
+
+    /**
+     * «زودمصرف» and its expiry date; the date is kept only when near expiry.
+     */
+    public function setNearExpiry(bool $isNearExpiry, ?CarbonInterface $expiryDate): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $isNearExpiry)
+            ->setAttribute(self::COLUMN_EXPIRY_DATE, $isNearExpiry ? $expiryDate?->toDateString() : null);
+    }
+
     public function isEnabled(): bool
     {
         return (bool) $this->getAttribute(self::COLUMN_IS_ENABLED);
@@ -218,6 +246,8 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
             self::COLUMN_IS_ENABLED => 'boolean',
             self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
             self::COLUMN_IS_PREFERRED => 'boolean',
+            self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
+            self::COLUMN_EXPIRY_DATE => 'immutable_date',
             self::COLUMN_LEAD_TIME_HOURS => 'integer',
         ];
     }

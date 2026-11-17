@@ -8,6 +8,8 @@ use App\Modules\Catalog\Database\Factories\ProductVariantFactory;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use App\Modules\Shared\Support\Toman;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -53,6 +55,10 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public const string COLUMN_FLASH_DEAL_PRICE = 'flash_deal_price';
 
     public const string COLUMN_FLASH_DEAL_ID = 'flash_deal_id';
+
+    public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
+
+    public const string COLUMN_EXPIRY_DATE = 'expiry_date';
 
     public const string COLUMN_STOCK_STATUS = 'stock_status';
 
@@ -233,6 +239,29 @@ final class ProductVariant extends Model implements HasActivityLogLabel
         $value = $this->getAttribute(self::COLUMN_FLASH_DEAL_ID);
 
         return $value === null ? null : (int) $value;
+    }
+
+    /**
+     * «زودمصرف»: the stock of the supplier the site sells from now is near expiry (owner, 2026-11-17), written by the
+     * pricing engine, or by a live flash deal's supplier.
+     */
+    public function isNearExpiry(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_IS_NEAR_EXPIRY);
+    }
+
+    /**
+     * That stock's expiry date, shown on the product page while «زودمصرف».
+     */
+    public function getExpiryDate(): ?CarbonImmutable
+    {
+        return $this->getAttribute(self::COLUMN_EXPIRY_DATE);
+    }
+
+    public function setNearExpiry(bool $isNearExpiry, ?CarbonInterface $expiryDate): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $isNearExpiry)
+            ->setAttribute(self::COLUMN_EXPIRY_DATE, $isNearExpiry ? $expiryDate?->toDateString() : null);
     }
 
     /**
@@ -542,6 +571,8 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_HARAJ_PERCENT => 'decimal:2',
             self::COLUMN_FLASH_DEAL_PRICE => 'integer',
             self::COLUMN_FLASH_DEAL_ID => 'integer',
+            self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
+            self::COLUMN_EXPIRY_DATE => 'immutable_date',
             self::COLUMN_CURRENT_PRICE_ID => 'integer',
             self::COLUMN_STOCK_STATUS => StockStatus::class,
             self::COLUMN_WEIGHT_G => 'integer',

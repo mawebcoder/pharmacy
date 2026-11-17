@@ -38,6 +38,9 @@ final class CalculateVariantPrice
     {
         $flags = [];
         $providerChoice = null;
+        // «زودمصرف» follows the supplier the site sells from (owner, 2026-11-17).
+        $nearExpiry = false;
+        $expiryDate = null;
 
         if ($chosen instanceof ChosenSupplier && $chosen->offer->sellingPrice !== null) {
             $providerId = $chosen->offer->price->getProviderId();
@@ -46,6 +49,8 @@ final class CalculateVariantPrice
             $commission = $chosen->offer->commissionPercent;
             $source = $chosen->offer->commissionSource;
             $price = $chosen->offer->sellingPrice;
+            $nearExpiry = $chosen->offer->price->isNearExpiry();
+            $expiryDate = $nearExpiry ? $chosen->offer->price->getExpiryDate() : null;
 
             if ($chosen->offer->cappedByPrinted) {
                 $flags[] = VariantPrice::FLAG_CAPPED_BY_PRINTED;
@@ -89,6 +94,8 @@ final class CalculateVariantPrice
             price: $price,
             salePrice: $salePrice,
             flags: $flags,
+            isNearExpiry: $nearExpiry,
+            expiryDate: $expiryDate,
         );
     }
 
@@ -131,6 +138,8 @@ final class CalculateVariantPrice
             || $latest->getCommissionPercent() !== $calculated->commissionPercent
             || $latest->getCommissionSource() !== $calculated->commissionSource
             || $latest->getPrice() !== $calculated->price
-            || $latest->getSalePrice() !== $calculated->salePrice;
+            || $latest->getSalePrice() !== $calculated->salePrice
+            || $latest->isNearExpiry() !== $calculated->isNearExpiry
+            || $latest->getExpiryDate()?->toDateString() !== $calculated->expiryDate?->toDateString();
     }
 }

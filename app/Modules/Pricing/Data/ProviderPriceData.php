@@ -6,6 +6,7 @@ namespace App\Modules\Pricing\Data;
 
 use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Shared\Support\PersianNormalizer;
+use Carbon\CarbonImmutable;
 
 /**
  * Input for a supplier's price of a SKU. Cost in Rial.
@@ -21,6 +22,8 @@ final readonly class ProviderPriceData
         public ?int $leadTimeHours,
         public ?float $commissionPercent = null,
         public bool $isPreferred = false,
+        public bool $isNearExpiry = false,
+        public ?CarbonImmutable $expiryDate = null,
     ) {}
 
     /**
@@ -39,6 +42,8 @@ final readonly class ProviderPriceData
             leadTimeHours: blank($lead) ? null : (int) PersianNormalizer::digits((string) $lead),
             commissionPercent: blank($commission = $data[ProviderPrice::COLUMN_COMMISSION_PERCENT] ?? null) ? null : (float) PersianNormalizer::digits((string) $commission),
             isPreferred: (bool) ($data[ProviderPrice::COLUMN_IS_PREFERRED] ?? false),
+            isNearExpiry: (bool) ($data[ProviderPrice::COLUMN_IS_NEAR_EXPIRY] ?? false),
+            expiryDate: blank($expiry = $data[ProviderPrice::COLUMN_EXPIRY_DATE] ?? null) ? null : CarbonImmutable::parse((string) $expiry)->startOfDay(),
         );
     }
 }

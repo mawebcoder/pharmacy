@@ -37,6 +37,8 @@ final class StoreProviderPriceRequest extends FormRequest
             ProviderPrice::COLUMN_LEAD_TIME_HOURS => ['nullable', 'integer', 'min:0', 'max:2000'],
             ProviderPrice::COLUMN_COMMISSION_PERCENT => ['nullable', 'numeric', 'min:0', 'max:100'],
             ProviderPrice::COLUMN_IS_PREFERRED => ['boolean'],
+            ProviderPrice::COLUMN_IS_NEAR_EXPIRY => ['boolean'],
+            ProviderPrice::COLUMN_EXPIRY_DATE => ['nullable', 'required_if_accepted:'.ProviderPrice::COLUMN_IS_NEAR_EXPIRY, 'date'],
         ];
     }
 

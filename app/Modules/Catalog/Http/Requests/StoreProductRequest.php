@@ -49,7 +49,6 @@ final class StoreProductRequest extends FormRequest
             Product::COLUMN_IRC_CODE => ['nullable', 'string', 'max:32'],
             Product::COLUMN_MAX_PER_ORDER => ['nullable', 'integer', 'min:1', 'max:999'],
             Product::COLUMN_MIN_SHELF_LIFE_MONTHS => ['nullable', 'integer', 'min:1', 'max:60'],
-            Product::COLUMN_IS_NEAR_EXPIRY => ['boolean'],
             Product::COLUMN_HARAJ_PERCENT => ['nullable', 'numeric', 'min:0.01', 'max:90'],
             Product::COLUMN_SHORT_DESCRIPTION => ['nullable', 'string', 'max:1000'],
             Product::COLUMN_DESCRIPTION => $text,

@@ -8,6 +8,8 @@ use App\Modules\Pricing\Database\Factories\VariantPriceFactory;
 use App\Modules\Pricing\Enums\CommissionSource;
 use App\Modules\Pricing\Enums\PriceChangeReason;
 use App\Modules\Pricing\Enums\ProviderChoice;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +45,10 @@ final class VariantPrice extends Model
     public const string COLUMN_PRICE = 'price';
 
     public const string COLUMN_SALE_PRICE = 'sale_price';
+
+    public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
+
+    public const string COLUMN_EXPIRY_DATE = 'expiry_date';
 
     public const string COLUMN_REASON = 'reason';
 
@@ -180,6 +186,28 @@ final class VariantPrice extends Model
         return $this->setAttribute(self::COLUMN_SALE_PRICE, $salePrice);
     }
 
+    /**
+     * The selling supplier's stock was «زودمصرف» at that moment, with its expiry date.
+     */
+    public function isNearExpiry(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_IS_NEAR_EXPIRY);
+    }
+
+    public function getExpiryDate(): ?CarbonImmutable
+    {
+        return $this->getAttribute(self::COLUMN_EXPIRY_DATE);
+    }
+
+    /**
+     * «زودمصرف» and its expiry date; the date is kept only when near expiry.
+     */
+    public function setNearExpiry(bool $isNearExpiry, ?CarbonInterface $expiryDate): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $isNearExpiry)
+            ->setAttribute(self::COLUMN_EXPIRY_DATE, $isNearExpiry ? $expiryDate?->toDateString() : null);
+    }
+
     public function getReason(): PriceChangeReason
     {
         return $this->getAttribute(self::COLUMN_REASON);
@@ -259,6 +287,8 @@ final class VariantPrice extends Model
             self::COLUMN_COMMISSION_SOURCE => CommissionSource::class,
             self::COLUMN_PRICE => 'integer',
             self::COLUMN_SALE_PRICE => 'integer',
+            self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
+            self::COLUMN_EXPIRY_DATE => 'immutable_date',
             self::COLUMN_REASON => PriceChangeReason::class,
             self::COLUMN_FLAGS => 'array',
             self::COLUMN_CHANGED_BY => 'integer',

@@ -144,8 +144,8 @@ it('shows the flash deal widget only while a deal is live', function (): void {
 
 it('shows live deals, discount tiers and «زودمصرف» on /deals', function (): void {
     dealFor($this->variant);
-    $nearExpiry = Product::factory()->active()->nearExpiry()->create();
-    ProductVariant::factory()->for($nearExpiry)->create();
+    $nearExpiry = Product::factory()->active()->create();
+    ProductVariant::factory()->for($nearExpiry)->nearExpiry()->create();
 
     $this->get(route('deals'))
         ->assertOk()

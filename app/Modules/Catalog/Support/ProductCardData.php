@@ -9,8 +9,9 @@ use App\Modules\Catalog\Models\ProductVariant;
 
 /**
  * What a product card shows (roadmap B9.4): the default SKU (Product::getDefaultVariant()) with its price, the
- * struck-through price and stock, and at most one badge in priority order: discount % → near expiry →
- * new. $variantId is the SKU «افزودن به سبد» adds (S19). Needs the product's active variants loaded.
+ * struck-through price and stock, and one corner badge: «زودمصرف» whenever the product is flagged (owner, 2026-11-17:
+ * always, with a line saying why it is discounted), else «جدید» for a new product without a discount.
+ * $variantId is the SKU «افزودن به سبد» adds (S19). Needs the product's active variants loaded.
  */
 final readonly class ProductCardData
 {
@@ -23,6 +24,7 @@ final readonly class ProductCardData
         public bool $inStock,
         public ?string $badge,
         public ?string $badgeTone,
+        public bool $nearExpiry = false,
     ) {}
 
     public static function for(Product $product): self
@@ -31,8 +33,8 @@ final readonly class ProductCardData
         $default = $product->getDefaultVariant();
 
         [$badge, $tone] = match (true) {
-            ($default?->discountPercent() ?? 0) > 0 => [null, 'discount'],
             $product->isNearExpiry() => ['زودمصرف', 'near-expiry'],
+            ($default?->discountPercent() ?? 0) > 0 => [null, 'discount'],
             ($product->getCreatedAt()?->diffInDays(now()) ?? PHP_INT_MAX) <= self::NEW_FOR_DAYS => ['جدید', 'new'],
             default => [null, null],
         };
@@ -44,6 +46,7 @@ final readonly class ProductCardData
             inStock: $default?->isInStock() ?? false,
             badge: $badge,
             badgeTone: $tone,
+            nearExpiry: $product->isNearExpiry(),
         );
     }
 }

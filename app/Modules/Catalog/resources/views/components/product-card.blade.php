@@ -1,6 +1,7 @@
 {{--
     Product card (roadmap B9.4), shaped like the owner's reference shop (owner, 2026-11-14/15: about 230 × 310 px): a
-    photo contained on a white well inset from the card's edges, at most one badge, then the name (2 lines), the price
+    photo contained on a white well inset from the card's edges, one corner badge («زودمصرف» always when flagged, with a
+    strip saying why it is discounted), then the name (2 lines), the price
     (old price and discount on a second line when on sale) and the cart row (the square «+», then the quantity bar).
     Every part has a fixed height, so a card is as tall on the home page as in a list or after an add (owner,
     2026-11-15), whatever its width or sale. No brand line. The whole card links to the
@@ -32,6 +33,11 @@
 
         @if ($card->badge)
             <span @class(['absolute start-2 top-2 rounded-full px-2 text-xs leading-6 font-bold', $badgeClasses[$card->badgeTone] ?? ''])>{{ $card->badge }}</span>
+        @endif
+
+        {{-- Why it is discounted (owner, 2026-11-17), inside the photo well so every card keeps the same height. --}}
+        @if ($card->nearExpiry)
+            <p class="absolute inset-x-0 bottom-0 bg-warning-500/90 px-2 text-center text-[11px] leading-5 font-medium text-ink-900">انقضای نزدیک؛ دلیل تخفیف</p>
         @endif
 
         <x-catalog::wishlist-button :product-id="$product->getId()" class="absolute end-2 top-2" />

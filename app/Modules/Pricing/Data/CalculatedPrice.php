@@ -6,6 +6,7 @@ namespace App\Modules\Pricing\Data;
 
 use App\Modules\Pricing\Enums\CommissionSource;
 use App\Modules\Pricing\Enums\ProviderChoice;
+use Carbon\CarbonImmutable;
 
 /**
  * The result of pricing one SKU (roadmap D3.2): what a new price record would hold. Money in Rial.
@@ -25,5 +26,7 @@ final readonly class CalculatedPrice
         public int $price,
         public ?int $salePrice,
         public array $flags,
+        public bool $isNearExpiry = false,
+        public ?CarbonImmutable $expiryDate = null,
     ) {}
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Pricing\Data;
 
+use Carbon\CarbonImmutable;
+
 /**
  * A SKU's current price record (roadmap D3.2) as an order item copies it at checkout (D3.4 «Price snapshot»): the
  * supplier and its cost (null when sold at the printed price), the commission and where it came from, how the
@@ -22,5 +24,7 @@ final readonly class PriceRecordData
         public ?int $officialPrice,
         public int $listPrice,
         public ?int $salePrice,
+        public bool $isNearExpiry = false,
+        public ?CarbonImmutable $expiryDate = null,
     ) {}
 }

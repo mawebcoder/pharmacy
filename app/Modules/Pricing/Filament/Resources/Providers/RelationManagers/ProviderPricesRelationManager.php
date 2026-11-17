@@ -23,6 +23,7 @@ use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -136,7 +137,7 @@ final class ProviderPricesRelationManager extends RelationManager
     }
 
     /**
-     * @return list<Select|TextInput|Toggle>
+     * @return list<Select|TextInput|Toggle|DatePicker>
      */
     private function priceForm(bool $withSku): array
     {

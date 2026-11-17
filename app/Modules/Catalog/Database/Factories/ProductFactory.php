@@ -51,11 +51,6 @@ final class ProductFactory extends Factory
         return $this->state(fn (array $attributes): array => [Product::COLUMN_STATUS => ProductStatus::Active]);
     }
 
-    public function nearExpiry(): static
-    {
-        return $this->state(fn (array $attributes): array => [Product::COLUMN_IS_NEAR_EXPIRY => true]);
-    }
-
     public function rx(): static
     {
         return $this->state(fn (array $attributes): array => [Product::COLUMN_PRODUCT_TYPE => ProductType::Rx]);

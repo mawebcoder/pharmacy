@@ -100,7 +100,6 @@ final class UpdateProduct
             ->setIrcCode($data->ircCode)
             ->setMaxPerOrder($data->maxPerOrder)
             ->setMinShelfLifeMonths($data->minShelfLifeMonths)
-            ->setIsNearExpiry($data->isNearExpiry)
             ->setHarajPercent($data->harajPercent)
             ->setShortDescription($data->shortDescription)
             ->setDescription($data->description)

@@ -235,13 +235,21 @@ new class extends Component
                 @if ($isRx)
                     <li class="inline-flex items-center gap-1 rounded-full border border-rx-600 px-2.5 leading-6 text-rx-600"><x-ts-icon icon="document-text" class="size-4" />نسخه‌ای</li>
                 @endif
-                @if ($product->isNearExpiry())
+                @if ($variant?->isNearExpiry())
                     <li class="inline-flex items-center gap-1 rounded-full bg-warning-500 px-2.5 leading-7 text-ink-900">زودمصرف</li>
                 @endif
                 @if ($product->getIrcCode())
                     <li class="inline-flex items-center gap-1 rounded-full border border-line-300 px-2.5 leading-6 text-ink-500">IRC <bdi dir="ltr">{{ $product->getIrcCode() }}</bdi></li>
                 @endif
             </ul>
+
+            {{-- Why it is discounted, whenever the selected SKU's supplier stock is «زودمصرف» (owner, 2026-11-17). --}}
+            @if ($variant?->isNearExpiry())
+                <p class="flex items-start gap-2 rounded-card border border-warning-500 bg-warning-500/10 p-3 text-sm leading-7 text-ink-900" role="note">
+                    <x-ts-icon icon="clock" class="mt-1 size-5 shrink-0 text-warning-500" />
+                    <span><strong>زودمصرف:</strong> تاریخ انقضای این کالا نزدیک است و به همین دلیل با تخفیف عرضه می‌شود.</span>
+                </p>
+            @endif
 
             @if ($product->getShortDescription())
                 <p class="leading-8 text-ink-900">{{ $product->getShortDescription() }}</p>
@@ -291,8 +299,14 @@ new class extends Component
                         </p>
                         <x-ui.price :price="$variant->currentPrice()" :old="$variant->compareAtPrice()" size="lg" />
                     </div>
-                    {{-- Goods are bought after the order is placed, so no exact expiry date is promised: only a minimum (owner, 2026-11-16). --}}
-                    @if ($product->getMinShelfLifeMonths())
+                    {{-- «زودمصرف»: that supplier's stock has a known expiry date, shown (owner, 2026-11-17). Otherwise goods are bought
+                         after the order, so no exact date is promised: only a minimum (owner, 2026-11-16). --}}
+                    @if ($variant->isNearExpiry() && $variant->getExpiryDate())
+                        <p class="inline-flex items-center gap-1.5 text-sm text-ink-500">
+                            <x-ts-icon icon="calendar-days" class="size-5 text-warning-500" />
+                            تاریخ انقضا: <span class="font-bold text-ink-900">@jalali($variant->getExpiryDate())</span>
+                        </p>
+                    @elseif ($product->getMinShelfLifeMonths())
                         <p class="inline-flex items-center gap-1.5 text-sm text-ink-500">
                             <x-ts-icon icon="calendar-days" class="size-5 text-primary-700" />
                             تضمین اعتبار: <span class="font-medium text-ink-900">حداقل {{ PersianDigits::toPersian($product->getMinShelfLifeMonths()) }} ماه</span>

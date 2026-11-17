@@ -78,7 +78,7 @@ final class RecalculateVariantPrices implements ShouldQueue
 
                 if (! CalculateVariantPrice::differs($calculated, $previous)) {
                     if ($stockChanges && $previous instanceof VariantPrice) {
-                        $updates[] = new VariantPriceUpdate($variantId, $previous->getPrice(), $previous->getSalePrice(), $previous->getId(), $stock);
+                        $updates[] = new VariantPriceUpdate($variantId, $previous->getPrice(), $previous->getSalePrice(), $previous->getId(), $stock, $previous->isNearExpiry(), $previous->getExpiryDate());
                     }
 
                     continue;
@@ -94,12 +94,13 @@ final class RecalculateVariantPrices implements ShouldQueue
                     ->setCommissionSource($calculated->commissionSource)
                     ->setPrice($calculated->price)
                     ->setSalePrice($calculated->salePrice)
+                    ->setNearExpiry($calculated->isNearExpiry, $calculated->expiryDate)
                     ->setReason($previous instanceof VariantPrice ? $this->reason : PriceChangeReason::Initial)
                     ->setFlags($calculated->flags)
                     ->setChangedBy($this->adminId);
                 $record->save();
 
-                $updates[] = new VariantPriceUpdate($variantId, $calculated->price, $calculated->salePrice, $record->getId(), $stock);
+                $updates[] = new VariantPriceUpdate($variantId, $calculated->price, $calculated->salePrice, $record->getId(), $stock, $calculated->isNearExpiry, $calculated->expiryDate);
             }
         });
 

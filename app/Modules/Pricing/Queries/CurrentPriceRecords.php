@@ -42,6 +42,8 @@ final readonly class CurrentPriceRecords
                 officialPrice: $price->getOfficialPrice(),
                 listPrice: $price->getPrice(),
                 salePrice: $price->getSalePrice(),
+                isNearExpiry: $price->isNearExpiry(),
+                expiryDate: $price->getExpiryDate(),
             );
         }
 

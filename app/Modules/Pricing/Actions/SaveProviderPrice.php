@@ -33,7 +33,8 @@ final class SaveProviderPrice
                 ->setIsEnabled($data->isEnabled)
                 ->setIsPreferred($data->isPreferred)
                 ->setCommissionPercent($data->commissionPercent)
-                ->setLeadTimeHours($data->leadTimeHours);
+                ->setLeadTimeHours($data->leadTimeHours)
+                ->setNearExpiry($data->isNearExpiry, $data->expiryDate);
 
             if ($price->exists && ! $price->isDirty()) {
                 return $price;

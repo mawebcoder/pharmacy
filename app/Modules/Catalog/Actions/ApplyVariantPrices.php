@@ -45,6 +45,11 @@ final class ApplyVariantPrices
                     $variant->setStockStatus($update->stockStatus);
                 }
 
+                // While a flash deal runs, its supplier decides «زودمصرف» (SyncFlashDealPrices).
+                if ($variant->getFlashDealId() === null) {
+                    $variant->setNearExpiry($update->isNearExpiry, $update->expiryDate);
+                }
+
                 $variant->save();
                 $productIds[$variant->getProductId()] = true;
             }

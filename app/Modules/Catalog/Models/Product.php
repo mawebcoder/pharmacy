@@ -68,8 +68,6 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_MIN_SHELF_LIFE_MONTHS = 'min_shelf_life_months';
 
-    public const string COLUMN_IS_NEAR_EXPIRY = 'is_near_expiry';
-
     public const string COLUMN_SHORT_DESCRIPTION = 'short_description';
 
     public const string COLUMN_DESCRIPTION = 'description';
@@ -182,17 +180,12 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     }
 
     /**
-     * «زودمصرف»: set by hand on the product (owner, 2026-11-16); badge, storefront filter and the admin filter for
-     * products to put on haraj.
+     * «زودمصرف» when its default SKU's selling supplier has near-expiry stock (owner, 2026-11-17: per supplier, not a
+     * product switch). Needs the variants loaded.
      */
     public function isNearExpiry(): bool
     {
-        return (bool) $this->getAttribute(self::COLUMN_IS_NEAR_EXPIRY);
-    }
-
-    public function setIsNearExpiry(bool $value): static
-    {
-        return $this->setAttribute(self::COLUMN_IS_NEAR_EXPIRY, $value);
+        return $this->getDefaultVariant()?->isNearExpiry() ?? false;
     }
 
     public function getShortDescription(): ?string
@@ -731,7 +724,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             ->useLogName('catalog')
             ->logOnly([
                 self::COLUMN_NAME_FA, self::COLUMN_NAME_EN, self::COLUMN_SLUG, self::COLUMN_BRAND_ID, self::COLUMN_COMMISSION_PERCENT, self::COLUMN_HARAJ_PERCENT, self::COLUMN_PRIMARY_CATEGORY_ID, self::COLUMN_PRIMARY_SUBCATEGORY_ID, self::COLUMN_DEFAULT_VARIANT_ID,
-                self::COLUMN_PRODUCT_TYPE, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_MIN_SHELF_LIFE_MONTHS, self::COLUMN_IS_NEAR_EXPIRY, self::COLUMN_SHORT_DESCRIPTION,
+                self::COLUMN_PRODUCT_TYPE, self::COLUMN_IRC_CODE, self::COLUMN_MAX_PER_ORDER, self::COLUMN_MIN_SHELF_LIFE_MONTHS, self::COLUMN_SHORT_DESCRIPTION,
                 self::COLUMN_DESCRIPTION, self::COLUMN_INGREDIENTS, self::COLUMN_USAGE, self::COLUMN_WARNINGS, self::COLUMN_SIDE_EFFECTS,
                 self::COLUMN_INTERACTIONS, self::COLUMN_STATUS, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION,
             ])
@@ -759,7 +752,6 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
             self::COLUMN_MAX_PER_ORDER => 'integer',
             self::COLUMN_MIN_SHELF_LIFE_MONTHS => 'integer',
-            self::COLUMN_IS_NEAR_EXPIRY => 'boolean',
             self::COLUMN_STATUS => ProductStatus::class,
         ];
     }

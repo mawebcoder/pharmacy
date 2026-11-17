@@ -9,12 +9,15 @@ use App\Modules\Pricing\Data\ProviderPriceData;
 use App\Modules\Pricing\Data\SupplierOffer;
 use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\ProviderPriceChange;
+use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
@@ -89,6 +92,12 @@ final class ProviderPriceColumns
                 ->tooltip('سایت تا وقتی این تأمین‌کننده قابل فروش است از او می‌فروشد، حتی اگر ارزان‌ترین نباشد. فقط یکی برای هر SKU.')
                 ->disabled(fn (): bool => ! self::canChange())
                 ->updateStateUsing(fn (ProviderPrice $record, bool $state): bool => self::switch($record, ProviderPrice::COLUMN_IS_PREFERRED, $state)),
+            TextColumn::make(ProviderPrice::COLUMN_IS_NEAR_EXPIRY)
+                ->label('زودمصرف')
+                ->badge()
+                ->state(fn (ProviderPrice $record): ?string => $record->isNearExpiry() ? 'تا '.JalaliDate::display($record->getExpiryDate(), 'j F Y') : null)
+                ->color('warning')
+                ->placeholder('—'),
             TextColumn::make(ProviderPrice::COLUMN_LEAD_TIME_HOURS)
                 ->label('زمان تحویل')
                 ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : PersianDigits::toPersian($state).' ساعت')
@@ -98,9 +107,10 @@ final class ProviderPriceColumns
     }
 
     /**
-     * Cost, lead time and the two switches (the supplier or SKU picker is added by each table).
+     * Cost, lead time, the switches and «زودمصرف» with its expiry date (the supplier or SKU picker is added by each
+     * table).
      *
-     * @return list<TextInput|Toggle>
+     * @return list<TextInput|Toggle|DatePicker>
      */
     public static function fields(): array
     {
@@ -122,6 +132,16 @@ final class ProviderPriceColumns
             Toggle::make(ProviderPrice::COLUMN_IS_PREFERRED)
                 ->label('تأمین‌کننده انتخابی')
                 ->helperText('سایت از این تأمین‌کننده می‌فروشد تا وقتی قابل فروش است؛ انتخابی قبلی همین SKU خاموش می‌شود.'),
+            // «زودمصرف» per supplier (owner, 2026-11-17): this supplier's stock has its own expiry.
+            Toggle::make(ProviderPrice::COLUMN_IS_NEAR_EXPIRY)
+                ->label('زودمصرف')
+                ->live()
+                ->helperText('وقتی سایت از همین تأمین‌کننده می‌فروشد، نشان «زودمصرف» و تاریخ انقضای زیر روی سایت نمایش داده می‌شود.'),
+            DatePicker::make(ProviderPrice::COLUMN_EXPIRY_DATE)
+                ->label('تاریخ انقضای کالای این تأمین‌کننده')
+                ->jalali() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
+                ->visible(fn (Get $get): bool => (bool) $get(ProviderPrice::COLUMN_IS_NEAR_EXPIRY))
+                ->required(fn (Get $get): bool => (bool) $get(ProviderPrice::COLUMN_IS_NEAR_EXPIRY)),
         ];
     }
 
@@ -150,6 +170,8 @@ final class ProviderPriceColumns
             ProviderPrice::COLUMN_IS_PREFERRED => $column === ProviderPrice::COLUMN_IS_PREFERRED ? $state : $record->isPreferred(),
             ProviderPrice::COLUMN_COMMISSION_PERCENT => $record->getCommissionPercent(),
             ProviderPrice::COLUMN_LEAD_TIME_HOURS => $record->getLeadTimeHours(),
+            ProviderPrice::COLUMN_IS_NEAR_EXPIRY => $record->isNearExpiry(),
+            ProviderPrice::COLUMN_EXPIRY_DATE => $record->getExpiryDate()?->toDateString(),
         ]), $record, self::adminId());
 
         return match ($column) {

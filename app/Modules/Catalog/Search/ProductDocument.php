@@ -84,7 +84,7 @@ final class ProductDocument
             'discount_pct' => $default?->discountPercent() ?? 0,
             'in_stock' => $default?->isInStock() ?? false,
             'in_stock_rank' => $default?->isInStock() ? 1 : 0,
-            'is_near_expiry' => $product->isNearExpiry(),
+            'is_near_expiry' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()),
             // A SKU with a live flash deal (S33): the «پیشنهاد لحظه‌ای» listing filter.
             'has_flash_deal' => $variants->contains(fn (ProductVariant $variant): bool => $variant->getFlashDealId() !== null),
             'product_type' => $product->getProductType()->value,

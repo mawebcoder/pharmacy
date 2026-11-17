@@ -7,17 +7,25 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Search\ProductSearchIndex;
+use App\Modules\Pricing\Data\PriceRecordData;
+use App\Modules\Pricing\Queries\CurrentPriceRecords;
+use App\Modules\Pricing\Queries\SupplierOptions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Puts each live flash deal's price on its SKU and clears it from SKUs whose deal ended, sold out or was switched
- * off (roadmap S33). Runs every minute (SyncFlashDeals) and after every deal change, reservation or release; the
- * products whose SKUs changed are re-indexed so search and cards show the new price. Pass SKU ids to sync only
- * those.
+ * off (roadmap S33), with the deal supplier's «زودمصرف» and expiry date while it runs (owner, 2026-11-17). Runs
+ * every minute (SyncFlashDeals) and after every deal change, reservation or release; the products whose SKUs changed
+ * are re-indexed so search and cards show the new price. Pass SKU ids to sync only those.
  */
 final readonly class SyncFlashDealPrices
 {
+    public function __construct(
+        private SupplierOptions $suppliers,
+        private CurrentPriceRecords $priceRecords,
+    ) {}
+
     /**
      * @param  list<int>|null  $variantIds
      */
@@ -48,11 +56,21 @@ final readonly class SyncFlashDealPrices
                 $dealId = $deal instanceof FlashDeal ? $deal->getId() : null;
                 $dealPrice = $deal instanceof FlashDeal ? $deal->getDealPrice() : null;
 
-                if ($variant->getFlashDealId() === $dealId && $variant->getFlashDealPrice() === $dealPrice) {
+                // «زودمصرف» follows the deal's supplier while it runs, else the selling supplier of the latest price record.
+                if ($deal instanceof FlashDeal && $deal->getProviderId() !== null) {
+                    [$nearExpiry, $expiryDate] = $this->suppliers->nearExpiry($deal->getProviderId(), $variant->getId());
+                } else {
+                    $record = $this->priceRecords->for([$variant->getId()])[$variant->getId()] ?? null;
+                    $nearExpiry = $record instanceof PriceRecordData && $record->isNearExpiry;
+                    $expiryDate = $record instanceof PriceRecordData ? $record->expiryDate : null;
+                }
+
+                if ($variant->getFlashDealId() === $dealId && $variant->getFlashDealPrice() === $dealPrice
+                    && $variant->isNearExpiry() === $nearExpiry && $variant->getExpiryDate()?->toDateString() === $expiryDate?->toDateString()) {
                     continue;
                 }
 
-                $variant->setFlashDeal($dealId, $dealPrice)->saveQuietly();
+                $variant->setFlashDeal($dealId, $dealPrice)->setNearExpiry($nearExpiry, $expiryDate)->saveQuietly();
                 $changed[$variant->getProductId()] = $variant->getProduct();
             }
         });

@@ -233,7 +233,7 @@ What each site teaches, as a design pattern, and the professional standard we ap
 ### B8.5 Sarsoon (sarsoon.com)
 - **Pattern to adopt:** "damaged box" and "near expiry" clearance sections; free-shipping promise in the title; mobile-number login; payment-methods page.
 - **Problems seen:** generic template look, inconsistent product photos.
-- **Our standard:** near-expiry items carry an amber «زودمصرف» badge set by the admin (no damaged-box items and no exact expiry dates: the store has no warehouse, buys after the order and sells only sound goods; owner, 2026-11-16); all product photos 1:1 on white (D14.2); free-shipping progress bar in cart instead of a slogan.
+- **Our standard:** near-expiry items carry an amber «زودمصرف» badge, set per supplier with that stock's expiry date, shown on the product page (owner, 2026-11-17; no damaged-box items: the store has no warehouse, buys after the order and sells only sound goods); all product photos 1:1 on white (D14.2); free-shipping progress bar in cart instead of a slogan.
 
 ### B8.6 Mosbate Sabz (mosbatesabz.com)
 - **Pattern to adopt:** discount tiers (10/20/30/40/50 %, 50 %+); hourly deals; "newly added"; online prescription entry; medical devices and home tests categories; ticket support; scientific team and licences pages; tracking code lookup; cancellation and return policy page.
@@ -287,7 +287,7 @@ Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop
 
 ### B9.4 Product card anatomy (all breakpoints)
 Reshaped like the owner's reference shop (owner, 2026-11-14/15: about 230 × 310 px on desktop; the home rail shows 5 cards). One component, `<x-catalog::product-card>`, is the only source of product cells (lists, home rails, search panel, related products, wishlist) and is shown on the design-system page `/dev/ui`; its placeholder is `<x-ui.product-card-skeleton>`.
-1. Photo contained (not cropped) on the white `media` well, inset 12 px from the card's edges with rounded corners; **fixed height** (96 px on phones, 128 px from tablet up; owner, 2026-11-15: about 230 × 312 px like the reference), so a card is as tall on the home page as in a list; max 1 badge top corner (priority: discount % → near-expiry → new); the heart at the top end.
+1. Photo contained (not cropped) on the white `media` well, inset 12 px from the card's edges with rounded corners; **fixed height** (96 px on phones, 128 px from tablet up; owner, 2026-11-15: about 230 × 312 px like the reference), so a card is as tall on the home page as in a list; one badge top corner: **«زودمصرف» always when the SKU sells from near-expiry supplier stock**, with a strip at the bottom of the photo saying why it is discounted («انقضای نزدیک؛ دلیل تخفیف»; owner, 2026-11-17), else «جدید» for a new product without a discount; the product page explains «زودمصرف» in a note; the heart at the top end.
 2. ~~Brand~~: no brand line on cards, and card queries do not load the brand (owner, 2026-11-15).
 3. Name (2 lines, fixed height, 14 px, `ink-900`).
 4. Rating stars + count (only if ≥ 1 review).
@@ -839,7 +839,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | current_price_id | FK nullable | the latest `variant_prices` record (S15) |
 | stock_status | enum | `available`, `on_request`, `out_of_stock` (no own stock; reflects provider availability) |
 
-**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S30 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. **«زودمصرف» is on the product** (`products.is_near_expiry`, owner 2026-11-16; moved from the SKUs): a switch in the product form set by hand; it drives the card and product page badge, the storefront filter and search facet, and the admin product list filter used to find products to put on haraj.
+**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S30 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. **«زودمصرف» is per supplier** (owner, 2026-11-17; replaces the product switch `products.is_near_expiry` of 2026-11-16): each supplier row of a SKU (`provider_prices.is_near_expiry` + required `expiry_date`) says whether that supplier's stock is near expiry. The pricing engine copies the selling supplier's flag and date onto the price record (`variant_prices`) and the SKU (`product_variants.is_near_expiry`, `expiry_date`); while a flash deal runs, its supplier's row decides. A near-expiry SKU shows the card badge, and its product page shows «تاریخ انقضا: …» (Jalali) instead of the shelf-life guarantee; a product is «زودمصرف» in search and in the admin product list filter (used to find products to put on haraj) when any of its SKUs is. The price import keeps a row's flag and date; Excel columns for them are not built yet.
 | weight_g | int | packaged weight |
 | length_mm, width_mm, height_mm | int | packaged dimensions |
 | dimensions_verified | bool | true after someone measured it |
@@ -1880,7 +1880,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 
 ### D13.11 Other flows
 - Stock alert: customer subscribes on out-of-stock variant → when `stock_status` becomes `available`, SMS sent once.
-- Near expiry: the admin flags a product «زودمصرف» by hand → it appears in "زودمصرف" (owner, 2026-11-16; the daily `MarkNearExpiry` job was removed with `expiry_date`).
+- Near expiry: the admin marks a supplier's stock of a SKU «زودمصرف» with its expiry date → when the site sells from that supplier, the SKU appears in "زودمصرف" (owner, 2026-11-17; the daily `MarkNearExpiry` job stays removed).
 - Review moderation: reviews `pending` → admin approves → visible; verified-buyer badge if linked to delivered order item.
 - Contact form: stored + email/SMS alert to operator.
 
@@ -3131,7 +3131,7 @@ Update `ROADMAP_PROGRESS.md`: step id, title, status `done`, date, commit hash (
 | IRC | IFDA product registration code |
 | e-Namad | Iranian e-commerce trust seal |
 | COD | Cash on delivery |
-| زودمصرف | Near-expiry items (set by hand; «کج‌جعبه» removed, owner 2026-11-16) |
+| زودمصرف | Near-expiry items (per supplier, with the expiry date; «کج‌جعبه» removed, owner 2026-11-16/17) |
 
 ## Sources
 - Competitor sites reviewed 2026-11-06: darunet.com, darukade.com, daroodrug.com, darochi.com, sarsoon.com, mosbatesabz.com

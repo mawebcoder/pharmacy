@@ -39,4 +39,15 @@ final class ProductVariantFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [ProductVariant::COLUMN_IS_ACTIVE => false]);
     }
+
+    /**
+     * The selling supplier's stock is «زودمصرف», expiring on $expiryDate (Y-m-d; default: in two months).
+     */
+    public function nearExpiry(?string $expiryDate = null): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            ProductVariant::COLUMN_IS_NEAR_EXPIRY => true,
+            ProductVariant::COLUMN_EXPIRY_DATE => $expiryDate ?? now()->addMonths(2)->toDateString(),
+        ]);
+    }
 }

@@ -7,6 +7,7 @@ namespace App\Modules\Pricing\Queries;
 use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Shared\Support\Toman;
+use Carbon\CarbonImmutable;
 
 /**
  * Suppliers for other modules' admin forms (roadmap S30): their names, and a supplier's current cost of a SKU, which
@@ -66,5 +67,21 @@ final readonly class SupplierOptions
             ->value(ProviderPrice::COLUMN_COST);
 
         return $cost === null ? null : (int) $cost;
+    }
+
+    /**
+     * Whether a supplier's stock of a SKU is «زودمصرف» and its expiry date (owner, 2026-11-17); not near expiry when the
+     * supplier has no row for it.
+     *
+     * @return array{0: bool, 1: CarbonImmutable|null}
+     */
+    public function nearExpiry(int $providerId, int $variantId): array
+    {
+        $price = ProviderPrice::query()
+            ->where(ProviderPrice::COLUMN_PROVIDER_ID, $providerId)
+            ->where(ProviderPrice::COLUMN_VARIANT_ID, $variantId)
+            ->first();
+
+        return $price instanceof ProviderPrice && $price->isNearExpiry() ? [true, $price->getExpiryDate()] : [false, null];
     }
 }
