@@ -30,7 +30,7 @@
 <footer class="mt-12 border-t border-line-200 bg-card">
     <div class="mx-auto max-w-7xl px-4 md:px-6 xl:px-8">
         <x-layout.trust class="py-8" />
-        <x-layout.trust-counters :products="false" class="pb-8" />
+        <x-layout.trust-counters class="pb-8" />
         <div class="border-b border-line-200" aria-hidden="true"></div>
 
         <div class="grid gap-8 py-8 md:grid-cols-3 xl:grid-cols-5">

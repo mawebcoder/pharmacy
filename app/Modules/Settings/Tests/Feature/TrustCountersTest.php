@@ -10,8 +10,8 @@ use App\Modules\Settings\Queries\TrustCounters;
 use Illuminate\Support\Facades\Cache;
 
 /*
-| Trust counters (roadmap S35): products for sale, delivered orders and cities delivered to, each shown once it is
-| big enough (100 orders, 10 cities; owner 2026-11-17), cached an hour.
+| Trust counters (roadmap S35): delivered orders and cities delivered to, each shown once it is big enough (100
+| orders, 10 cities; owner 2026-11-17), cached an hour. No product count anywhere (owner, 2026-11-17).
 */
 
 function deliveredOrders(int $count, int $cities): void
@@ -24,13 +24,11 @@ function deliveredOrders(int $count, int $cities): void
     }
 }
 
-it('counts products for sale and leaves out orders and cities while they are few', function (): void {
-    foreach (range(1, 3) as $index) {
-        ProductVariant::factory()->for(Product::factory()->active())->create();
-    }
+it('leaves out orders and cities while they are few, and never counts products', function (): void {
+    ProductVariant::factory()->for(Product::factory()->active())->create();
     deliveredOrders(5, 2);
 
-    expect(app(TrustCounters::class)->shown())->toBe([['icon' => 'cube', 'value' => 3, 'label' => 'کالای موجود']]);
+    expect(app(TrustCounters::class)->shown())->toBe([]);
 });
 
 it('shows delivered orders and cities once there are enough, counting only delivered orders', function (): void {
@@ -42,18 +40,18 @@ it('shows delivered orders and cities once there are enough, counting only deliv
 });
 
 it('keeps the counts for an hour', function (): void {
-    ProductVariant::factory()->for(Product::factory()->active())->create();
+    deliveredOrders(TrustCounters::MIN_ORDERS, 1);
     app(TrustCounters::class)->shown();
-    ProductVariant::factory()->for(Product::factory()->active())->create();
+    deliveredOrders(1, 1);
 
-    expect(app(TrustCounters::class)->shown()[0]['value'])->toBe(1);
+    expect(app(TrustCounters::class)->shown()[0]['value'])->toBe(TrustCounters::MIN_ORDERS);
 
     $this->travel(61)->minutes();
 
-    expect(app(TrustCounters::class)->shown()[0]['value'])->toBe(2);
+    expect(app(TrustCounters::class)->shown()[0]['value'])->toBe(TrustCounters::MIN_ORDERS + 1);
 });
 
-it('leaves the products for sale out of the footer', function (): void {
+it('shows the counters under the trust block in the footer and on the home page, without a product count', function (): void {
     Cache::forget(TrustCounters::CACHE_KEY);
     ProductVariant::factory()->for(Product::factory()->active())->create();
     deliveredOrders(TrustCounters::MIN_ORDERS, TrustCounters::MIN_CITIES);
@@ -62,4 +60,5 @@ it('leaves the products for sale out of the footer', function (): void {
         ->assertOk()
         ->assertSeeInOrder(['ضمانت بازگشت', 'سفارش تحویل‌شده', 'شهر زیر پوشش'])
         ->assertDontSee('کالای موجود');
+    $this->get(route('home'))->assertOk()->assertDontSee('کالای موجود');
 });

@@ -37,7 +37,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S35 | Settings and trust | done | 2026-11-17 | 19e2024 |
 | S21 | Shipping foundation | todo | | |
 | S24 | Own courier zones | todo | | |
-| S22 | Tipax client and reference sync | todo | | |
+| S22 | Tapin client and reference sync (Tipax via Tapin) | todo | | |
 | S23 | Tipax quotes in checkout | todo | | |
 | S26 | Zarinpal payments | todo | | |
 | S27 | Tipax shipment registration and tracking | todo | | |

@@ -1,12 +1,11 @@
 {{--
-    Trust counters (roadmap B7 Daroodrug, S35): products for sale, delivered orders and cities delivered to, counted
-    live (cached an hour) by Settings' TrustCounters; a counter still too small is left out, and the row with it.
-    The footer leaves out the products for sale (owner, 2026-11-17): <x-layout.trust-counters :products="false" />
+    Trust counters (roadmap B7 Daroodrug, S35): delivered orders and cities delivered to, counted live (cached an
+    hour) by Settings' TrustCounters; a counter still too small is left out, and the row with it. No product count
+    (owner, 2026-11-17).
+    <x-layout.trust-counters class="…" />
 --}}
-@props(['products' => true])
-
 @php
-    $counters = app(\App\Modules\Settings\Queries\TrustCounters::class)->shown($products);
+    $counters = app(\App\Modules\Settings\Queries\TrustCounters::class)->shown();
 @endphp
 
 @if ($counters !== [])

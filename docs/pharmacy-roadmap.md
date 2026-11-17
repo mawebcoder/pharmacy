@@ -45,7 +45,7 @@ Medicines have government-set consumer prices: `selling_price ≤ official_price
 | 1–2 | Register company, domain, business bank account | Founder | Legal entity |
 | 1–3 | Legal consult on online health sales (IFDA rules, supplements classified as medicine, delivery of OTC) | Lawyer | Written opinion [CONFIRM] |
 | 1–4 | Provider agreement with Sina's company: price list format (Excel), discount %, delivery to our warehouse, returns of damaged goods, payment terms | Founder | Signed agreement + sample price file |
-| 2–4 | Tipax eTipax business account, contract, API key, pickup schedule, payment type (wallet/credit), COD | Ops | Test + production credentials |
+| 2–4 | Tapin panel account with Tipax enabled (ticket), token and shop id, wallet top-up, pickup (at our place from ~10 orders a day, else branch drop-off); owner 2026-11-17: through Tapin, not eTipax | Ops | Token + shop id |
 | 2–5 | Zarinpal merchant registration, identity level ≥ silver, gateway on production domain | Finance | merchant_id |
 | 3–6 | e-Namad application (needs live site with contact/about/terms) | Ops | e-Namad badge |
 | 3–8 | Product data: top 300 SKUs with photos (1:1 white), weights, dimensions, IRC codes, descriptions | Content | Import file |
@@ -1010,6 +1010,12 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 
 **Locations follow Tipax** (owner, 2026-11-14, S18): provinces and cities come from the Tipax API and use Tipax's ids, so addresses, quotes and shipments need no mapping. Counties, regions, neighbourhoods and the earlier open dataset (sajaddp, GPL) are gone.
 
+> **Change (owner, 2026-11-17): Tipax goes through Tapin (D6.0).** Tapin numbers provinces and cities its own way (`location/public/all/province/filter/`, `…/city/filter/`, each city with a `tipax.is_available` flag). S22 decides how our cities meet Tapin's:
+> - **switch the city source to Tapin** (recommended): `tapin:sync-cities` replaces `tipax:sync-cities`, ids become Tapin's, and «ارسال فعال» follows `tipax.is_available`; existing addresses are re-pointed by name in one migration;
+> - **or keep Tipax's list** and store each city's Tapin id beside it.
+>
+> Tapin also needs the recipient's map point, which S18 dropped («no map pin»). **[CONFIRM] in S22:** a map pin on the address form, or the city's centre point (Tapin accepts «an approximate point in the recipient's city»).
+
 ### D4.1 Source data
 - Tipax OM API **v4** (specs `https://omtestapi.tipax.ir/swagger/v4/swagger.json` and `/swagger/v3/swagger.json`, checked 2026-11-14): `GET /api/OM/v4/Cities/plusstate` → a bare array of `OmCityListWithStateDto` `{ id, title, abbreviation, stateId, stateTitle, jetId, latitude, longitude }`; `GET /api/OM/v4/Cities/BranchCities` → `OmCityListDto` (no `stateTitle`); `GET /api/OM/v4/States` → `OmProvinceListDto` `{ id, title, … }`. All need a Bearer token; **sign-in exists only in v3**: `POST /api/OM/v3/Account/token` `{ username, password, apiKey }` → `{ accessToken, refreshToken, expiresIn }` (v4 has only `Account/RefreshToken`). No endpoint returns regions or neighbourhoods.
 
@@ -1025,6 +1031,13 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 ---
 
 ## D5. Pricing of shipping: concepts
+
+> **Change (owner, 2026-11-17): through Tapin (D6.0), every order is one parcel and box sizes do not matter.**
+> - Tapin takes length, width and height as **5 cm** by agreement with Tipax.
+> - The parcel weighs **1–6 kg** (items plus packaging; under 1 kg is sent as 1 kg).
+> - The declared value is at least **4,000,000 rial**.
+> - Tapin returns the price; the volumetric estimate and the box packer below no longer apply to Tipax. They stay only as background for the own courier (S24), which prices by zone.
+> - An order over 6 kg is split into several Tapin orders. **[CONFIRM] in S23:** split, or refuse online checkout over 6 kg.
 
 - Tipax receives **weight (kg), length, width, height (cm) and declared value (Rial)** per package and returns the price; Tipax applies its own volumetric rules. **[CONFIRM]** the volumetric divisor with Tipax account manager; we keep our own estimate only for the fallback table.
 - Our estimate (fallback and sanity check): `volumetric_kg = L×W×H(cm) / divisor` (default divisor 5000, stored on `carriers`), `chargeable = max(actual_kg, volumetric_kg)`.
@@ -1047,6 +1060,66 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 ---
 
 ## D6. Tipax integration
+
+### D6.0 Through Tapin (owner, 2026-11-17)
+We send Tipax parcels through **Tapin** (تاپین, api.tapin.ir), a shipping panel that resells Tipax, not through Tipax's own OM API. **D6.0 replaces D6.1–D6.8**, which stay below only as background on the direct API. Source: Tapin's «راهنمای پیاده سازی سرویس تیپاکس» (PDF, 31 pages, read 2026-11-17).
+
+**Access**
+- Tipax is turned on for the shop by a ticket in the Tapin panel.
+- The panel («یکپارچه‌سازی» → «مدیریت توکن») issues a **token** and the **shop id** (`shop_id`, a UUID). The token may be limited to the server's IP address (`https://checkip.tapin.ir` shows it).
+- Calls send `Authorization: Bearer <token>` (JWT) and `shop_id` in the body.
+- Base `https://api.tapin.ir/api/v4/`; every call is POST except the label (GET).
+- Success is `returns.status` 20 or 21; anything else carries `returns.message`.
+- Config: `TAPIN_BASE_URL`, `TAPIN_TOKEN`, `TAPIN_SHOP_ID`.
+
+**Money**
+- Shipping is paid from the shop's **Tapin wallet**. It is charged when an order becomes «آماده به ارسال» and refunded when that order is cancelled.
+- With «پس‌کرایه» the recipient pays, and the charge comes back to the wallet after delivery.
+- The admin shows the wallet balance and warns when it runs low.
+
+**Endpoints**
+
+| Purpose | Path (POST unless noted) |
+|---|---|
+| Codes (statuses, payment, delivery, pickup, service, register and product types, pack types) | `tipax/public/user/order/options/` |
+| Provinces / cities | `location/public/all/province/filter/`, `location/public/all/city/filter/` |
+| Price | `tipax/public/user/order/check-price/` |
+| Register | `tipax/public/user/order/register/` |
+| Confirm (to «آماده به ارسال») | `tipax/public/user/order/change-status/ready-to-send/` |
+| Cancel / delete | `…/change-status/cancel`, `…/change-status/delete` |
+| Re-register (new barcode) | `tipax/public/user/order/re-register/` |
+| Edit (only at status 100 or 50) | `…/order/edit/detail/` (read), `…/order/edit/` (write) |
+| Full detail (history, wallet transactions) | `tipax/public/user/order/full-detail/` |
+| Bulk status by our order numbers or barcodes | `tipax/public/user/order/get-status/bulk/` |
+| Report / `hash_raw` | `tipax/public/user/order/filter/` |
+| Label (A5 or 10×15 cm) | GET `tipax/public/all/order/parcel/label/{hash_raw}` |
+
+**An order (register and check-price)**
+- **Recipient:** first name, last name, mobile, province and city (Tapin ids), address, plaque, unit, floor, postal code, `receiver_lat` / `receiver_long` (required; the city's point when unknown).
+- **Items:** `title`, `count`, `amount_per_count` and `discount_per_count` (rial), `weight_per_count` (g).
+- **Parcel:** `package_weight` (g), `length` = `width` = `height` = 5.
+- **Codes:** `product_type_id`, `packing_type_id`, `payment_type`, `service_type`, `delivery_type`, `pickup_type`, plus `manual_id` (our order number) and `enable_label_privacy` (hide sender details on the label).
+- **Rules:** total weight 1–6 kg; declared value ≥ 4,000,000 rial.
+
+**Codes we use**
+- Item type: 1 «بسته/عمومی», 4 «مایعات-شکستنی/بسته» (any liquid or fragile item).
+- Packing: «نیاز به بسته‌بندی ندارد» (we pack ourselves).
+- Payment: 10 prepaid from the wallet; 20 «پس‌کرایه».
+- Service: 7 same-city express (1–2 days), 2 between-city express (2–3 days).
+- Delivery: 10 to the door; 20 at a branch.
+- Pickup: 10 at our place (only from about 10 orders a day); 20 we drop parcels at a Tipax branch (`https://map.tapin.ir/accept-tipax/`).
+- Register type: 0 «تحت بررسی» (held, confirm later); 2 straight to «آماده به ارسال».
+
+**Statuses:** 100 منتظر استعلام، 50 تحت بررسی، 60 در حال تغییر وضعیت، 0 آماده به ارسال، 1 در حال پردازش، 8 ثبت اولیه، 2 منتظر جمع‌آوری، 7 جمع‌آوری شد / در حال تحویل (the guide lists 7 twice: **[CONFIRM]** with Tapin)، 3 تحویل گیرنده، 5 برگشت خورده، 6 عودتی، 4 ابطال شده، 80 حذف شده.
+
+**Flow**
+1. `check-price` at checkout.
+2. After payment, `register` with type 0 (held).
+3. When the order is packed, confirm with `ready-to-send`. The wallet is charged and the Tipax barcode (`contract_code`) comes back.
+4. Print the label, stick it on, and drop the parcel off (or it is picked up).
+5. **There are no webhooks:** a scheduled job asks `get-status/bulk` for open shipments.
+
+**Not available through Tapin:** the sender address (it is set in the Tapin panel), webhooks, and real parcel sizes.
 
 ### D6.1 Environments and access
 
@@ -1219,6 +1292,13 @@ Parcel statuses (12) and events (18): load from `ParcelStatus` and `GetEventWith
 3. Fallback poller: scheduled job every 30 min calls `Tracking/ByTrackingCode` for shipments not delivered/cancelled and updated > 2 h ago.
 
 ### D6.8 Laravel design
+> **Superseded by D6.0 (owner, 2026-11-17).** The shape stays, with these changes:
+> - `ShippingCarrier` contract and DTOs, but `Carriers/Tapin/TapinClient` (token and `shop_id`, no sign-in) and `Carriers/Tapin/TapinTipaxCarrier`;
+> - no `BoxPacker` and no token store;
+> - `TapinSyncCities`, and a `PollTapinStatuses` job instead of webhooks;
+> - `RegisterTipaxShipment` still idempotent (on our order number as `manual_id`);
+> - config `TAPIN_BASE_URL`, `TAPIN_TOKEN`, `TAPIN_SHOP_ID`.
+
 
 ```
 app/Modules/Shipping/
@@ -2924,9 +3004,10 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
     - `/pharmacist` lists the pharmacist in charge first.
     - Every product page shows «زیر نظر …، شماره نظام پزشکی …» (B2 rule 3) from the cached `Pharmacists::responsible()`.
     - «داروساز مسئول» is a menu target and is back in the footer's «داروخانه» column.
-  - **Trust counters:** products for sale, delivered orders, and cities delivered to (from the order address snapshot), cached for an hour.
+  - **Trust counters:** delivered orders and cities delivered to (from the order address snapshot), cached for an hour.
     - Orders show from 100, cities from 10.
-    - The row sits under the trust block in the home trust widget, and in the footer without the products count (owner, 2026-11-17).
+    - No product count anywhere on the site (owner, 2026-11-17).
+    - The row sits under the trust block in the footer and in the home trust widget.
 - **Tests:** settings cache invalidation; e-Namad embed renders.
 
 > **Phase 7: Shipping and external integrations (owner, 2026-11-09; shipping added 2026-11-14; moved before SEO, hardening and reporting, owner 2026-11-17).** The shipping foundation (S21) and own courier zones (S24) come first, then Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28), right after the content steps (S33–S35) and before SEO, hardening and reporting (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S25), shipment status and own-courier deliveries set by hand (S29).
@@ -2934,8 +3015,15 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S21 Shipping foundation
 - **Moved to phase 7** (built after S35, before the Tipax steps; owner, 2026-11-14/17); until then checkout charges the S25 flat rate.
 - **Refs:** D5, D5.1, D6.8
-- **Build:** carriers, carrier_services, shipping_boxes, origins, shipping_rules, `ShippingCarrier` contract, DTOs, `BoxPacker`, fallback `RateTable`, Filament resources.
-- **Tests:** box packing cases (single, many small, ship_separately, overweight), fallback rate.
+- **Changed for Tapin (owner, 2026-11-17; D5, D6.0):** every order is one parcel of fixed size, so there are no shipping boxes or box packer, and the pickup address lives in the Tapin panel (no `origins`).
+- **Build:**
+  - `carriers` (Tipax via Tapin, own courier) and `carrier_services` (Tapin service 7 same-city, 2 between-city, with delivery days), with Filament screens;
+  - the `ShippingCarrier` contract and DTOs (`Parcel`, `Quote`, `ShipmentResult`, `TrackingStatus`);
+  - `ParcelBuilder`: an order or cart becomes one parcel. Weight is the sum of the SKUs' weights plus a packaging weight from settings, at least 1 kg. Declared value is the items' value, at least 4,000,000 rial. The item type is 4 «مایعات-شکستنی» when any item is liquid or fragile, else 1. Orders over 6 kg are flagged (**[CONFIRM] in S23:** split or refuse);
+  - a fallback `RateTable` by weight band × same city / same province / other province, for when Tapin does not answer (the quote is marked an estimate);
+  - rounding of shown prices (`shipping_rules`: round up only);
+  - an admin list of SKUs without a weight.
+- **Tests:** parcel weight (sum plus packaging, 1 kg minimum, over 6 kg flagged), declared value minimum, liquid or fragile item type, fallback rate by band and distance, rounding.
 
 ### S24 Own courier zones
 - **Moved to phase 7** (built after S21; owner, 2026-11-14); until then own-courier deliveries are arranged by hand in the order admin (S29).
@@ -2948,14 +3036,26 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Moved to phase 7** (built after S35; owner, 2026-11-09/17).
 - **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
 - **Already done in S18:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
-- **Build:** extend `TipaxClient` (refresh token), commands `tipax:ping`, `tipax:sync-reference`, `tipax:register-origin`.
-- **Tests:** `Http::fake` fixtures for services and reference data; token refresh.
+- **Changed for Tapin (owner, 2026-11-17; D6.0):** the S18 `TipaxClient` is replaced by a `TapinClient`; there is no sign-in, origin registration or webhook registration.
+- **Build:**
+  - `TapinClient` (Bearer token, `shop_id`, retries, timeouts, every call logged with secrets hidden, `returns.status` checked);
+  - `tapin:ping`;
+  - `tapin:sync-options`, storing Tapin's codes;
+  - `tapin:sync-cities`, with the city decision in D4 (switch ids to Tapin's, or keep Tipax's and store Tapin's beside them);
+  - the map-point decision in D4;
+  - a wallet balance on the admin dashboard.
+- **Tests:** `Http::fake` fixtures from the guide for options, cities and errors (`returns.status` not 20 or 21); the city import.
 
 ### S23 Tipax quotes in checkout
 - **Moved to phase 7**; built after S21 and S24. Until then checkout charges the S25 flat rate.
 - **Refs:** D6.4, D13.4 step 2
-- **Build:** `TipaxCarrier::quote()` (unit conversion g→kg, mm→cm), `GetServicesBetweenCities`, shipping_quotes cache (20 min), shipping rules (free over X), fallback flag.
-- **Tests:** quote mapping from fixture, cache hit, timeout → fallback estimate.
+- **Changed for Tapin (owner, 2026-11-17; D6.0):** quotes come from Tapin's `check-price`.
+- **Build:**
+  - `TapinTipaxCarrier::quote()`: one parcel from `ParcelBuilder`, service 7 inside the shop's city else 2, prepaid, delivery to the door, pickup per settings;
+  - the price shown is `total_send_price` with tax, rounded;
+  - `shipping_quotes` cache (20 min), the free-shipping threshold and coupons as today, and a fallback estimate on timeout;
+  - orders over 6 kg per the S21 decision.
+- **Tests:** request body and price mapping from the guide's fixture, cache hit, timeout → fallback estimate, same-city vs between-city service.
 
 ### S26 Zarinpal payments
 - **Moved to phase 7**; until then checkout pays through the S25 fake gateway.
@@ -2966,8 +3066,16 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S27 Tipax shipment registration and tracking
 - **Moved to phase 7**; until then shipment status is set by hand in the order admin (S29).
 - **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
-- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job; webhooks and tracking poll may move orders to `on_the_way` and `delivered` through `ChangeOrderStatus` (actor `carrier`; owner, 2026-11-14); label link, cancel action.
-- **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
+- **Changed for Tapin (owner, 2026-11-17; D6.0):** no webhooks; status comes from polling.
+- **Build:**
+  - `shipments` and `shipment_events`;
+  - `RegisterTipaxShipment` (idempotent on our order number as `manual_id`, `register` type 0 after payment);
+  - «آماده ارسال» on the order admin, which calls `ready-to-send` and stores the barcode (`contract_code`) and `hash_raw`;
+  - label download (A5 or 10×15) and print;
+  - cancel (refunds the wallet), and re-register when Tapin asks;
+  - `PollTapinStatuses` every 30 minutes for open shipments (`get-status/bulk`). It moves orders to `on_the_way` (status 2 or 7) and `delivered` (3) through `ChangeOrderStatus` (actor `carrier`), and flags returns (5, 6) for staff;
+  - a low wallet balance blocks confirmation with a clear message.
+- **Tests:** idempotent registration, ready-to-send stores the barcode, status mapping per code, polling only open shipments, cancel, low-balance refusal.
 
 ### S28 Notifications (SMS via Melli Payamak)
 - **Moved to phase 7.** The Melli Payamak sender, `SmsManager`, `SendSmsJob`, `sms_logs` and `sms:test` were built in S17 (2026-11-14); this step adds the order templates.
@@ -3060,7 +3168,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Cart, cart items, mini-cart | S19 | Cart |
 | Coupons, coupon usages | S20 | Cart |
 | Carriers, carrier services, shipping boxes, origins, shipping rules, box packer | S21 | Shipping |
-| Tipax client, carrier city mappings, reference sync | S22 | Shipping |
+| Tapin client (Tipax via Tapin), city sync, codes | S22 | Shipping |
 | Shipping quotes (Tipax) | S23 | Shipping |
 | Delivery zones, delivery slots, couriers | S24 | Shipping |
 | Checkout wizard, orders, order items, order numbering | S25 | Checkout / Orders |
