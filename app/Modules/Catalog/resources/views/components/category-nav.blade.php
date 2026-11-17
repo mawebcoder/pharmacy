@@ -82,7 +82,7 @@
                 <ul class="hidden items-center gap-1 xl:flex" x-on:mouseenter="open = false">
                     @foreach ($links as $link)
                         <li>
-                            <a href="{{ $link['href'] }}" wire:navigate class="{{ $linkClass }} text-ink-500">
+                            <a href="{{ $link['href'] }}" @if ($link['newTab'] ?? false) target="_blank" rel="noopener" @else wire:navigate @endif class="{{ $linkClass }} text-ink-500">
                                 @isset($link['icon'])
                                     <x-ts-icon :icon="$link['icon']" class="size-5" />
                                 @endisset

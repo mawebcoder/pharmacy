@@ -11,9 +11,9 @@ use App\Modules\Content\Actions\DeleteBanner;
 use App\Modules\Content\Actions\SaveBanner;
 use App\Modules\Content\Actions\SetPlaceBanners;
 use App\Modules\Content\Data\BannerData;
-use App\Modules\Content\Enums\BannerLinkType;
 use App\Modules\Content\Enums\BannerPlace;
 use App\Modules\Content\Enums\HomeWidgetType;
+use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Exceptions\BannerChangeRefused;
 use App\Modules\Content\Models\Banner;
 use App\Modules\Content\Models\BannerPlacement;
@@ -42,43 +42,43 @@ function slider(): HomeWidget
 }
 
 describe('links', function (): void {
-    it('links to the picked item by its current slug', function (BannerLinkType $type, Closure $makeItem, string $path): void {
+    it('links to the picked item by its current slug', function (LinkType $type, Closure $makeItem, string $path): void {
         $banner = Banner::factory()->linkingTo($type, $makeItem()->getId())->create();
 
         expect($banner->linkUrl())->toBe(url($path));
     })->with([
-        'category' => [BannerLinkType::Category, fn () => Category::factory()->create([Category::COLUMN_SLUG => 'skin']), '/categories/skin'],
-        'collection' => [BannerLinkType::Collection, fn () => ProductCollection::factory()->create([ProductCollection::COLUMN_SLUG => 'summer']), '/collections/summer'],
-        'brand' => [BannerLinkType::Brand, fn () => Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin']), '/brands/eucerin'],
-        'tag' => [BannerLinkType::Tag, fn () => Tag::factory()->create([Tag::COLUMN_SLUG => 'vitamin-d']), '/t/vitamin-d'],
-        'product' => [BannerLinkType::Product, fn () => Product::factory()->active()->create([Product::COLUMN_SLUG => 'urea-cream']), '/products/urea-cream'],
+        'category' => [LinkType::Category, fn () => Category::factory()->create([Category::COLUMN_SLUG => 'skin']), '/categories/skin'],
+        'collection' => [LinkType::Collection, fn () => ProductCollection::factory()->create([ProductCollection::COLUMN_SLUG => 'summer']), '/collections/summer'],
+        'brand' => [LinkType::Brand, fn () => Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin']), '/brands/eucerin'],
+        'tag' => [LinkType::Tag, fn () => Tag::factory()->create([Tag::COLUMN_SLUG => 'vitamin-d']), '/t/vitamin-d'],
+        'product' => [LinkType::Product, fn () => Product::factory()->active()->create([Product::COLUMN_SLUG => 'urea-cream']), '/products/urea-cream'],
     ]);
 
-    it('links to a list page or an external address', function (BannerLinkType $type, ?string $url, string $expected): void {
+    it('links to a list page or an external address', function (LinkType $type, ?string $url, string $expected): void {
         expect(Banner::factory()->linkingTo($type, url: $url)->create()->linkUrl())->toBe(url($expected));
     })->with([
-        'categories list' => [BannerLinkType::CategoriesList, null, '/categories'],
-        'collections list' => [BannerLinkType::CollectionsList, null, '/collections'],
-        'brands list' => [BannerLinkType::BrandsList, null, '/brands'],
-        'external' => [BannerLinkType::External, 'https://example.com/sale', 'https://example.com/sale'],
+        'categories list' => [LinkType::CategoriesList, null, '/categories'],
+        'collections list' => [LinkType::CollectionsList, null, '/collections'],
+        'brands list' => [LinkType::BrandsList, null, '/brands'],
+        'external' => [LinkType::External, 'https://example.com/sale', 'https://example.com/sale'],
     ]);
 
     it('follows a slug change', function (): void {
         $brand = Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin']);
-        $banner = Banner::factory()->linkingTo(BannerLinkType::Brand, $brand->getId())->create();
+        $banner = Banner::factory()->linkingTo(LinkType::Brand, $brand->getId())->create();
 
         $brand->setSlug('eucerin-de')->save();
 
         expect($banner->linkUrl())->toBe(url('/brands/eucerin-de'));
     });
 
-    it('has no link when the picked item is hidden or gone', function (BannerLinkType $type, Closure $makeItem): void {
+    it('has no link when the picked item is hidden or gone', function (LinkType $type, Closure $makeItem): void {
         expect(Banner::factory()->linkingTo($type, $makeItem()->getId())->create()->linkUrl())->toBeNull();
     })->with([
-        'inactive brand' => [BannerLinkType::Brand, fn () => Brand::factory()->inactive()->create()],
-        'draft product' => [BannerLinkType::Product, fn () => Product::factory()->create()],
-        'ended collection' => [BannerLinkType::Collection, fn () => ProductCollection::factory()->ended()->create()],
-        'deleted category' => [BannerLinkType::Category, fn () => tap(Category::factory()->create())->delete()],
+        'inactive brand' => [LinkType::Brand, fn () => Brand::factory()->inactive()->create()],
+        'draft product' => [LinkType::Product, fn () => Product::factory()->create()],
+        'ended collection' => [LinkType::Collection, fn () => ProductCollection::factory()->ended()->create()],
+        'deleted category' => [LinkType::Category, fn () => tap(Category::factory()->create())->delete()],
     ]);
 });
 
@@ -147,7 +147,7 @@ describe('places', function (): void {
             Banner::factory()->create([Banner::COLUMN_TITLE => 'غیرفعال', Banner::COLUMN_IS_ACTIVE => false]),
             Banner::factory()->create([Banner::COLUMN_TITLE => 'هنوز نه', Banner::COLUMN_STARTS_AT => now()->addMinute()]),
             Banner::factory()->create([Banner::COLUMN_TITLE => 'تمام‌شده', Banner::COLUMN_ENDS_AT => now()]),
-            Banner::factory()->linkingTo(BannerLinkType::Brand, Brand::factory()->inactive()->create()->getId())->create([Banner::COLUMN_TITLE => 'مقصد پنهان']),
+            Banner::factory()->linkingTo(LinkType::Brand, Brand::factory()->inactive()->create()->getId())->create([Banner::COLUMN_TITLE => 'مقصد پنهان']),
         ]);
 
         expect(shownBannerTitles($slider))->toBe(['فعال']);
@@ -158,8 +158,8 @@ describe('home page', function (): void {
     it('opens an external banner in a new tab and a catalog banner in the site', function (): void {
         $brand = Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin']);
         placeBanners(slider(), [
-            Banner::factory()->linkingTo(BannerLinkType::External, url: 'https://example.com/sale')->create(),
-            Banner::factory()->linkingTo(BannerLinkType::Brand, $brand->getId())->create(),
+            Banner::factory()->linkingTo(LinkType::External, url: 'https://example.com/sale')->create(),
+            Banner::factory()->linkingTo(LinkType::Brand, $brand->getId())->create(),
         ]);
 
         $html = $this->get(route('home'))->getContent();
@@ -184,7 +184,7 @@ describe('home page', function (): void {
 describe('catalog pages', function (): void {
     it('shows the banners at the top of a page', function (Closure $makePage): void {
         [$url, $place, $placeId] = $makePage();
-        $banner = Banner::factory()->linkingTo(BannerLinkType::External, url: 'https://example.com/sale')->create([Banner::COLUMN_TITLE => 'حراج تابستان']);
+        $banner = Banner::factory()->linkingTo(LinkType::External, url: 'https://example.com/sale')->create([Banner::COLUMN_TITLE => 'حراج تابستان']);
         app(SetPlaceBanners::class)($place, $placeId, [$banner->getId()]);
 
         $this->get($url)

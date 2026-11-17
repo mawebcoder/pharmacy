@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Content\Models;
 
-use App\Modules\Catalog\Queries\CatalogLinks;
 use App\Modules\Content\Database\Factories\BannerFactory;
-use App\Modules\Content\Enums\BannerLinkType;
-use App\Modules\Content\Queries\PageLinks;
+use App\Modules\Content\Enums\LinkType;
+use App\Modules\Content\Queries\LinkUrls;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
@@ -75,12 +74,12 @@ final class Banner extends Model implements HasActivityLogLabel, HasImagePresets
         return $this->setAttribute(self::COLUMN_TITLE, $title);
     }
 
-    public function getLinkType(): BannerLinkType
+    public function getLinkType(): LinkType
     {
         return $this->getAttribute(self::COLUMN_LINK_TYPE);
     }
 
-    public function setLinkType(BannerLinkType $type): static
+    public function setLinkType(LinkType $type): static
     {
         return $this->setAttribute(self::COLUMN_LINK_TYPE, $type);
     }
@@ -149,21 +148,12 @@ final class Banner extends Model implements HasActivityLogLabel, HasImagePresets
      */
     public function linkUrl(): ?string
     {
-        $type = $this->getLinkType();
-
-        return match ($type) {
-            BannerLinkType::CategoriesList => route('categories.index'),
-            BannerLinkType::CollectionsList => route('collections.index'),
-            BannerLinkType::BrandsList => route('brands.index'),
-            BannerLinkType::External => $this->getExternalUrl(),
-            BannerLinkType::Page => $this->getLinkId() === null ? null : app(PageLinks::class)->url($this->getLinkId()),
-            default => $this->getLinkId() === null ? null : app(CatalogLinks::class)->url($type->value, $this->getLinkId()),
-        };
+        return app(LinkUrls::class)->url($this->getLinkType(), $this->getLinkId(), $this->getExternalUrl());
     }
 
     public function opensInNewTab(): bool
     {
-        return $this->getLinkType() === BannerLinkType::External;
+        return $this->getLinkType() === LinkType::External;
     }
 
     public function getDesktopImage(): ?StoredImage
@@ -234,7 +224,7 @@ final class Banner extends Model implements HasActivityLogLabel, HasImagePresets
     protected function casts(): array
     {
         return [
-            self::COLUMN_LINK_TYPE => BannerLinkType::class,
+            self::COLUMN_LINK_TYPE => LinkType::class,
             self::COLUMN_LINK_ID => 'integer',
             self::COLUMN_IS_ACTIVE => 'boolean',
             self::COLUMN_STARTS_AT => 'datetime',

@@ -6,7 +6,7 @@ namespace App\Modules\Content\Filament\Resources\Banners;
 
 use App\Modules\Catalog\Queries\CatalogLinks;
 use App\Modules\Content\Actions\DeleteBanner;
-use App\Modules\Content\Enums\BannerLinkType;
+use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Filament\Resources\Banners\Pages\CreateBanner;
 use App\Modules\Content\Filament\Resources\Banners\Pages\EditBanner;
 use App\Modules\Content\Filament\Resources\Banners\Pages\ListBanners;
@@ -65,7 +65,7 @@ final class BannerResource extends Resource
                 TextColumn::make(Banner::COLUMN_TITLE)->label('عنوان')->searchable()->wrap(),
                 TextColumn::make(Banner::COLUMN_LINK_TYPE)
                     ->label('مقصد')
-                    ->formatStateUsing(fn (BannerLinkType $state): string => $state->label())
+                    ->formatStateUsing(fn (LinkType $state): string => $state->label())
                     ->description(fn (Banner $record): ?string => self::targetLabel($record)),
                 IconColumn::make(Banner::COLUMN_IS_ACTIVE)->label('فعال')->boolean(),
                 IconColumn::make('scheduled')
@@ -116,8 +116,8 @@ final class BannerResource extends Resource
         $type = $banner->getLinkType();
 
         return match (true) {
-            $type === BannerLinkType::External => $banner->getExternalUrl(),
-            $type === BannerLinkType::Page && $banner->getLinkId() !== null => app(PageLinks::class)->label($banner->getLinkId()) ?? 'حذف‌شده',
+            $type === LinkType::External => $banner->getExternalUrl(),
+            $type === LinkType::Page && $banner->getLinkId() !== null => app(PageLinks::class)->label($banner->getLinkId()) ?? 'حذف‌شده',
             $type->isCatalogItem() && $banner->getLinkId() !== null => app(CatalogLinks::class)->label($type->value, $banner->getLinkId()) ?? 'حذف‌شده',
             default => null,
         };

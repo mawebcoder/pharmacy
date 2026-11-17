@@ -1,27 +1,18 @@
 {{--
     Site footer (roadmap B8.2, B9.2 item 8): trust block (x-layout.trust), help links, e-Namad slot.
-    Page links point at the S34 static pages; contact details and badges come from settings in S35.
+    The link columns are the footer menus («منوها», S34); contact details and badges come from settings in S35.
 --}}
 @php
-    $columns = [
-        'راهنمای خرید' => [
-            'شیوه‌های ارسال' => '/pages/shipping',
-            'روش‌های پرداخت' => '/pages/payment-methods',
-            'بازگشت کالا' => '/pages/returns',
-            'پرسش‌های متداول' => '/faq',
-        ],
-        'داروخانه' => [
-            'درباره ما' => '/pages/about',
-            'مجوزها' => '/pages/licenses',
-            'داروساز مسئول' => '/pharmacist',
-            'تماس با ما' => '/contact',
-        ],
-        'قوانین' => [
-            'شرایط استفاده' => '/pages/terms',
-            'حریم خصوصی' => '/pages/privacy',
-            'پیگیری سفارش' => '/track',
-        ],
-    ];
+    // The three footer columns are menus edited in the admin («منوها», S34; owner, 2026-11-17).
+    $menuLinks = app(\App\Modules\Content\Queries\MenuLinks::class);
+    $columns = array_values(array_filter(
+        array_map(fn ($location): array => $menuLinks->for($location), [
+            \App\Modules\Content\Enums\MenuLocation::Footer1,
+            \App\Modules\Content\Enums\MenuLocation::Footer2,
+            \App\Modules\Content\Enums\MenuLocation::Footer3,
+        ]),
+        fn (array $column): bool => $column['links'] !== [],
+    ));
 @endphp
 
 <footer class="mt-12 border-t border-line-200 bg-card">
@@ -29,12 +20,14 @@
         <x-layout.trust class="border-b border-line-200 py-8" />
 
         <div class="grid gap-8 py-8 md:grid-cols-4">
-            @foreach ($columns as $title => $links)
+            @foreach ($columns as $column)
                 <div>
-                    <h2 class="mb-3 text-sm font-bold text-ink-900">{{ $title }}</h2>
+                    @if ($column['title'] !== null)
+                        <h2 class="mb-3 text-sm font-bold text-ink-900">{{ $column['title'] }}</h2>
+                    @endif
                     <ul class="space-y-1">
-                        @foreach ($links as $label => $href)
-                            <li><a href="{{ $href }}" class="inline-block py-1 text-sm text-ink-500 hover:text-primary-700">{{ $label }}</a></li>
+                        @foreach ($column['links'] as $link)
+                            <li><a href="{{ $link['href'] }}" @if ($link['newTab']) target="_blank" rel="noopener" @endif class="inline-block py-1 text-sm text-ink-500 hover:text-primary-700">{{ $link['label'] }}</a></li>
                         @endforeach
                     </ul>
                 </div>

@@ -8,11 +8,11 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where a banner leads (roadmap D3.6, S13b). The admin picks the item; the URL is worked out when the banner is
- * shown, so it follows slug changes. The catalog types are resolved through Catalog's CatalogLinks, static pages
- * (S34) through PageLinks.
+ * Where a banner or a menu item leads (roadmap D3.6, S13b, S34). The admin picks the item; the URL is worked out when
+ * it is shown (LinkUrls), so it follows slug changes. The catalog types are resolved through Catalog's CatalogLinks,
+ * static pages through PageLinks, the site pages by route name.
  */
-enum BannerLinkType: string implements HasLabel
+enum LinkType: string implements HasLabel
 {
     use LabelledEnum;
 
@@ -26,6 +26,11 @@ enum BannerLinkType: string implements HasLabel
     case CategoriesList = 'categories_list';
     case CollectionsList = 'collections_list';
     case BrandsList = 'brands_list';
+    case AllProducts = 'products';
+    case Deals = 'deals';
+    case Faq = 'faq';
+    case Contact = 'contact';
+    case TrackOrder = 'track';
     case External = 'external';
 
     public function label(): string
@@ -41,6 +46,11 @@ enum BannerLinkType: string implements HasLabel
             self::CategoriesList => 'فهرست دسته‌بندی‌ها',
             self::CollectionsList => 'فهرست کالکشن‌ها',
             self::BrandsList => 'فهرست برندها',
+            self::AllProducts => 'همه کالاها',
+            self::Deals => 'پیشنهادهای لحظه‌ای',
+            self::Faq => 'پرسش‌های متداول',
+            self::Contact => 'تماس با ما',
+            self::TrackOrder => 'پیگیری سفارش',
             self::External => 'آدرس بیرونی',
         };
     }
@@ -59,5 +69,23 @@ enum BannerLinkType: string implements HasLabel
     public function isCatalogItem(): bool
     {
         return in_array($this, [self::Category, self::Subcategory, self::Collection, self::Brand, self::Tag, self::Product], true);
+    }
+
+    /**
+     * The route of a site page target (a list page or a fixed page such as «تماس با ما»), else null.
+     */
+    public function routeName(): ?string
+    {
+        return match ($this) {
+            self::CategoriesList => 'categories.index',
+            self::CollectionsList => 'collections.index',
+            self::BrandsList => 'brands.index',
+            self::AllProducts => 'products.index',
+            self::Deals => 'deals',
+            self::Faq => 'faq',
+            self::Contact => 'contact',
+            self::TrackOrder => 'orders.track',
+            default => null,
+        };
     }
 }

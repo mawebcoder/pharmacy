@@ -1,6 +1,6 @@
 # Roadmap progress
 
-Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Rows follow the build order: the shipping foundation and own courier zones (S21, S24; owner, 2026-11-14), then Tipax, Zarinpal and SMS (S22, S23, S26, S27, S28; owner, 2026-11-09) come last, before launch.
+Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Rows follow the build order: after the content steps come the shipping foundation and own courier zones (S21, S24; owner, 2026-11-14), then Tipax, Zarinpal and SMS (S22, S23, S26, S27, S28; owner, 2026-11-09); SEO, hardening, performance, ops and reporting (S36–S39, S41, S42) come last, before launch (owner, 2026-11-17).
 
 | Step | Title | Status | Date | Commit |
 |---|---|---|---|---|
@@ -33,14 +33,8 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S31 | Packing | todo | | |
 | S32 | Returns | todo | | |
 | S33 | Home, banners, deals (flash deals, /deals; bundles in S33b) | done | 2026-11-17 | 5be9dc0 |
-| S34 | Static pages, FAQ, contact, menus | in progress (pages done) | | |
+| S34 | Static pages, FAQ, contact, menus | in progress (built, awaiting commit) | | |
 | S35 | Settings and trust | todo | | |
-| S36 | SEO | todo | | |
-| S37 | Security hardening | todo | | |
-| S38 | Performance | todo | | |
-| S39 | Observability, backups, ops | todo | | |
-| S41 | Reporting warehouse (before S40) | todo | | |
-| S42 | Dashboard and report pages (before S40) | todo | | |
 | S21 | Shipping foundation | todo | | |
 | S24 | Own courier zones | todo | | |
 | S22 | Tipax client and reference sync | todo | | |
@@ -48,4 +42,10 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S26 | Zarinpal payments | todo | | |
 | S27 | Tipax shipment registration and tracking | todo | | |
 | S28 | Notifications (SMS) | todo | | |
+| S36 | SEO | todo | | |
+| S37 | Security hardening | todo | | |
+| S38 | Performance | todo | | |
+| S39 | Observability, backups, ops | todo | | |
+| S41 | Reporting warehouse (before S40) | todo | | |
+| S42 | Dashboard and report pages (before S40) | todo | | |
 | S40 | Launch | todo | | |

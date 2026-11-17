@@ -6,9 +6,9 @@ use App\Modules\Content\Actions\SaveBanner;
 use App\Modules\Content\Actions\SavePage;
 use App\Modules\Content\Data\BannerData;
 use App\Modules\Content\Data\PageData;
-use App\Modules\Content\Enums\BannerLinkType;
 use App\Modules\Content\Enums\BannerPlace;
 use App\Modules\Content\Enums\HomeWidgetType;
+use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Exceptions\BannerChangeRefused;
 use App\Modules\Content\Filament\Resources\Pages\PageResource;
 use App\Modules\Content\Filament\Resources\Pages\Pages\CreatePage;
@@ -129,7 +129,7 @@ describe('the storefront page', function (): void {
 describe('banners linking to a page', function (): void {
     it('follow the page address and hide while the page is unpublished', function (): void {
         $page = Page::factory()->create([Page::COLUMN_SLUG => 'guide']);
-        $banner = Banner::factory()->linkingTo(BannerLinkType::Page, $page->getId())->create();
+        $banner = Banner::factory()->linkingTo(LinkType::Page, $page->getId())->create();
 
         expect($banner->linkUrl())->toBe(url('/pages/guide'));
 
@@ -145,7 +145,7 @@ describe('banners linking to a page', function (): void {
     });
 
     it('cannot be saved without an existing page', function (): void {
-        $data = BannerData::fromArray([Banner::COLUMN_TITLE => 'راهنما', Banner::COLUMN_LINK_TYPE => BannerLinkType::Page->value, Banner::COLUMN_LINK_ID => 999_999]);
+        $data = BannerData::fromArray([Banner::COLUMN_TITLE => 'راهنما', Banner::COLUMN_LINK_TYPE => LinkType::Page->value, Banner::COLUMN_LINK_ID => 999_999]);
 
         expect(fn (): Banner => app(SaveBanner::class)($data))->toThrow(BannerChangeRefused::class);
     });

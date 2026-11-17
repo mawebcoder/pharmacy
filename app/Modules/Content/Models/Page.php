@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Content\Models;
 
 use App\Modules\Content\Database\Factories\PageFactory;
+use App\Modules\Content\Queries\MenuLinks;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -150,6 +151,16 @@ final class Page extends Model implements HasActivityLogLabel
             ->logOnly([self::COLUMN_TITLE, self::COLUMN_SLUG, self::COLUMN_IS_ACTIVE, self::COLUMN_SEO_TITLE, self::COLUMN_SEO_DESCRIPTION])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
+    }
+
+    /**
+     * Menus show a page only while it is live, so their cache is cleared when a page changes.
+     */
+    protected static function booted(): void
+    {
+        self::saved(fn () => MenuLinks::forget());
+        self::deleted(fn () => MenuLinks::forget());
+        self::restored(fn () => MenuLinks::forget());
     }
 
     /**

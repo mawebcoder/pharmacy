@@ -6,7 +6,7 @@ namespace App\Modules\Content\Actions;
 
 use App\Modules\Catalog\Queries\CatalogLinks;
 use App\Modules\Content\Data\BannerData;
-use App\Modules\Content\Enums\BannerLinkType;
+use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Exceptions\BannerChangeRefused;
 use App\Modules\Content\Models\Banner;
 use App\Modules\Content\Queries\PageLinks;
@@ -31,7 +31,7 @@ final readonly class SaveBanner
             throw BannerChangeRefused::linkItemMissing();
         }
 
-        if ($data->linkType === BannerLinkType::External && ($data->externalUrl === null || ! str_starts_with($data->externalUrl, 'https://') || filter_var($data->externalUrl, FILTER_VALIDATE_URL) === false)) {
+        if ($data->linkType === LinkType::External && ($data->externalUrl === null || ! str_starts_with($data->externalUrl, 'https://') || filter_var($data->externalUrl, FILTER_VALIDATE_URL) === false)) {
             throw BannerChangeRefused::externalUrlInvalid();
         }
 
@@ -48,8 +48,8 @@ final readonly class SaveBanner
         return $banner;
     }
 
-    private function targetLabel(BannerLinkType $type, int $linkId): ?string
+    private function targetLabel(LinkType $type, int $linkId): ?string
     {
-        return $type === BannerLinkType::Page ? $this->pageLinks->label($linkId) : $this->catalogLinks->label($type->value, $linkId);
+        return $type === LinkType::Page ? $this->pageLinks->label($linkId) : $this->catalogLinks->label($type->value, $linkId);
     }
 }

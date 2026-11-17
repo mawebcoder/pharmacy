@@ -5,9 +5,9 @@ declare(strict_types=1);
 use App\Modules\Catalog\Filament\Resources\Collections\Pages\ListCollections;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
-use App\Modules\Content\Enums\BannerLinkType;
 use App\Modules\Content\Enums\BannerPlace;
 use App\Modules\Content\Enums\HomeWidgetType;
+use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Filament\Resources\Banners\Pages\CreateBanner;
 use App\Modules\Content\Filament\Resources\Banners\Pages\ListBanners;
 use App\Modules\Content\Filament\Resources\HomeWidgets\Pages\ManageHomeWidgets;
@@ -47,7 +47,7 @@ describe('as a content editor', function (): void {
         livewire(CreateBanner::class)
             ->fillForm([
                 Banner::COLUMN_TITLE => 'حراج کرم',
-                Banner::COLUMN_LINK_TYPE => BannerLinkType::Product->value,
+                Banner::COLUMN_LINK_TYPE => LinkType::Product->value,
                 'link_sku_id' => $sku->getId(),
                 Banner::IMAGE_DESKTOP => [testImage(1920, 600, 'jpg')],
                 Banner::IMAGE_MOBILE => [testImage(800, 400, 'jpg')],
@@ -56,7 +56,7 @@ describe('as a content editor', function (): void {
             ->assertHasNoFormErrors();
 
         expect(Banner::query()->sole())
-            ->getLinkType()->toBe(BannerLinkType::Product)
+            ->getLinkType()->toBe(LinkType::Product)
             ->getLinkId()->toBe($product->getId())
             ->getDesktopImage()->not->toBeNull();
     });
@@ -65,7 +65,7 @@ describe('as a content editor', function (): void {
         $create = fn (int $height) => livewire(CreateBanner::class)
             ->fillForm([
                 Banner::COLUMN_TITLE => 'حراج',
-                Banner::COLUMN_LINK_TYPE => BannerLinkType::BrandsList->value,
+                Banner::COLUMN_LINK_TYPE => LinkType::BrandsList->value,
                 Banner::IMAGE_DESKTOP => [testImage(1920, 600, 'jpg')],
                 Banner::IMAGE_MOBILE => [testImage(800, $height, 'jpg')],
             ])
@@ -77,7 +77,7 @@ describe('as a content editor', function (): void {
 
     it('asks for the desktop and mobile artwork', function (): void {
         livewire(CreateBanner::class)
-            ->fillForm([Banner::COLUMN_TITLE => 'حراج', Banner::COLUMN_LINK_TYPE => BannerLinkType::BrandsList->value])
+            ->fillForm([Banner::COLUMN_TITLE => 'حراج', Banner::COLUMN_LINK_TYPE => LinkType::BrandsList->value])
             ->call('create')
             ->assertHasFormErrors([Banner::IMAGE_DESKTOP => 'required', Banner::IMAGE_MOBILE => 'required']);
     });

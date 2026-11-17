@@ -325,7 +325,7 @@ One-tap removal (owner, 2026-11-15): a bin beside each line's total (cart page) 
 
 ### B9.7 Checkout (as built in S25; owner, 2026-11-14)
 - **Address step (owner, 2026-11-15)**: «بازگشت به سبد» on top of the page; on phones «ادامه با آدرس انتخاب‌شده» is a fixed bar above the bottom navigation, like the cart's; it is always shown and disabled until an address is chosen. Every input of the address form has a placeholder; deleting an address shows a spinner on its button until done.
-- **Flow**: cart «ادامه خرید» → `/checkout/address` **always** → `/checkout` («بازبینی و پرداخت») → gateway → `/checkout/result/{order}`. Guests sign in first and come back to the address step. Stepper on top: آدرس ارسال ← بازبینی و پرداخت (a shipping step returns with real shipping options in phase 8).
+- **Flow**: cart «ادامه خرید» → `/checkout/address` **always** → `/checkout` («بازبینی و پرداخت») → gateway → `/checkout/result/{order}`. Guests sign in first and come back to the address step. Stepper on top: آدرس ارسال ← بازبینی و پرداخت (a shipping step returns with real shipping options in phase 7).
 - **Address step**: the customer's address cards (the same list as «آدرس‌ها»: add, edit, make default, delete) with «ارسال به این آدرس» on each; the add/edit form opens in a right-to-left modal; no map pin.
 - **Review**: address with «تغییر آدرس», «ارسال» (one flat «هزینه ارسال», «رایگان» over the threshold or with a free-shipping coupon), items (collapsed on mobile), order note, coupon field (collapsible), totals, «پرداخت <total>». No terms checkbox or terms link on checkout (owner, 2026-11-15); the static pages (terms, privacy, …) are to be linked from the customer's profile later. **Nothing clickable on checkout leads outside the purchase** (owner, 2026-11-15): only the steps back (address, cart) and paying. Under «ارسال» a hint says the parcel's «کد رهگیری» appears on the order's detail page in the account after dispatch (owner, 2026-11-15) — **S27/S29 must show the tracking code there**. Items that can no longer be bought are named in a warning and the button reads «ابتدا سبد خرید را اصلاح کنید».
 - Desktop: content with the summary column on the end side; mobile: sticky pay button.
@@ -944,7 +944,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | coupon_id, coupon_code, coupon_snapshot | the coupon's rules at ordering (type, value, limits, caps) as JSON |
 | shipping_method | `tipax`, `own_courier` |
 | carrier_service_id | FK to `carrier_services` |
-| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate. Until phase 8 (S25): price, whether free and why (threshold or coupon), and the flat rate and threshold in force |
+| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate. Until phase 7 (S25): price, whether free and why (threshold or coupon), and the flat rate and threshold in force |
 | payment_fee | Rial; the gateway fee of that payment, for net margin |
 | shipping_cost_quoted, shipping_cost_actual | Rial; actual comes from Tipax after pickup |
 | delivery_slot_id | own courier only |
@@ -1847,7 +1847,7 @@ As built in S25 (owner, 2026-11-14):
 2. Review (`/checkout`): `Cart\Queries\CheckoutQuote` works out the cart, the coupon on the fly, the flat shipping and the address snapshot.
 3. «پرداخت»: `Orders\Actions\PlaceOrder` (cache lock per customer, transaction) **creates the order only now**, after checking everything again: items buyable and within limits, current prices against the total shown, coupon still valid (then reserved), address theirs and its city deliverable. If anything changed, no order; the page reloads with the reason. Then it copies the snapshots, shares the coupon discount over the items, **empties the cart** and opens the payment link (`Payments\Actions\OpenPaymentLink`) → gateway.
 4. A failed payment is retried from the order («تلاش دوباره» on the result page, «پرداخت» in «سفارش‌ها») until it expires.
-5. Phase 8 adds the shipping step: `Shipping\Actions\QuoteCart` packs items into boxes (D5) and quotes Tipax and own courier.
+5. Phase 7 adds the shipping step: `Shipping\Actions\QuoteCart` packs items into boxes (D5) and quotes Tipax and own courier.
 
 ### D13.5 Payment
 See D7.2. On verify success: `Payments\Events\PaymentSucceeded` (sent once) → (a) Orders: `MarkOrderPaid` moves the order to `paid` (also from `expired` when verified late) and marks the coupon used (`SettleOrderCoupon`, S25); (b) Pricing: create provider purchase draft (S30); (c) Notifications: SMS `order_paid` (S28). On NOK or cancel: the attempt is `failed` and the order stays `pending`, payable again until it expires; on expiry the order becomes `expired` and the coupon is released (owner, 2026-11-14).
@@ -2726,9 +2726,9 @@ Never: commit or push without explicit approval; call real Tipax/Zarinpal produc
 | 3 Customers & cart | S17–S20 |
 | 4 Checkout (stand-ins for shipping and payments) | S25 |
 | 5 Orders operations | S29–S32 |
-| 6 Content, SEO, trust | S33–S36 |
-| 7 Hardening & reporting | S37–S39, S41–S42 |
-| 8 Shipping and external integrations, then launch | S21, S24 (shipping foundation and own courier zones; owner 2026-11-14), S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09), then S40 |
+| 6 Content and trust | S33–S35 |
+| 7 Shipping and external integrations | S21, S24 (shipping foundation and own courier zones; owner 2026-11-14), S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09) |
+| 8 SEO, hardening & reporting, then launch | S36–S39, S41–S42 (moved after the main functionality, owner 2026-11-17), then S40 |
 
 ## E3. Steps
 
@@ -2862,13 +2862,13 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S25 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
-- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering (`PH-{Jalali Ym}-{id, 6 digits}`), status `pending`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 8); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S19 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S21), own courier zones (S24) and Tipax quotes (S23) in phase 8 (owner, 2026-11-14).
+- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering (`PH-{Jalali Ym}-{id, 6 digits}`), status `pending`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 7); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S19 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S21), own courier zones (S24) and Tipax quotes (S23) in phase 7 (owner, 2026-11-14).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content (address, customer, coupon, shipping quote and every item field of the D3.4 «Snapshot rule»; editing the product, price, address or city afterwards leaves the order unchanged).
 - **Built (owner, 2026-11-14):** the address step and review page (B9.7, D13.4), `PlaceOrder` with re-checks and snapshots, the seven statuses and `ChangeOrderStatus` (D3.5), payments with one link per order and the fake gateway (`config('payments.gateway') = 'fake'`, refused unless `payments.fake_enabled`, so production can never take fake payments), `/checkout/result/{order}` (paid, failed-but-payable, expired), «سفارش‌ها» with «پرداخت», «لغو سفارش» and «سفارش دوباره» (`ReorderItems`: still-buyable items back into the cart at today's price, added and capped; the rest reported), addresses in parts with `AddressText`, the flat shipping setting, owner-only checks on every account action. Also in this step at the owner's request: dark mode and the design system (B3), Iranian postal-code rules and the 0900 prefix (D3.3), the product page layout ahead of S13 (B9.5) and the WhatsApp/Telegram contact settings (D3.4 settings).
 
 ### S29 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
-- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 8), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (the read-only order detail page `/account/orders/{id}` was built early with S25: header card, items, status history, address and payment summary; owner, 2026-11-14) (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
+- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 7), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (the read-only order detail page `/account/orders/{id}` was built early with S25: header card, items, status history, address and payment summary; owner, 2026-11-14) (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders, the customer page lists only that customer's orders and each row links to its order view (new tab).
 - **As built (owner, 2026-11-15):** «سفارش‌ها» in «فروش» (`OrderResource`): list (number, date, customer and mobile from the snapshot, status, items, total, payment; search by number or mobile; filters by status, payment, date) and a view page from the snapshots only (summary with tracking code and refund, items with supplier, purchase price and gross margin, totals, customer and address, status history with who and why). Header actions show only when the move is allowed (D3.5): «شروع آماده‌سازی», «تحویل به حمل» (tracking code required; `SendOrderOnItsWay`), «تحویل شد», «لغو سفارش» (reason required; `CancelOrderByAdmin`, payment → refund pending), «ثبت بازگشت وجه» (reference required; `MarkOrderRefunded`, super admins only; the amount paid back for the products and for shipping, `refund_items_amount` / `refund_shipping_amount`, prefilled with the full amounts and at most what was paid for each, owner 2026-11-16; when an order with free shipping is cancelled after delivery, the product refund starts at what was paid less the free shipping the store paid for, `shipping_discount`), «یادداشت مدیر». Operators get `ViewAny/View/Update:Order`; `Refund:Order` is left to super admins; content editors see no orders. Tabs: «تراکنش‌های پرداخت» on the order (`Payments\Filament\RelationManagers\OrderPaymentsRelationManager`) and «سفارش‌ها» on the customer (`Orders\Filament\RelationManagers\CustomerOrdersRelationManager`, rows open in a new tab); both build their relation from the owner record, keeping module boundaries. Customers see the tracking code on their order page; `/track` («پیگیری سفارش») finds an order by number plus the customer's or receiver's mobile and shows only its status, history and tracking code, with the same answer for any mismatch.
 
@@ -2880,7 +2880,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S31 Packing
 - **Refs:** D13.7
-- **Build:** packing screen (confirm weight; suggested boxes come with the S21 box packer in phase 8, owner 2026-11-14), packing slip print, triggers shipment registration.
+- **Build:** packing screen (confirm weight; suggested boxes come with the S21 box packer in phase 7, owner 2026-11-14), packing slip print, triggers shipment registration.
 - **Tests:** packed transition requires weights; triggers job.
 
 ### S32 Returns
@@ -2897,12 +2897,71 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S34 Static pages, FAQ, contact, menus
 - **Refs:** D3.6, B5, B7–B13
 - **Build:** pages, FAQ, menus (header/footer/mobile), contact form with rate limit. **Pages were built ahead** (owner, 2026-11-14; see D3.6 «pages»): admin «صفحه‌های ثابت» with the rich editor, `/pages/{slug}`, the eight footer pages as drafts, cleaned HTML and a «یک صفحه ثابت» banner link. S34 still builds FAQ, menus and the contact form.
+- **Decided (owner, 2026-11-17):**
+  - **Menus:** «دسته‌بندی کالاها» and its mega-menu stay hard-coded. Everything else is edited in «منوها» (group «محتوا»):
+    - the header site links beside it;
+    - the three footer columns, each with a heading;
+    - a phone and tablet menu opened from a «منو» button in the header (below 1280 px).
+  - **Menu items:** each has a title, an optional heroicon picked from a short list, and an on/off switch. Items are reordered by drag.
+  - **Menu links:** an item picks its target like a banner does, so links follow slug changes and an item whose target is gone or hidden is left out. Targets: a page, category, subcategory, collection, brand, tag or product; the list pages; «همه کالاها»; «پیشنهادهای لحظه‌ای»; «پرسش‌های متداول»; «تماس با ما»; «پیگیری سفارش»; or an https address. `BannerLinkType` becomes the shared `LinkType`.
+  - **Menu data:** no nesting (`parent_id` dropped). Tables `menus` (one per location, with a heading) and `menu_items`. They are created with today's links in a migration and cached per location, cleared when a menu, item or page changes.
+  - **FAQ:** groups are a fixed list (سفارش و ارسال، پرداخت، بازگشت کالا، حساب کاربری، دارو و نسخه، سایر). Answers are plain text. `/faq` shows active questions by group as an accordion.
+  - **Contact:** name, mobile, optional email, a subject from a fixed list, and the message. Limited to 3 sends per 10 minutes per IP and per mobile.
+  - **Contact admin:** «پیام‌های تماس» with statuses new, read and answered, and a badge counting new messages. Opening a message marks it read. There is no SMS or email to staff until S28.
 - **Tests:** sanitized HTML, rate limit on contact.
 
 ### S35 Settings and trust
 - **Refs:** D3.6 (settings, social, trust badges, pharmacists), B2 rule 3, B7–B13
 - **Build:** spatie/laravel-settings page, social links, trust badges (e-Namad embed), pharmacist page, trust counters (live).
 - **Tests:** settings cache invalidation; e-Namad embed renders.
+
+> **Phase 7: Shipping and external integrations (owner, 2026-11-09; shipping added 2026-11-14; moved before SEO, hardening and reporting, owner 2026-11-17).** The shipping foundation (S21) and own courier zones (S24) come first, then Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28), right after the content steps (S33–S35) and before SEO, hardening and reporting (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S25), shipment status and own-courier deliveries set by hand (S29).
+
+### S21 Shipping foundation
+- **Moved to phase 7** (built after S35, before the Tipax steps; owner, 2026-11-14/17); until then checkout charges the S25 flat rate.
+- **Refs:** D5, D5.1, D6.8
+- **Build:** carriers, carrier_services, shipping_boxes, origins, shipping_rules, `ShippingCarrier` contract, DTOs, `BoxPacker`, fallback `RateTable`, Filament resources.
+- **Tests:** box packing cases (single, many small, ship_separately, overweight), fallback rate.
+
+### S24 Own courier zones
+- **Moved to phase 7** (built after S21; owner, 2026-11-14); until then own-courier deliveries are arranged by hand in the order admin (S29).
+- **Refs:** D5.1 (zones, slots, couriers)
+- **Note (2026-11-14, S18):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
+- **Build:** delivery zones (city + postal-code ranges), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
+- **Tests:** address in zone, slot capacity exhausted.
+
+### S22 Tipax client and reference sync
+- **Moved to phase 7** (built after S35; owner, 2026-11-09/17).
+- **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
+- **Already done in S18:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
+- **Build:** extend `TipaxClient` (refresh token), commands `tipax:ping`, `tipax:sync-reference`, `tipax:register-origin`.
+- **Tests:** `Http::fake` fixtures for services and reference data; token refresh.
+
+### S23 Tipax quotes in checkout
+- **Moved to phase 7**; built after S21 and S24. Until then checkout charges the S25 flat rate.
+- **Refs:** D6.4, D13.4 step 2
+- **Build:** `TipaxCarrier::quote()` (unit conversion g→kg, mm→cm), `GetServicesBetweenCities`, shipping_quotes cache (20 min), shipping rules (free over X), fallback flag.
+- **Tests:** quote mapping from fixture, cache hit, timeout → fallback estimate.
+
+### S26 Zarinpal payments
+- **Moved to phase 7**; until then checkout pays through the S25 fake gateway.
+- **Refs:** D7 (all), D11.4, D16 (payments)
+- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing `Payments\Contracts\PaymentGateway` (S25); `config/payments.php` gets the gateway block (merchant id, sandbox, callback) (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
+- **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
+
+### S27 Tipax shipment registration and tracking
+- **Moved to phase 7**; until then shipment status is set by hand in the order admin (S29).
+- **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
+- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job; webhooks and tracking poll may move orders to `on_the_way` and `delivered` through `ChangeOrderStatus` (actor `carrier`; owner, 2026-11-14); label link, cancel action.
+- **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
+
+### S28 Notifications (SMS via Melli Payamak)
+- **Moved to phase 7.** The Melli Payamak sender, `SmsManager`, `SendSmsJob`, `sms_logs` and `sms:test` were built in S17 (2026-11-14); this step adds the order templates.
+- **Refs:** D11.6, D3.6 (templates), D13.1
+- **Build:** order templates ↔ pattern ids (config/sms.php), low-credit alert; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
+- **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
+
+> **Phase 8: SEO, hardening and reporting, built after the shipping and payment steps (owner, 2026-11-17: the main functionality comes first).** S36, S37, S38, S39, S41 and S42 run after S28 and right before launch (S40).
 
 ### S36 SEO
 - **Refs:** D3.6 (seo_redirects), B5
@@ -2933,52 +2992,6 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Refs:** D22.1, D22.4, B12, B7–B13
 - **Build:** **SKU sales on the SKU page** (owner, 2026-11-09): widgets and charts inside each SKU's suppliers page showing how much was sold (quantity and money), how much was bought from each supplier and sold per supplier, and the SKU's total gross and net margin (from order items' `variant_price_id` records and the reporting facts; filters by date range / Jalali month); **supplier sales on the supplier view page** (owner, 2026-11-09): widgets and charts showing how many products were sold that were bought from this supplier, which products and SKUs, at which prices (selling, haraj, supplier cost from each order item's price record), how much money was sold from this supplier, and its other sales reports (gross/net margin, top SKUs, sales over time; same filters); dashboard widgets (KPIs R1/R2, sales & margin chart, live R8/R10/R26), report pages per group with filters (date range, Jalali month, category, brand, provider) and CSV/XLSX export; ★ reports in MVP, others behind a feature flag until data exists; role-based visibility.
 - **Tests:** SKU page widgets: quantity, revenue, per-supplier split and gross/net margin match seeded order items; supplier page widgets: quantity, products sold, prices and revenue from this supplier match seeded order items; widgets render from seeded `rpt_*` data; live widgets query counts bounded; access by role; export matches filters.
-
-> **Phase 8: Shipping and external integrations, built last (owner, 2026-11-09; shipping added 2026-11-14).** The shipping foundation (S21) and own courier zones (S24) come first, then Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28), all after reporting and right before launch (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S25), shipment status and own-courier deliveries set by hand (S29).
-
-### S21 Shipping foundation
-- **Moved to phase 8** (built after S42, before the Tipax steps; owner, 2026-11-14); until then checkout charges the S25 flat rate.
-- **Refs:** D5, D5.1, D6.8
-- **Build:** carriers, carrier_services, shipping_boxes, origins, shipping_rules, `ShippingCarrier` contract, DTOs, `BoxPacker`, fallback `RateTable`, Filament resources.
-- **Tests:** box packing cases (single, many small, ship_separately, overweight), fallback rate.
-
-### S24 Own courier zones
-- **Moved to phase 8** (built after S21; owner, 2026-11-14); until then own-courier deliveries are arranged by hand in the order admin (S29).
-- **Refs:** D5.1 (zones, slots, couriers)
-- **Note (2026-11-14, S18):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
-- **Build:** delivery zones (city + postal-code ranges), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
-- **Tests:** address in zone, slot capacity exhausted.
-
-### S22 Tipax client and reference sync
-- **Moved to phase 8** (built after S42; owner, 2026-11-09).
-- **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
-- **Already done in S18:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
-- **Build:** extend `TipaxClient` (refresh token), commands `tipax:ping`, `tipax:sync-reference`, `tipax:register-origin`.
-- **Tests:** `Http::fake` fixtures for services and reference data; token refresh.
-
-### S23 Tipax quotes in checkout
-- **Moved to phase 8**; built after S21 and S24. Until then checkout charges the S25 flat rate.
-- **Refs:** D6.4, D13.4 step 2
-- **Build:** `TipaxCarrier::quote()` (unit conversion g→kg, mm→cm), `GetServicesBetweenCities`, shipping_quotes cache (20 min), shipping rules (free over X), fallback flag.
-- **Tests:** quote mapping from fixture, cache hit, timeout → fallback estimate.
-
-### S26 Zarinpal payments
-- **Moved to phase 8**; until then checkout pays through the S25 fake gateway.
-- **Refs:** D7 (all), D11.4, D16 (payments)
-- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing `Payments\Contracts\PaymentGateway` (S25); `config/payments.php` gets the gateway block (merchant id, sandbox, callback) (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
-- **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
-
-### S27 Tipax shipment registration and tracking
-- **Moved to phase 8**; until then shipment status is set by hand in the order admin (S29).
-- **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
-- **Build:** shipments/packages/events, `RegisterTipaxShipment` job (idempotent), callback + webhook controllers (secret header), `tipax:register-webhook`, polling job; webhooks and tracking poll may move orders to `on_the_way` and `delivered` through `ChangeOrderStatus` (actor `carrier`; owner, 2026-11-14); label link, cancel action.
-- **Tests:** idempotent registration, callback success/failure, webhook secret rejection, status mapping.
-
-### S28 Notifications (SMS via Melli Payamak)
-- **Moved to phase 8.** The Melli Payamak sender, `SmsManager`, `SendSmsJob`, `sms_logs` and `sms:test` were built in S17 (2026-11-14); this step adds the order templates.
-- **Refs:** D11.6, D3.6 (templates), D13.1
-- **Build:** order templates ↔ pattern ids (config/sms.php), low-credit alert; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
-- **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
 ### S40 Launch
 - **Refs:** D11.9, A3, A4

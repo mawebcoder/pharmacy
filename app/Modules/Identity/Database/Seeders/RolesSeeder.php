@@ -36,6 +36,8 @@ final class RolesSeeder extends Seeder
             'ViewAny:Order', 'View:Order', 'Update:Order',
             // S30 Orders: open an order's purchase document, type its rows and record what arrived.
             'ViewAny:OrderPurchase', 'View:OrderPurchase', 'Create:OrderPurchase', 'Update:OrderPurchase',
+            // S34 Content: read the contact messages and mark them answered.
+            'ViewAny:ContactMessage', 'View:ContactMessage', 'Update:ContactMessage',
         ],
         'content_editor' => [
             // S07 Catalog: create and edit brands (deleting is left to super admins).
@@ -57,6 +59,10 @@ final class RolesSeeder extends Seeder
             'ViewAny:Banner', 'View:Banner', 'Create:Banner', 'Update:Banner', 'Delete:Banner',
             // S34 Content: static pages («صفحه‌های ثابت»).
             'ViewAny:Page', 'View:Page', 'Create:Page', 'Update:Page', 'Delete:Page', 'Restore:Page',
+            // S34 Content: questions on /faq, the site menus, and the contact messages.
+            'ViewAny:Faq', 'View:Faq', 'Create:Faq', 'Update:Faq', 'Delete:Faq',
+            'ViewAny:Menu', 'View:Menu', 'Update:Menu',
+            'ViewAny:ContactMessage', 'View:ContactMessage', 'Update:ContactMessage',
         ],
     ];
 

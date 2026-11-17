@@ -17,9 +17,9 @@ use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Content\Actions\SaveHomeWidget;
 use App\Modules\Content\Actions\SetPlaceBanners;
 use App\Modules\Content\Data\HomeWidgetData;
-use App\Modules\Content\Enums\BannerLinkType;
 use App\Modules\Content\Enums\BannerPlace;
 use App\Modules\Content\Enums\HomeWidgetType;
+use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Models\Banner;
 use App\Modules\Content\Models\HomeWidget;
 use App\Modules\Media\Actions\AttachImage;
@@ -157,12 +157,12 @@ final class HomePageDemoSeeder extends Seeder
         $addProducts($special, array_slice($productIds, 4, 8));
 
         $bannerTargets = [
-            [BannerLinkType::Collection, $special->getId()],
-            [BannerLinkType::Category, $categories[0]->getId()],
-            [BannerLinkType::Brand, $brands[1]->getId()],
-            [BannerLinkType::Collection, $popular->getId()],
-            [BannerLinkType::Tag, $tags[0]->getId()],
-            [BannerLinkType::BrandsList, null],
+            [LinkType::Collection, $special->getId()],
+            [LinkType::Category, $categories[0]->getId()],
+            [LinkType::Brand, $brands[1]->getId()],
+            [LinkType::Collection, $popular->getId()],
+            [LinkType::Tag, $tags[0]->getId()],
+            [LinkType::BrandsList, null],
         ];
         $bannerIds = [];
 

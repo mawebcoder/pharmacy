@@ -59,6 +59,7 @@
         </div>
 
         <x-layout.bottom-nav />
+        <x-layout.mobile-menu />
 
         @livewireScripts
     </body>

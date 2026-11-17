@@ -14,6 +14,11 @@
     "
 >
     <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:h-16 md:gap-6 md:px-6 xl:h-18 xl:px-8">
+        {{-- Phones and tablets: «منو» opens the site menu (x-layout.mobile-menu, S34). --}}
+        <button type="button" x-on:click="$tsui.open.slide('site-menu')" class="-ms-2 grid size-11 shrink-0 place-items-center rounded-card text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 xl:hidden" aria-label="منو" aria-controls="site-menu">
+            <x-ts-icon icon="bars-3" class="size-6" />
+        </button>
+
         <a href="{{ route('home') }}" class="flex h-11 shrink-0 items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary-700">
             <span class="grid size-9 place-items-center rounded-card bg-primary-700 text-white">
                 <x-ts-icon icon="plus" class="size-5" />
@@ -88,15 +93,9 @@
         </nav>
     </div>
 
-    {{-- Site links beside «دسته‌بندی کالاها» on desktop (owner, 2026-11-15); a page shows only once it is live. --}}
+    {{-- Site links beside «دسته‌بندی کالاها» on desktop: the header menu from the admin («منوها», S34; owner, 2026-11-17). --}}
     @php
-        $pageLinks = app(\App\Modules\Content\Queries\PageLinks::class);
-        $siteLinks = array_values(array_filter([
-            ['label' => 'همه کالاها', 'href' => route('products.index'), 'icon' => 'squares-2x2'],
-            ['label' => 'برندها', 'href' => route('brands.index'), 'icon' => 'tag'],
-            ['label' => 'درباره ما', 'href' => $pageLinks->urlOfSlug('about'), 'icon' => 'information-circle'],
-            ['label' => 'تماس با ما', 'href' => Route::has('contact') ? route('contact') : null, 'icon' => 'phone'],
-        ], fn (array $link): bool => $link['href'] !== null));
+        $siteLinks = app(\App\Modules\Content\Queries\MenuLinks::class)->for(\App\Modules\Content\Enums\MenuLocation::Header)['links'];
     @endphp
     <x-catalog::category-nav :links="$siteLinks" />
 
