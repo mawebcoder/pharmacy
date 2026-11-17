@@ -89,7 +89,8 @@ it('shows the selling supplier\'s expiry date and why it is discounted on the pr
     $this->variant->setNearExpiry(true, CarbonImmutable::parse('2027-03-21'))->save();
 
     livewire('catalog::product-page', ['slug' => 'near-expiry-cream'])
-        ->assertSee(['زودمصرف', 'تاریخ انقضا', '۱ فروردین ۱۴۰۶', 'تاریخ انقضای این کالا نزدیک است و به همین دلیل با تخفیف عرضه می‌شود.'])
+        ->assertSeeInOrder(['زودمصرف:', 'تاریخ انقضای این کالا', '۱ فروردین ۱۴۰۶', 'است و به همین دلیل با تخفیف عرضه می‌شود.'])
+        ->assertSee('تاریخ انقضا')
         ->assertDontSee('تضمین اعتبار');
 });
 

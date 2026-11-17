@@ -7,12 +7,14 @@ namespace App\Modules\Settings\Filament\Pages;
 use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Queries\AdminOptions;
 use App\Modules\Settings\Actions\SaveStoreSettings;
+use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shared\Rules\IranianMobile;
 use App\Modules\Shared\Support\IranMobile;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -27,7 +29,7 @@ use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
 /**
- * «تنظیمات فروشگاه» (roadmap D3.6, started in S19; S35 adds contact details, logo, maintenance mode …). «جستجو» pins
+ * «تنظیمات فروشگاه» (roadmap D3.6, started in S19; S35 adds the contact details and social links). «جستجو» pins
  * categories and brands to the search panel (owner, 2026-11-15).
  *
  * @property-read Schema $form
@@ -62,6 +64,11 @@ final class StoreSettingsPage extends Page
             'telegram_username' => $settings->telegramUsername(),
             'chat_message_product' => $settings->get(StoreSettings::CHAT_MESSAGE_PRODUCT),
             'chat_message_general' => $settings->generalChatMessage(),
+            'phone' => $settings->phone(),
+            'email' => $settings->email(),
+            'address' => $settings->address(),
+            'working_hours' => $settings->workingHours(),
+            'social_links' => array_map(fn (array $link): array => ['platform' => $link['platform']->value, 'url' => $link['url']], $settings->socialLinks()),
             'search_category_ids' => $settings->searchCategoryIds(),
             'search_brand_ids' => $settings->searchBrandIds(),
         ]);
@@ -105,6 +112,43 @@ final class StoreSettingsPage extends Page
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                             ->required()
                             ->helperText('یک هزینه برای همه سفارش‌ها تا راه‌اندازی تیپاکس و پیک؛ بالای حد ارسال رایگان یا با کوپن ارسال رایگان، رایگان است.'),
+                    ]),
+                Section::make('اطلاعات تماس')
+                    ->description('در پانویس همه صفحه‌ها و صفحه «تماس با ما» نمایش داده می‌شوند؛ خالی یعنی نمایش داده نمی‌شود.')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('phone')
+                            ->label('تلفن')
+                            ->maxLength(30)
+                            ->extraInputAttributes(['dir' => 'ltr', 'inputmode' => 'tel'])
+                            ->placeholder('021-12345678')
+                            ->regex('/^[0-9۰-۹+\-\s()]+$/u')
+                            ->validationMessages(['regex' => 'تلفن فقط عدد، فاصله، «-» و «+» دارد.']),
+                        TextInput::make('email')->label('ایمیل')->email()->maxLength(120)->extraInputAttributes(['dir' => 'ltr']),
+                        Textarea::make('address')->label('نشانی')->rows(2)->maxLength(300),
+                        TextInput::make('working_hours')->label('ساعت پاسخ‌گویی')->maxLength(120)->placeholder('شنبه تا پنجشنبه، ۹ تا ۱۷'),
+                    ]),
+                Section::make('شبکه‌های اجتماعی')
+                    ->description('به ترتیب این فهرست با آیکن در پانویس نمایش داده می‌شوند؛ با کشیدن جابه‌جا کنید.')
+                    ->schema([
+                        Repeater::make('social_links')
+                            ->hiddenLabel()
+                            ->columns(2)
+                            ->reorderableWithDragAndDrop()
+                            ->maxItems(10)
+                            ->addActionLabel('افزودن شبکه اجتماعی')
+                            ->defaultItems(0)
+                            ->schema([
+                                Select::make('platform')->label('شبکه')->options(SocialPlatform::options())->required()->distinct(),
+                                TextInput::make('url')
+                                    ->label('آدرس')
+                                    ->url()
+                                    ->startsWith(['https://'])
+                                    ->maxLength(300)
+                                    ->required()
+                                    ->extraInputAttributes(['dir' => 'ltr'])
+                                    ->placeholder('https://instagram.com/…'),
+                            ]),
                     ]),
                 Section::make('تماس')
                     ->columns(2)
@@ -176,6 +220,14 @@ final class StoreSettingsPage extends Page
             StoreSettings::TELEGRAM_USERNAME => (string) ($data['telegram_username'] ?? ''),
             StoreSettings::CHAT_MESSAGE_PRODUCT => trim((string) $data['chat_message_product']),
             StoreSettings::CHAT_MESSAGE_GENERAL => trim((string) $data['chat_message_general']),
+            StoreSettings::PHONE => trim((string) ($data['phone'] ?? '')),
+            StoreSettings::EMAIL => mb_strtolower(trim((string) ($data['email'] ?? ''))),
+            StoreSettings::ADDRESS => trim(strip_tags((string) ($data['address'] ?? ''))),
+            StoreSettings::WORKING_HOURS => trim(strip_tags((string) ($data['working_hours'] ?? ''))),
+            StoreSettings::SOCIAL_LINKS => array_values(array_map(
+                fn (array $link): array => ['platform' => (string) $link['platform'], 'url' => trim((string) $link['url'])],
+                (array) ($data['social_links'] ?? []),
+            )),
             StoreSettings::SEARCH_CATEGORY_IDS => array_values(array_map(intval(...), (array) ($data['search_category_ids'] ?? []))),
             StoreSettings::SEARCH_BRAND_IDS => array_values(array_map(intval(...), (array) ($data['search_brand_ids'] ?? []))),
         ]);

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Settings\Queries;
 
+use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Models\Setting;
+use App\Modules\Shared\Support\PersianDigits;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -36,6 +38,19 @@ final readonly class StoreSettings
 
     public const string CHAT_MESSAGE_GENERAL = 'contact.chat_message_general';
 
+    public const string PHONE = 'contact.phone';
+
+    public const string EMAIL = 'contact.email';
+
+    public const string ADDRESS = 'contact.address';
+
+    public const string WORKING_HOURS = 'contact.working_hours';
+
+    /**
+     * The footer's social links (S35): a list of ['platform' => SocialPlatform value, 'url' => https address], in order.
+     */
+    public const string SOCIAL_LINKS = 'social.links';
+
     public const string SEARCH_CATEGORY_IDS = 'search.category_ids';
 
     public const string SEARCH_BRAND_IDS = 'search.brand_ids';
@@ -57,6 +72,11 @@ final readonly class StoreSettings
         self::TELEGRAM_USERNAME => '',
         self::CHAT_MESSAGE_PRODUCT => 'سلام، درباره «{product}» {variant} سؤال دارم: {link}',
         self::CHAT_MESSAGE_GENERAL => 'سلام، سؤالی دارم.',
+        self::PHONE => '',
+        self::EMAIL => '',
+        self::ADDRESS => '',
+        self::WORKING_HOURS => '',
+        self::SOCIAL_LINKS => [],
         self::SEARCH_CATEGORY_IDS => [],
         self::SEARCH_BRAND_IDS => [],
     ];
@@ -166,6 +186,63 @@ final readonly class StoreSettings
     }
 
     /**
+     * The store's phone number as typed («۰۲۱-۱۲۳۴۵۶۷۸»), or null while the admin has not set one (S35).
+     */
+    public function phone(): ?string
+    {
+        return $this->text(self::PHONE);
+    }
+
+    /**
+     * The phone number as a tel: link (Latin digits, no spaces or dashes), or null without one.
+     */
+    public function phoneUrl(): ?string
+    {
+        $phone = $this->phone();
+
+        return $phone === null ? null : 'tel:'.preg_replace('/[^0-9+]/', '', PersianDigits::toLatin($phone));
+    }
+
+    public function email(): ?string
+    {
+        return $this->text(self::EMAIL);
+    }
+
+    public function address(): ?string
+    {
+        return $this->text(self::ADDRESS);
+    }
+
+    /**
+     * When the store answers, e.g. «شنبه تا پنجشنبه، ۹ تا ۱۷».
+     */
+    public function workingHours(): ?string
+    {
+        return $this->text(self::WORKING_HOURS);
+    }
+
+    /**
+     * The social links in the admin's order (S35); links to an unknown network are left out.
+     *
+     * @return list<array{platform: SocialPlatform, url: string}>
+     */
+    public function socialLinks(): array
+    {
+        $links = [];
+
+        foreach ((array) $this->get(self::SOCIAL_LINKS) as $link) {
+            $platform = is_array($link) ? SocialPlatform::tryFrom((string) ($link['platform'] ?? '')) : null;
+            $url = is_array($link) ? trim((string) ($link['url'] ?? '')) : '';
+
+            if ($platform !== null && $url !== '') {
+                $links[] = ['platform' => $platform, 'url' => $url];
+            }
+        }
+
+        return $links;
+    }
+
+    /**
      * Categories the search panel shows when the box is empty or the text matches none (owner, 2026-11-15), in the
      * admin's order.
      *
@@ -201,6 +278,13 @@ final readonly class StoreSettings
         $saved = Cache::rememberForever(self::CACHE_KEY, fn (): array => Setting::query()->pluck(Setting::COLUMN_VALUE, Setting::COLUMN_KEY)->all());
 
         return [...self::DEFAULTS, ...$saved];
+    }
+
+    private function text(string $key): ?string
+    {
+        $value = trim((string) $this->get($key));
+
+        return $value === '' ? null : $value;
     }
 
     /**

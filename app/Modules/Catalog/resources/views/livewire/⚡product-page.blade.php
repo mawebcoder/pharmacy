@@ -5,6 +5,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductRelation;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Queries\ProductListing;
+use App\Modules\Settings\Queries\Pharmacists;
 use App\Modules\Settings\Queries\StoreSettings;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
@@ -77,9 +78,10 @@ new class extends Component
             ->values();
     }
 
-    public function render(StoreSettings $settings): \Illuminate\Contracts\View\View
+    public function render(StoreSettings $settings, Pharmacists $pharmacists): \Illuminate\Contracts\View\View
     {
         return $this->view([
+            'pharmacist' => $pharmacists->responsible(),
             'shippingRate' => $settings->shippingFlatRate(),
             'freeShippingThreshold' => $settings->freeShippingThreshold(),
             'chatMessage' => $settings->productChatMessage(
@@ -243,11 +245,16 @@ new class extends Component
                 @endif
             </ul>
 
-            {{-- Why it is discounted, whenever the selected SKU's supplier stock is «زودمصرف» (owner, 2026-11-17). --}}
+            {{-- Why it is discounted, with the exact expiry date, whenever the selected SKU's supplier stock is «زودمصرف»
+                 (owner, 2026-11-17). --}}
             @if ($variant?->isNearExpiry())
                 <p class="flex items-start gap-2 rounded-card border border-warning-500 bg-warning-500/10 p-3 text-sm leading-7 text-ink-900" role="note">
                     <x-ts-icon icon="clock" class="mt-1 size-5 shrink-0 text-warning-500" />
-                    <span><strong>زودمصرف:</strong> تاریخ انقضای این کالا نزدیک است و به همین دلیل با تخفیف عرضه می‌شود.</span>
+                    @if ($variant->getExpiryDate())
+                        <span><strong>زودمصرف:</strong> تاریخ انقضای این کالا <strong>@jalali($variant->getExpiryDate())</strong> است و به همین دلیل با تخفیف عرضه می‌شود.</span>
+                    @else
+                        <span><strong>زودمصرف:</strong> تاریخ انقضای این کالا نزدیک است و به همین دلیل با تخفیف عرضه می‌شود.</span>
+                    @endif
                 </p>
             @endif
 
@@ -324,6 +331,13 @@ new class extends Component
                 <ul class="space-y-2 border-t border-line-200 pt-3 text-sm text-ink-500">
                     <li class="flex gap-2"><x-ts-icon icon="truck" class="size-5 shrink-0 text-primary-700" /><span>هزینه ارسال @toman($shippingRate)؛ رایگان برای خرید بالای @toman($freeShippingThreshold)</span></li>
                     <li class="flex gap-2"><x-ts-icon icon="shield-check" class="size-5 shrink-0 text-primary-700" /><span>خرید مستقیم از شرکت‌های پخش معتبر</span></li>
+                    {{-- B2 rule 3: the pharmacist in charge on every product (S35). --}}
+                    @if ($pharmacist !== null)
+                        <li class="flex gap-2">
+                            <x-ts-icon icon="user-circle" class="size-5 shrink-0 text-primary-700" />
+                            <a href="{{ route('pharmacist') }}" wire:navigate class="hover:text-primary-700 hover:underline">زیر نظر {{ $pharmacist['name'] }}، شماره نظام پزشکی <span dir="ltr">{{ PersianDigits::toPersian($pharmacist['licenseNumber']) }}</span></a>
+                        </li>
+                    @endif
                 </ul>
                 <x-ui.pharmacist-chat wire:key="chat-{{ $variant?->getId() }}" :text="$chatMessage" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-card border border-primary-700 px-4 text-sm font-bold text-primary-700 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700" />
             </div>

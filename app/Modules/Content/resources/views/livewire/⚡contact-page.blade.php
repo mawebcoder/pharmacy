@@ -14,8 +14,8 @@ use Livewire\Component;
 /**
  * «تماس با ما» (roadmap B5 /contact, S34): name, mobile, optional email, a subject and the message, saved for staff
  * in «پیام‌های تماس». At most 3 messages every 10 minutes per IP and per mobile (SendContactMessage). A signed-in
- * customer's name and mobile are filled in. Beside the form: chat links from the store settings, order tracking and
- * the FAQ.
+ * customer's name and mobile are filled in. Beside the form: phone, email, chat links, working hours and address from
+ * the store settings (S35), order tracking and the FAQ.
  */
 new class extends Component
 {
@@ -82,6 +82,11 @@ new class extends Component
             'subjects' => ContactSubject::options(),
             'whatsAppUrl' => $settings->whatsAppChatUrl($settings->generalChatMessage()),
             'telegramUrl' => $settings->telegramChatUrl($settings->generalChatMessage()),
+            'phone' => $settings->phone(),
+            'phoneUrl' => $settings->phoneUrl(),
+            'email' => $settings->email(),
+            'address' => $settings->address(),
+            'workingHours' => $settings->workingHours(),
         ])
             ->title('تماس با ما')
             ->layoutData(['description' => 'پرسش، پیگیری سفارش یا پیشنهاد خود را برای ما بفرستید.']);
@@ -160,6 +165,8 @@ new class extends Component
             <h2 class="font-bold text-ink-900">راه‌های دیگر</h2>
             @php
                 $ways = array_values(array_filter([
+                    $phone === null ? null : ['label' => \App\Modules\Shared\Support\PersianDigits::toPersian($phone), 'href' => $phoneUrl, 'icon' => 'phone', 'external' => true, 'ltr' => true],
+                    $email === null ? null : ['label' => $email, 'href' => 'mailto:'.$email, 'icon' => 'envelope', 'external' => true, 'ltr' => true],
                     $whatsAppUrl === null ? null : ['label' => 'گفتگو در واتس‌اپ', 'href' => $whatsAppUrl, 'icon' => 'chat-bubble-left-right', 'external' => true],
                     $telegramUrl === null ? null : ['label' => 'گفتگو در تلگرام', 'href' => $telegramUrl, 'icon' => 'paper-airplane', 'external' => true],
                     ['label' => 'پیگیری سفارش', 'href' => route('orders.track'), 'icon' => 'truck', 'external' => false],
@@ -169,13 +176,23 @@ new class extends Component
             <ul class="space-y-1">
                 @foreach ($ways as $way)
                     <li>
-                        <a href="{{ $way['href'] }}" @if ($way['external']) target="_blank" rel="noopener" @else wire:navigate @endif class="flex min-h-11 items-center gap-3 rounded-card px-2 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
+                        <a href="{{ $way['href'] }}" @if ($way['external']) target="_blank" rel="noopener" @else wire:navigate @endif @if ($way['ltr'] ?? false) dir="ltr" @endif class="flex min-h-11 items-center gap-3 rounded-card px-2 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
                             <x-ts-icon :icon="$way['icon']" class="size-5 text-primary-700" />
                             {{ $way['label'] }}
                         </a>
                     </li>
                 @endforeach
             </ul>
+            @if ($workingHours !== null || $address !== null)
+                <dl class="space-y-2 border-t border-line-200 pt-3 text-sm">
+                    @if ($workingHours !== null)
+                        <div class="flex gap-3"><dt class="sr-only">ساعت پاسخ‌گویی</dt><x-ts-icon icon="clock" class="size-5 shrink-0 text-primary-700" /><dd class="text-ink-900">{{ $workingHours }}</dd></div>
+                    @endif
+                    @if ($address !== null)
+                        <div class="flex gap-3"><dt class="sr-only">نشانی</dt><x-ts-icon icon="map-pin" class="size-5 shrink-0 text-primary-700" /><dd class="whitespace-pre-line text-ink-900">{{ $address }}</dd></div>
+                    @endif
+                </dl>
+            @endif
         </aside>
     </div>
 </div>

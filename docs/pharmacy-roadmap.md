@@ -992,10 +992,10 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 - **faqs**: `group`, `question`, `answer`, `sort`.
 - **menus** / **menu_items**: `location` (`header`, `footer_1`, `footer_2`, `mobile`), `title`, `url`, `parent_id`, `sort`.
 - **contact_messages**: `name`, `mobile`, `email`, `subject`, `body`, `status`.
-- **settings**: key/value (`site_name`, `logo_image_id`, `phone`, `email`, `address`, `working_hours`, `free_shipping_threshold`, `min_order_amount`, `maintenance_mode`, `origin_address_id`, …).
-- **social_links**: `platform`, `url`, `sort`.
-- **trust_badges**: `title`, `image_id`, `link_url`, `embed_code` (e-Namad), `sort`.
-- **pharmacists**: `full_name`, `license_number`, `photo_image_id`, `bio`, `is_responsible`.
+- **settings**: key/value in `settings` (see «settings» above; S35 added `contact.phone`, `contact.email`, `contact.address`, `contact.working_hours` and `social.links`; `site_name`, `logo_image_id`, `min_order_amount`, `maintenance_mode`, `origin_address_id` come with the steps that need them).
+- **social_links**: kept in settings as `social.links` (platform, url, in order; S35), not a table.
+- **trust_badges**: `title`, `embed_code` (e-Namad or Samandehi, cleaned), image (medialibrary «image», preset `trust_badge`), `link_url`, `sort`, `is_active`.
+- **pharmacists**: `full_name`, `license_number`, photo (medialibrary «photo», preset `pharmacist_photo`), `bio`, `is_responsible` (one at a time), `sort`.
 - **seo_redirects**: `from_path`, `to_path`, `status_code`.
 - **search_logs**: `query`, `normalized_query`, `results_count`, `customer_id`, `clicked_product_id`.
 - **search_synonyms**: `term`, `synonyms` (JSON), e.g. `ویتامین دی` ↔ `D3`, `ویتامین D`.
@@ -2728,7 +2728,7 @@ Never: commit or push without explicit approval; call real Tipax/Zarinpal produc
 | 5 Orders operations | S29–S32 |
 | 6 Content and trust | S33–S35 |
 | 7 Shipping and external integrations | S21, S24 (shipping foundation and own courier zones; owner 2026-11-14), S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09) |
-| 8 SEO, hardening & reporting, then launch | S36–S39, S41–S42 (moved after the main functionality, owner 2026-11-17), then S40 |
+| 8 SEO, search tuning, hardening & reporting, then launch | S36, S43 (site search tuning, added 2026-11-17), S37–S39, S41–S42 (moved after the main functionality, owner 2026-11-17), then S40 |
 
 ## E3. Steps
 
@@ -2913,6 +2913,20 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 ### S35 Settings and trust
 - **Refs:** D3.6 (settings, social, trust badges, pharmacists), B2 rule 3, B7–B13
 - **Build:** spatie/laravel-settings page, social links, trust badges (e-Namad embed), pharmacist page, trust counters (live).
+- **As built (owner, 2026-11-17):**
+  - **Settings storage:** no `spatie/laravel-settings`. The S19 key/value store (`StoreSettings`, cached, cleared on save) gets «اطلاعات تماس» (`contact.phone`, `contact.email`, `contact.address`, `contact.working_hours`) and «شبکه‌های اجتماعی» (`social.links`: an ordered list of platform and https address; `social_links` is not a table). These are shown in the footer's «ارتباط با ما» column (with drawn icons) and in the `/contact` side box.
+  - **Trust badges:** «نمادهای اعتماد» (super admin) holds the `trust_badges` table, ordered by drag.
+    - A badge is either e-Namad's or Samandehi's code, pasted as they hand it out, or an uploaded image with an optional link.
+    - The code is cleaned on save and when shown (`TrustBadgeEmbed`): only `<a>`/`<img>` over https on enamad.ir or samandehi.ir hosts, with `referrerpolicy`, and links get `rel="noopener"` but never `noreferrer`, because e-Namad checks the referrer.
+    - A code from anywhere else is refused.
+  - **Pharmacists:** «داروسازان» (super admin), table `pharmacists`, with name, council number, photo and bio.
+    - Exactly one is «داروساز مسئول»; marking another takes it over.
+    - `/pharmacist` lists the pharmacist in charge first.
+    - Every product page shows «زیر نظر …، شماره نظام پزشکی …» (B2 rule 3) from the cached `Pharmacists::responsible()`.
+    - «داروساز مسئول» is a menu target and is back in the footer's «داروخانه» column.
+  - **Trust counters:** products for sale, delivered orders, and cities delivered to (from the order address snapshot), cached for an hour.
+    - Orders show from 100, cities from 10.
+    - The row sits under the trust block in the home trust widget, and in the footer without the products count (owner, 2026-11-17).
 - **Tests:** settings cache invalidation; e-Namad embed renders.
 
 > **Phase 7: Shipping and external integrations (owner, 2026-11-09; shipping added 2026-11-14; moved before SEO, hardening and reporting, owner 2026-11-17).** The shipping foundation (S21) and own courier zones (S24) come first, then Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28), right after the content steps (S33–S35) and before SEO, hardening and reporting (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S25), shipment status and own-courier deliveries set by hand (S29).
@@ -2961,12 +2975,25 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:** order templates ↔ pattern ids (config/sms.php), low-credit alert; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
 - **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
-> **Phase 8: SEO, hardening and reporting, built after the shipping and payment steps (owner, 2026-11-17: the main functionality comes first).** S36, S37, S38, S39, S41 and S42 run after S28 and right before launch (S40).
+> **Phase 8: SEO, hardening and reporting, built after the shipping and payment steps (owner, 2026-11-17: the main functionality comes first).** S36, S43 (site search tuning, added 2026-11-17), S37, S38, S39, S41 and S42 run after S28 and right before launch (S40).
 
 ### S36 SEO
 - **Refs:** D3.6 (seo_redirects), B5
 - **Build:** meta tags per page, Open Graph, JSON-LD (Product, BreadcrumbList, Organization), sitemap.xml, robots.txt, redirects middleware, canonical URLs for filters.
 - **Tests:** JSON-LD present on PDP, redirect 301, sitemap includes active products only.
+
+### S43 Site search tuning
+- **Added (owner, 2026-11-17):** built in phase 8 right after S36, before launch. S12 built the search (Meilisearch, Persian normalisation, synonyms with Excel import, search logs and the insights page); this step tunes it with real queries.
+- **Refs:** D21 (search plan, D21.3 normalisation, D21.5 Meilisearch), S12, B7–B13
+- **Build:**
+  - **Relevance:** review the ranking rules and searchable-attribute order against the 200 most frequent queries in the search logs, with a fixed list of expected first results per query. Boost products for sale and in stock over the rest; use sales from order items as a popularity signal.
+  - **Typo tolerance:** per attribute; no typos on IRC codes, barcodes and short words.
+  - **Normalisation:** check the full D21.3 set in the index and in queries (ي/ی، ك/ک، ة، diacritics, ZWNJ «‌», Persian and Arabic digits, half-space forms of brand names), plus Finglish brand names (e.g. «cinere» → سینره) through synonyms.
+  - **Zero results and low clicks:** a weekly list in «بینش جستجو» of queries with no results or no clicks (from `search.open`), each with one-click «افزودن مترادف» or «اصلاح نوشتار».
+  - **Stop words and phrases:** common filler words («قیمت»، «خرید»، «اصل») are ignored, so «قیمت کرم سینره» finds سینره.
+  - **Suggestions:** «منظورتان … بود؟» when a query has no results and a close term does.
+  - **Speed:** p95 under 50 ms in Meilisearch for the instant box, measured on the production-size index.
+- **Tests:** expected first results for the fixed query list (a regression suite), normalisation variants find the same products, stop words ignored, typo rules per attribute, zero-result and low-click lists, the «منظورتان» suggestion.
 
 ### S37 Security hardening
 - **Refs:** D16
@@ -3053,6 +3080,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Horizon, Supervisor, monitoring, backups, deploy | S39 | System |
 | Reporting warehouse (`rpt_*` tables, 12-hour refresh) | S41 | Reporting |
 | Dashboard and reports R1–R27 | S42 | Reporting |
+| Site search tuning (relevance, typos, stop words, zero-result fixes) | S43 | Search |
 | Launch | S40 | — |
 
 ## E6. The `implement-roadmap-section` skill (full instructions)

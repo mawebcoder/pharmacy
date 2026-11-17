@@ -300,5 +300,7 @@ it('renders a listing page in a fixed number of queries', function (int $product
     $this->get('/categories/skin')->assertOk()->assertSee("محصول {$products}");
     $queries = count(DB::getQueryLog());
 
-    expect($queries)->toBeLessThan(40);
+    // The same for 3 and 20 products; the ceiling includes the layout on a cold cache (menus, trust badges and
+    // counters since S34–S35).
+    expect($queries)->toBeLessThan(50);
 })->with([3, 20]);

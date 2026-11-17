@@ -8,6 +8,7 @@ use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Settings\Actions\SaveStoreSettings;
+use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Filament\Pages\StoreSettingsPage;
 use App\Modules\Settings\Queries\StoreSettings;
 use Filament\Facades\Filament;
@@ -101,4 +102,45 @@ it('keeps content editors off the settings page', function (): void {
     $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::ContentEditor)->create(), 'admin')
         ->get(StoreSettingsPage::getUrl())
         ->assertForbidden();
+});
+
+it('shows the saved contact details and social links in the footer and on the contact page', function (): void {
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+    $this->get(route('faq'))->assertDontSee('ارتباط با ما');
+
+    livewire(StoreSettingsPage::class)
+        ->fillForm([
+            'phone' => '۰۲۱-۸۸۷۷۶۶۵۵',
+            'email' => 'Info@Hutana.ir',
+            'working_hours' => 'شنبه تا پنجشنبه، ۹ تا ۱۷',
+            'address' => 'تهران، خیابان ولیعصر',
+            'social_links' => [
+                ['platform' => SocialPlatform::Telegram->value, 'url' => 'https://t.me/hutana'],
+                ['platform' => SocialPlatform::Instagram->value, 'url' => 'https://instagram.com/hutana'],
+            ],
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $settings = app(StoreSettings::class);
+
+    expect($settings->phoneUrl())->toBe('tel:02188776655')
+        ->and($settings->email())->toBe('info@hutana.ir')
+        ->and(array_column($settings->socialLinks(), 'url'))->toBe(['https://t.me/hutana', 'https://instagram.com/hutana']);
+
+    $this->get(route('faq'))
+        ->assertOk()
+        ->assertSeeInOrder(['ارتباط با ما', 'href="tel:02188776655"', 'mailto:info@hutana.ir', 'شنبه تا پنجشنبه، ۹ تا ۱۷', 'تهران، خیابان ولیعصر', 'aria-label="تلگرام"', 'aria-label="اینستاگرام"'], false);
+    $this->get(route('contact'))->assertSee(['۰۲۱-۸۸۷۷۶۶۵۵', 'info@hutana.ir', 'شنبه تا پنجشنبه، ۹ تا ۱۷']);
+});
+
+it('takes social links only as https addresses', function (): void {
+    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+
+    livewire(StoreSettingsPage::class)
+        ->fillForm(['social_links' => [['platform' => SocialPlatform::Instagram->value, 'url' => 'javascript:alert(1)']]])
+        ->call('save')
+        ->assertHasFormErrors();
+
+    expect(app(StoreSettings::class)->socialLinks())->toBe([]);
 });

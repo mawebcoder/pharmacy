@@ -31,6 +31,7 @@ enum LinkType: string implements HasLabel
     case Faq = 'faq';
     case Contact = 'contact';
     case TrackOrder = 'track';
+    case Pharmacist = 'pharmacist';
     case External = 'external';
 
     public function label(): string
@@ -51,6 +52,7 @@ enum LinkType: string implements HasLabel
             self::Faq => 'پرسش‌های متداول',
             self::Contact => 'تماس با ما',
             self::TrackOrder => 'پیگیری سفارش',
+            self::Pharmacist => 'داروساز مسئول',
             self::External => 'آدرس بیرونی',
         };
     }
@@ -85,6 +87,7 @@ enum LinkType: string implements HasLabel
             self::Faq => 'faq',
             self::Contact => 'contact',
             self::TrackOrder => 'orders.track',
+            self::Pharmacist => 'pharmacist',
             default => null,
         };
     }
