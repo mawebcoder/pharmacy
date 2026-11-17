@@ -248,6 +248,13 @@ final class ProductForm
                     ->label('قیمت مصرف‌کننده (روی جعبه)')
                     ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                     ->helperText('سقف قیمت فروش. برای دارو الزامی است.'),
+                TextInput::make(ProductVariant::COLUMN_WEIGHT_G)
+                    ->label('وزن')
+                    ->numeric()
+                    ->suffix('گرم')
+                    ->required()
+                    ->helperText('وزن کالا با بسته‌بندی خودش؛ هزینه ارسال از آن حساب می‌شود.')
+                    ->rules($rules[ProductVariant::COLUMN_WEIGHT_G]),
             ]);
     }
 

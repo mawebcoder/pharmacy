@@ -48,6 +48,7 @@ describe('as a content editor', function (): void {
                 Product::COLUMN_PRODUCT_TYPE => 'cosmetic',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => '۵۰ میلی‌لیتر',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_OFFICIAL_PRICE => '485,000',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_WEIGHT_G => 120,
             ])
             ->call('create')
             ->assertHasNoFormErrors()
@@ -58,11 +59,12 @@ describe('as a content editor', function (): void {
             ->and($product->variants()->sole())
             ->getTitleFa()->toBe('۵۰ میلی‌لیتر')
             ->getOfficialPrice()->toBe(4_850_000)
+            ->getWeightG()->toBe(120)
             // No supplier yet: sold at its printed price (roadmap D3.2).
             ->getPrice()->toBe(4_850_000);
     });
 
-    it('asks for the first SKU on create', function (): void {
+    it('asks for the first SKU and its weight on create', function (): void {
         livewire(CreateProduct::class)
             ->fillForm([
                 Product::COLUMN_NAME_FA => 'کرم مرطوب‌کننده',
@@ -72,6 +74,7 @@ describe('as a content editor', function (): void {
             ->call('create')
             ->assertHasFormErrors([
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => 'required',
+                ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_WEIGHT_G => 'required',
             ]);
 
         expect(Product::query()->count())->toBe(0);
@@ -85,6 +88,7 @@ describe('as a content editor', function (): void {
                 ->callAction(TestAction::make(CreateAction::class)->table(), [
                     ProductVariant::COLUMN_TITLE_FA => $title,
                     ProductVariant::COLUMN_OFFICIAL_PRICE => $price,
+                    ProductVariant::COLUMN_WEIGHT_G => 250,
                     ProductVariant::COLUMN_IS_ACTIVE => true,
                 ])
                 ->assertHasNoFormErrors();
@@ -92,6 +96,17 @@ describe('as a content editor', function (): void {
 
         expect($product->variants()->pluck(ProductVariant::COLUMN_OFFICIAL_PRICE)->all())->toBe([4_850_000, 12_500_000])
             ->and($product->variants()->pluck(ProductVariant::COLUMN_PRICE)->all())->toBe([4_850_000, 12_500_000]);
+    });
+
+    it('asks for a SKU\'s weight, but not its length, width or height', function (): void {
+        $product = Product::factory()->create();
+
+        livewire(VariantsRelationManager::class, ['ownerRecord' => $product, 'pageClass' => EditProduct::class])
+            ->callAction(TestAction::make(CreateAction::class)->table(), [ProductVariant::COLUMN_TITLE_FA => '۳۰ عددی'])
+            ->assertHasFormErrors([ProductVariant::COLUMN_WEIGHT_G => 'required'])
+            ->assertHasNoFormErrors([ProductVariant::COLUMN_LENGTH_MM, ProductVariant::COLUMN_WIDTH_MM, ProductVariant::COLUMN_HEIGHT_MM]);
+
+        expect($product->variants()->count())->toBe(0);
     });
 
     it('uploads the first photo and activates the product in one save', function (): void {

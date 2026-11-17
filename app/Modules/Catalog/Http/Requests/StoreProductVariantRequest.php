@@ -33,7 +33,8 @@ final class StoreProductVariantRequest extends FormRequest
             ProductVariant::COLUMN_OFFICIAL_PRICE => ['nullable', 'integer', 'min:0'],
             ProductVariant::COLUMN_HARAJ_PERCENT => ['nullable', 'numeric', 'min:0', 'max:90'],
             ProductVariant::COLUMN_STOCK_STATUS => ['required', Rule::enum(StockStatus::class)],
-            ProductVariant::COLUMN_WEIGHT_G => ['nullable', 'integer', 'min:1', 'max:100000'],
+            // Weight is required for shipping prices (owner, 2026-11-17); length, width and height stay optional.
+            ProductVariant::COLUMN_WEIGHT_G => ['required', 'integer', 'min:1', 'max:100000'],
             ProductVariant::COLUMN_LENGTH_MM => $size,
             ProductVariant::COLUMN_WIDTH_MM => $size,
             ProductVariant::COLUMN_HEIGHT_MM => $size,

@@ -42,13 +42,6 @@
                             </button>
                             <span class="text-xs text-ink-500">مهلت پرداخت تا {{ JalaliDate::display($order->getExpiresAt(), 'H:i') }}</span>
                         @else
-                            @if ($status->isCancellableByCustomer())
-                                <button type="button" x-data="{ working: false }" x-bind:disabled="working" x-bind:aria-busy="working" x-on:click="$store.confirm.ask({ title: 'لغو سفارش', message: @js('سفارش '.$order->getNumber().' لغو شود؟ مبلغ پرداختی بازگردانده می‌شود.'), confirm: 'لغو سفارش', cancel: 'منصرف شدم', icon: 'cancel' }).then((ok) => { if (! ok) return; working = true; $wire.cancel({{ $order->getId() }}).finally(() => (working = false)); })" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 disabled:cursor-wait disabled:opacity-60">
-                                    <x-ts-icon icon="x-circle" class="size-5" x-show="! working" />
-                                    <x-ui.spinner class="size-5" x-show="working" x-cloak />
-                                    لغو سفارش
-                                </button>
-                            @endif
                             @if ($status !== OrderStatus::Pending)
                                 <button type="button" wire:click="reorder({{ $order->getId() }})" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-primary-700 hover:bg-primary-50">
                                     <x-ts-icon icon="arrow-path" class="size-5" />
@@ -56,6 +49,11 @@
                                 </button>
                             @endif
                         @endif
+                        {{-- A visible way into the order beside the card link (owner, 2026-11-17). --}}
+                        <a href="{{ route('account.orders.show', $order->getId()) }}" wire:navigate class="ms-auto inline-flex min-h-11 items-center gap-1 rounded-card border border-line-300 px-3 text-sm font-medium text-ink-900 hover:border-primary-700 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700">
+                            جزئیات سفارش
+                            <x-ts-icon icon="chevron-left" class="size-4" />
+                        </a>
                     </div>
                 </li>
             @endforeach

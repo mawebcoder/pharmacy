@@ -38,19 +38,12 @@
                     </button>
                     <span class="text-xs text-ink-500">مهلت پرداخت تا {{ JalaliDate::display($order->getExpiresAt(), 'H:i') }}</span>
                 @else
-                    @if ($status->isCancellableByCustomer())
-                        <button type="button" x-data="{ working: false }" x-bind:disabled="working" x-bind:aria-busy="working" x-on:click="$store.confirm.ask({ title: 'لغو سفارش', message: @js('سفارش '.$order->getNumber().' لغو شود؟ مبلغ پرداختی بازگردانده می‌شود.'), confirm: 'لغو سفارش', cancel: 'منصرف شدم', icon: 'cancel' }).then((ok) => { if (! ok) return; working = true; $wire.cancel({{ $order->getId() }}).finally(() => (working = false)); })" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-danger-600 hover:bg-surface-50 disabled:cursor-wait disabled:opacity-60">
-                            <x-ts-icon icon="x-circle" class="size-5" x-show="! working" />
-                            <x-ui.spinner class="size-5" x-show="working" x-cloak />
-                            لغو سفارش
-                        </button>
-                    @endif
-                    @if ($status !== OrderStatus::Pending)
-                        <button type="button" wire:click="reorder({{ $order->getId() }})" class="inline-flex min-h-11 items-center gap-1 rounded-card px-3 text-sm text-primary-700 hover:bg-primary-50">
-                            <x-ts-icon icon="arrow-path" class="size-5" />
-                            سفارش دوباره
-                        </button>
-                    @endif
+                    {{-- «سفارش دوباره» is the page's main action, filled, at the top (owner, 2026-11-17). --}}
+                    <button type="button" wire:click="reorder({{ $order->getId() }})" wire:loading.attr="disabled" wire:target="reorder" data-own-loading class="inline-flex min-h-11 items-center gap-2 rounded-card bg-primary-700 px-4 text-sm font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700 disabled:opacity-60">
+                        <x-ts-icon icon="arrow-path" class="size-5" wire:loading.remove wire:target="reorder" />
+                        <x-ui.spinner class="size-5" wire:loading wire:target="reorder" />
+                        سفارش دوباره
+                    </button>
                 @endif
             </div>
         @endif
@@ -158,4 +151,16 @@
             </section>
         </div>
     </div>
+
+    {{-- «لغو سفارش» only here, at the bottom of the order page (owner, 2026-11-17), until the order is on its way. --}}
+    @if ($status->isCancellableByCustomer())
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line-200 bg-card p-4">
+            <p class="text-sm text-ink-500">تا پیش از ارسال می‌توانید سفارش را لغو کنید؛ مبلغ پرداختی بازگردانده می‌شود.</p>
+            <button type="button" x-data="{ working: false }" x-bind:disabled="working" x-bind:aria-busy="working" x-on:click="$store.confirm.ask({ title: 'لغو سفارش', message: @js('سفارش '.$order->getNumber().' لغو شود؟ مبلغ پرداختی بازگردانده می‌شود.'), confirm: 'لغو سفارش', cancel: 'منصرف شدم', icon: 'cancel' }).then((ok) => { if (! ok) return; working = true; $wire.cancel({{ $order->getId() }}).finally(() => (working = false)); })" class="inline-flex min-h-11 items-center gap-1 rounded-card border border-danger-600 px-4 text-sm font-medium text-danger-600 hover:bg-surface-50 disabled:cursor-wait disabled:opacity-60">
+                <x-ts-icon icon="x-circle" class="size-5" x-show="! working" />
+                <x-ui.spinner class="size-5" x-show="working" x-cloak />
+                لغو سفارش
+            </button>
+        </div>
+    @endif
 </x-identity::account-shell>

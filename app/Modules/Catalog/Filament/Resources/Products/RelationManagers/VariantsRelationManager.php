@@ -139,13 +139,15 @@ final class VariantsRelationManager extends RelationManager
                             ->required(),
                     ]),
                 Section::make('ارسال')
-                    ->description('ابعاد و وزن بسته‌بندی‌شده؛ برای محاسبه هزینه ارسال تیپاکس.')
+                    ->description('وزن الزامی است و هزینه ارسال از آن حساب می‌شود؛ ابعاد اختیاری است.')
                     ->columns(4)
                     ->schema([
                         TextInput::make(ProductVariant::COLUMN_WEIGHT_G)
                             ->label('وزن')
                             ->numeric()
                             ->suffix('گرم')
+                            ->required()
+                            ->helperText('وزن کالا با بسته‌بندی خودش؛ هزینه ارسال از آن حساب می‌شود.')
                             ->rules(fn (?ProductVariant $record): array => $rules($record, ProductVariant::COLUMN_WEIGHT_G)),
                         $millimetres(ProductVariant::COLUMN_LENGTH_MM, 'طول'),
                         $millimetres(ProductVariant::COLUMN_WIDTH_MM, 'عرض'),

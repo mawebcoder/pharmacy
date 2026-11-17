@@ -531,7 +531,7 @@ describe('paying', function (): void {
 });
 
 describe('the customer\'s orders', function (): void {
-    it('shows only their orders, with «پرداخت» on pending ones', function (): void {
+    it('shows only their orders, with «پرداخت» on pending ones and «جزئیات سفارش» on each, but no «لغو سفارش»', function (): void {
         $this->actingAs($this->customer, 'customer');
         Order::factory()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_NUMBER => 'PH-140508-000001']);
         Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_NUMBER => 'PH-140508-000002']);
@@ -542,7 +542,8 @@ describe('the customer\'s orders', function (): void {
             ->assertSee('PH-140508-000002')
             ->assertDontSee('PH-140508-000003')
             ->assertSeeHtml('wire:click="pay(')
-            ->assertSee('لغو سفارش');
+            ->assertSee('جزئیات سفارش')
+            ->assertDontSee('لغو سفارش');
     });
 
     it('lets the customer cancel a paid or processing order, marking the money to refund, but not one on its way', function (): void {
@@ -551,9 +552,9 @@ describe('the customer\'s orders', function (): void {
         $processing = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_STATUS => OrderStatus::Processing]);
         $onTheWay = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId(), Order::COLUMN_STATUS => OrderStatus::OnTheWay]);
 
-        livewire(OrderList::class)->call('cancel', $paid->getId());
-        livewire(OrderList::class)->call('cancel', $processing->getId());
-        livewire(OrderList::class)->call('cancel', $onTheWay->getId());
+        livewire(OrderDetail::class, ['order' => $paid->getId()])->call('cancel', $paid->getId());
+        livewire(OrderDetail::class, ['order' => $processing->getId()])->call('cancel', $processing->getId());
+        livewire(OrderDetail::class, ['order' => $onTheWay->getId()])->call('cancel', $onTheWay->getId());
 
         expect($paid->refresh()->getStatus())->toBe(OrderStatus::Cancelled)
             ->and($paid->getPaymentStatus())->toBe(PaymentStatus::RefundPending)
@@ -608,7 +609,17 @@ describe('the customer\'s orders', function (): void {
 
         expect($theirs->fresh()->getStatus())->toBe(OrderStatus::Paid)
             ->and(CartItem::query()->count())->toBe(0);
-    })->with(['pay', 'cancel', 'reorder']);
+    })->with(['pay', 'reorder']);
+
+    it('never cancels another customer\'s order from an order page', function (): void {
+        $this->actingAs($this->customer, 'customer');
+        $mine = Order::factory()->paid()->create([Order::COLUMN_CUSTOMER_ID => $this->customer->getId()]);
+        $theirs = Order::factory()->paid()->create();
+
+        livewire(OrderDetail::class, ['order' => $mine->getId()])->call('cancel', $theirs->getId())->assertNotFound();
+
+        expect($theirs->fresh()->getStatus())->toBe(OrderStatus::Paid);
+    });
 
     it('opens an order from the list and shows it from its own copies', function (): void {
         $this->actingAs($this->customer, 'customer');
