@@ -33,7 +33,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S31 | Packing | todo | | |
 | S32 | Returns | todo | | |
 | S33 | Home, banners, deals (flash deals, /deals; bundles in S33b) | done | 2026-11-17 | 5be9dc0 |
-| S34 | Static pages, FAQ, contact, menus | in progress (built, awaiting commit) | | |
+| S34 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
 | S35 | Settings and trust | todo | | |
 | S21 | Shipping foundation | todo | | |
 | S24 | Own courier zones | todo | | |
