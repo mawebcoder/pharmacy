@@ -13,6 +13,7 @@ use App\Modules\Notifications\NotificationsServiceProvider;
 use App\Modules\Orders\OrdersServiceProvider;
 use App\Modules\Payments\PaymentsServiceProvider;
 use App\Modules\Pricing\PricingServiceProvider;
+use App\Modules\Profile\ProfileServiceProvider;
 use App\Modules\Reporting\ReportingServiceProvider;
 use App\Modules\Search\SearchServiceProvider;
 use App\Modules\Seo\SeoServiceProvider;
@@ -36,6 +37,7 @@ return [
     OrdersServiceProvider::class,
     PaymentsServiceProvider::class,
     PricingServiceProvider::class,
+    ProfileServiceProvider::class,
     ReportingServiceProvider::class,
     SearchServiceProvider::class,
     SeoServiceProvider::class,

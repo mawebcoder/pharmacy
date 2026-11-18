@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Modules\Catalog\Actions\AddToWishlist;
 use App\Modules\Catalog\Actions\ToggleWishlist;
-use App\Modules\Catalog\Livewire\Account\Wishlist as WishlistPage;
 use App\Modules\Catalog\Livewire\WishlistToggle;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
@@ -12,6 +11,7 @@ use App\Modules\Catalog\Models\Wishlist;
 use App\Modules\Catalog\Support\PendingWishlist;
 use App\Modules\Identity\Events\CustomerLoggedIn;
 use App\Modules\Identity\Models\Customer;
+use App\Modules\Profile\Livewire\Wishlist as WishlistPage;
 
 use function Pest\Livewire\livewire;
 

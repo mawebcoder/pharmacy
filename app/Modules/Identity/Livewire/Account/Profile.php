@@ -20,9 +20,9 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * «اطلاعات حساب» (roadmap B9.9, S20): name, national id, email, birth date (Jalali picker, stored Gregorian) and
- * gender; the mobile is the sign-in identity and cannot be changed here. The theme (owner, 2026-11-14) is saved as soon
- * as it is picked and applied to the page without a reload.
+ * The «اطلاعات حساب» form (roadmap B9.9, S20), framed by the Profile module's account page: name, national id, email,
+ * birth date (Jalali picker, stored Gregorian) and gender; the mobile is the sign-in identity and cannot be changed
+ * here. The theme (owner, 2026-11-14) is saved as soon as it is picked and applied to the page without a reload.
  */
 final class Profile extends Component
 {
@@ -100,6 +100,6 @@ final class Profile extends Component
             'mobile' => $this->customer()->getMobile(),
             'genders' => Gender::options(),
             'themes' => ThemePreference::options(),
-        ])->title('اطلاعات حساب');
+        ]);
     }
 }

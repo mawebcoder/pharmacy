@@ -6,9 +6,9 @@ use App\Modules\Identity\Models\Customer;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
-use App\Modules\Orders\Livewire\Account\OrderDetail;
 use App\Modules\Orders\Livewire\TrackOrder;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Profile\Livewire\OrderDetail;
 use Illuminate\Support\Facades\RateLimiter;
 
 use function Pest\Livewire\livewire;

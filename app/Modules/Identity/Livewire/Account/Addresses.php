@@ -23,8 +23,8 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * «آدرس‌ها» (roadmap B9.9, D3.3, S20): the customer's addresses as cards (at most 10) with add / edit in a modal,
- * «پیش‌فرض شود» and delete. Provinces and cities are Tipax's, limited to cities with delivery on (admin «شهرها»).
+ * The address book (roadmap B9.9, D3.3, S20), framed by the Profile module's «آدرس‌ها» page: the customer's addresses
+ * as cards (at most 10) with add / edit in a modal, «پیش‌فرض شود» and delete. Provinces and cities are Tipax's, limited to cities with delivery on (admin «شهرها»).
  * Writes go through the address actions. With forCheckout it is the checkout address step (S23): each card offers
  * «ارسال به این آدرس», which tells the page through the «address-picked» event.
  *
@@ -201,7 +201,7 @@ final class Addresses extends Component
             'cities' => $locations->cities(filled($this->form[Address::COLUMN_PROVINCE_ID] ?? null) ? (int) $this->form[Address::COLUMN_PROVINCE_ID] : null),
             'canDeliver' => $provinces !== [],
             'maxAddresses' => Address::MAX_PER_CUSTOMER,
-        ])->title('آدرس‌ها');
+        ]);
     }
 
     /**

@@ -9,10 +9,4 @@ use Illuminate\Support\Facades\Route;
 Route::livewire('/login', 'identity::login-page')->middleware('guest:customer')->name('login');
 Route::post('/logout', LogoutCustomerController::class)->middleware('auth:customer')->name('logout');
 
-// Account area (roadmap B5, B9.9, S20). «سفارش‌ها» is in the Orders module (S23); reviews show an empty state until S13.
-Route::middleware('auth:customer')->prefix('account')->group(function (): void {
-    Route::livewire('/', 'identity::account.dashboard')->name('account');
-    Route::livewire('/addresses', 'identity::account.addresses')->name('account.addresses');
-    Route::livewire('/profile', 'identity::account.profile')->name('account.profile');
-    Route::livewire('/reviews', 'identity::account.reviews')->name('account.reviews');
-});
+// The account area is the Profile module (2026-11-18); its address book and profile form are Identity components.

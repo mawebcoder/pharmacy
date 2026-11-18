@@ -9,8 +9,9 @@ use App\Modules\Identity\Models\Address;
 use App\Modules\Locations\Queries\DeliveryLocations;
 
 /**
- * A customer's addresses for checkout (roadmap S23), read by other modules: which address an order goes to (the one
- * picked on the address step if it is still theirs, else their default, else their newest) and its snapshot.
+ * A customer's addresses, read by other modules: for checkout (roadmap S23), which address an order goes to (the one
+ * picked on the address step if it is still theirs, else their default, else their newest) and its snapshot; for the
+ * account dashboard (Profile), how many there are and the default one.
  */
 final readonly class CustomerAddresses
 {
@@ -19,6 +20,21 @@ final readonly class CustomerAddresses
     public function hasAny(int $customerId): bool
     {
         return Address::query()->ownedBy($customerId)->exists();
+    }
+
+    public function count(int $customerId): int
+    {
+        return Address::query()->ownedBy($customerId)->count();
+    }
+
+    /**
+     * The address the customer marked as default, for the account dashboard; null when none is marked.
+     */
+    public function defaultSnapshot(int $customerId): ?AddressSnapshotData
+    {
+        $addressId = Address::query()->ownedBy($customerId)->where(Address::COLUMN_IS_DEFAULT, true)->value(Address::COLUMN_ID);
+
+        return $addressId === null ? null : $this->snapshot($customerId, (int) $addressId);
     }
 
     /**

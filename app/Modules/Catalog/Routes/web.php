@@ -29,9 +29,6 @@ Route::livewire('/products/{slug}', 'catalog::product-page')->name('products.sho
 // «تخفیف‌ها»: flash deals, discount tiers and «زودمصرف» (roadmap B5, S28).
 Route::livewire('/deals', 'catalog::deals-page')->name('deals');
 
-// The customer's saved products, inside the account area (roadmap S20).
-Route::livewire('/account/wishlist', 'catalog::account.wishlist')->middleware('auth:customer')->name('account.wishlist');
-
 // The first short addresses (/b, /c, /p) keep working: permanent redirects to the new ones.
 Route::permanentRedirect('/b', '/brands');
 Route::permanentRedirect('/b/{slug}', '/brands/{slug}');

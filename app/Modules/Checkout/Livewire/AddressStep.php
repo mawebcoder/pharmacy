@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Checkout\Livewire;
 
 use App\Modules\Cart\Actions\PickCartAddress;
-use App\Modules\Cart\Data\CheckoutQuoteData;
-use App\Modules\Cart\Queries\CheckoutQuote;
+use App\Modules\Checkout\Data\CheckoutQuoteData;
+use App\Modules\Checkout\Queries\CheckoutQuote;
 use App\Modules\Identity\Queries\CustomerAddresses;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;

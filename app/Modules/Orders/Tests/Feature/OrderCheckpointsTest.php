@@ -8,9 +8,9 @@ use App\Modules\Orders\Data\OrderCheckpointData;
 use App\Modules\Orders\Enums\CheckpointState;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
-use App\Modules\Orders\Livewire\Account\OrderDetail;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Support\OrderCheckpoints;
+use App\Modules\Profile\Livewire\OrderDetail;
 use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\Toman;
 

@@ -460,8 +460,9 @@ app/
     Media/         # image presets, conversions, thumbhash
     Pricing/       # providers, provider prices, rules, imports, pricing engine
     Cart/          # cart, coupons
-    Checkout/      # checkout orchestration
-    Orders/        # orders, items, state machine, sourcing, returns
+    Checkout/      # checkout flow: address step, quote (CheckoutQuote), PlaceOrder, payment result
+    Orders/        # orders, items (CreateOrder), state machine, sourcing, returns
+    Profile/       # the customer's account area (/account): dashboard, orders, addresses, wishlist, reviews, details
     Payments/      # gateways (Zarinpal), payments, refunds, reconciliation
     Shipping/      # carriers (Tipax, own courier), boxes, quotes, shipments, zones
     Content/       # banners, home sections, flash deals, pages, FAQ, menus, contact
@@ -495,6 +496,8 @@ app/Modules/Catalog/
   resources/views/
   Tests/Unit/  Tests/Feature/
 ```
+
+> **Change (owner, 2026-11-18): Checkout and Profile.** Checkout owns the whole checkout flow: `CheckoutQuote` (from Cart), `PlaceOrder`, its DTOs and `CheckoutRefused` (from Orders) and the payment result page; it reads the cart through `Cart\Queries\CheckoutCart` and saves the order through `Orders\Actions\CreateOrder`. The new Profile module owns the account area (routes `account.*`, the account frame `x-profile::account-shell`, and the dashboard, orders, order, addresses, wishlist, reviews and details pages); data comes through `Orders\Queries\CustomerOrders`, `Identity\Queries\CustomerAddresses` and `Catalog\Queries\CustomerWishlist`, and the address book and profile form stay Identity components (checkout uses the address book too).
 
 Rules:
 1. A module may call another module **only through its Actions, Queries, Events or Contracts**, never through another module's models directly (except reading foreign keys). Enforced with Pest `arch()` tests.

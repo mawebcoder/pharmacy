@@ -12,7 +12,8 @@
     ];
 @endphp
 
-<x-identity::account-shell active="profile" title="اطلاعات حساب">
+{{-- The form only; the account page «اطلاعات حساب» (Profile) frames it. --}}
+<div>
     <form wire:submit="save" class="space-y-5 rounded-card border border-line-200 bg-card p-4 md:p-6" novalidate>
         <div class="grid gap-4 md:grid-cols-2">
             @foreach ($text as [$key, $label, $attributes])
@@ -69,4 +70,4 @@
             @endforeach
         </div>
     </fieldset>
-</x-identity::account-shell>
+</div>

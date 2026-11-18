@@ -22,7 +22,7 @@ return [
     | APP_NAME also builds Redis and Horizon key prefixes. Moves to site settings in S30.
     */
 
-    'display_name' => env('APP_DISPLAY_NAME', 'داروخانه آنلاین'),
+    'display_name' => env('APP_DISPLAY_NAME', 'هوتانا'),
 
     /*
     |--------------------------------------------------------------------------

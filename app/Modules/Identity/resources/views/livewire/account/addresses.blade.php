@@ -9,15 +9,7 @@
     };
 @endphp
 
-{{-- One root element: the list is also nested in the checkout address step (S23). --}}
-<div>
-    @if ($forCheckout)
-        <div class="space-y-4">
-            @include('identity::livewire.account.partials.addresses-content')
-        </div>
-    @else
-        <x-identity::account-shell active="addresses" title="آدرس‌ها">
-            @include('identity::livewire.account.partials.addresses-content')
-        </x-identity::account-shell>
-    @endif
+{{-- One root element: the address book is nested in the account page «آدرس‌ها» (Profile) and the checkout address step (S23). --}}
+<div class="space-y-4">
+    @include('identity::livewire.account.partials.addresses-content')
 </div>
