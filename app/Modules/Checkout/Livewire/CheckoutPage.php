@@ -20,8 +20,8 @@ use Livewire\Component;
 
 /**
  * Checkout step 2, «بازبینی و پرداخت» (roadmap B9.7, D13.4, S23). Everything is worked out on the fly from the cart
- * now and nothing is written until «پرداخت»: the address (picked, else default; «تغییر» goes back), shipping at the
- * flat rate or free, the items, the coupon (applied codes are only logged), the totals. «پرداخت» runs PlaceOrder,
+ * now and nothing is written until «پرداخت»: the address (picked, else default; «تغییر» goes back), the shipping
+ * options with the one picked (S34), the items, the coupon (applied codes are only logged), the totals. «پرداخت» runs PlaceOrder,
  * which checks it all again and creates the order; then the customer goes to the gateway.
  */
 final class CheckoutPage extends Component
@@ -31,6 +31,9 @@ final class CheckoutPage extends Component
     public string $couponInput = '';
 
     public string $note = '';
+
+    /** The shipping option picked (S34); empty or no longer offered means the cheapest. */
+    public string $shippingOption = '';
 
     /** Why the last «پرداخت» did not go through (prices, stock, coupon or address changed). */
     #[Locked]
@@ -97,6 +100,7 @@ final class CheckoutPage extends Component
                 couponCode: $this->couponCode(),
                 shownTotal: $this->shownTotal,
                 customerNote: trim($this->note) === '' ? null : trim($this->note),
+                shippingOptionKey: $this->shippingOption === '' ? null : $this->shippingOption,
             ));
         } catch (CheckoutRefused $refused) {
             $this->notice = $refused->getMessage();
@@ -118,8 +122,9 @@ final class CheckoutPage extends Component
 
     public function render(CheckoutQuote $quotes): View
     {
-        $quote = $quotes->forCustomer($this->customerId(), $this->couponCode());
+        $quote = $quotes->forCustomer($this->customerId(), $this->couponCode(), $this->shippingOption === '' ? null : $this->shippingOption);
         $this->shownTotal = $quote?->total() ?? 0;
+        $this->shippingOption = $quote?->shippingOption->key ?? '';
 
         return view('checkout::livewire.checkout-page', ['quote' => $quote])->title('بازبینی و پرداخت');
     }

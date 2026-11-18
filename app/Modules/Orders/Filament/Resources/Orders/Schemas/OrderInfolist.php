@@ -183,9 +183,9 @@ final class OrderInfolist
                         ->label('روش ارسال')
                         ->formatStateUsing(fn (string $state, Order $record): string => match ($state) {
                             'own_courier' => 'پیک فروشگاه',
-                            'tipax' => 'تیپاکس',
+                            'tipax' => (string) ($record->getShippingQuoteSnapshot()['label'] ?? 'تیپاکس'),
                             default => (string) ($record->getShippingQuoteSnapshot()['label'] ?? 'ارسال'),
-                        }),
+                        }.(($record->getShippingQuoteSnapshot()['is_estimate'] ?? false) ? ' (قیمت تخمینی)' : '')),
                     TextEntry::make(Order::COLUMN_SHIPPING_PRICE)
                         ->label('هزینه ارسال')
                         ->formatStateUsing(fn (int $state, Order $record): string => $record->getShippingTotal() > 0 ? Toman::format($record->getShippingTotal()) : 'رایگان')

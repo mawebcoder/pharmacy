@@ -27,6 +27,14 @@ final class TipaxRequestFailed extends RuntimeException
         return new self("Tipax refused {$operation} (HTTP {$status}).");
     }
 
+    /**
+     * HTTP 200 with `isSuccess: false` (D6.2), e.g. `CityNotFound` or `ServiceNotAvailable`.
+     */
+    public static function refused(string $operation, string $statusCode): self
+    {
+        return new self("Tipax refused {$operation} ({$statusCode}).");
+    }
+
     public static function unexpected(string $operation): self
     {
         return new self("Tipax answered {$operation} with an unexpected body.");

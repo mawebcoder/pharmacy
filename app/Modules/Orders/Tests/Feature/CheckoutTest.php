@@ -47,7 +47,12 @@ use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
+use App\Modules\Shipping\Database\Seeders\TipaxCartonsSeeder;
+use App\Modules\Shipping\Models\ShippingBox;
+use App\Modules\Shipping\Models\VariantBoxCapacity;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Livewire\livewire;
 
@@ -205,6 +210,87 @@ describe('the checkout page', function (): void {
             ->assertHasNoErrors()
             ->assertRedirect(Payment::query()->first()?->getUrl() ?? 'missing');
         expect(Order::query()->count())->toBe(1);
+    });
+});
+
+describe('shipping through Tipax', function (): void {
+    beforeEach(function (): void {
+        config([
+            'shipping.tipax.base_url' => 'https://tipax.test',
+            'shipping.tipax.username' => 'shop',
+            'shipping.tipax.password' => 'test-password',
+            'shipping.tipax.api_key' => 'test-api-key',
+        ]);
+        $this->seed(TipaxCartonsSeeder::class);
+        app(SaveStoreSettings::class)([StoreSettings::SHIPPING_ORIGIN_CITY_ID => 1]);
+        $this->tipaxDown = false;
+        Http::fake(fn (Request $request) => match (true) {
+            $this->tipaxDown => Http::response(null, 500),
+            str_ends_with($request->url(), 'Account/token') => Http::response(['accessToken' => 'token-123', 'expiresIn' => 3600]),
+            str_ends_with($request->url(), 'GetServicesBetweenCities') => Http::response(['isSuccess' => true, 'data' => ['serviceList' => [['serviceId' => 3, 'deliveryDay' => 2]]]]),
+            default => Http::response([[
+                'regularRate' => ['serviceId' => 3, 'finalPrice' => 300_000],
+                'expressRate' => ['serviceId' => 1, 'finalPrice' => 700_000],
+            ]]),
+        });
+        $this->variant = checkoutSku(1_000_000);
+        $this->variant->setWeightG(300)->save();
+        (new VariantBoxCapacity)
+            ->setVariantId($this->variant->getId())
+            ->setBoxId(ShippingBox::query()->where(ShippingBox::COLUMN_TIPAX_SIZE, 3)->sole()->getId())
+            ->setCapacity(6)
+            ->save();
+        fillCart($this->customer, [$this->variant->getId() => 2]);
+        homeAddress($this->customer);
+    });
+
+    it('lists Tipax services cheapest first and charges the one the customer picks', function (): void {
+        $this->actingAs($this->customer, 'customer');
+
+        livewire(CheckoutPage::class)
+            ->assertSeeInOrder(['تیپاکس عادی', 'تحویل حدود ۲ روز کاری', 'تیپاکس اکسپرس'])
+            ->assertSet('shippingOption', 'tipax.regular')
+            ->assertSet('shownTotal', 2_300_000)
+            ->set('shippingOption', 'tipax.express')
+            ->assertSet('shownTotal', 2_700_000);
+    });
+
+    it('records the picked Tipax service on the order', function (): void {
+        $placed = app(PlaceOrder::class)(new PlaceOrderData($this->customer->getId(), null, 2_700_000, shippingOptionKey: 'tipax.express'));
+        $order = Order::query()->findOrFail($placed->orderId);
+
+        expect($order)
+            ->getShippingMethod()->toBe('tipax')
+            ->getShippingPrice()->toBe(700_000)
+            ->getShippingTotal()->toBe(700_000)
+            ->and($order->getShippingQuoteSnapshot())->toMatchArray(['option' => 'tipax.express', 'label' => 'تیپاکس اکسپرس', 'is_estimate' => false]);
+    });
+
+    it('lets free shipping cover the cheapest service, so a dearer one costs the difference', function (): void {
+        app(SaveStoreSettings::class)([StoreSettings::FREE_SHIPPING_THRESHOLD => 1_000_000]);
+
+        $cheapest = app(PlaceOrder::class)(new PlaceOrderData($this->customer->getId(), null, 2_000_000));
+
+        expect(Order::query()->findOrFail($cheapest->orderId))
+            ->getShippingPrice()->toBe(300_000)
+            ->getShippingDiscount()->toBe(300_000)
+            ->getShippingDiscountReason()->toBe('threshold')
+            ->getShippingTotal()->toBe(0);
+
+        fillCart($this->customer, [$this->variant->getId() => 2]);
+        $dearer = app(PlaceOrder::class)(new PlaceOrderData($this->customer->getId(), null, 2_400_000, shippingOptionKey: 'tipax.express'));
+
+        expect(Order::query()->findOrFail($dearer->orderId)->getShippingTotal())->toBe(400_000);
+    });
+
+    it('charges the flat rate, marked an estimate, when Tipax does not answer', function (): void {
+        $this->tipaxDown = true;
+        $this->actingAs($this->customer, 'customer');
+
+        livewire(CheckoutPage::class)
+            ->assertSet('shippingOption', 'flat')
+            ->assertSet('shownTotal', 2_500_000)
+            ->assertSee('قیمت تخمینی است.');
     });
 });
 

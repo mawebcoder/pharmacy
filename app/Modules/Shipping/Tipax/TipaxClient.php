@@ -23,7 +23,7 @@ final readonly class TipaxClient
     private const string TOKEN_CACHE_KEY = 'shipping:tipax:access_token';
 
     /**
-     * @param  array{token: string, cities: string, branch_cities: string}  $paths
+     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string}  $paths
      */
     public function __construct(
         private string $baseUrl,
@@ -35,7 +35,84 @@ final readonly class TipaxClient
         private int $timeoutSeconds,
         private int $retries,
         private int $retrySleepMs,
+        private int $pricingTimeoutSeconds,
     ) {}
+
+    /**
+     * Whether sign-in can be tried at all (the username, password and API key are set).
+     */
+    public function isConfigured(): bool
+    {
+        return filled($this->username) && filled($this->password) && filled($this->apiKey);
+    }
+
+    /**
+     * Prices packages (`POST Pricing`, OmPriceDto): one entry per package (ETipaxPriceMinListDto) with a rate per
+     * service family. Checkout waits on it, so it has the short pricing timeout and no retry.
+     *
+     * @param  array<string, mixed>  $body
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function price(array $body): array
+    {
+        $response = $this->send(
+            'pricing',
+            fn (PendingRequest $request): Response => $request->withToken($this->token())->post($this->url($this->paths['pricing']), $body),
+            timeoutSeconds: $this->pricingTimeoutSeconds,
+            retries: 0,
+        );
+        $entries = $response->json();
+
+        // The spec answers with a bare array; tolerate the usual envelope too.
+        if (is_array($entries) && ! array_is_list($entries)) {
+            if (($entries['isSuccess'] ?? true) === false) {
+                throw TipaxRequestFailed::refused('pricing', (string) ($entries['statusCode'] ?? ''));
+            }
+
+            $entries = $entries['data'] ?? null;
+        }
+
+        if (! is_array($entries) || ! array_is_list($entries)) {
+            throw TipaxRequestFailed::unexpected('pricing');
+        }
+
+        return array_values(array_filter($entries, is_array(...)));
+    }
+
+    /**
+     * The services between two cities with their delivery days (`POST Pricing/GetServicesBetweenCities`):
+     * serviceList [{ serviceId, serviceKindId, serviceKind, deliveryDay }].
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function servicesBetweenCities(int $originCityId, int $destinationCityId): array
+    {
+        $response = $this->send(
+            'services_between_cities',
+            fn (PendingRequest $request): Response => $request->withToken($this->token())->post($this->url($this->paths['services_between_cities']), [
+                'sourceCityId' => $originCityId,
+                'destinationCityId' => $destinationCityId,
+            ]),
+            timeoutSeconds: $this->pricingTimeoutSeconds,
+            retries: 0,
+        );
+
+        if ($response->json('isSuccess') === false) {
+            throw TipaxRequestFailed::refused('services_between_cities', (string) $response->json('statusCode'));
+        }
+
+        $services = $response->json('data.serviceList');
+
+        if (! is_array($services)) {
+            throw TipaxRequestFailed::unexpected('services_between_cities');
+        }
+
+        return array_values(array_filter($services, is_array(...)));
+    }
 
     /**
      * Every Tipax city with its province (`GET Cities/plusstate`, OmCityListWithStateDto).
@@ -116,15 +193,15 @@ final readonly class TipaxClient
      *
      * @throws TipaxRequestFailed
      */
-    private function send(string $operation, callable $call, array $redact = []): Response
+    private function send(string $operation, callable $call, array $redact = [], ?int $timeoutSeconds = null, ?int $retries = null): Response
     {
         $request = IntegrationHttp::for('tipax', $operation, redact: $redact)
             ->acceptJson()
             ->asJson()
-            ->connectTimeout($this->connectTimeoutSeconds)
-            ->timeout($this->timeoutSeconds)
+            ->connectTimeout(min($this->connectTimeoutSeconds, $timeoutSeconds ?? $this->timeoutSeconds))
+            ->timeout($timeoutSeconds ?? $this->timeoutSeconds)
             ->retry(
-                max(1, $this->retries + 1),
+                max(1, ($retries ?? $this->retries) + 1),
                 $this->retrySleepMs,
                 fn (Throwable $exception): bool => $exception instanceof ConnectionException
                     || ($exception instanceof RequestException && $exception->response->serverError()),

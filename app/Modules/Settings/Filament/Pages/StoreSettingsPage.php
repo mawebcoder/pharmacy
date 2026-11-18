@@ -6,6 +6,7 @@ namespace App\Modules\Settings\Filament\Pages;
 
 use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Queries\AdminOptions;
+use App\Modules\Locations\Queries\CitySearch;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Queries\StoreSettings;
@@ -60,6 +61,8 @@ final class StoreSettingsPage extends Page
             'free_shipping_threshold' => $settings->freeShippingThreshold(),
             'removal_delay_seconds' => $settings->removalDelaySeconds(),
             'shipping_flat_rate' => $settings->shippingFlatRate(),
+            'shipping_origin_city_id' => $settings->shippingOriginCityId(),
+            'shipping_markup_percent' => $settings->shippingMarkupPercent(),
             'whatsapp_number' => $settings->whatsAppNumber(),
             'telegram_username' => $settings->telegramUsername(),
             'chat_message_product' => $settings->get(StoreSettings::CHAT_MESSAGE_PRODUCT),
@@ -107,11 +110,25 @@ final class StoreSettingsPage extends Page
                 Section::make('ارسال')
                     ->columns(2)
                     ->schema([
+                        Select::make('shipping_origin_city_id')
+                            ->label('شهر مبدأ ارسال')
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search): array => app(CitySearch::class)->options($search))
+                            ->getOptionLabelUsing(fn (int|string $value): ?string => app(CitySearch::class)->label((int) $value))
+                            ->helperText('شهر انبار که بسته‌ها از آن ارسال می‌شوند؛ تا انتخاب نشود، هزینه ارسال از تیپاکس گرفته نمی‌شود و «هزینه ارسال ثابت» حساب می‌شود.'),
+                        TextInput::make('shipping_markup_percent')
+                            ->label('افزایش قیمت ارسال (درصد)')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(0)
+                            ->maxValue(StoreSettings::MAX_SHIPPING_MARKUP_PERCENT)
+                            ->required()
+                            ->helperText('این درصد به قیمت تیپاکس اضافه می‌شود، مثلاً برای اختلاف با قیمت باجه؛ صفر یعنی همان قیمت تیپاکس.'),
                         TextInput::make('shipping_flat_rate')
-                            ->label('هزینه ارسال')
+                            ->label('هزینه ارسال ثابت')
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                             ->required()
-                            ->helperText('یک هزینه برای همه سفارش‌ها تا راه‌اندازی تیپاکس و پیک؛ بالای حد ارسال رایگان یا با کوپن ارسال رایگان، رایگان است.'),
+                            ->helperText('وقتی تیپاکس پاسخ ندهد یا شهر مبدأ انتخاب نشده باشد، همین مبلغ با برچسب «تخمینی» حساب می‌شود؛ بالای حد ارسال رایگان یا با کوپن ارسال رایگان، رایگان است.'),
                     ]),
                 Section::make('اطلاعات تماس')
                     ->description('در پانویس همه صفحه‌ها و صفحه «تماس با ما» نمایش داده می‌شوند؛ خالی یعنی نمایش داده نمی‌شود.')
@@ -216,6 +233,8 @@ final class StoreSettingsPage extends Page
             StoreSettings::FREE_SHIPPING_THRESHOLD => (int) $data['free_shipping_threshold'],
             StoreSettings::REMOVAL_DELAY_SECONDS => (int) $data['removal_delay_seconds'],
             StoreSettings::SHIPPING_FLAT_RATE => (int) $data['shipping_flat_rate'],
+            StoreSettings::SHIPPING_ORIGIN_CITY_ID => (int) ($data['shipping_origin_city_id'] ?? 0),
+            StoreSettings::SHIPPING_MARKUP_PERCENT => (int) $data['shipping_markup_percent'],
             StoreSettings::WHATSAPP_NUMBER => IranMobile::normalize((string) ($data['whatsapp_number'] ?? '')) ?? '',
             StoreSettings::TELEGRAM_USERNAME => (string) ($data['telegram_username'] ?? ''),
             StoreSettings::CHAT_MESSAGE_PRODUCT => trim((string) $data['chat_message_product']),

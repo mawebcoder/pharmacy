@@ -94,7 +94,7 @@ final readonly class PlaceOrder
 
     private function place(PlaceOrderData $data): Order
     {
-        $quote = $this->quotes->forCustomer($data->customerId, $data->couponCode) ?? throw CheckoutRefused::cartEmpty();
+        $quote = $this->quotes->forCustomer($data->customerId, $data->couponCode, $data->shippingOptionKey) ?? throw CheckoutRefused::cartEmpty();
         $address = $this->check($quote, $data);
         $lines = $quote->cart->lines;
         $variantIds = array_map(fn (CartLineData $line): int => $line->variant->variantId, $lines);
@@ -112,22 +112,26 @@ final readonly class PlaceOrder
             ->setCustomerSnapshot($this->contacts->for($data->customerId) ?? [])
             ->setSubtotal($quote->cart->subtotal)
             ->setDiscountTotal(array_sum($discounts))
-            ->setShippingPrice($quote->flatRate)
-            ->setShippingDiscount($quote->flatRate - $quote->shippingPrice)
-            ->setShippingDiscountReason($quote->freeShipping ? $quote->freeShippingReason : null)
+            ->setShippingPrice($quote->shippingOption->price)
+            ->setShippingDiscount($quote->shippingDiscount)
+            ->setShippingDiscountReason($quote->shippingDiscount > 0 ? $quote->freeShippingReason : null)
             ->setShippingTotal($quote->shippingPrice)
             ->setTotal($quote->cart->subtotal - array_sum($discounts) + $quote->shippingPrice)
             ->setCouponId($quote->coupon?->couponId)
             ->setCouponCode($quote->coupon?->code)
             ->setCouponSnapshot($quote->coupon instanceof AppliedCouponData ? $this->quotes->couponSnapshot($quote->coupon->couponId) : null)
-            ->setShippingMethod('flat')
+            ->setShippingMethod($quote->shippingOption->method)
             ->setShippingQuoteSnapshot([
-                'method' => 'flat',
-                'label' => 'ارسال',
+                'method' => $quote->shippingOption->method,
+                'option' => $quote->shippingOption->key,
+                'label' => $quote->shippingOption->title,
+                'option_price' => $quote->shippingOption->price,
                 'price' => $quote->shippingPrice,
+                'delivery_days' => $quote->shippingOption->deliveryDays,
+                'is_estimate' => $quote->shippingOption->isEstimate,
+                'details' => $quote->shippingOption->details,
                 'free' => $quote->freeShipping,
                 'free_reason' => $quote->freeShippingReason,
-                'flat_rate' => $quote->flatRate,
                 'free_shipping_threshold' => $quote->freeShippingThreshold,
             ])
             ->setCustomerNote($data->customerNote)

@@ -39,19 +39,39 @@
                     @endif
                 </section>
 
-                {{-- Shipping: one option until phase 8. --}}
+                {{-- Shipping (S34): the services on the route, cheapest first; the customer picks one. --}}
                 <section class="rounded-card border border-line-200 bg-card p-4" aria-labelledby="checkout-shipping">
-                    <div class="flex items-center justify-between gap-3">
-                        <h2 id="checkout-shipping" class="flex items-center gap-2 font-bold text-ink-900">
-                            <x-ts-icon icon="truck" class="size-5 text-primary-700" />
-                            ارسال
-                        </h2>
-                        @if ($quote->freeShipping)
-                            <span class="font-medium text-success-600">رایگان</span>
-                        @else
-                            <span class="text-ink-900">@toman($quote->shippingPrice)</span>
-                        @endif
-                    </div>
+                    <h2 id="checkout-shipping" class="flex items-center gap-2 font-bold text-ink-900">
+                        <x-ts-icon icon="truck" class="size-5 text-primary-700" />
+                        روش ارسال
+                    </h2>
+                    <fieldset class="mt-3 space-y-2">
+                        <legend class="sr-only">روش ارسال</legend>
+                        @foreach ($quote->shippingOptions as $option)
+                            @php($cost = $quote->shippingCostOf($option))
+                            <label wire:key="shipping-{{ $option->key }}" @class([
+                                'flex min-h-12 cursor-pointer items-center gap-3 rounded-card border p-3 text-sm',
+                                'border-primary-700 bg-primary-50' => $option->key === $quote->shippingOption->key,
+                                'border-line-200' => $option->key !== $quote->shippingOption->key,
+                            ])>
+                                <input type="radio" name="shipping-option" value="{{ $option->key }}" wire:model.live="shippingOption" @checked($option->key === $quote->shippingOption->key) class="size-4 shrink-0 accent-primary-700" />
+                                <span class="min-w-0 flex-1">
+                                    <span class="block font-medium text-ink-900">{{ $option->title }}</span>
+                                    @if ($option->deliveryDays)
+                                        <span class="block text-xs text-ink-500">تحویل حدود {{ PersianDigits::toPersian((string) $option->deliveryDays) }} روز کاری</span>
+                                    @endif
+                                    @if ($option->isEstimate)
+                                        <span class="block text-xs text-ink-500">قیمت تخمینی است.</span>
+                                    @endif
+                                </span>
+                                @if ($cost === 0)
+                                    <span class="shrink-0 font-medium text-success-600">رایگان</span>
+                                @else
+                                    <span class="shrink-0 text-ink-900">@toman($cost)</span>
+                                @endif
+                            </label>
+                        @endforeach
+                    </fieldset>
                     {{-- Where to follow the parcel (owner, 2026-11-15); plain text, nothing on checkout leads away from paying. --}}
                     <p class="mt-2 flex items-start gap-1.5 text-xs leading-6 text-ink-500">
                         <x-ts-icon icon="information-circle" class="mt-0.5 size-4 shrink-0" />
@@ -152,8 +172,8 @@
                             <div class="flex justify-between"><dt class="text-ink-500">تخفیف کد <span dir="ltr">{{ $quote->coupon?->code }}</span></dt><dd class="text-success-600">@toman($quote->discount())</dd></div>
                         @endif
                         <div class="flex justify-between">
-                            <dt class="text-ink-500">هزینه ارسال</dt>
-                            @if ($quote->freeShipping)
+                            <dt class="text-ink-500">هزینه ارسال @if ($quote->shippingOption->isEstimate)<span class="text-xs">(تخمینی)</span>@endif</dt>
+                            @if ($quote->shippingPrice === 0)
                                 <dd class="font-medium text-success-600">رایگان</dd>
                             @else
                                 <dd class="text-ink-900">@toman($quote->shippingPrice)</dd>

@@ -30,6 +30,15 @@ final readonly class StoreSettings
 
     public const string SHIPPING_FLAT_RATE = 'shipping.flat_rate';
 
+    public const string SHIPPING_ORIGIN_CITY_ID = 'shipping.origin_city_id';
+
+    public const string SHIPPING_MARKUP_PERCENT = 'shipping.markup_percent';
+
+    /**
+     * Highest markup the admin can add to the shipping services' prices.
+     */
+    public const int MAX_SHIPPING_MARKUP_PERCENT = 100;
+
     public const string WHATSAPP_NUMBER = 'contact.whatsapp_number';
 
     public const string TELEGRAM_USERNAME = 'contact.telegram_username';
@@ -68,6 +77,8 @@ final readonly class StoreSettings
         self::FREE_SHIPPING_THRESHOLD => 5_000_000,
         self::REMOVAL_DELAY_SECONDS => 3,
         self::SHIPPING_FLAT_RATE => 500_000,
+        self::SHIPPING_ORIGIN_CITY_ID => null,
+        self::SHIPPING_MARKUP_PERCENT => 0,
         self::WHATSAPP_NUMBER => '',
         self::TELEGRAM_USERNAME => '',
         self::CHAT_MESSAGE_PRODUCT => 'سلام، درباره «{product}» {variant} سؤال دارم: {link}',
@@ -107,11 +118,31 @@ final readonly class StoreSettings
     }
 
     /**
-     * The one shipping price (rial) until real shipping arrives in phase 8 (S23); free over the threshold.
+     * The flat shipping price (rial): charged, marked an estimate, when no shipping service can price an order
+     * (S34); free over the threshold.
      */
     public function shippingFlatRate(): int
     {
         return max(0, (int) $this->get(self::SHIPPING_FLAT_RATE));
+    }
+
+    /**
+     * The city parcels are sent from (our warehouse; a Tipax city id, D4), or null while the admin has not set it, in
+     * which case shipping services cannot price and the flat rate is charged (S34).
+     */
+    public function shippingOriginCityId(): ?int
+    {
+        $cityId = (int) $this->get(self::SHIPPING_ORIGIN_CITY_ID);
+
+        return $cityId > 0 ? $cityId : null;
+    }
+
+    /**
+     * Percent added to the shipping services' prices (S34), e.g. to cover the gap with the branch counter price.
+     */
+    public function shippingMarkupPercent(): int
+    {
+        return min(self::MAX_SHIPPING_MARKUP_PERCENT, max(0, (int) $this->get(self::SHIPPING_MARKUP_PERCENT)));
     }
 
     /**

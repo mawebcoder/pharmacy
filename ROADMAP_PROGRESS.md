@@ -35,11 +35,11 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S28 | Home, banners, deals (flash deals, /deals; bundles in S28b) | done | 2026-11-17 | 5be9dc0 |
 | S29 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
 | S30 | Settings and trust | done | 2026-11-17 | 19e2024 |
-| S31 | Shipping foundation | todo | | |
+| S31 | Shipping foundation | in progress (boxing done) | 2026-11-18 | 97ed5e4 |
 | S32 | Own courier zones | todo | | |
-| S33 | Tapin client and reference sync (Tipax via Tapin) | todo | | |
-| S34 | Tipax quotes in checkout | todo | | |
-| S35 | Tipax shipment registration and tracking | todo | | |
+| S33 | Tipax client and reference sync (Tipax direct; owner 2026-11-18) | todo | | |
+| S34 | Tipax quotes in checkout | in progress | 2026-11-18 | |
+| S35 | Tipax shipment registration and tracking (on hold: branch drop-off by hand) | todo | | |
 | S36 | Zarinpal payments | todo | | |
 | S37 | Notifications (SMS) | todo | | |
 | S38 | SEO | todo | | |

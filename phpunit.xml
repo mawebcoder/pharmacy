@@ -29,6 +29,10 @@
         <env name="ADMIN_DOMAIN" value=""/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="PAYMENT_GATEWAY" value="fake"/>
+        <env name="TIPAX_BASE_URL" value="https://tipax.test"/>
+        <env name="TIPAX_USERNAME" value=""/>
+        <env name="TIPAX_PASSWORD" value=""/>
+        <env name="TIPAX_API_KEY" value=""/>
         <env name="PAYMENT_FAKE_ENABLED" value="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
