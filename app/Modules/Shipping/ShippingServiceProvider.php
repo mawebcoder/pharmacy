@@ -55,6 +55,7 @@ final class ShippingServiceProvider extends ModuleServiceProvider
             contentGeneralId: (int) config('shipping.tipax.pricing.content_general_id'),
             contentLiquidId: (int) config('shipping.tipax.pricing.content_liquid_id'),
             unboxedSizeCm: (int) config('shipping.tipax.pricing.unboxed_size_cm'),
+            minWeightKg: (float) config('shipping.tipax.pricing.min_weight_kg'),
         ));
         $this->app->singleton(TipaxPriceResponseAdapter::class, fn (): TipaxPriceResponseAdapter => new TipaxPriceResponseAdapter(
             priceUnit: TipaxPriceUnit::from((string) config('shipping.tipax.pricing.price_unit')),
@@ -64,7 +65,7 @@ final class ShippingServiceProvider extends ModuleServiceProvider
             requestAdapter: $app->make(TipaxPriceRequestAdapter::class),
             responseAdapter: $app->make(TipaxPriceResponseAdapter::class),
             enabled: (bool) config('shipping.tipax.enabled'),
-            deliveryDaysCacheHours: (int) config('shipping.pricing.delivery_days_cache_hours'),
+            servicesCacheHours: (int) config('shipping.pricing.services_cache_hours'),
         ));
 
         // One strategy per shipping service; a new service (e.g. the own courier, S32) is added to this list.
@@ -86,8 +87,8 @@ final class ShippingServiceProvider extends ModuleServiceProvider
         Event::listen(OrderPaid::class, PackPaidOrder::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            // Provinces and cities from Tipax (roadmap D4.3): Saturdays 03:00 Tehran time, besides every deploy.
-            $schedule->command('tipax:sync-cities')->weeklyOn(6, '03:00')->timezone((string) config('app.display_timezone'))->onOneServer();
+            // Provinces and cities from Tipax (roadmap D4.3): every night at 00:00 Tehran time (owner, 2026-11-18), besides every deploy.
+            $schedule->command('tipax:sync-cities')->dailyAt('00:00')->timezone((string) config('app.display_timezone'))->onOneServer();
         });
     }
 }

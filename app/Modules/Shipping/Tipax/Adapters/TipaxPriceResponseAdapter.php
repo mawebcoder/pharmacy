@@ -9,78 +9,108 @@ use App\Modules\Shipping\Enums\TipaxPriceUnit;
 use App\Modules\Shipping\Exceptions\ShippingPriceUnavailable;
 
 /**
- * Turns Tipax's `POST Pricing` answer into our options (roadmap D6.4, S34; adapter, owner 2026-11-18). The answer has
- * one entry per package, each with a rate per service family; a family becomes one option when every package has a
- * price for it, priced as the sum of their `finalPrice` (with tax and discount) in rial. Delivery days come from
- * GetServicesBetweenCities by service id.
+ * Turns Tipax's answers into our data (roadmap D6.4, S34; adapter, owner 2026-11-18):
+ * - `GetServicesBetweenCities` → the services on a route, with delivery time in days (Tipax gives minutes: 4320 for
+ *   Tehran–Isfahan);
+ * - `POST Pricing` for one service → one option. The answer has one entry per package; each fills one of its rate
+ *   fields (e.g. `regularRate` even for «ارسال زمینی همان روز»), and the option's price is the sum of their
+ *   `finalPrice` (with tax and insurance) in rial. A package without a price means the service does not take the order.
  */
 final readonly class TipaxPriceResponseAdapter
 {
     /**
-     * Tipax's rate fields => our option key and title, in the order offered.
+     * The rate fields of ETipaxPriceMinListDto.
      */
-    public const array FAMILIES = [
-        'regularRate' => ['key' => 'regular', 'title' => 'تیپاکس عادی'],
-        'regularPlusRate' => ['key' => 'regular_plus', 'title' => 'تیپاکس عادی پلاس'],
-        'expressRate' => ['key' => 'express', 'title' => 'تیپاکس اکسپرس'],
-        'sameDayExpressRate' => ['key' => 'same_day', 'title' => 'تیپاکس همان روز'],
-        'airExpressRate' => ['key' => 'air_express', 'title' => 'تیپاکس اکسپرس هوایی'],
-    ];
+    public const array RATE_FIELDS = ['regularRate', 'regularPlusRate', 'expressRate', 'sameDayExpressRate', 'airExpressRate'];
+
+    private const int MINUTES_PER_DAY = 1_440;
 
     public function __construct(
         private TipaxPriceUnit $priceUnit,
     ) {}
 
     /**
-     * @param  list<array<string, mixed>>  $entries  one per package, in the order sent
-     * @param  array<int, int>  $deliveryDays  service id => days
-     * @return list<ShippingOptionData>
-     *
-     * @throws ShippingPriceUnavailable
+     * @param  list<array<string, mixed>>  $serviceList  GetServicesBetweenCities' serviceList
+     * @return list<array{id: int, kind: string, days: int|null}>
      */
-    public function toOptions(array $entries, int $packageCount, array $deliveryDays, bool $isEstimate): array
+    public function toServices(array $serviceList): array
     {
-        if ($entries === [] || count($entries) !== $packageCount) {
+        $services = [];
+
+        foreach ($serviceList as $service) {
+            if (! is_numeric($service['serviceId'] ?? null) || (int) $service['serviceId'] <= 0) {
+                continue;
+            }
+
+            $minutes = is_numeric($service['deliveryDay'] ?? null) ? (int) $service['deliveryDay'] : 0;
+            $services[] = [
+                'id' => (int) $service['serviceId'],
+                'kind' => trim(is_string($service['serviceKind'] ?? null) ? $service['serviceKind'] : ''),
+                'days' => $minutes > 0 ? (int) ceil($minutes / self::MINUTES_PER_DAY) : null,
+            ];
+        }
+
+        return $services;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $entries  one per package, in the order sent
+     * @param  array{id: int, kind: string, days: int|null}  $service
+     *
+     * @throws ShippingPriceUnavailable when the answer has not one entry per package
+     */
+    public function toOption(array $entries, int $packageCount, array $service, bool $isEstimate): ?ShippingOptionData
+    {
+        if (count($entries) !== $packageCount) {
             throw ShippingPriceUnavailable::unreadable('Tipax');
         }
 
-        $options = [];
+        $total = 0;
+        $serviceTitle = null;
 
-        foreach (self::FAMILIES as $field => $family) {
-            $total = 0;
-            $serviceId = null;
-            $serviceTitle = null;
+        foreach ($entries as $entry) {
+            $rate = $this->rate($entry);
 
-            foreach ($entries as $entry) {
-                $rate = $entry[$field] ?? null;
-                $price = is_array($rate) && is_numeric($rate['finalPrice'] ?? null) ? (float) $rate['finalPrice'] : 0.0;
-
-                if ($price <= 0) {
-                    // Not offered for this package, so not for the order.
-                    continue 2;
-                }
-
-                $total += $this->priceUnit->toRial($price);
-                $serviceId ??= is_numeric($rate['serviceId'] ?? null) ? (int) $rate['serviceId'] : null;
-                $serviceTitle ??= is_string($rate['serviceTitle'] ?? null) ? $rate['serviceTitle'] : null;
+            if ($rate === null) {
+                return null;
             }
 
-            $options[] = new ShippingOptionData(
-                key: 'tipax.'.$family['key'],
-                method: 'tipax',
-                title: $family['title'],
-                price: $total,
-                deliveryDays: $serviceId === null ? null : ($deliveryDays[$serviceId] ?? null),
-                isEstimate: $isEstimate,
-                details: [
-                    'family' => $field,
-                    'service_id' => $serviceId,
-                    'service_title' => $serviceTitle,
-                    'packages' => count($entries),
-                ],
-            );
+            $total += $this->priceUnit->toRial((float) $rate['finalPrice']);
+            $serviceTitle ??= is_string($rate['serviceTitle'] ?? null) ? trim($rate['serviceTitle']) : null;
         }
 
-        return $options;
+        return new ShippingOptionData(
+            key: 'tipax.'.$service['id'],
+            method: 'tipax',
+            title: 'تیپاکس '.($service['kind'] !== '' ? $service['kind'] : ($serviceTitle ?? '')),
+            price: $total,
+            deliveryDays: $service['days'],
+            isEstimate: $isEstimate,
+            details: [
+                'service_id' => $service['id'],
+                'service_kind' => $service['kind'],
+                'service_title' => $serviceTitle,
+                'packages' => $packageCount,
+            ],
+        );
+    }
+
+    /**
+     * The package's priced rate, whichever field Tipax put it in.
+     *
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>|null
+     */
+    private function rate(array $entry): ?array
+    {
+        foreach (self::RATE_FIELDS as $field) {
+            $rate = $entry[$field] ?? null;
+
+            if (is_array($rate) && is_numeric($rate['finalPrice'] ?? null) && (float) $rate['finalPrice'] > 0) {
+                return $rate;
+            }
+        }
+
+        return null;
     }
 }

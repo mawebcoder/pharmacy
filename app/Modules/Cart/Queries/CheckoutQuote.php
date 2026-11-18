@@ -20,10 +20,10 @@ use App\Modules\Shipping\Queries\ShippingOptions;
 
 /**
  * Works out checkout from the customer's cart as it is now (roadmap S23, S34): current prices and stock, the coupon
- * checked on the fly (nothing is written), the picked address or else the default, and the shipping options for it:
- * the cart packed into our boxes and priced by the shipping services (Tipax), the flat rate when none answers. Free
- * shipping (threshold or coupon) covers the cheapest option. PlaceOrder uses the same quote, so what is charged is
- * what was shown.
+ * checked on the fly (nothing is written), the picked address or else the default, and one estimated shipping price
+ * for it: the cart packed into our boxes and priced by the shipping services (Tipax), cheapest first, the flat rate
+ * when none answers; free over the threshold or with a free-shipping coupon. PlaceOrder uses the same quote, so what
+ * is charged is what was shown.
  */
 final readonly class CheckoutQuote
 {
@@ -37,17 +37,16 @@ final readonly class CheckoutQuote
     ) {}
 
     /**
-     * The customer's checkout now, or null when they have no cart. $shippingOptionKey is the option they picked; the
-     * cheapest stands in when it is missing or no longer offered.
+     * The customer's checkout now, or null when they have no cart.
      */
-    public function forCustomer(int $customerId, ?string $couponCode, ?string $shippingOptionKey = null): ?CheckoutQuoteData
+    public function forCustomer(int $customerId, ?string $couponCode): ?CheckoutQuoteData
     {
         $cart = $this->carts->find(new CartOwnerData($customerId, null));
 
-        return $cart instanceof Cart ? $this->for($cart, $customerId, $couponCode, $shippingOptionKey) : null;
+        return $cart instanceof Cart ? $this->for($cart, $customerId, $couponCode) : null;
     }
 
-    public function for(Cart $cart, int $customerId, ?string $couponCode, ?string $shippingOptionKey = null): CheckoutQuoteData
+    public function for(Cart $cart, int $customerId, ?string $couponCode): CheckoutQuoteData
     {
         $summary = $this->carts->summaryOf($cart);
         $coupon = null;
@@ -68,26 +67,18 @@ final readonly class CheckoutQuote
         $free = $freeByThreshold || $freeByCoupon;
         $addressId = $this->addresses->chosenId($customerId, $cart->getAddressId());
         $address = $addressId === null ? null : $this->addresses->snapshot($customerId, $addressId);
-        $options = $this->shippingOptions->for($address?->cityId, $this->packItems($summary->lines));
-        $chosen = $options[0];
-
-        foreach ($options as $option) {
-            if ($option->key === $shippingOptionKey) {
-                $chosen = $option;
-            }
-        }
-
-        $discount = $free ? min($chosen->price, $options[0]->price) : 0;
+        // One estimated price (owner, 2026-11-18): the cheapest option for the packed cart.
+        $estimate = $this->shippingOptions->for($address?->cityId, $this->packItems($summary->lines))[0];
+        $discount = $free ? $estimate->price : 0;
 
         return new CheckoutQuoteData(
             cartId: $cart->getId(),
             cart: $summary->withCoupon($coupon),
             coupon: $coupon,
             couponProblem: $problem,
-            shippingOptions: $options,
-            shippingOption: $chosen,
+            shippingOption: $estimate,
             shippingDiscount: $discount,
-            shippingPrice: $chosen->price - $discount,
+            shippingPrice: $estimate->price - $discount,
             freeShipping: $free,
             freeShippingThreshold: $threshold,
             freeShippingReason: $freeByCoupon ? 'coupon' : ($freeByThreshold ? 'threshold' : null),

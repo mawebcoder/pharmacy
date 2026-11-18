@@ -94,7 +94,7 @@ final readonly class PlaceOrder
 
     private function place(PlaceOrderData $data): Order
     {
-        $quote = $this->quotes->forCustomer($data->customerId, $data->couponCode, $data->shippingOptionKey) ?? throw CheckoutRefused::cartEmpty();
+        $quote = $this->quotes->forCustomer($data->customerId, $data->couponCode) ?? throw CheckoutRefused::cartEmpty();
         $address = $this->check($quote, $data);
         $lines = $quote->cart->lines;
         $variantIds = array_map(fn (CartLineData $line): int => $line->variant->variantId, $lines);

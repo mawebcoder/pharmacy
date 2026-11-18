@@ -13,9 +13,10 @@ use App\Modules\Shipping\Enums\TipaxPaymentType;
 use App\Modules\Shipping\Enums\TipaxPickupType;
 
 /**
- * Turns our ShippingPriceRequest into Tipax's `POST Pricing` body (OmPriceDto, roadmap D6.4; adapter, owner
- * 2026-11-18): one packageInput per parcel, sizes from its box in cm, weight in kg, declared value in rial, the content
- * by what it holds, and the codes from config/shipping.php. `serviceId` 0 asks for every service on the route.
+ * Turns our ShippingPriceRequest into Tipax's `POST Pricing` body for one service (OmPriceDto, roadmap D6.4; adapter,
+ * owner 2026-11-18): one packageInput per parcel, sizes from its box in cm, weight in kg (at least Tipax's minimum),
+ * declared value in rial, the content by what it holds, and the codes from config/shipping.php. Tipax prices one
+ * service per request (`serviceId` 0 is refused), so the strategy asks once per service on the route.
  */
 final readonly class TipaxPriceRequestAdapter
 {
@@ -28,15 +29,16 @@ final readonly class TipaxPriceRequestAdapter
         private int $contentGeneralId,
         private int $contentLiquidId,
         private int $unboxedSizeCm,
+        private float $minWeightKg,
     ) {}
 
     /**
      * @return array{packageInputs: list<array<string, mixed>>, discountCode: null}
      */
-    public function toBody(ShippingPriceRequest $request): array
+    public function toBody(ShippingPriceRequest $request, int $serviceId): array
     {
         return [
-            'packageInputs' => array_map(fn (PackedParcel $parcel): array => $this->package($request, $parcel), $request->parcels),
+            'packageInputs' => array_map(fn (PackedParcel $parcel): array => $this->package($request, $parcel, $serviceId), $request->parcels),
             'discountCode' => null,
         ];
     }
@@ -44,14 +46,14 @@ final readonly class TipaxPriceRequestAdapter
     /**
      * @return array<string, mixed>
      */
-    private function package(ShippingPriceRequest $request, PackedParcel $parcel): array
+    private function package(ShippingPriceRequest $request, PackedParcel $parcel, int $serviceId): array
     {
         $box = $parcel->box;
 
         return [
             'origin' => ['cityId' => $request->originCityId],
             'destination' => ['cityId' => $request->destinationCityId],
-            'weight' => round($parcel->totalWeightG / 1000, 3),
+            'weight' => max($this->minWeightKg, round($parcel->totalWeightG / 1000, 3)),
             'length' => $box instanceof BoxSpec ? $box->lengthCm : $this->unboxedSizeCm,
             'width' => $box instanceof BoxSpec ? $box->widthCm : $this->unboxedSizeCm,
             'height' => $box instanceof BoxSpec ? $box->heightCm : $this->unboxedSizeCm,
@@ -59,7 +61,7 @@ final readonly class TipaxPriceRequestAdapter
             'packingId' => $this->packingId,
             'packageContentId' => $parcel->content === ParcelContent::LiquidFragile ? $this->contentLiquidId : $this->contentGeneralId,
             'packType' => $this->packType,
-            'serviceId' => 0,
+            'serviceId' => $serviceId,
             'paymentType' => $this->paymentType->value,
             'pickupType' => $this->pickupType->value,
             'distributionType' => $this->distributionType->value,

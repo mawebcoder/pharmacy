@@ -48,12 +48,15 @@ return [
             'pickup_type' => (int) env('TIPAX_DEFAULT_PICKUP_TYPE', TipaxPickupType::DroppedAtBranch->value),
             // A TipaxDistributionType value: 10 delivered to the receiver's address; 20 collected at a branch.
             'distribution_type' => (int) env('TIPAX_DEFAULT_DISTRIBUTION_TYPE', TipaxDistributionType::ToReceiverAddress->value),
-            // «نیاز به بسته‌بندی ندارد»: we pack in our own boxes.
-            'packing_id' => (int) env('TIPAX_PACKING_ID', 0),
-            'pack_type' => (int) env('TIPAX_PACK_TYPE', 0),
-            // «آرایشی، بهداشتی و داروهای مجاز», and «مایعات-شکستنی» for a parcel with any liquid or fragile item.
-            'content_general_id' => (int) env('TIPAX_CONTENT_GENERAL_ID', 0),
-            'content_liquid_id' => (int) env('TIPAX_CONTENT_LIQUID_ID', 0),
+            // Ids from Tipax's PackingType endpoints (read 2026-11-18); contents and packings belong to a pack type.
+            // 504 «نیاز به بسته‌بندی ندارد» of pack type 20 «بسته» (1–30 kg): we pack in our own boxes.
+            'packing_id' => (int) env('TIPAX_PACKING_ID', 504),
+            'pack_type' => (int) env('TIPAX_PACK_TYPE', 20),
+            // 9 «عمومی» and 1 «مایعات-شکستنی» of pack type 20 (it has no «آرایشی، بهداشتی» content).
+            'content_general_id' => (int) env('TIPAX_CONTENT_GENERAL_ID', 9),
+            'content_liquid_id' => (int) env('TIPAX_CONTENT_LIQUID_ID', 1),
+            // Tipax prices a package from this weight up (kg); lighter parcels are sent as this.
+            'min_weight_kg' => 1.0,
             // A TipaxPriceUnit value: what `finalPrice` is in, 'rial' or 'toman'.
             'price_unit' => env('TIPAX_PRICE_UNIT', TipaxPriceUnit::Rial->value),
             // Sizes sent for a parcel no box takes (staff pack it by hand); its price is marked an estimate.
@@ -64,8 +67,8 @@ return [
     'pricing' => [
         // How long a route and packing keeps its prices (minutes).
         'cache_minutes' => (int) env('TIPAX_QUOTE_TTL_MINUTES', 20),
-        // Delivery days per route change rarely (hours).
-        'delivery_days_cache_hours' => 24,
+        // The services on a route and their delivery times change rarely (hours).
+        'services_cache_hours' => 24,
         // Shown prices are rounded up to this many rial (1,000 toman).
         'round_up_to_rial' => 10_000,
     ],

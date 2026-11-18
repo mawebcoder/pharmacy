@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Brings provinces and cities in line with Tipax (roadmap D4.3, decided 2026-11-14 in S20): both keyed by Tipax's
- * ids (stateId, city id). Names and branch flags are updated; «ارسال فعال» is kept. Cities Tipax no
- * longer lists are kept and counted. One activity entry per import, not one per row.
+ * ids (stateId, city id). Names and branch flags are updated. A new city with a Tipax branch starts with «ارسال فعال»
+ * on, so customers can pick it at checkout, and one without a branch starts off (owner, 2026-11-18); an existing city
+ * keeps whatever the admin set. Cities Tipax no longer lists
+ * are kept and counted. One activity entry per import, not one per row.
  */
 final class ImportTipaxCities
 {
@@ -45,17 +47,24 @@ final class ImportTipaxCities
             $existing = City::query()->whereKey($tipaxIds)->pluck(City::COLUMN_HAS_TIPAX_BRANCH, City::COLUMN_ID);
 
             foreach (array_chunk($cities, 500) as $chunk) {
-                City::query()->upsert(array_map(fn (TipaxCityData $city): array => [
-                    City::COLUMN_ID => $city->tipaxCityId,
-                    City::COLUMN_PROVINCE_ID => $city->tipaxStateId,
-                    City::COLUMN_NAME_FA => $city->nameFa,
-                    City::COLUMN_LATITUDE => $city->latitude,
-                    City::COLUMN_LONGITUDE => $city->longitude,
-                    City::COLUMN_HAS_TIPAX_BRANCH => $branches === null ? (bool) ($existing[$city->tipaxCityId] ?? true) : isset($branches[$city->tipaxCityId]),
-                    City::COLUMN_TIPAX_SYNCED_AT => $now,
-                    City::COLUMN_CREATED_AT => $now,
-                    City::COLUMN_UPDATED_AT => $now,
-                ], $chunk), [City::COLUMN_ID], [
+                City::query()->upsert(array_map(function (TipaxCityData $city) use ($branches, $existing, $now): array {
+                    $hasBranch = $branches === null ? (bool) ($existing[$city->tipaxCityId] ?? true) : isset($branches[$city->tipaxCityId]);
+
+                    return [
+                        City::COLUMN_ID => $city->tipaxCityId,
+                        City::COLUMN_PROVINCE_ID => $city->tipaxStateId,
+                        City::COLUMN_NAME_FA => $city->nameFa,
+                        City::COLUMN_LATITUDE => $city->latitude,
+                        City::COLUMN_LONGITUDE => $city->longitude,
+                        City::COLUMN_HAS_TIPAX_BRANCH => $hasBranch,
+                        // Only a new city takes this (it is not among the updated columns, so the admin's choice stays):
+                        // open for delivery when it has a Tipax branch (owner, 2026-11-18).
+                        City::COLUMN_IS_DELIVERY_ENABLED => $hasBranch,
+                        City::COLUMN_TIPAX_SYNCED_AT => $now,
+                        City::COLUMN_CREATED_AT => $now,
+                        City::COLUMN_UPDATED_AT => $now,
+                    ];
+                }, $chunk), [City::COLUMN_ID], [
                     City::COLUMN_PROVINCE_ID, City::COLUMN_NAME_FA, City::COLUMN_LATITUDE, City::COLUMN_LONGITUDE, City::COLUMN_HAS_TIPAX_BRANCH, City::COLUMN_TIPAX_SYNCED_AT, City::COLUMN_UPDATED_AT,
                 ]);
             }

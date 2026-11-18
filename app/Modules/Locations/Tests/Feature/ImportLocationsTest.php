@@ -12,7 +12,7 @@ function tipaxFixture(string $name): string
     return __DIR__."/../Fixtures/tipax/{$name}.json";
 }
 
-it('imports provinces and cities with Tipax ids from Tipax\'s city list', function (): void {
+it('imports provinces and cities with Tipax ids from Tipax\'s city list, new cities open for delivery', function (): void {
     $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate')])
         ->expectsOutputToContain('شهرها: ۴')
         ->assertSuccessful();
@@ -23,7 +23,8 @@ it('imports provinces and cities with Tipax ids from Tipax\'s city list', functi
         ->and(City::count())->toBe(4)
         ->and($tajrish->getNameFa())->toBe('تجریش')
         ->and($tajrish->getProvince()->getId())->toBe(8)
-        ->and($tajrish->isDeliveryEnabled())->toBeFalse();
+        ->and($tajrish->isDeliveryEnabled())->toBeTrue()
+        ->and(City::deliveryEnabled()->count())->toBe(4);
 });
 
 it('keeps Tipax coordinates and treats 0 or null as unknown', function (): void {
@@ -34,15 +35,16 @@ it('keeps Tipax coordinates and treats 0 or null as unknown', function (): void 
         ->and(City::query()->findOrFail(140)->getLongitude())->toBeNull();
 });
 
-it('marks the cities that have a Tipax branch', function (): void {
+it('marks the cities that have a Tipax branch and opens only those for delivery', function (): void {
     $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate'), '--branches' => tipaxFixture('branches')])->assertSuccessful();
 
-    expect(City::query()->where(City::COLUMN_HAS_TIPAX_BRANCH, true)->pluck(City::COLUMN_ID)->all())->toEqualCanonicalizing([1, 85]);
+    expect(City::query()->where(City::COLUMN_HAS_TIPAX_BRANCH, true)->pluck(City::COLUMN_ID)->all())->toEqualCanonicalizing([1, 85])
+        ->and(City::deliveryEnabled()->pluck(City::COLUMN_ID)->all())->toEqualCanonicalizing([1, 85]);
 });
 
-it('updates names on a re-run, keeps the delivery switches and keeps cities Tipax no longer lists', function (): void {
+it('updates names on a re-run, keeps a delivery switch the admin turned off and keeps cities Tipax no longer lists', function (): void {
     $this->artisan('locations:import-tipax', ['file' => tipaxFixture('plusstate')])->assertSuccessful();
-    City::query()->findOrFail(85)->setIsDeliveryEnabled(true)->setNameFa('نام قدیمی')->save();
+    City::query()->findOrFail(85)->setIsDeliveryEnabled(false)->setNameFa('نام قدیمی')->save();
     $shorter = storage_path('framework/testing/plusstate-'.uniqid().'.json');
     File::put($shorter, json_encode(array_slice(json_decode((string) File::get(tipaxFixture('plusstate')), true), 0, 3)));
 
@@ -52,7 +54,7 @@ it('updates names on a re-run, keeps the delivery switches and keeps cities Tipa
 
     $arak = City::query()->findOrFail(85);
     expect($arak->getNameFa())->toBe('اراک')
-        ->and($arak->isDeliveryEnabled())->toBeTrue()
+        ->and($arak->isDeliveryEnabled())->toBeFalse()
         ->and(City::query()->find(140))->not->toBeNull();
     File::delete($shorter);
 });

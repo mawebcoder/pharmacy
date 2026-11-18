@@ -79,3 +79,15 @@ it('changes nothing when Tipax fails, is not configured or returns no cities', f
 
     expect(City::query()->pluck(City::COLUMN_NAME_FA, City::COLUMN_ID)->all())->toBe([85 => 'اراک']);
 })->with(['refused', 'not configured', 'empty']);
+
+it('skips and counts rows Tipax lists without a province, opening the rest for delivery', function (): void {
+    fakeTipax([
+        ['title' => 'RW city', 'abbreviation' => null, 'stateId' => null, 'stateTitle' => 'RW province', 'latitude' => null, 'longitude' => null, 'id' => 3040],
+        ['title' => 'تهران', 'abbreviation' => 'THR', 'stateId' => 8, 'stateTitle' => 'تهران', 'latitude' => 35.6892, 'longitude' => 51.389, 'id' => 1],
+    ]);
+
+    $this->artisan('tipax:sync-cities')->expectsOutputToContain('ردیف‌های ناقص کنارگذاشته: ۱')->assertSuccessful();
+
+    expect(City::query()->pluck(City::COLUMN_ID)->all())->toBe([1])
+        ->and(City::query()->findOrFail(1)->isDeliveryEnabled())->toBeTrue();
+});

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Shipping\Pricing\Strategies;
 
 use App\Modules\Shipping\Contracts\ShippingPriceStrategy;
+use App\Modules\Shipping\Data\ShippingOptionData;
 use App\Modules\Shipping\Data\ShippingPriceRequest;
 use App\Modules\Shipping\Exceptions\ShippingPriceUnavailable;
 use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
@@ -14,10 +15,10 @@ use App\Modules\Shipping\Tipax\TipaxClient;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Tipax as a shipping price strategy (roadmap S34, Tipax direct; owner 2026-11-18): our request goes through
- * TipaxPriceRequestAdapter to `POST Pricing`, and the answer comes back through TipaxPriceResponseAdapter as one
- * option per service family on the route. Delivery days per route are asked once a day; without them the options
- * still stand.
+ * Tipax as a shipping price strategy (roadmap S34, Tipax direct; owner 2026-11-18). Tipax prices one service per
+ * request, so it first asks which services run between the two cities (kept a day per route), then prices each: our
+ * request goes through TipaxPriceRequestAdapter to `POST Pricing`, and each answer comes back through
+ * TipaxPriceResponseAdapter as one option. A service Tipax refuses for this order is left out.
  */
 final readonly class TipaxShippingPrice implements ShippingPriceStrategy
 {
@@ -26,7 +27,7 @@ final readonly class TipaxShippingPrice implements ShippingPriceStrategy
         private TipaxPriceRequestAdapter $requestAdapter,
         private TipaxPriceResponseAdapter $responseAdapter,
         private bool $enabled,
-        private int $deliveryDaysCacheHours,
+        private int $servicesCacheHours,
     ) {}
 
     public function key(): string
@@ -41,48 +42,55 @@ final readonly class TipaxShippingPrice implements ShippingPriceStrategy
 
     public function options(ShippingPriceRequest $request): array
     {
-        try {
-            $entries = $this->client->price($this->requestAdapter->toBody($request));
-        } catch (TipaxRequestFailed $failed) {
-            throw ShippingPriceUnavailable::from('Tipax', $failed);
+        $options = [];
+        $failure = null;
+
+        foreach ($this->services((int) $request->originCityId, $request->destinationCityId) as $service) {
+            try {
+                $entries = $this->client->price($this->requestAdapter->toBody($request, $service['id']));
+            } catch (TipaxRequestFailed $failed) {
+                $failure = $failed;
+
+                continue;
+            }
+
+            $option = $this->responseAdapter->toOption($entries, count($request->parcels), $service, $request->isEstimate());
+
+            if ($option instanceof ShippingOptionData) {
+                $options[] = $option;
+            }
         }
 
-        return $this->responseAdapter->toOptions(
-            $entries,
-            count($request->parcels),
-            $this->deliveryDays((int) $request->originCityId, $request->destinationCityId),
-            $request->isEstimate(),
-        );
+        if ($options === [] && $failure instanceof TipaxRequestFailed) {
+            throw ShippingPriceUnavailable::from('Tipax', $failure);
+        }
+
+        return $options;
     }
 
     /**
-     * @return array<int, int> service id => delivery days; empty when Tipax does not say
+     * @return list<array{id: int, kind: string, days: int|null}>
+     *
+     * @throws ShippingPriceUnavailable
      */
-    private function deliveryDays(int $originCityId, int $destinationCityId): array
+    private function services(int $originCityId, int $destinationCityId): array
     {
-        $key = "shipping:tipax:delivery_days:{$originCityId}:{$destinationCityId}";
+        $key = "shipping:tipax:services:{$originCityId}:{$destinationCityId}";
         $cached = Cache::get($key);
 
         if (is_array($cached)) {
+            /** @var list<array{id: int, kind: string, days: int|null}> $cached */
             return $cached;
         }
 
         try {
-            $services = $this->client->servicesBetweenCities($originCityId, $destinationCityId);
-        } catch (TipaxRequestFailed) {
-            return [];
+            $services = $this->responseAdapter->toServices($this->client->servicesBetweenCities($originCityId, $destinationCityId));
+        } catch (TipaxRequestFailed $failed) {
+            throw ShippingPriceUnavailable::from('Tipax', $failed);
         }
 
-        $days = [];
+        Cache::put($key, $services, now()->addHours($this->servicesCacheHours));
 
-        foreach ($services as $service) {
-            if (is_numeric($service['serviceId'] ?? null) && is_numeric($service['deliveryDay'] ?? null)) {
-                $days[(int) $service['serviceId']] = (int) $service['deliveryDay'];
-            }
-        }
-
-        Cache::put($key, $days, now()->addHours($this->deliveryDaysCacheHours));
-
-        return $days;
+        return $services;
     }
 }

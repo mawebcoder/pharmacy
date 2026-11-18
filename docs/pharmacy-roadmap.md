@@ -1064,8 +1064,10 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 > **Change (owner, 2026-11-18): Tipax direct, not Tapin.** Shipping is priced through Tipax's own OM API v4 (`POST /api/OM/v4/Pricing`, D6.4) from our own packing (S31 boxes and `BoxPacker`, one Tipax package per parcel), so D6.1–D6.4 and D6.6 apply again and Tapin (D6.0) is dropped. For now we only price: parcels are dropped at a Tipax branch by hand (`pickupType` 20) and the barcode is typed in the order admin (S24); registration and tracking through the API (S35) wait.
 > - **Strategy pattern** (owner, 2026-11-18): a `ShippingPriceStrategy` contract with one strategy per service (`TipaxShippingPrice`, and `FlatRateShippingPrice` as the fallback); `ShippingPriceCalculator` asks every available strategy and falls back to the flat rate (marked «تخمینی») when none answers.
 > - **Adapters** (owner, 2026-11-18): `TipaxPriceRequestAdapter` turns our `ShippingPriceRequest` DTO into Tipax's body; `TipaxPriceResponseAdapter` turns Tipax's answer into our `ShippingOptionData` DTOs. No Tipax shape leaves `Shipping\Tipax`.
-> - The customer picks one of the services Tipax offers on the route (owner, 2026-11-18).
-> - **[CONFIRM]** with a test call: whether `finalPrice` is rial or toman (`TIPAX_PRICE_UNIT`), and the ids for «نیاز به بسته‌بندی ندارد», the package contents and the pack type (`TIPAX_PACKING_ID`, `TIPAX_CONTENT_GENERAL_ID`, `TIPAX_CONTENT_LIQUID_ID`, `TIPAX_PACK_TYPE`).
+> - Checkout shows **one estimated price** («هزینه ارسال (تخمینی)»): the cheapest Tipax service for the packed cart; staff pick the service at the branch (owner, 2026-11-18).
+> - Tipax prices **one service per request** (`serviceId` 0 is refused): the services on a route come from `GetServicesBetweenCities` (delivery time in **minutes**, e.g. 4320 = 3 days), then each is priced. Seen on the test API: «اکسپرس» (#1) between cities, «همان روز» (#12) inside a city.
+> - Ids read from the test API (2026-11-18): pack type 20 «بسته», packing 504 «نیاز به بسته‌بندی ندارد» (1–30 kg), contents 9 «عمومی» and 1 «مایعات-شکستنی» (pack type 20 has no «آرایشی، بهداشتی»); Tipax's minimum weight is 1 kg. `finalPrice` looks like rial (Tehran–Isfahan 1.7 kg: 3,522,217). **[CONFIRM]** both with the live account.
+> - Cities (2026-11-18): only cities with a Tipax branch are open for delivery when first imported; `tipax:sync-cities` runs every night at 00:00 Tehran time and skips rows without a province.
 
 ### D6.0 Through Tapin (owner, 2026-11-17; dropped 2026-11-18)
 We send Tipax parcels through **Tapin** (تاپین, api.tapin.ir), a shipping panel that resells Tipax, not through Tipax's own OM API. **D6.0 replaces D6.1–D6.8**, which stay below only as background on the direct API. Source: Tapin's «راهنمای پیاده سازی سرویس تیپاکس» (PDF, 31 pages, read 2026-11-17).
@@ -3100,11 +3102,11 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Build:**
   - the cart is packed with `BoxPacker` (each SKU's weight and box numbers), one Tipax package per parcel: box sizes in cm, weight in kg, declared value in rial, content «مایعات-شکستنی» when any item is liquid or fragile, prepaid (`paymentType` 10), branch drop-off (`pickupType` 20), delivery to the door (`distributionType` 10); orders over 6 kg are simply several parcels;
   - `ShippingPriceStrategy` + `ShippingPriceCalculator`; `TipaxShippingPrice` with `TipaxPriceRequestAdapter` / `TipaxPriceResponseAdapter`; delivery days from `Pricing/GetServicesBetweenCities` (cached a day);
-  - each Tipax service family on the route (regular, regular plus, express, same day, air express) is one option, priced as the sum over parcels; the customer picks one (cheapest first);
+  - each Tipax service on the route is priced (one request per service), as the sum over parcels; checkout charges the cheapest as one estimated price;
   - settings: the origin city (our warehouse's Tipax city) and a markup % on Tipax prices; prices are rounded up to 1,000 toman;
-  - options cached 20 min per route and packing; the free-shipping threshold and coupons as today (free covers the cheapest option; a dearer one costs the difference); when Tipax fails, times out or the origin is not set, the flat rate is charged and marked «تخمینی»;
+  - options cached 20 min per route and packing; the free-shipping threshold and coupons as today (free takes the whole estimate off); when Tipax fails, times out or the origin is not set, the flat rate is charged and marked «تخمینی»;
   - the order keeps the chosen option, its parcels and the estimate flag in `shipping_quote_snapshot`, with `shipping_method` `tipax` (or `flat`).
-- **Tests:** request body (units, one package per parcel, codes), response mapping and the sum over parcels, a family missing for one parcel left out, cache hit, failure → flat-rate estimate, no origin → flat rate, markup and rounding, free shipping covers the cheapest option, the chosen option on the order.
+- **Tests:** request body (units, minimum weight, one package per parcel, codes, service id), the route's services (minutes → days), the sum over parcels whichever rate field Tipax fills, a service not priced for a parcel left out, cache hit, failure → flat rate, no origin → flat rate, markup and rounding, one estimate on checkout, free shipping, the estimate on the order.
 
 ### S35 Tipax shipment registration and tracking
 - **Moved to phase 7**; until then shipment status is set by hand in the order admin (S24).
