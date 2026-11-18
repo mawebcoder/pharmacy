@@ -41,6 +41,12 @@ final class Payment extends Model
 
     public const string COLUMN_CARD_PAN = 'card_pan';
 
+    public const string COLUMN_CARD_HASH = 'card_hash';
+
+    public const string COLUMN_FEE_TYPE = 'fee_type';
+
+    public const string COLUMN_FEE = 'fee';
+
     public const string COLUMN_FAILURE_REASON = 'failure_reason';
 
     public const string COLUMN_VERIFIED_AT = 'verified_at';
@@ -136,9 +142,49 @@ final class Payment extends Model
         return $this->setAttribute(self::COLUMN_REF_ID, $refId);
     }
 
+    public function getCardPan(): ?string
+    {
+        return $this->getAttribute(self::COLUMN_CARD_PAN);
+    }
+
     public function setCardPan(?string $cardPan): static
     {
         return $this->setAttribute(self::COLUMN_CARD_PAN, $cardPan);
+    }
+
+    public function getCardHash(): ?string
+    {
+        return $this->getAttribute(self::COLUMN_CARD_HASH);
+    }
+
+    public function setCardHash(?string $cardHash): static
+    {
+        return $this->setAttribute(self::COLUMN_CARD_HASH, $cardHash);
+    }
+
+    public function getFeeType(): ?string
+    {
+        return $this->getAttribute(self::COLUMN_FEE_TYPE);
+    }
+
+    public function setFeeType(?string $feeType): static
+    {
+        return $this->setAttribute(self::COLUMN_FEE_TYPE, $feeType);
+    }
+
+    /**
+     * Zarinpal's fee for this payment (rial), when it reported one.
+     */
+    public function getFee(): ?int
+    {
+        $fee = $this->getAttribute(self::COLUMN_FEE);
+
+        return $fee === null ? null : (int) $fee;
+    }
+
+    public function setFee(?int $fee): static
+    {
+        return $this->setAttribute(self::COLUMN_FEE, $fee);
     }
 
     public function getFailureReason(): ?string

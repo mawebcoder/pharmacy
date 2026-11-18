@@ -16,4 +16,12 @@ final class GatewayUnavailable extends RuntimeException
     {
         return new self('The fake payment gateway is turned off (payments.fake_enabled).');
     }
+
+    /**
+     * The gateway could not be asked or refused to open a payment; the reason is safe to show admins.
+     */
+    public static function because(string $reason, ?\Throwable $previous = null): self
+    {
+        return new self($reason, 0, $previous);
+    }
 }

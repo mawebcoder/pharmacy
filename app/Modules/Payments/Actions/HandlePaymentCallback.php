@@ -7,6 +7,7 @@ namespace App\Modules\Payments\Actions;
 use App\Modules\Payments\Contracts\PaymentGateway;
 use App\Modules\Payments\Enums\PaymentAttemptStatus;
 use App\Modules\Payments\Events\PaymentSucceeded;
+use App\Modules\Payments\Exceptions\GatewayUnavailable;
 use App\Modules\Payments\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
@@ -60,12 +61,20 @@ final readonly class HandlePaymentCallback
                 return $payment->getOrderId();
             }
 
-            $verification = $this->gateway->verify($payment, $query);
+            try {
+                $verification = $this->gateway->verify($payment, $query);
+            } catch (GatewayUnavailable) {
+                // Not answered: the payment stays pending, and reconciliation settles it once the gateway answers.
+                return $payment->getOrderId();
+            }
 
             if ($verification->paid) {
                 $payment->setStatus(PaymentAttemptStatus::Paid)
                     ->setRefId($verification->refId)
                     ->setCardPan($verification->cardPan)
+                    ->setCardHash($verification->cardHash)
+                    ->setFeeType($verification->feeType)
+                    ->setFee($verification->fee)
                     ->setVerifiedAt(now())
                     ->save();
 

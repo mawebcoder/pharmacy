@@ -40,7 +40,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S33 | Tipax client and reference sync (Tipax direct; owner 2026-11-18) | todo | | |
 | S34 | Tipax quotes in checkout | in progress | 2026-11-18 | |
 | S35 | Tipax shipment registration and tracking (on hold: branch drop-off by hand) | todo | | |
-| S36 | Zarinpal payments | todo | | |
+| S36 | Zarinpal payments (refunds and reverse later) | in progress | 2026-11-18 | |
 | S37 | Notifications (SMS) | todo | | |
 | S38 | SEO | todo | | |
 | S39 | Site search tuning | todo | | |

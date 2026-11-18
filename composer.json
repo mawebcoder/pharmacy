@@ -11,6 +11,7 @@
         "bezhansalleh/filament-shield": "^4.3",
         "filament/filament": "^5.11",
         "filament/spatie-laravel-media-library-plugin": "^5.11",
+        "kavenegar/php": "^2.1",
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.50",
         "laravel/sanctum": "^4.4",
@@ -26,7 +27,8 @@
         "spatie/laravel-medialibrary": "^11.23",
         "spatie/laravel-permission": "^8.5",
         "srwiez/thumbhash": "^1.6",
-        "tallstackui/tallstackui": "^4.7"
+        "tallstackui/tallstackui": "^4.7",
+        "zarinpal/zarinpal-php-sdk": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
