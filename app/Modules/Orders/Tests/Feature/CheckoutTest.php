@@ -256,6 +256,23 @@ describe('shipping through Tipax', function (): void {
             ->assertDontSee('تیپاکس اکسپرس');
     });
 
+    it('shows the boxes and what each holds outside production, but never in production', function (): void {
+        $this->actingAs($this->customer, 'customer');
+
+        livewire(CheckoutPage::class)
+            ->assertSeeHtml('data-test="shipping-packing"')
+            ->assertSee('۱ بسته')
+            ->assertSee('کارتن سایز 3')
+            ->assertSee('کرم اوره × ۲');
+
+        $this->app['env'] = 'production';
+
+        livewire(CheckoutPage::class)
+            ->assertSet('shownTotal', 2_300_000)
+            ->assertDontSeeHtml('data-test="shipping-packing"')
+            ->assertDontSee('کارتن سایز 3');
+    });
+
     it('records the estimate and its Tipax service on the order', function (): void {
         $placed = app(PlaceOrder::class)(new PlaceOrderData($this->customer->getId(), null, 2_300_000));
         $order = Order::query()->findOrFail($placed->orderId);

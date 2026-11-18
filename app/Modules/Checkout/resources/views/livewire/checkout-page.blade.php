@@ -52,6 +52,31 @@
                             <span class="text-ink-900">@toman($quote->shippingPrice)</span>
                         @endif
                     </div>
+                    {{-- The packing the price came from: local and dev only, never in production (owner, 2026-11-18). --}}
+                    @unless (app()->isProduction())
+                        <div class="mt-3 rounded-card border border-dashed border-line-200 p-3 text-xs leading-6 text-ink-500" data-test="shipping-packing">
+                            <p class="font-medium text-ink-900">
+                                بسته‌بندی (فقط در محیط توسعه): {{ PersianDigits::toPersian((string) count($quote->parcels)) }} بسته
+                                · {{ $quote->shippingOption->title }}@if ($quote->shippingOption->deliveryDays) · حدود {{ PersianDigits::toPersian((string) $quote->shippingOption->deliveryDays) }} روز@endif
+                                · @toman($quote->shippingOption->price)
+                            </p>
+                            @foreach ($quote->parcels as $parcel)
+                                <div class="mt-2">
+                                    <p class="text-ink-900">
+                                        بسته {{ PersianDigits::toPersian((string) $loop->iteration) }}: {{ $parcel->box?->name ?? 'بدون کارتن' }}
+                                        · {{ PersianDigits::toPersian(number_format($parcel->totalWeightG / 1000, 2)) }} کیلوگرم
+                                        · {{ $parcel->content->label() }}
+                                        @if ($parcel->isEstimate) · وزن پیش‌فرض @endif
+                                    </p>
+                                    <ul class="ps-4">
+                                        @foreach ($parcel->items as $item)
+                                            <li>{{ $item['title'] }} × {{ PersianDigits::toPersian((string) $item['quantity']) }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endunless
                     {{-- Where to follow the parcel (owner, 2026-11-15); plain text, nothing on checkout leads away from paying. --}}
                     <p class="mt-2 flex items-start gap-1.5 text-xs leading-6 text-ink-500">
                         <x-ts-icon icon="information-circle" class="mt-0.5 size-4 shrink-0" />

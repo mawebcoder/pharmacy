@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Cart\Data;
 
 use App\Modules\Identity\Data\AddressSnapshotData;
+use App\Modules\Shipping\Data\PackedParcel;
 use App\Modules\Shipping\Data\ShippingOptionData;
 
 /**
@@ -19,6 +20,7 @@ final readonly class CheckoutQuoteData
 {
     /**
      * @param  ShippingOptionData  $shippingOption  the estimate charged for shipping
+     * @param  list<PackedParcel>  $parcels  the parcels it was priced from (shown outside production only)
      * @param  int  $shippingDiscount  what free shipping takes off it
      * @param  int  $shippingPrice  what shipping costs: the estimate less the discount
      */
@@ -28,6 +30,7 @@ final readonly class CheckoutQuoteData
         public ?AppliedCouponData $coupon,
         public ?string $couponProblem,
         public ShippingOptionData $shippingOption,
+        public array $parcels,
         public int $shippingDiscount,
         public int $shippingPrice,
         public bool $freeShipping,

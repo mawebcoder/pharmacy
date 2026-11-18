@@ -67,8 +67,9 @@ final readonly class CheckoutQuote
         $free = $freeByThreshold || $freeByCoupon;
         $addressId = $this->addresses->chosenId($customerId, $cart->getAddressId());
         $address = $addressId === null ? null : $this->addresses->snapshot($customerId, $addressId);
-        // One estimated price (owner, 2026-11-18): the cheapest option for the packed cart.
-        $estimate = $this->shippingOptions->for($address?->cityId, $this->packItems($summary->lines))[0];
+        // One price (owner, 2026-11-18): the cheapest option for the packed cart.
+        $shipping = $this->shippingOptions->for($address?->cityId, $this->packItems($summary->lines));
+        $estimate = $shipping->cheapest();
         $discount = $free ? $estimate->price : 0;
 
         return new CheckoutQuoteData(
@@ -77,6 +78,7 @@ final readonly class CheckoutQuote
             coupon: $coupon,
             couponProblem: $problem,
             shippingOption: $estimate,
+            parcels: $shipping->parcels,
             shippingDiscount: $discount,
             shippingPrice: $estimate->price - $discount,
             freeShipping: $free,

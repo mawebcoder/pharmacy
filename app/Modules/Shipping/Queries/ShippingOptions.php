@@ -6,8 +6,8 @@ namespace App\Modules\Shipping\Queries;
 
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shipping\Data\PackItem;
-use App\Modules\Shipping\Data\ShippingOptionData;
 use App\Modules\Shipping\Data\ShippingPriceRequest;
+use App\Modules\Shipping\Data\ShippingQuoteData;
 use App\Modules\Shipping\Packing\BoxPacker;
 use App\Modules\Shipping\Pricing\ShippingPriceCalculator;
 use App\Modules\Shipping\Pricing\Strategies\FlatRateShippingPrice;
@@ -28,18 +28,19 @@ final readonly class ShippingOptions
 
     /**
      * @param  list<PackItem>  $items
-     * @return list<ShippingOptionData> cheapest first, never empty
      */
-    public function for(?int $destinationCityId, array $items): array
+    public function for(?int $destinationCityId, array $items): ShippingQuoteData
     {
         if ($destinationCityId === null || $items === []) {
-            return [FlatRateShippingPrice::option($this->settings->shippingFlatRate())];
+            return new ShippingQuoteData([FlatRateShippingPrice::option($this->settings->shippingFlatRate())], []);
         }
 
-        return $this->calculator->options(new ShippingPriceRequest(
+        $parcels = $this->packer->pack($items, $this->boxes->specs());
+
+        return new ShippingQuoteData($this->calculator->options(new ShippingPriceRequest(
             originCityId: $this->settings->shippingOriginCityId(),
             destinationCityId: $destinationCityId,
-            parcels: $this->packer->pack($items, $this->boxes->specs()),
-        ));
+            parcels: $parcels,
+        )), $parcels);
     }
 }
