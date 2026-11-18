@@ -11,6 +11,7 @@ use App\Modules\Catalog\Actions\SetDefaultVariant;
 use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
+use App\Modules\Catalog\Filament\Forms\BoxCapacityFields;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
@@ -139,7 +140,7 @@ final class VariantsRelationManager extends RelationManager
                             ->required(),
                     ]),
                 Section::make('ارسال')
-                    ->description('وزن الزامی است و هزینه ارسال از آن حساب می‌شود؛ ابعاد اختیاری است.')
+                    ->description('وزن الزامی است و همراه «جا در کارتن‌ها» کارتن و هزینه ارسال را تعیین می‌کند؛ ابعاد اختیاری است.')
                     ->columns(4)
                     ->schema([
                         TextInput::make(ProductVariant::COLUMN_WEIGHT_G)
@@ -160,6 +161,7 @@ final class VariantsRelationManager extends RelationManager
                             ->label('نیاز به زنجیره سرد')
                             ->helperText('ارسال آن در فاز اول ممکن نیست.'),
                     ]),
+                BoxCapacityFields::section(),
                 Section::make('محدودیت‌ها')
                     ->columns(2)
                     ->schema([
@@ -238,6 +240,7 @@ final class VariantsRelationManager extends RelationManager
                     }),
                 EditAction::make()
                     ->visible(fn (): bool => $this->canChange())
+                    ->mutateRecordDataUsing(fn (ProductVariant $record, array $data): array => [...$data, BoxCapacityFields::STATE => BoxCapacityFields::state($record->getId())])
                     ->using(fn (ProductVariant $record, array $data): ProductVariant => $this->save($data, $record)),
                 DeleteAction::make()
                     ->visible(fn (): bool => $this->canChange())
@@ -354,7 +357,7 @@ final class VariantsRelationManager extends RelationManager
      */
     private function activeSuppliers(): array
     {
-        // A live flash deal's supplier replaces the default one (S33, owner 2026-11-17).
+        // A live flash deal's supplier replaces the default one (S28, owner 2026-11-17).
         return $this->activeSupplierNames ??= array_replace(
             app(ActiveSuppliers::class)->names($this->variantIds()),
             array_map(
@@ -417,7 +420,10 @@ final class VariantsRelationManager extends RelationManager
         $product = $this->product();
 
         try {
-            return app(SaveProductVariant::class)($product, ProductVariantData::fromArray($data), $variant);
+            $saved = app(SaveProductVariant::class)($product, ProductVariantData::fromArray($data), $variant);
+            BoxCapacityFields::save($saved->getId(), $data);
+
+            return $saved;
         } catch (ProductChangeRefused $refused) {
             Notification::make()->danger()->title($refused->getMessage())->persistent()->send();
             throw new Halt($refused->getMessage(), $refused->getCode(), $refused);

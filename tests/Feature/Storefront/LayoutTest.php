@@ -3,8 +3,16 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Content\Database\Seeders\DraftPagesSeeder;
+use App\Modules\Content\Database\Seeders\MenusSeeder;
 use App\Modules\Content\Models\Page;
 use App\Modules\Identity\Models\Customer;
+
+beforeEach(function (): void {
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(DraftPagesSeeder::class);
+    $this->seed(MenusSeeder::class);
+});
 
 it('renders the home page right-to-left in Persian inside the storefront layout', function (): void {
     $response = $this->get('/');
@@ -18,7 +26,7 @@ it('renders the home page right-to-left in Persian inside the storefront layout'
 });
 
 it('shows the five bottom navigation items and marks the current page', function (): void {
-    // Guests see «ورود» in place of «حساب من» (S17).
+    // Guests see «ورود» in place of «حساب من» (S19).
     $this->get('/')
         ->assertOk()
         ->assertSeeInOrder(['خانه', 'دسته‌ها', 'جستجو', 'سبد خرید', 'ورود'])

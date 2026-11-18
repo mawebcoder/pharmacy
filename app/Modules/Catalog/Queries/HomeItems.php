@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * The brands, categories and tags a home widget chose, in the admin's order, with their images; hidden ones are
- * skipped, at most 6 (roadmap D3.6, S13b). Also the collection a rail shows.
+ * skipped, at most 6 (roadmap D3.6, S14). Also the collection a rail shows.
  */
 final readonly class HomeItems
 {

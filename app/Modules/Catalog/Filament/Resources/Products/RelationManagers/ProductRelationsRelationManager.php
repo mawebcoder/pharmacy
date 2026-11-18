@@ -41,7 +41,7 @@ final class ProductRelationsRelationManager extends RelationManager
         return $schema
             ->columns(2)
             ->components([
-                // Picked by SKU (decided 2026-11-07, S13b); the SKU's product is linked.
+                // Picked by SKU (decided 2026-11-07, S14); the SKU's product is linked.
                 ImageSelect::skus(Select::make('related_sku_id'))
                     ->label('محصول (SKU)')
                     ->required(),

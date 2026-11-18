@@ -8,7 +8,7 @@ use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Identity\Models\Customer;
 
 /**
- * Customers sign themselves up (S17); staff only look them up and block or unblock them. super_admin passes every
+ * Customers sign themselves up (S19); staff only look them up and block or unblock them. super_admin passes every
  * check through Shield.
  */
 final class CustomerPolicy

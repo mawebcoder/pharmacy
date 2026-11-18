@@ -8,7 +8,7 @@ use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Media\Filament\Tables\ImageThumbnail;
 
 /**
- * The HTML of one option in an admin select (S13b): a round image, the name and an optional second line (for SKUs:
+ * The HTML of one option in an admin select (S14): a round image, the name and an optional second line (for SKUs:
  * the SKU title, code and id). Styled inline because the admin has no custom theme. Text is escaped.
  */
 final class AdminOptionLabel

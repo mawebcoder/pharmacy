@@ -11,7 +11,7 @@ use App\Modules\Orders\Models\OrderPurchase;
 use App\Modules\Orders\Models\OrderPurchaseItem;
 
 /**
- * Works a purchase document's status, total cost and its order's sourcing status out of its rows (roadmap S30, owner
+ * Works a purchase document's status, total cost and its order's sourcing status out of its rows (roadmap S25, owner
  * 2026-11-16), after every change to them:
  * - «پیش‌نویس» until every unit of every order item has a row, then «ثبت‌شده», then «دریافت کامل» once every row has
  *   arrived in full;

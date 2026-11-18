@@ -1,6 +1,6 @@
 # Roadmap progress
 
-Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Rows follow the build order: after the content steps come the shipping foundation and own courier zones (S21, S24; owner, 2026-11-14), then Tipax, Zarinpal and SMS (S22, S23, S26, S27, S28; owner, 2026-11-09); SEO, site search tuning, hardening, performance, ops and reporting (S36, S43, S37–S39, S41, S42) come last, before launch (owner, 2026-11-17).
+Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E). Statuses: `todo`, `in progress`, `done`. Steps are numbered in build order (renumbered 2026-11-17; the old-to-new table is in roadmap E2, and commits before that day use the old numbers).
 
 | Step | Title | Status | Date | Commit |
 |---|---|---|---|---|
@@ -18,35 +18,35 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S11 | Attributes and tags | done | 2026-11-07 | c1726da |
 | S12 | PLP and search | done | 2026-11-07 | 8f64af1 |
 | S13 | PDP | todo | | |
-| S13b | Collections, popular products and home page builder | done | 2026-11-09 | 670e8d9 |
-| S14 | Providers and provider prices | done | 2026-11-09 | 0dd663b |
-| S15 | Pricing engine and price records | done | 2026-11-09 | 0dd663b |
-| S15b | Commission per supplier and preferred supplier | done | 2026-11-15 | 31207e0 |
-| S16 | Price import | done | 2026-11-14 | 15c24fa |
-| S17 | Customer OTP auth | done | 2026-11-14 | df4164e |
-| S18 | Addresses and account area | done | 2026-11-14 | 13ad476 |
-| S19 | Cart | done | 2026-11-14 | ff08e15 |
-| S20 | Coupons | done | 2026-11-14 | 8472cda |
-| S25 | Checkout wizard | done | 2026-11-14 | e8afe2a |
-| S29 | Order admin and state machine | done | 2026-11-15 | 3db79f7 |
-| S30 | Provider purchases (sourcing) | done | 2026-11-16 | 27e16b1 |
-| S31 | Packing | todo | | |
-| S32 | Returns | todo | | |
-| S33 | Home, banners, deals (flash deals, /deals; bundles in S33b) | done | 2026-11-17 | 5be9dc0 |
-| S34 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
-| S35 | Settings and trust | done | 2026-11-17 | 19e2024 |
-| S21 | Shipping foundation | todo | | |
-| S24 | Own courier zones | todo | | |
-| S22 | Tapin client and reference sync (Tipax via Tapin) | todo | | |
-| S23 | Tipax quotes in checkout | todo | | |
-| S26 | Zarinpal payments | todo | | |
-| S27 | Tipax shipment registration and tracking | todo | | |
-| S28 | Notifications (SMS) | todo | | |
-| S36 | SEO | todo | | |
-| S43 | Site search tuning | todo | | |
-| S37 | Security hardening | todo | | |
-| S38 | Performance | todo | | |
-| S39 | Observability, backups, ops | todo | | |
-| S41 | Reporting warehouse (before S40) | todo | | |
-| S42 | Dashboard and report pages (before S40) | todo | | |
-| S40 | Launch | todo | | |
+| S14 | Collections, popular products and home page builder | done | 2026-11-09 | 670e8d9 |
+| S15 | Providers and provider prices | done | 2026-11-09 | 0dd663b |
+| S16 | Pricing engine and price records | done | 2026-11-09 | 0dd663b |
+| S17 | Commission per supplier and preferred supplier | done | 2026-11-15 | 31207e0 |
+| S18 | Price import | done | 2026-11-14 | 15c24fa |
+| S19 | Customer OTP auth | done | 2026-11-14 | df4164e |
+| S20 | Addresses and account area | done | 2026-11-14 | 13ad476 |
+| S21 | Cart | done | 2026-11-14 | ff08e15 |
+| S22 | Coupons | done | 2026-11-14 | 8472cda |
+| S23 | Checkout wizard | done | 2026-11-14 | e8afe2a |
+| S24 | Order admin and state machine | done | 2026-11-15 | 3db79f7 |
+| S25 | Provider purchases (sourcing) | done | 2026-11-16 | 27e16b1 |
+| S26 | Packing | todo | | |
+| S27 | Returns | todo | | |
+| S28 | Home, banners, deals (flash deals, /deals; bundles in S28b) | done | 2026-11-17 | 5be9dc0 |
+| S29 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
+| S30 | Settings and trust | done | 2026-11-17 | 19e2024 |
+| S31 | Shipping foundation | todo | | |
+| S32 | Own courier zones | todo | | |
+| S33 | Tapin client and reference sync (Tipax via Tapin) | todo | | |
+| S34 | Tipax quotes in checkout | todo | | |
+| S35 | Tipax shipment registration and tracking | todo | | |
+| S36 | Zarinpal payments | todo | | |
+| S37 | Notifications (SMS) | todo | | |
+| S38 | SEO | todo | | |
+| S39 | Site search tuning | todo | | |
+| S40 | Security hardening | todo | | |
+| S41 | Performance | todo | | |
+| S42 | Observability, backups, ops | todo | | |
+| S43 | Reporting warehouse (before S45) | todo | | |
+| S44 | Dashboard and report pages (before S45) | todo | | |
+| S45 | Launch | todo | | |

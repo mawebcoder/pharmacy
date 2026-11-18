@@ -7,7 +7,7 @@ namespace App\Modules\Cart\Data;
 use App\Modules\Identity\Data\AddressSnapshotData;
 
 /**
- * What checkout shows and PlaceOrder charges (roadmap B9.7, S25), worked out on the fly from the cart now: items,
+ * What checkout shows and PlaceOrder charges (roadmap B9.7, S23), worked out on the fly from the cart now: items,
  * the coupon (or why it does not apply), the shipping price, the total, and the address the order goes to. Rial.
  */
 final readonly class CheckoutQuoteData

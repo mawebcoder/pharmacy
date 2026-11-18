@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * «سفارش‌ها» on a customer's admin page (roadmap S29, decided 2026-11-14): the customer's orders, newest first; a row
+ * «سفارش‌ها» on a customer's admin page (roadmap S24, decided 2026-11-14): the customer's orders, newest first; a row
  * opens the order's page in a new tab. The relation is built here from the customer record, so the Identity module
  * does not need the Order model (module boundaries, C3).
  */

@@ -8,7 +8,7 @@ use App\Modules\Cart\Models\Cart;
 use App\Modules\Cart\Models\CartItem;
 
 /**
- * Empties a cart once its order is placed (roadmap S25, owner 2026-11-14: the order keeps its own copy) or when the
+ * Empties a cart once its order is placed (roadmap S23, owner 2026-11-14: the order keeps its own copy) or when the
  * customer taps «حذف همه» (owner, 2026-11-15), and forgets the picked address.
  */
 final class EmptyCart

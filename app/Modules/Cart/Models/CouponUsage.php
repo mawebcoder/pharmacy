@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One customer's use of a coupon, followed through checkout (roadmap D3.4, S20): logged when the code is applied at
+ * One customer's use of a coupon, followed through checkout (roadmap D3.4, S22): logged when the code is applied at
  * checkout, reserved when the payment link is created (until the gateway's expiry), then used or released. A record
  * itself, so it is not written to the activity log.
  */

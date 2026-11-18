@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * One block of the home page («چیدمان صفحه اصلی», roadmap D3.6, S13b): a slider, a collection rail, brands,
+ * One block of the home page («چیدمان صفحه اصلی», roadmap D3.6, S14): a slider, a collection rail, brands,
  * categories, tags or the trust block, in the admin's order, with an optional schedule.
  */
 final class HomeWidget extends Model implements HasActivityLogLabel

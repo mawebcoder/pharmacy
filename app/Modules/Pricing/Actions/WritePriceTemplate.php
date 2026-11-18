@@ -11,7 +11,7 @@ use App\Modules\Pricing\Support\PriceSpreadsheet;
 use App\Modules\Shared\Support\Toman;
 
 /**
- * Writes the supplier price template (roadmap S16): every current supplier price, one row per supplier and SKU, in
+ * Writes the supplier price template (roadmap S18): every current supplier price, one row per supplier and SKU, in
  * toman, ready to edit and upload back. Rows of SKUs that no longer exist are left out.
  */
 final readonly class WritePriceTemplate

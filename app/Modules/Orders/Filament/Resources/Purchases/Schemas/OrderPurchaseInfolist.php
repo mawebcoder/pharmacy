@@ -17,7 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
 /**
- * A purchase document's page (S30): its order (linked), status, the order's sourcing status, what the customer paid
+ * A purchase document's page (S25): its order (linked), status, the order's sourcing status, what the customer paid
  * for the items, what the rows cost and the final margin. The rows are the relation manager below.
  */
 final class OrderPurchaseInfolist

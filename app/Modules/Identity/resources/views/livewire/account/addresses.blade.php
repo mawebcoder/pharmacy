@@ -9,7 +9,7 @@
     };
 @endphp
 
-{{-- One root element: the list is also nested in the checkout address step (S25). --}}
+{{-- One root element: the list is also nested in the checkout address step (S23). --}}
 <div>
     @if ($forCheckout)
         <div class="space-y-4">

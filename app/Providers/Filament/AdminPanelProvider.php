@@ -99,7 +99,8 @@ class AdminPanelProvider extends PanelProvider
             $panel
                 ->discoverResources(in: app_path("Modules/{$module}/Filament/Resources"), for: "App\\Modules\\{$module}\\Filament\\Resources")
                 ->discoverPages(in: app_path("Modules/{$module}/Filament/Pages"), for: "App\\Modules\\{$module}\\Filament\\Pages")
-                ->discoverWidgets(in: app_path("Modules/{$module}/Filament/Widgets"), for: "App\\Modules\\{$module}\\Filament\\Widgets");
+                ->discoverWidgets(in: app_path("Modules/{$module}/Filament/Widgets"), for: "App\\Modules\\{$module}\\Filament\\Widgets")
+                ->discoverClusters(in: app_path("Modules/{$module}/Filament/Clusters"), for: "App\\Modules\\{$module}\\Filament\\Clusters");
         }
 
         // Roles and permissions (roadmap S04). Registered after module discovery so Shield sees the Identity

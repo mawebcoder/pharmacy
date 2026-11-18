@@ -11,7 +11,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Settings\Queries\StoreSettings;
 
 /**
- * SKUs as the cart sees them (roadmap D13.3, S19), read fresh on every cart change so prices and stock are always
+ * SKUs as the cart sees them (roadmap D13.3, S21), read fresh on every cart change so prices and stock are always
  * current. A SKU that is gone is simply missing from the result.
  */
 final readonly class PurchasableVariants
@@ -34,7 +34,7 @@ final readonly class PurchasableVariants
             ->with(['product' => fn ($products) => $products->withTrashed()->with(['brand', 'media', 'variants'])])
             ->get();
         $storeLimit = $this->settings->maxQuantityPerOrder();
-        // The supplier each live flash deal sells from (S33, owner 2026-11-17).
+        // The supplier each live flash deal sells from (S28, owner 2026-11-17).
         $dealProviders = FlashDeal::query()
             ->whereKey($variants->map(fn (ProductVariant $variant): ?int => $variant->getFlashDealId())->filter()->all())
             ->pluck(FlashDeal::COLUMN_PROVIDER_ID, FlashDeal::COLUMN_ID);

@@ -9,7 +9,7 @@ use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
  * Order statuses (roadmap D3.5, owner 2026-11-14). The system moves pending orders to paid or expired; the admin
- * moves paid → processing → on the way → delivered (Tipax webhooks may set the last two from S27). The customer may
+ * moves paid → processing → on the way → delivered (Tipax webhooks may set the last two from S35). The customer may
  * cancel a paid or processing order; the admin a paid, processing or delivered one (a return); nobody one on its way
  * (owner, 2026-11-16).
  */

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 /**
- * Products with a live flash deal (roadmap S33) for the home widget and /deals: sellable and in stock, the deal ending
+ * Products with a live flash deal (roadmap S28) for the home widget and /deals: sellable and in stock, the deal ending
  * soonest first, one card per product. The SKU's price is already the deal price (SyncFlashDealPrices).
  */
 final readonly class FlashDealProducts

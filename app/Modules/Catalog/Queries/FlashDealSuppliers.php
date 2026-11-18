@@ -7,7 +7,7 @@ namespace App\Modules\Catalog\Queries;
 use App\Modules\Catalog\Models\FlashDeal;
 
 /**
- * The supplier of each SKU's live flash deal (roadmap S33, owner 2026-11-17): while a deal runs it replaces the SKU's
+ * The supplier of each SKU's live flash deal (roadmap S28, owner 2026-11-17): while a deal runs it replaces the SKU's
  * default supplier (preferred SKU → preferred product → cheapest) wherever the site says who it sells from. The
  * pricing engine and the SKU's regular price are unchanged.
  */

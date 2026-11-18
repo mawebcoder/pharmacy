@@ -9,6 +9,7 @@ use App\Modules\Catalog\Actions\ReorderCollectionProducts;
 use App\Modules\Catalog\Actions\SaveCollection;
 use App\Modules\Catalog\Data\CollectionData;
 use App\Modules\Catalog\Data\ListingCriteria;
+use App\Modules\Catalog\Database\Seeders\PopularCollectionSeeder;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Exceptions\CollectionChangeRefused;
@@ -18,6 +19,11 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Queries\CollectionProducts;
 use App\Modules\Catalog\Queries\ProductListing;
 use Meilisearch\Client;
+
+beforeEach(function (): void {
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(PopularCollectionSeeder::class);
+});
 
 /**
  * An active product with one available variant, named for the assertions.

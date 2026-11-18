@@ -10,7 +10,7 @@ use App\Modules\Identity\Models\Customer;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Removes one of the customer's addresses (soft delete, so orders keep their address id; roadmap S18). When it was
+ * Removes one of the customer's addresses (soft delete, so orders keep their address id; roadmap S20). When it was
  * the default, the newest remaining address becomes the default.
  */
 final class DeleteAddress

@@ -14,7 +14,7 @@ use App\Modules\Pricing\Queries\SupplierOptions;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Adds a row to an order's purchase document, or changes one (roadmap S30, owner 2026-11-16): this many units of an
+ * Adds a row to an order's purchase document, or changes one (roadmap S25, owner 2026-11-16): this many units of an
  * order item from this supplier at this unit cost, typed by the admin. An item's rows never add up to more than it
  * was ordered, and a changed row keeps at least the units already received or marked missing. Rows change only until
  * 48 hours after the document is registered (owner, 2026-11-16).

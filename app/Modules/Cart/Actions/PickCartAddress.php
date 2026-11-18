@@ -9,7 +9,7 @@ use App\Modules\Cart\Models\Cart;
 use App\Modules\Cart\Queries\CurrentCart;
 
 /**
- * Remembers which of the customer's addresses this order goes to (roadmap S25, checkout address step). The caller
+ * Remembers which of the customer's addresses this order goes to (roadmap S23, checkout address step). The caller
  * checks the address is theirs (Identity's CustomerAddresses). Nothing happens without a cart.
  */
 final readonly class PickCartAddress

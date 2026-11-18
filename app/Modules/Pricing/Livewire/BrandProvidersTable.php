@@ -30,7 +30,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * «کمیسیون به تفکیک تأمین‌کننده» on the brand form (roadmap D3.2, S15b, level 4): a supplier's commission for this
+ * «کمیسیون به تفکیک تأمین‌کننده» on the brand form (roadmap D3.2, S17, level 4): a supplier's commission for this
  * brand, over the brand's own and under any product commission. Changes re-price the brand's SKUs that buy from that
  * supplier in the background.
  */

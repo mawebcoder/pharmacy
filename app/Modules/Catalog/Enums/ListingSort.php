@@ -46,7 +46,7 @@ enum ListingSort: string implements HasLabel
             self::Relevant => [],
             // The collection's own order, applied by ProductListing after the search.
             self::Featured => [],
-            // sales_30d is 0 until orders exist (S20), so newest decides.
+            // sales_30d is 0 until orders exist (S22), so newest decides.
             self::BestSelling => ['sales_30d:desc', 'created_at:desc'],
             self::Newest => ['created_at:desc'],
             self::Cheapest => ['price:asc'],

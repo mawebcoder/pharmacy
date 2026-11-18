@@ -30,7 +30,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 
 /**
- * An order's page (roadmap S29). Each status button shows only when the admin may make that move now (D3.5) and goes
+ * An order's page (roadmap S24). Each status button shows only when the admin may make that move now (D3.5) and goes
  * through an Orders action, which logs it with the admin as the actor; a refused change is shown as a notification.
  */
 final class ViewOrder extends ViewRecord

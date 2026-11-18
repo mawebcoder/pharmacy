@@ -246,7 +246,7 @@ final readonly class PlaceOrder
         $harajUnit = max(0, $listPrice - $variant->price);
         $paidTotal = $line->lineTotal - $discount;
         $paidUnit = intdiv($paidTotal, max(1, $line->quantity));
-        // Bought under a flash deal from a chosen supplier (S33, owner 2026-11-17): that supplier and its cost.
+        // Bought under a flash deal from a chosen supplier (S28, owner 2026-11-17): that supplier and its cost.
         $dealProviderId = $variant->flashDealProviderId;
         $providerId = $dealProviderId ?? $price?->providerId;
         $providerName = $dealProviderId === null ? $price?->providerName : $this->suppliers->name($dealProviderId);

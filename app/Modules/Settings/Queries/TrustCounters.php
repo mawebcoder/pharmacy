@@ -8,7 +8,7 @@ use App\Modules\Orders\Queries\DeliveryStats;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * The trust counters under the trust block (roadmap B7 Daroodrug, S35): delivered orders and cities delivered to,
+ * The trust counters under the trust block (roadmap B7 Daroodrug, S30): delivered orders and cities delivered to,
  * counted live and cached for an hour. No product count anywhere on the site (owner, 2026-11-17). A counter is left
  * out while it is too small to reassure anyone (fewer than 100 orders or 10 cities; owner, 2026-11-17).
  */

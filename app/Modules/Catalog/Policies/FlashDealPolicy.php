@@ -8,7 +8,7 @@ use App\Modules\Catalog\Models\FlashDeal;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Flash deals (roadmap S33) change what customers pay, so they are left to super admins (Shield lets super_admin pass
+ * Flash deals (roadmap S28) change what customers pay, so they are left to super admins (Shield lets super_admin pass
  * every check); other roles get the permissions only when granted in the admin.
  */
 final class FlashDealPolicy

@@ -8,7 +8,7 @@ use App\Modules\Cart\Enums\CouponUsageStatus;
 use App\Modules\Cart\Models\CouponUsage;
 
 /**
- * Settles the coupon reserved for an order (roadmap D13.5, S25): used once the order is paid, released when it
+ * Settles the coupon reserved for an order (roadmap D13.5, S23): used once the order is paid, released when it
  * expires or fails (a payment verified after the order expired still marks it used). Nothing happens for an order
  * without a coupon.
  */

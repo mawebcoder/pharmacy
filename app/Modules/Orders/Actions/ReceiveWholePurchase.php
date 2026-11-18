@@ -10,7 +10,7 @@ use App\Modules\Orders\Support\PurchaseProgress;
 use Illuminate\Support\Facades\DB;
 
 /**
- * «دریافت کامل همه ردیف‌ها» (roadmap S30): every row of the document arrived in full; any missing marks are cleared.
+ * «دریافت کامل همه ردیف‌ها» (roadmap S25): every row of the document arrived in full; any missing marks are cleared.
  */
 final readonly class ReceiveWholePurchase
 {

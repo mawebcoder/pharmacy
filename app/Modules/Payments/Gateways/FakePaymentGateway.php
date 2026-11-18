@@ -13,7 +13,7 @@ use App\Modules\Payments\Models\Payment;
 use Illuminate\Support\Str;
 
 /**
- * A stand-in bank for local and staging (roadmap S25) until Zarinpal (S26): its page offers «پرداخت موفق» and
+ * A stand-in bank for local and staging (roadmap S23) until Zarinpal (S36): its page offers «پرداخت موفق» and
  * «پرداخت ناموفق», which come back to the normal callback. Refuses to work unless payments.fake_enabled is on.
  */
 final class FakePaymentGateway implements PaymentGateway

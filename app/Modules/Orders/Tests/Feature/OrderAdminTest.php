@@ -166,7 +166,7 @@ describe('as an operator', function (): void {
 
     it('sends a prepared order on its way with its tracking code, then marks it delivered', function (): void {
         $order = Order::factory()->paid()->create();
-        // Its purchase document has fully arrived (S30).
+        // Its purchase document has fully arrived (S25).
         $order->setStatus(OrderStatus::Processing)->setSourcingStatus(SourcingStatus::ReadyToPack)->save();
 
         livewire(ViewOrder::class, ['record' => $order->getRouteKey()])

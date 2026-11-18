@@ -8,7 +8,7 @@ use App\Modules\Content\Data\PageData;
 use App\Modules\Content\Models\Page;
 
 /**
- * Creates or updates a static page (roadmap D3.6, S34). The body arrives cleaned (PageData → PageHtml) and is cleaned
+ * Creates or updates a static page (roadmap D3.6, S29). The body arrives cleaned (PageData → PageHtml) and is cleaned
  * again when shown (PageContent).
  */
 final class SavePage

@@ -14,9 +14,9 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * What each home widget shows now (roadmap D3.6, S13b). A widget is shown only with at least one item (owner,
+ * What each home widget shows now (roadmap D3.6, S14). A widget is shown only with at least one item (owner,
  * 2026-11-07): a slider needs a visible banner, a collection rail an in-stock product of a visible collection, and
- * brands, categories and tags an active item, a flash deal row a live deal (S33). The trust block has no items and is
+ * brands, categories and tags an active item, a flash deal row a live deal (S28). The trust block has no items and is
  * always shown.
  */
 final readonly class HomeWidgetItems

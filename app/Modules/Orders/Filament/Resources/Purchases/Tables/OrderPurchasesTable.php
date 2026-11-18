@@ -18,7 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Purchase documents (S30): the document, its order (opens the order), status, rows, cost and the final margin.
+ * Purchase documents (S25): the document, its order (opens the order), status, rows, cost and the final margin.
  */
 final class OrderPurchasesTable
 {

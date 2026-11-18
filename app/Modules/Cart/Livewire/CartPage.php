@@ -15,7 +15,7 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * «سبد خرید» (roadmap B9.6, D13.3, S19). Every visit reads current prices and stock: a changed price is shown on its
+ * «سبد خرید» (roadmap B9.6, D13.3, S21). Every visit reads current prices and stock: a changed price is shown on its
  * line once («قیمت از … به … تغییر کرد») and then taken as seen; a line that can no longer be sold is greyed, left out
  * of the total, and blocks «ادامه خرید» until «به‌روزرسانی سبد» removes it (owner, 2026-11-14).
  */

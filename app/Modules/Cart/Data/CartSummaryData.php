@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Cart\Data;
 
 /**
- * The cart as shown on /cart and in the mini-cart (roadmap B9.6, S19). Amounts in rial; only lines that can be bought
- * count. The free-shipping threshold comes from «تنظیمات فروشگاه» (0 means no offer). Checkout (S25) adds the coupon
+ * The cart as shown on /cart and in the mini-cart (roadmap B9.6, S21). Amounts in rial; only lines that can be bought
+ * count. The free-shipping threshold comes from «تنظیمات فروشگاه» (0 means no offer). Checkout (S23) adds the coupon
  * it worked out on the fly (withCoupon); the cart page shows none.
  */
 final readonly class CartSummaryData

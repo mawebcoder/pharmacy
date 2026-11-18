@@ -32,7 +32,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * A purchase document's rows (roadmap S30, owner 2026-11-16), typed by the admin: for an order item, the supplier, how
+ * A purchase document's rows (roadmap S25, owner 2026-11-16), typed by the admin: for an order item, the supplier, how
  * many units and the unit cost really paid (the supplier's current price is only shown as a hint). An item may be
  * split over several suppliers; its rows never exceed what was ordered. Each row records what arrived and what is
  * missing. Every change goes through an Orders action.

@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * `{ "data": { "items": { "<variant id>": <quantity> }, "count": <total units> } }` for the product cards (S19).
+ * `{ "data": { "items": { "<variant id>": <quantity> }, "count": <total units> } }` for the product cards (S21).
  *
  * @property-read array<int, int> $resource variant id => quantity
  */

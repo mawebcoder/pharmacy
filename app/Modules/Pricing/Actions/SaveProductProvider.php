@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Sets a supplier's commission for a product and whether it is the product's preferred supplier (roadmap D3.2,
- * S15b). One preferred supplier per product: choosing one clears the other. The product's SKUs are re-priced in the
+ * S17). One preferred supplier per product: choosing one clears the other. The product's SKUs are re-priced in the
  * background.
  */
 final readonly class SaveProductProvider

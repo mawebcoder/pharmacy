@@ -14,7 +14,7 @@ use App\Modules\Catalog\Queries\PurchasableVariants;
 use App\Modules\Settings\Queries\StoreSettings;
 
 /**
- * Finds a shopper's cart and builds what it shows (roadmap D13.3, B9.6, S19): current prices and stock for every line,
+ * Finds a shopper's cart and builds what it shows (roadmap D13.3, B9.6, S21): current prices and stock for every line,
  * totals of what can be bought, and the free-shipping progress.
  */
 final readonly class CurrentCart
@@ -51,7 +51,7 @@ final readonly class CurrentCart
     }
 
     /**
-     * Just how many of each SKU the shopper has (lightweight, for product cards; S19): reads cart_items only, no
+     * Just how many of each SKU the shopper has (lightweight, for product cards; S21): reads cart_items only, no
      * prices, products or images.
      *
      * @return array<int, int> variant id => quantity

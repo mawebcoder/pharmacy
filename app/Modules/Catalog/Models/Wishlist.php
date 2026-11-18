@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A product a customer saved with the heart button (roadmap D3.3, S18). The customer is referred to by id only
+ * A product a customer saved with the heart button (roadmap D3.3, S20). The customer is referred to by id only
  * (Identity owns customers). Customers write these rows themselves, so they are not in the admin audit log.
  */
 final class Wishlist extends Model

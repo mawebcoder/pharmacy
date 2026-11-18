@@ -99,7 +99,7 @@
         </div>
 
         @unless ($hasText)
-            {{-- Empty box: «جستجوهای اخیر» (instant, from the browser), then «محصولات محبوب» (roadmap D21.2, S13b): their
+            {{-- Empty box: «جستجوهای اخیر» (instant, from the browser), then «محصولات محبوب» (roadmap D21.2, S14): their
                  skeleton while they load, then one Swiper row with side arrows at every size (owner, 2026-11-14): about 2
                  cards with the next peeking, 3 on desktop. The panel opens hidden, so Swiper re-measures (observer). --}}
             <div

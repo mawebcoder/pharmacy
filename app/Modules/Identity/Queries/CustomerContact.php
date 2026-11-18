@@ -7,7 +7,7 @@ namespace App\Modules\Identity\Queries;
 use App\Modules\Identity\Models\Customer;
 
 /**
- * A customer's name and mobile as an order keeps them (roadmap D3.4 customer_snapshot, S25).
+ * A customer's name and mobile as an order keeps them (roadmap D3.4 customer_snapshot, S23).
  */
 final readonly class CustomerContact
 {

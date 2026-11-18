@@ -14,7 +14,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A question on /faq (roadmap D3.6, S34): its group, the question, a plain-text answer and its place in the group.
+ * A question on /faq (roadmap D3.6, S29): its group, the question, a plain-text answer and its place in the group.
  */
 final class Faq extends Model implements HasActivityLogLabel
 {

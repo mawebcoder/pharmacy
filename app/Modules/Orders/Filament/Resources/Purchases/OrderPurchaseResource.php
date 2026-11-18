@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 /**
- * Purchase documents («اسناد خرید», roadmap S30, owner 2026-11-16): one per order, opened from the order's page
+ * Purchase documents («اسناد خرید», roadmap S25, owner 2026-11-16): one per order, opened from the order's page
  * («ثبت سند خرید») and linked both ways. The document's page holds its rows (supplier, quantity, unit cost per order
  * item), receiving, and the final margin. Never created here directly, never deleted.
  */

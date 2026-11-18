@@ -1,5 +1,5 @@
 {{--
-    «پیشنهاد لحظه‌ای» (roadmap B9.2 section 3, S33): the live flash deals, soonest ending first, with one coral
+    «پیشنهاد لحظه‌ای» (roadmap B9.2 section 3, S28): the live flash deals, soonest ending first, with one coral
     countdown to the last deal's end (owner, 2026-11-17) and «مشاهده همه» to the product list filtered to live deals
     (/products?deal=1), with all its filters. Same slider as a collection rail: about 2 cards on a phone,
     3 on a tablet, 5 on a wide screen. When the countdown reaches zero the page refreshes the widgets.

@@ -9,7 +9,7 @@ use App\Modules\Cart\Models\Coupon;
 use Illuminate\Support\Carbon;
 
 /**
- * Input for creating or updating a coupon (roadmap D3.4, S20). Money in rial; a percent coupon's value is 1–100;
+ * Input for creating or updating a coupon (roadmap D3.4, S22). Money in rial; a percent coupon's value is 1–100;
  * the include lists hold catalog ids (products, not SKUs). Times are UTC.
  */
 final readonly class CouponData

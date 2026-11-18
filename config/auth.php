@@ -52,7 +52,7 @@ return [
             'driver' => 'session',
             'provider' => 'admin_users',
         ],
-        // Storefront customers, signed in with a one-time SMS code (roadmap D16, S17); Sanctum uses this guard.
+        // Storefront customers, signed in with a one-time SMS code (roadmap D16, S19); Sanctum uses this guard.
         'customer' => [
             'driver' => 'session',
             'provider' => 'customers',
@@ -140,7 +140,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Customer sign-in codes (S17)
+    | Customer sign-in codes (S19)
     |--------------------------------------------------------------------------
     |
     | On the local environment only, the bypass code signs in any number that has just requested a code, so

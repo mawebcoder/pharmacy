@@ -12,7 +12,7 @@ use App\Modules\Catalog\Data\PurchasableVariantData;
 use App\Modules\Catalog\Queries\PurchasableVariants;
 
 /**
- * Sets a cart line's quantity (− / + on the stepper, roadmap S19); 0 removes it. Raising is refused for SKUs that
+ * Sets a cart line's quantity (− / + on the stepper, roadmap S21); 0 removes it. Raising is refused for SKUs that
  * cannot be bought now and capped at the limit per order; lowering and removing always work. Returns the quantity.
  */
 final readonly class SetCartQuantity

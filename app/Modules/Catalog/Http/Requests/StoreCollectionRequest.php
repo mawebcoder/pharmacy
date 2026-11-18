@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Unique;
 
 /**
- * Validation for collections (roadmap S13b); the admin form uses baseRules().
+ * Validation for collections (roadmap S14); the admin form uses baseRules().
  */
 final class StoreCollectionRequest extends FormRequest
 {

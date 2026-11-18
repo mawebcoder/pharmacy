@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where a contact message is (roadmap S34): new until staff open it, then read, then answered once staff say so.
+ * Where a contact message is (roadmap S29): new until staff open it, then read, then answered once staff say so.
  */
 enum ContactMessageStatus: string implements HasLabel
 {

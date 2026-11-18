@@ -11,7 +11,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A supplier's settings for one product (roadmap D3.2, S15b): its commission for this product (level 2, over the
+ * A supplier's settings for one product (roadmap D3.2, S17): its commission for this product (level 2, over the
  * product's own) and whether it is the product's preferred supplier (for every SKU, unless a SKU has its own).
  * product_id is a Catalog products id (read as a foreign key only).
  */

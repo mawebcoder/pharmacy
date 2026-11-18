@@ -8,7 +8,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Visible collections that have at least one product for sale (roadmap S13b /collections), in the admin's order,
+ * Visible collections that have at least one product for sale (roadmap S14 /collections), in the admin's order,
  * with their small icons and how many such products they hold.
  */
 new #[Title('کالکشن‌ها')] class extends Component

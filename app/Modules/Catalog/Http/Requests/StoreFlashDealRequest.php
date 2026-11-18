@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 
 /**
- * Validation for a flash deal (roadmap C5, S33). Price in rial (the admin form converts from toman). Rules that need
+ * Validation for a flash deal (roadmap C5, S28). Price in rial (the admin form converts from toman). Rules that need
  * the SKU's price or other deals (deal price below the regular price, no overlapping deal) are in SaveFlashDeal.
  */
 final class StoreFlashDealRequest extends FormRequest

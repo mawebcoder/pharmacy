@@ -41,7 +41,7 @@ use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 /**
- * «چیدمان صفحه اصلی» (roadmap D3.6, B9.2, S13b): the admin builds the home page from widgets and drags them into
+ * «چیدمان صفحه اصلی» (roadmap D3.6, B9.2, S14): the admin builds the home page from widgets and drags them into
  * order; each widget shows at most 6 items. Writes go through the Content actions.
  */
 final class HomeWidgetResource extends Resource

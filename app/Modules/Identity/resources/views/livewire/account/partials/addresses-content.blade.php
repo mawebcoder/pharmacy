@@ -1,4 +1,4 @@
-{{-- The address list and form, shared by «آدرس‌ها» and the checkout address step (S25). --}}
+{{-- The address list and form, shared by «آدرس‌ها» and the checkout address step (S23). --}}
 @use('App\Modules\Identity\Models\Address')
 @use('App\Modules\Shared\Support\PersianDigits')
     @if (! $canDeliver)

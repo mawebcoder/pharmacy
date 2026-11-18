@@ -10,7 +10,7 @@ use App\Modules\Settings\Queries\TrustCounters;
 use Illuminate\Support\Facades\Cache;
 
 /*
-| Trust counters (roadmap S35): delivered orders and cities delivered to, each shown once it is big enough (100
+| Trust counters (roadmap S30): delivered orders and cities delivered to, each shown once it is big enough (100
 | orders, 10 cities; owner 2026-11-17), cached an hour. No product count anywhere (owner, 2026-11-17).
 */
 

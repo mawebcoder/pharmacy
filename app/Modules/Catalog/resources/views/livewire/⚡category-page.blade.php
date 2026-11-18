@@ -58,7 +58,7 @@ new class extends Component
         </ol>
     </nav>
 
-    {{-- Banners placed on this category or subcategory (S13b); its own banner images are the fallback. --}}
+    {{-- Banners placed on this category or subcategory (S14); its own banner images are the fallback. --}}
     @php($placedBanners = app(\App\Modules\Content\Queries\PlaceBanners::class)->for($subcategory ? \App\Modules\Content\Enums\BannerPlace::Subcategory : \App\Modules\Content\Enums\BannerPlace::Category, $page->getId()))
     @if ($placedBanners->isNotEmpty())
         <x-content::banners :banners="$placedBanners" :priority="true" />

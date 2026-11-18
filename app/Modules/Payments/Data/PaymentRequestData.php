@@ -7,7 +7,7 @@ namespace App\Modules\Payments\Data;
 use Illuminate\Support\Carbon;
 
 /**
- * What a payment link is opened for (roadmap D7, S25): the order, the amount in rial, a description and the payer's
+ * What a payment link is opened for (roadmap D7, S23): the order, the amount in rial, a description and the payer's
  * mobile for the gateway, and when the order stops accepting payment.
  */
 final readonly class PaymentRequestData

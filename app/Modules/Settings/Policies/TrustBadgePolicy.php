@@ -8,7 +8,7 @@ use App\Modules\Settings\Models\TrustBadge;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Trust badges (roadmap S35): no role is granted them, so only super_admin (through Shield) manages them.
+ * Trust badges (roadmap S30): no role is granted them, so only super_admin (through Shield) manages them.
  */
 final class TrustBadgePolicy
 {

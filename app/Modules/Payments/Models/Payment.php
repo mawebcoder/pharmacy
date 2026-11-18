@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * One payment attempt for an order (roadmap D7.4, S25). An order has at most one pending, unexpired attempt; its link
+ * One payment attempt for an order (roadmap D7.4, S23). An order has at most one pending, unexpired attempt; its link
  * is reused until it ends. A record of the gateway exchange, so it is not in the admin audit log.
  */
 final class Payment extends Model

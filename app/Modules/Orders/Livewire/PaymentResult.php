@@ -12,7 +12,7 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * Where the customer lands after the gateway (roadmap B9.8, S25): paid (order number with copy, payment reference,
+ * Where the customer lands after the gateway (roadmap B9.8, S23): paid (order number with copy, payment reference,
  * «پیگیری سفارش»), not paid yet (the reason and «تلاش دوباره» until the order expires) or expired («سفارش دوباره»).
  * Only the order's owner sees it.
  */

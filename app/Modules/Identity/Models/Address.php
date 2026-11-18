@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
- * A customer's delivery address (roadmap D3.3, S18): no map pin, only the postal code and the full address. Only the
+ * A customer's delivery address (roadmap D3.3, S20): no map pin, only the postal code and the full address. Only the
  * owner sees it (AddressPolicy). Customers write these rows themselves, so they are not in the admin audit log.
  */
 final class Address extends Model
@@ -46,7 +46,7 @@ final class Address extends Model
 
     public const string COLUMN_BLOCK = 'block';
 
-    /** Extra directions («توضیحات تکمیلی»); before the street parts (S25) it held the whole street address. */
+    /** Extra directions («توضیحات تکمیلی»); before the street parts (S23) it held the whole street address. */
     public const string COLUMN_FULL_ADDRESS = 'full_address';
 
     public const string COLUMN_PLAQUE = 'plaque';

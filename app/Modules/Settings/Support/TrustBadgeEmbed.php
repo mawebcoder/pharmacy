@@ -8,7 +8,7 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 /**
- * Cleans a trust badge's embed code (roadmap D16, S35), on save and again when shown. Only what e-Namad and
+ * Cleans a trust badge's embed code (roadmap D16, S30), on save and again when shown. Only what e-Namad and
  * Samandehi hand out survives: a link and an image, both https on their own hosts, with referrerpolicy (e-Namad
  * checks the referring site, so links get rel="noopener", never noreferrer). Scripts, handlers, styles and any other
  * host are dropped; a code left without an image from those hosts is null.

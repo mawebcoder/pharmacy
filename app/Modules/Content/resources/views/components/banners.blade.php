@@ -1,5 +1,5 @@
 {{--
-    The banners of a place (roadmap D3.6, B9.2, S13b): nothing, one banner, or a Swiper slider of up to 6 (slider in
+    The banners of a place (roadmap D3.6, B9.2, S14): nothing, one banner, or a Swiper slider of up to 6 (slider in
     resources/js) that swipes with touch, pen and mouse, with a previous and a next arrow on the banner's sides
     (owner, 2026-11-09: no dots below); no autoplay. Each banner shows its desktop, tablet or mobile artwork for the screen.
     Phones show it at 2:1 (owner, 2026-11-15), so older 4:5 mobile artwork is cropped to its middle until replaced.

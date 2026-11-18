@@ -17,7 +17,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A pharmacist of the store (roadmap D3.6, S35): name, medical council number («شماره نظام پزشکی»), photo and a short
+ * A pharmacist of the store (roadmap D3.6, S30): name, medical council number («شماره نظام پزشکی»), photo and a short
  * bio. One is the pharmacist in charge («داروساز مسئول»), named on /pharmacist and on every product page.
  */
 final class Pharmacist extends Model implements HasActivityLogLabel, HasImagePresets

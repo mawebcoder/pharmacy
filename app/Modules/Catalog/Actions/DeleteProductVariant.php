@@ -10,7 +10,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Search\ProductSearchIndex;
 
 /**
- * Moves a variant to the trash, unless it is the product's last variant (every product keeps one, S13b) or the last
+ * Moves a variant to the trash, unless it is the product's last variant (every product keeps one, S14) or the last
  * active variant of an active product.
  */
 final class DeleteProductVariant

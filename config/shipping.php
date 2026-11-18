@@ -8,7 +8,7 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 |
 | Tipax: the OM API (v4; sign-in is only in v3). TIPAX_BASE_URL is the test API (https://omtestapi.tipax.ir) until go-live. Provinces and
-| cities come from Tipax (`php artisan tipax:sync-cities`, run on deploy and weekly; decided 2026-11-14 in S18).
+| cities come from Tipax (`php artisan tipax:sync-cities`, run on deploy and weekly; decided 2026-11-14 in S20).
 | Credentials live only in .env.
 |
 */

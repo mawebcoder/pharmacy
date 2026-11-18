@@ -17,7 +17,7 @@ final class OrdersServiceProvider extends ModuleServiceProvider
 {
     public function register(): void
     {
-        // «First order only» coupons ask the real order history (S25 replaces Cart's NoOrdersYet).
+        // «First order only» coupons ask the real order history (S23 replaces Cart's NoOrdersYet).
         $this->app->bind(CustomerOrderHistory::class, PlacedOrderHistory::class);
     }
 
@@ -28,7 +28,7 @@ final class OrdersServiceProvider extends ModuleServiceProvider
         Event::listen(PaymentSucceeded::class, MarkOrderPaid::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            // Unpaid orders past their payment window (S25).
+            // Unpaid orders past their payment window (S23).
             $schedule->job(new ExpirePendingOrders)->everyMinute()->onOneServer();
         });
     }

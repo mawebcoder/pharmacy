@@ -150,7 +150,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     /**
      * Most units of one SKU in one order for this product; null falls back to the store setting (the SKU's own limit
-     * wins, S19).
+     * wins, S21).
      */
     public function getMaxPerOrder(): ?int
     {

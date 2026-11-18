@@ -8,7 +8,7 @@ use App\Modules\Identity\Data\CustomerProfileData;
 use App\Modules\Identity\Models\Customer;
 
 /**
- * Saves the customer's own profile from «اطلاعات حساب» (roadmap D3.3, S18); the national id is stored encrypted.
+ * Saves the customer's own profile from «اطلاعات حساب» (roadmap D3.3, S20); the national id is stored encrypted.
  */
 final class UpdateCustomerProfile
 {

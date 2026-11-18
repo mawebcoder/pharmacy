@@ -10,7 +10,7 @@ use Filament\Resources\Pages\ViewRecord;
 
 /**
  * A supplier with its SKUs and their price information (ProviderPricesRelationManager). Its sales widgets and
- * charts come with the reports (roadmap S42).
+ * charts come with the reports (roadmap S44).
  */
 final class ViewProvider extends ViewRecord
 {

@@ -13,7 +13,7 @@ use App\Modules\Shipping\Tipax\TipaxClient;
 use Illuminate\Console\Command;
 
 /**
- * Loads every Tipax province and city into our tables (roadmap D4.3, decided 2026-11-14 in S18): run on each deploy
+ * Loads every Tipax province and city into our tables (roadmap D4.3, decided 2026-11-14 in S20): run on each deploy
  * after `migrate`, and weekly. Same import as `locations:import-tipax`, but straight from the Tipax API.
  */
 final class TipaxSyncCitiesCommand extends Command

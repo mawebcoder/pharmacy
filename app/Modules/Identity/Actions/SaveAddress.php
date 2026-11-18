@@ -11,7 +11,7 @@ use App\Modules\Identity\Models\Customer;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Adds or edits a customer's address (roadmap D3.3, S18). A customer keeps at most 10; their first address, or one
+ * Adds or edits a customer's address (roadmap D3.3, S20). A customer keeps at most 10; their first address, or one
  * saved as default, becomes the only default.
  */
 final class SaveAddress

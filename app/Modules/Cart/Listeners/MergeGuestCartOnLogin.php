@@ -9,7 +9,7 @@ use App\Modules\Cart\Support\CartCookie;
 use App\Modules\Identity\Events\CustomerLoggedIn;
 
 /**
- * A guest's cart follows them into their account when they sign in (roadmap D13.3, S19).
+ * A guest's cart follows them into their account when they sign in (roadmap D13.3, S21).
  */
 final readonly class MergeGuestCartOnLogin
 {

@@ -8,7 +8,7 @@ use App\Modules\Content\Data\MenuItemData;
 use App\Modules\Content\Models\MenuItem;
 
 /**
- * Adds a link to a menu (at its end) or changes one (roadmap S34; owner 2026-11-17).
+ * Adds a link to a menu (at its end) or changes one (roadmap S29; owner 2026-11-17).
  */
 final class SaveMenuItem
 {

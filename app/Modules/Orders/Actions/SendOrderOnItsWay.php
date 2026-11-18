@@ -12,9 +12,9 @@ use App\Modules\Orders\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
- * «تحویل به حمل»: the admin hands a prepared order to the carrier and types its tracking code (roadmap S29; Tipax
- * sets both itself from S27). The customer sees the code on their order page and on «پیگیری سفارش». Only once the
- * order's purchase document has fully arrived («آماده بسته‌بندی», S30, owner 2026-11-16).
+ * «تحویل به حمل»: the admin hands a prepared order to the carrier and types its tracking code (roadmap S24; Tipax
+ * sets both itself from S35). The customer sees the code on their order page and on «پیگیری سفارش». Only once the
+ * order's purchase document has fully arrived («آماده بسته‌بندی», S25, owner 2026-11-16).
  */
 final readonly class SendOrderOnItsWay
 {

@@ -34,7 +34,7 @@ use Illuminate\Support\Carbon;
 use UnitEnum;
 
 /**
- * Coupons («کوپن‌ها», roadmap D3.4, B6 «فروش», S20). Deleting moves a coupon to the bin; its usages stay.
+ * Coupons («کوپن‌ها», roadmap D3.4, B6 «فروش», S22). Deleting moves a coupon to the bin; its usages stay.
  */
 final class CouponResource extends Resource
 {

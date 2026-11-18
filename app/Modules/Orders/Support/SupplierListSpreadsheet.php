@@ -9,7 +9,7 @@ use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
 
 /**
- * The «خرید از تأمین‌کننده» Excel (roadmap S30): purchase document rows still to arrive, by supplier, to send to each
+ * The «خرید از تأمین‌کننده» Excel (roadmap S25): purchase document rows still to arrive, by supplier, to send to each
  * supplier. Money in toman.
  */
 final class SupplierListSpreadsheet

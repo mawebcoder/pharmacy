@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Queues a re-price of every SKU on the «pricing» queue (roadmap D3.2, D9): once after the S14/S15 deploy, so SKUs
+ * Queues a re-price of every SKU on the «pricing» queue (roadmap D3.2, D9): once after the S15/S16 deploy, so SKUs
  * priced by hand before follow the engine (active supplier, else the printed price), and nightly as a safety net.
  */
 final class RecalculatePricesCommand extends Command

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Cart\Data;
 
 /**
- * The coupon on a cart as checked now (roadmap S20): its discount (rial, whole toman) and whether it makes shipping
+ * The coupon on a cart as checked now (roadmap S22): its discount (rial, whole toman) and whether it makes shipping
  * free, or, when it no longer qualifies, why (it then gives nothing).
  */
 final readonly class AppliedCouponData

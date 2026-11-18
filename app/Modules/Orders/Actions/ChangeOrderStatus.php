@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Moves an order to another status when the actor may (OrderStatus::nextFor, roadmap D3.5), sets the matching time
- * and writes order_status_logs. The only way an order's status changes. Flash deal units (S33) go back to their deals
+ * and writes order_status_logs. The only way an order's status changes. Flash deal units (S28) go back to their deals
  * when the order expires unpaid or is cancelled, and are counted again if an expired order is paid late.
  */
 final class ChangeOrderStatus

@@ -8,7 +8,7 @@ use App\Modules\Pricing\Data\PriceRecordData;
 use App\Modules\Pricing\Models\VariantPrice;
 
 /**
- * The latest price record of each SKU (roadmap D3.2), for orders to copy when they are placed (S25).
+ * The latest price record of each SKU (roadmap D3.2), for orders to copy when they are placed (S23).
  */
 final readonly class CurrentPriceRecords
 {

@@ -9,7 +9,7 @@ use App\Modules\Settings\Exceptions\TrustBadgeRefused;
 use App\Modules\Settings\Models\TrustBadge;
 
 /**
- * Adds a trust badge (at the end) or changes one (roadmap S35). An embed code with nothing from e-Namad or Samandehi
+ * Adds a trust badge (at the end) or changes one (roadmap S30). An embed code with nothing from e-Namad or Samandehi
  * left after cleaning is refused, so a pasted script never becomes an empty badge. A badge with an embed code keeps
  * no link of its own: the code carries it.
  */

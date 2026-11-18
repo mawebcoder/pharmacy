@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Queries;
 
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Shipping\Queries\VariantBoxCapacities;
 
 /**
  * The product and SKU as an order item keeps them (roadmap D3.4 «Snapshot rule», owner 2026-11-14): everything the
@@ -12,6 +13,10 @@ use App\Modules\Catalog\Models\ProductVariant;
  */
 final readonly class OrderItemSnapshots
 {
+    public function __construct(
+        private VariantBoxCapacities $boxCapacities,
+    ) {}
+
     /**
      * @param  list<int>  $variantIds
      * @return array<int, array{product: array<string, mixed>, sku: array<string, mixed>}> variant id => snapshot
@@ -29,6 +34,7 @@ final readonly class OrderItemSnapshots
             ->with(['product' => fn ($query) => $query->withTrashed()->with(['brand', 'primaryCategory'])])
             ->whereKey(array_values(array_unique($variantIds)))
             ->get();
+        $boxCapacities = $this->boxCapacities->for(array_values(array_unique($variantIds)));
 
         foreach ($variants as $variant) {
             $product = $variant->product;
@@ -53,6 +59,9 @@ final readonly class OrderItemSnapshots
                     'barcode' => $variant->getBarcode(),
                     'title' => $variant->getTitleFa(),
                     'weight_g' => $variant->getWeightG(),
+                    // How many fit each box (box id => pieces), for packing the paid order (S31, owner 2026-11-18).
+                    'box_capacities' => $boxCapacities[$variant->getId()] ?? [],
+                    'ship_separately' => $variant->shipsSeparately(),
                     'length_mm' => $variant->getLengthMm(),
                     'width_mm' => $variant->getWidthMm(),
                     'height_mm' => $variant->getHeightMm(),

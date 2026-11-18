@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A Tipax city (roadmap D4, decided 2026-11-14 in S18): the id is Tipax's city id, so addresses and shipments use it
+ * A Tipax city (roadmap D4, decided 2026-11-14 in S20): the id is Tipax's city id, so addresses and shipments use it
  * as is. Imported by `locations:import-tipax`; admins switch delivery on per city («ارسال فعال», S05).
  */
 final class City extends Model implements HasActivityLogLabel

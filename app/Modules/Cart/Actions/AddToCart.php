@@ -14,7 +14,7 @@ use App\Modules\Catalog\Queries\PurchasableVariants;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Adds units of a SKU to the shopper's cart (roadmap D13.3, S19), creating the cart (and, for a guest, the cookie)
+ * Adds units of a SKU to the shopper's cart (roadmap D13.3, S21), creating the cart (and, for a guest, the cookie)
  * on the first add. Refuses SKUs that cannot be bought (inactive, out of stock, prescription, cold chain) and caps
  * at the limit per order (SKU, else product, else the store setting). Returns the SKU's new quantity.
  */

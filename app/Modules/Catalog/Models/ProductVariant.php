@@ -182,7 +182,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
      * Discounted price in rial while a discount is active.
      */
     /**
-     * The latest Pricing price record (roadmap D3.2, S15); price, official_price and sale_price copy it.
+     * The latest Pricing price record (roadmap D3.2, S16); price, official_price and sale_price copy it.
      */
     public function getCurrentPriceId(): ?int
     {
@@ -225,7 +225,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     }
 
     /**
-     * The live flash deal's price (S33), copied here by SyncFlashDealPrices while the deal runs and is not sold out.
+     * The live flash deal's price (S28), copied here by SyncFlashDealPrices while the deal runs and is not sold out.
      */
     public function getFlashDealPrice(): ?int
     {
@@ -439,7 +439,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     }
 
     /**
-     * Whether the cart may take this SKU now (S19): active product of a type sold online, no prescription, no cold
+     * Whether the cart may take this SKU now (S21): active product of a type sold online, no prescription, no cold
      * chain, active and in stock. Needs the product loaded. The cart itself checks through PurchasableVariants.
      */
     public function canAddToCart(): bool
@@ -461,7 +461,7 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     }
 
     /**
-     * The price the customer pays now, in rial: a live flash deal's price (S33), else the sale price when set, else the
+     * The price the customer pays now, in rial: a live flash deal's price (S28), else the sale price when set, else the
      * price.
      */
     public function currentPrice(): int

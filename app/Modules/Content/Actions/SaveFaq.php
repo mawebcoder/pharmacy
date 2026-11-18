@@ -8,7 +8,7 @@ use App\Modules\Content\Data\FaqData;
 use App\Modules\Content\Models\Faq;
 
 /**
- * Adds a question to /faq (at the end of its group) or changes one (roadmap S34). A question moved to another group
+ * Adds a question to /faq (at the end of its group) or changes one (roadmap S29). A question moved to another group
  * goes to that group's end.
  */
 final class SaveFaq

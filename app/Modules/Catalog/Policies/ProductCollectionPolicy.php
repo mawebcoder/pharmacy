@@ -8,7 +8,7 @@ use App\Modules\Catalog\Models\ProductCollection;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Collections (roadmap S13b). The system collection «محصولات محبوب» can be edited but never deleted.
+ * Collections (roadmap S14). The system collection «محصولات محبوب» can be edited but never deleted.
  */
 final class ProductCollectionPolicy
 {

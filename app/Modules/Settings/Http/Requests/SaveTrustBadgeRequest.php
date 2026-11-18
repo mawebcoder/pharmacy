@@ -9,7 +9,7 @@ use App\Modules\Settings\Models\TrustBadge;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Validation for a trust badge (roadmap C5, S35); the Filament form applies the same baseRules(). Whether the embed
+ * Validation for a trust badge (roadmap C5, S30); the Filament form applies the same baseRules(). Whether the embed
  * code is one we accept is SaveTrustBadge's decision (TrustBadgeRefused).
  */
 final class SaveTrustBadgeRequest extends FormRequest

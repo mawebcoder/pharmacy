@@ -16,7 +16,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * An order's purchase document («سند خرید», roadmap S30, owner 2026-11-16): one per order, opened by an admin, whose
+ * An order's purchase document («سند خرید», roadmap S25, owner 2026-11-16): one per order, opened by an admin, whose
  * rows (OrderPurchaseItem) say which supplier provided how many units of each order item and at what cost. The
  * system never fills it. Its final margin is what the customer paid for the items less the rows' cost.
  */

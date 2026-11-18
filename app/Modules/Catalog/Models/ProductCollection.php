@@ -19,7 +19,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A hand-picked list of products in the admin's order, e.g. «ضدآفتاب تابستان» (roadmap D3.1, S13b). Listed at
+ * A hand-picked list of products in the admin's order, e.g. «ضدآفتاب تابستان» (roadmap D3.1, S14). Listed at
  * /collections/{slug} and usable as a home widget. The system collection «محصولات محبوب» (slug popular) feeds the
  * empty search box and cannot be deleted. Each may have a small icon shown beside its name. Named ProductCollection
  * so it is not confused with Eloquent collections.
@@ -116,6 +116,14 @@ final class ProductCollection extends Model implements HasActivityLogLabel, HasI
     public function isSystem(): bool
     {
         return (bool) $this->getAttribute(self::COLUMN_IS_SYSTEM);
+    }
+
+    /**
+     * Only PopularCollectionSeeder marks a collection as the system one.
+     */
+    public function setIsSystem(bool $isSystem): static
+    {
+        return $this->setAttribute(self::COLUMN_IS_SYSTEM, $isSystem);
     }
 
     public function getIsSystem(): bool

@@ -90,7 +90,7 @@ final class ProductListing extends Component
     public ?int $discount = null;
 
     /**
-     * Products with a live flash deal (S33): where the home page row's «مشاهده همه» lands, with every filter. Not in the
+     * Products with a live flash deal (S28): where the home page row's «مشاهده همه» lands, with every filter. Not in the
      * filter panel (owner, 2026-11-17); shown as a chip that clears it.
      */
     #[Url(as: 'deal')]

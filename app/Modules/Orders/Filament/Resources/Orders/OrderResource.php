@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 /**
- * Orders (roadmap S29, D3.5): a list whose rows open the order's page, built only from the order's snapshots. Status
+ * Orders (roadmap S24, D3.5): a list whose rows open the order's page, built only from the order's snapshots. Status
  * changes, cancelling and the refund record are header actions on that page (ViewOrder). Orders are placed by
  * customers at checkout, never created or deleted here.
  */

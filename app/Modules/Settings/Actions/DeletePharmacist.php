@@ -7,7 +7,7 @@ namespace App\Modules\Settings\Actions;
 use App\Modules\Settings\Models\Pharmacist;
 
 /**
- * Removes a pharmacist and their photo (roadmap S35); without a pharmacist in charge, product pages leave the line out.
+ * Removes a pharmacist and their photo (roadmap S30); without a pharmacist in charge, product pages leave the line out.
  */
 final class DeletePharmacist
 {

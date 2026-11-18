@@ -8,7 +8,7 @@ use App\Modules\Payments\Enums\PaymentAttemptStatus;
 use App\Modules\Payments\Models\Payment;
 
 /**
- * An order's payment attempts as other modules need them (roadmap S25): why the last one failed, and its reference.
+ * An order's payment attempts as other modules need them (roadmap S23): why the last one failed, and its reference.
  */
 final readonly class OrderPayments
 {

@@ -9,7 +9,7 @@ use App\Modules\Shared\Support\PersianNormalizer;
 
 /**
  * One city of Tipax's `GET /api/OM/v4/Cities/plusstate` (OmCityListWithStateDto, roadmap D4.3, decided 2026-11-14 in
- * S18): `id`, `title`, `stateId`, `stateTitle`, `latitude`, `longitude` (also `abbreviation`, `jetId`, unused).
+ * S20): `id`, `title`, `stateId`, `stateTitle`, `latitude`, `longitude` (also `abbreviation`, `jetId`, unused).
  */
 final readonly class TipaxCityData
 {

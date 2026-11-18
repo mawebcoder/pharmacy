@@ -16,7 +16,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A site menu (roadmap D3.6, S34; owner 2026-11-17): one per location (header, the three footer columns, the phone
+ * A site menu (roadmap D3.6, S29; owner 2026-11-17): one per location (header, the three footer columns, the phone
  * and tablet menu), with an optional heading and its items in order.
  */
 final class Menu extends Model implements HasActivityLogLabel

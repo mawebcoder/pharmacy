@@ -7,7 +7,7 @@ namespace App\Modules\Content\Actions;
 use App\Modules\Content\Models\MenuItem;
 
 /**
- * Removes a link from its menu (roadmap S34).
+ * Removes a link from its menu (roadmap S29).
  */
 final class DeleteMenuItem
 {

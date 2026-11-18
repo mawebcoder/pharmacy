@@ -13,7 +13,7 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * Behind every heart button (roadmap S18), once per page: seeds the Alpine «wishlist» store with the customer's saved
+ * Behind every heart button (roadmap S20), once per page: seeds the Alpine «wishlist» store with the customer's saved
  * product ids and handles the `wishlist-toggle` browser event. A guest is sent to sign in; the product is remembered
  * and saved after sign-in (SavePendingWishlistProduct), then they come back to this page.
  */

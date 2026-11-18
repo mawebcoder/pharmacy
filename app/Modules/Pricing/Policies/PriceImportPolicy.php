@@ -8,7 +8,7 @@ use App\Modules\Pricing\Models\PriceImport;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Supplier price imports (roadmap S16): super admins by default, like supplier costs.
+ * Supplier price imports (roadmap S18): super admins by default, like supplier costs.
  */
 final class PriceImportPolicy
 {

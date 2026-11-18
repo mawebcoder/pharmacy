@@ -18,18 +18,21 @@ use App\Modules\Payments\Queries\OrderPayments;
 use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
+use App\Modules\Shipping\Actions\PackOrder;
+use App\Modules\Shipping\Queries\OrderParcels;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 
 /**
- * An order's page (roadmap S29), built only from the order's own copies (owner, 2026-11-14): the summary, the items
+ * An order's page (roadmap S24), built only from the order's own copies (owner, 2026-11-14): the summary, the items
  * with what we paid the supplier and the margin, the totals, the customer and address snapshots, and the status
  * history. Never from the live product, price, coupon, address or customer.
  */
@@ -157,6 +160,8 @@ final class OrderInfolist
 
             self::purchaseSection(),
 
+            self::parcelsSection(),
+
             Section::make('مشتری و ارسال')
                 ->columnSpanFull()
                 ->columns(['default' => 1, 'md' => 2])
@@ -213,7 +218,68 @@ final class OrderInfolist
     }
 
     /**
-     * The order's purchase document (S30, owner 2026-11-16): status, edit deadline, cost, final margin and its rows,
+     * How the paid order is packed (S31, owner 2026-11-17): each parcel's box with its sizes and weight, the items in
+     * it, and the parcel's weight with the box (6 kg at most); «بسته‌بندی دوباره» repacks with today's boxes and SKUs'
+     * snapshots while the order is paid or processing.
+     */
+    private static function parcelsSection(): Section
+    {
+        return Section::make('بسته‌ها')
+            ->key('parcels')
+            ->columnSpanFull()
+            ->visible(fn (Order $record): bool => $record->getPaidAt() !== null)
+            ->headerActions([
+                Action::make('repack')
+                    ->label('بسته‌بندی دوباره')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->color('gray')
+                    ->visible(fn (Order $record): bool => in_array($record->getStatus(), [OrderStatus::Paid, OrderStatus::Processing], true)
+                        && (auth('admin')->user()?->can('Update:Order') ?? false))
+                    ->requiresConfirmation()
+                    ->modalDescription('بسته‌ها با کارتن‌ها و ظرفیت‌های فعلی دوباره چیده می‌شوند.')
+                    ->action(function (Order $record, PackOrder $packOrder): void {
+                        $_ = $packOrder($record->getId());
+                        Notification::make()->success()->title('بسته‌بندی دوباره انجام شد.')->send();
+                    }),
+            ])
+            ->schema([
+                TextEntry::make('parcels')
+                    ->hiddenLabel()
+                    ->html()
+                    ->state(fn (Order $record): string => self::parcelsHtml(app(OrderParcels::class)->for($record->getId()))),
+            ]);
+    }
+
+    /**
+     * @param  list<array{sequence: int, box: string|null, sizes: string|null, box_weight_g: int, items: list<array{title: string, quantity: int}>, items_weight_g: int, total_weight_g: int, content: string, is_estimate: bool}>  $parcels
+     */
+    private static function parcelsHtml(array $parcels): string
+    {
+        if ($parcels === []) {
+            return '<span class="text-gray-500">هنوز بسته‌بندی نشده است؛ چند لحظه بعد از پرداخت انجام می‌شود.</span>';
+        }
+
+        $grams = fn (int $grams): string => PersianDigits::toPersian(number_format($grams)).' گرم';
+        $html = '<div class="space-y-3">';
+
+        foreach ($parcels as $parcel) {
+            $box = $parcel['box'] === null
+                ? '<span class="text-danger-600">هیچ کارتنی جا نمی‌دهد؛ دستی بسته‌بندی کنید</span>'
+                : e($parcel['box']).' ('.e(PersianDigits::toPersian((string) $parcel['sizes'])).' سانتی‌متر، '.$grams($parcel['box_weight_g']).')';
+            $items = implode('، ', array_map(fn (array $item): string => e($item['title']).' × '.PersianDigits::toPersian($item['quantity']), $parcel['items']));
+            $html .= '<div class="rounded-lg border border-gray-200 p-3 dark:border-white/10">'
+                .'<div class="font-bold">بسته '.PersianDigits::toPersian($parcel['sequence']).': '.$box.'</div>'
+                .'<div class="mt-1 text-sm">'.$items.'</div>'
+                .'<div class="mt-1 text-sm text-gray-500">وزن کالاها '.$grams($parcel['items_weight_g']).' · وزن کل '.$grams($parcel['total_weight_g']).' · '.e($parcel['content'])
+                .($parcel['is_estimate'] ? ' · <span class="text-warning-600">تخمینی (وزن یا اندازه کالایی ثبت نشده)</span>' : '').'</div>'
+                .'</div>';
+        }
+
+        return $html.'</div>';
+    }
+
+    /**
+     * The order's purchase document (S25, owner 2026-11-16): status, edit deadline, cost, final margin and its rows,
      * read only; rows are added and received on the document's page («باز کردن سند خرید»).
      */
     private static function purchaseSection(): Section

@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * «بدون تأمین‌کننده» (roadmap D3.2, S15): SKUs with no supplier row yet. They keep their old manual price and stock
+ * «بدون تأمین‌کننده» (roadmap D3.2, S16): SKUs with no supplier row yet. They keep their old manual price and stock
  * until a supplier is added on their suppliers page. Only for admins who can see suppliers.
  */
 final class VariantsWithoutSuppliers extends Page implements HasTable

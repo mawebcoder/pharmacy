@@ -9,7 +9,7 @@ use App\Modules\Pricing\Jobs\ParsePriceImport;
 use App\Modules\Pricing\Models\PriceImport;
 
 /**
- * Starts a supplier price import (roadmap D13.9, S16) for an uploaded file on the local disk: the rows are read and
+ * Starts a supplier price import (roadmap D13.9, S18) for an uploaded file on the local disk: the rows are read and
  * checked in the background on the «price-import» queue; nothing changes until the admin applies the preview.
  */
 final class StartPriceImport

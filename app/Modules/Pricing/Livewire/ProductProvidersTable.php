@@ -32,7 +32,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * «تأمین‌کنندگان محصول» on the product form (roadmap D3.2, S15b): per supplier, its commission for this product
+ * «تأمین‌کنندگان محصول» on the product form (roadmap D3.2, S17): per supplier, its commission for this product
  * (level 2, over the product's own) and whether it is the product's preferred supplier (for every SKU that has no
  * preferred supplier of its own). Changes re-price the product's SKUs in the background.
  */

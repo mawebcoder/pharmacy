@@ -18,7 +18,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A storefront customer (roadmap D3.3), signed in with a one-time SMS code on the «customer» guard (S17). The mobile
+ * A storefront customer (roadmap D3.3), signed in with a one-time SMS code on the «customer» guard (S19). The mobile
  * («09xxxxxxxxx») is the identity; the national id is stored encrypted. Blocked customers cannot sign in.
  */
 #[Hidden([self::COLUMN_NATIONAL_ID, 'remember_token'])]

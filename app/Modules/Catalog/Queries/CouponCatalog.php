@@ -9,7 +9,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Subcategory;
 
 /**
- * What coupons need to know about the catalog (roadmap D3.4, S20): each product's brand and categories, and a
+ * What coupons need to know about the catalog (roadmap D3.4, S22): each product's brand and categories, and a
  * category with everything below it (a coupon on «مراقبت پوست» covers its subcategories too).
  */
 final readonly class CouponCatalog

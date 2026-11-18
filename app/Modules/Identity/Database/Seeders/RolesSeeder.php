@@ -17,7 +17,7 @@ use Spatie\Permission\PermissionRegistrar;
 final class RolesSeeder extends Seeder
 {
     /**
-     * Shield permission keys per role. super_admin needs none: it passes every check. Suppliers and their prices (S14,
+     * Shield permission keys per role. super_admin needs none: it passes every check. Suppliers and their prices (S15,
      * our costs) are left to super_admin.
      *
      * @var array<string, list<string>>
@@ -26,17 +26,17 @@ final class RolesSeeder extends Seeder
         'operator' => [
             // S05 Locations: switch delivery on or off per city.
             'ViewAny:City', 'View:City', 'Update:City',
-            // S10 Catalog: look up products (stock comes from providers in S14).
+            // S10 Catalog: look up products (stock comes from providers in S15).
             'ViewAny:Product', 'View:Product',
-            // S20 Cart: look up coupons (creating and editing them is left to super admins).
+            // S22 Cart: look up coupons (creating and editing them is left to super admins).
             'ViewAny:Coupon', 'View:Coupon',
-            // S17 Identity: look up customers and block or unblock them.
+            // S19 Identity: look up customers and block or unblock them.
             'ViewAny:Customer', 'View:Customer', 'Update:Customer',
-            // S29 Orders: look up orders and move their status, cancelling included (refunds are left to super admins).
+            // S24 Orders: look up orders and move their status, cancelling included (refunds are left to super admins).
             'ViewAny:Order', 'View:Order', 'Update:Order',
-            // S30 Orders: open an order's purchase document, type its rows and record what arrived.
+            // S25 Orders: open an order's purchase document, type its rows and record what arrived.
             'ViewAny:OrderPurchase', 'View:OrderPurchase', 'Create:OrderPurchase', 'Update:OrderPurchase',
-            // S34 Content: read the contact messages and mark them answered.
+            // S29 Content: read the contact messages and mark them answered.
             'ViewAny:ContactMessage', 'View:ContactMessage', 'Update:ContactMessage',
         ],
         'content_editor' => [
@@ -49,17 +49,17 @@ final class RolesSeeder extends Seeder
             // S11 Catalog: attributes (with values) and tags.
             'ViewAny:Attribute', 'View:Attribute', 'Create:Attribute', 'Update:Attribute',
             'ViewAny:Tag', 'View:Tag', 'Create:Tag', 'Update:Tag',
-            // S13b Catalog: collections, including «محصولات محبوب».
+            // S14 Catalog: collections, including «محصولات محبوب».
             'ViewAny:ProductCollection', 'View:ProductCollection', 'Create:ProductCollection', 'Update:ProductCollection',
             // S12 Search: synonyms and the search insights page.
             'ViewAny:SearchSynonym', 'View:SearchSynonym', 'Create:SearchSynonym', 'Update:SearchSynonym', 'Delete:SearchSynonym',
             'View:SearchInsights',
-            // S13b Content: home page widgets and the banner library.
+            // S14 Content: home page widgets and the banner library.
             'ViewAny:HomeWidget', 'View:HomeWidget', 'Create:HomeWidget', 'Update:HomeWidget', 'Delete:HomeWidget',
             'ViewAny:Banner', 'View:Banner', 'Create:Banner', 'Update:Banner', 'Delete:Banner',
-            // S34 Content: static pages («صفحه‌های ثابت»).
+            // S29 Content: static pages («صفحه‌های ثابت»).
             'ViewAny:Page', 'View:Page', 'Create:Page', 'Update:Page', 'Delete:Page', 'Restore:Page',
-            // S34 Content: questions on /faq, the site menus, and the contact messages.
+            // S29 Content: questions on /faq, the site menus, and the contact messages.
             'ViewAny:Faq', 'View:Faq', 'Create:Faq', 'Update:Faq', 'Delete:Faq',
             'ViewAny:Menu', 'View:Menu', 'Update:Menu',
             'ViewAny:ContactMessage', 'View:ContactMessage', 'Update:ContactMessage',

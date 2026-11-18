@@ -1,11 +1,11 @@
 {{--
     Site footer (roadmap B8.2, B9.2 item 8): trust block with counters (x-layout.trust), link columns, contact details
     with social links, and the trust badges (e-Namad).
-    The link columns are the footer menus («منوها», S34); contact details, social links and badges are set in the admin
-    (S35).
+    The link columns are the footer menus («منوها», S29); contact details, social links and badges are set in the admin
+    (S30).
 --}}
 @php
-    // The three footer columns are menus edited in the admin («منوها», S34; owner, 2026-11-17).
+    // The three footer columns are menus edited in the admin («منوها», S29; owner, 2026-11-17).
     $menuLinks = app(\App\Modules\Content\Queries\MenuLinks::class);
     $columns = array_values(array_filter(
         array_map(fn ($location): array => $menuLinks->for($location), [
@@ -15,7 +15,7 @@
         ]),
         fn (array $column): bool => $column['links'] !== [],
     ));
-    // Contact details, social links and trust badges come from the admin (S35); empty ones are left out.
+    // Contact details, social links and trust badges come from the admin (S30); empty ones are left out.
     $settings = app(\App\Modules\Settings\Queries\StoreSettings::class);
     $contact = array_values(array_filter([
         $settings->phone() === null ? null : ['icon' => 'phone', 'text' => \App\Modules\Shared\Support\PersianDigits::toPersian($settings->phone()), 'href' => $settings->phoneUrl(), 'ltr' => true],

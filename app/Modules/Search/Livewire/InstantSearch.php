@@ -21,7 +21,7 @@ use Livewire\Component;
  * The search box (roadmap B2 rule 2, D21.2 item 6): suggestions while typing (300 ms pause, from 2 letters) —
  * up to 6 products, rows of 8 categories and 8 brands (or the admin's pinned ones when none match; owner,
  * 2026-11-15), 3 tags — with keyboard navigation; Enter opens /search?q=…. Without JavaScript it is a plain form to
- * the search page. Opened empty, it shows «جستجوهای اخیر», «محصولات محبوب» (S13b) and the pinned categories and brands. Recent searches live in the browser (latest 6); a signed-in customer's come from their
+ * the search page. Opened empty, it shows «جستجوهای اخیر», «محصولات محبوب» (S14) and the pinned categories and brands. Recent searches live in the browser (latest 6); a signed-in customer's come from their
  * search logs too, loaded with popular products in the same request and merged in the browser (owner, 2026-11-14).
  */
 final class InstantSearch extends Component

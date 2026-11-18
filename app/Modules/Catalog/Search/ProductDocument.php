@@ -85,10 +85,10 @@ final class ProductDocument
             'in_stock' => $default?->isInStock() ?? false,
             'in_stock_rank' => $default?->isInStock() ? 1 : 0,
             'is_near_expiry' => $variants->contains(fn (ProductVariant $variant): bool => $variant->isNearExpiry()),
-            // A SKU with a live flash deal (S33): the «پیشنهاد لحظه‌ای» listing filter.
+            // A SKU with a live flash deal (S28): the «پیشنهاد لحظه‌ای» listing filter.
             'has_flash_deal' => $variants->contains(fn (ProductVariant $variant): bool => $variant->getFlashDealId() !== null),
             'product_type' => $product->getProductType()->value,
-            // Orders arrive in S20; until then best-selling sorts like newest.
+            // Orders arrive in S22; until then best-selling sorts like newest.
             'sales_30d' => 0,
             'created_at' => $product->getCreatedAt()?->getTimestamp() ?? 0,
         ];

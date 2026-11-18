@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Catalog items other modules link to by type and id (banners, home widgets; roadmap D3.6, S13b): the storefront
+ * Catalog items other modules link to by type and id (banners, home widgets; roadmap D3.6, S14): the storefront
  * URL of a shown item, its admin label, and admin search. Types: category, collection, brand, tag, product. An item
  * that is missing or hidden has no URL, so the link is not shown.
  */

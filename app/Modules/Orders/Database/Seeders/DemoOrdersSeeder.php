@@ -111,7 +111,7 @@ final class DemoOrdersSeeder extends Seeder
                 $order->setExpiresAt($order->getPlacedAt()->copy()->addMinutes((int) config('payments.pending_expiry_minutes')));
             }
 
-            // An order with the carrier has a tracking code (S29).
+            // An order with the carrier has a tracking code (S24).
             if (in_array($order->getStatus(), [OrderStatus::OnTheWay, OrderStatus::Delivered], true)) {
                 $order->setTrackingCode('TPX'.str_pad((string) $order->getId(), 9, '0', STR_PAD_LEFT));
             }

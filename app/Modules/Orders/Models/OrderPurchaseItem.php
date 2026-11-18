@@ -13,7 +13,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * One row of an order's purchase document (roadmap S30, owner 2026-11-16), typed by an admin: this many units of an
+ * One row of an order's purchase document (roadmap S25, owner 2026-11-16), typed by an admin: this many units of an
  * order item came from this supplier at this unit cost (rial), with how many arrived and how many are missing. An
  * order item may be split over several rows; their quantities never exceed the item's.
  */

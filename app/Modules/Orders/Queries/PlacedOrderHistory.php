@@ -9,7 +9,7 @@ use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 
 /**
- * «First order only» coupons (S20) ask this: has the customer an order that was paid (and not cancelled)?
+ * «First order only» coupons (S22) ask this: has the customer an order that was paid (and not cancelled)?
  */
 final readonly class PlacedOrderHistory implements CustomerOrderHistory
 {

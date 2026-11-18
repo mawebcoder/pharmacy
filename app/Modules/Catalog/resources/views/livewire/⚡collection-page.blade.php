@@ -4,7 +4,7 @@ use App\Modules\Catalog\Models\ProductCollection;
 use Livewire\Component;
 
 /**
- * Collection page (roadmap S13b /collections/{slug}): the collection's products with the usual filters, in the
+ * Collection page (roadmap S14 /collections/{slug}): the collection's products with the usual filters, in the
  * admin's order by default («پیشنهادی»). Hidden collections (inactive or outside their schedule) are not found.
  */
 new class extends Component

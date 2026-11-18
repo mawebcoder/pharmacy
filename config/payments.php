@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| Payments (roadmap D7, S25, S26)
+| Payments (roadmap D7, S23, S36)
 |--------------------------------------------------------------------------
 |
-| «gateway» picks the PaymentGateway: «fake» (local and staging, until Zarinpal in S26) offers pay / fail buttons and
+| «gateway» picks the PaymentGateway: «fake» (local and staging, until Zarinpal in S36) offers pay / fail buttons and
 | works only while «fake_enabled» is on, so production can never take fake payments. An order waits for its payment
 | «pending_expiry_minutes»; its payment link and coupon reservation last as long.
 |

@@ -15,7 +15,7 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * A province (Tipax «state»): the id is Tipax's stateId. Created by `locations:import-tipax` from Tipax's city list
- * (roadmap D4, decided 2026-11-14 in S18).
+ * (roadmap D4, decided 2026-11-14 in S20).
  */
 final class Province extends Model
 {

@@ -12,8 +12,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
 /**
- * Imports provinces and cities from Tipax's city list (roadmap D4.3, decided 2026-11-14 in S18). Reads the JSON
- * response of `Cities/plusstate` (and optionally `Cities/BranchCities`) saved to files; S22's Tipax client calls the
+ * Imports provinces and cities from Tipax's city list (roadmap D4.3, decided 2026-11-14 in S20). Reads the JSON
+ * response of `Cities/plusstate` (and optionally `Cities/BranchCities`) saved to files; S33's Tipax client calls the
  * API and feeds the same action.
  */
 final class ImportTipaxCitiesCommand extends Command

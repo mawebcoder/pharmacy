@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A flash deal («پیشنهاد لحظه‌ای», roadmap S33): a SKU at a deal price between two times, optionally for at most so many
+ * A flash deal («پیشنهاد لحظه‌ای», roadmap S28): a SKU at a deal price between two times, optionally for at most so many
  * units. Live while active, inside its window and not sold out; then SyncFlashDealPrices puts its price on the SKU.
  * Units are reserved when an order is placed and released when it expires or is cancelled (owner, 2026-11-16).
  */

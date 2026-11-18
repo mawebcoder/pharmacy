@@ -23,7 +23,7 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * «پیام‌های تماس» (roadmap D3.6, S34): messages from /contact, newest first, with the count of new ones on the menu.
+ * «پیام‌های تماس» (roadmap D3.6, S29): messages from /contact, newest first, with the count of new ones on the menu.
  * Opening one marks it read; staff reply by phone or email and mark it answered.
  */
 final class ContactMessageResource extends Resource

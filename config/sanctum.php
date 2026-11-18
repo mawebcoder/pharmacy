@@ -39,7 +39,7 @@ return [
     |
     */
 
-    // Storefront customers (roadmap D16, S17); staff use the separate "admin" guard and never get tokens.
+    // Storefront customers (roadmap D16, S19); staff use the separate "admin" guard and never get tokens.
     'guard' => ['customer'],
 
     /*

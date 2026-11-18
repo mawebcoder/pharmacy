@@ -35,7 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use UnitEnum;
 
 /**
- * Static pages («صفحه‌های ثابت», roadmap D3.6, S34): title, address under /pages/, rich-editor body (images on the
+ * Static pages («صفحه‌های ثابت», roadmap D3.6, S29): title, address under /pages/, rich-editor body (images on the
  * default filesystem disk), active switch and SEO fields. Banners can link to a page.
  */
 final class PageResource extends Resource

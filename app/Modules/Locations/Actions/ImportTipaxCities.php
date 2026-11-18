@@ -11,7 +11,7 @@ use App\Modules\Locations\Models\Province;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Brings provinces and cities in line with Tipax (roadmap D4.3, decided 2026-11-14 in S18): both keyed by Tipax's
+ * Brings provinces and cities in line with Tipax (roadmap D4.3, decided 2026-11-14 in S20): both keyed by Tipax's
  * ids (stateId, city id). Names and branch flags are updated; «ارسال فعال» is kept. Cities Tipax no
  * longer lists are kept and counted. One activity entry per import, not one per row.
  */

@@ -40,7 +40,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * One SKU's suppliers (roadmap D3.2, S14/S15), opened from the product's SKU table: each supplier's cost and the
+ * One SKU's suppliers (roadmap D3.2, S15/S16), opened from the product's SKU table: each supplier's cost and the
  * selling price it would give with the commission, the two switches («موجود نزد تأمین‌کننده», «فروش از این
  * تأمین‌کننده»), which one the website sells from now, and the SKU's price records (PriceHistoryTable). Supplier prices are our costs:
  * only admins who can see suppliers open this page; changes need Update:Provider.
@@ -161,7 +161,7 @@ final class SkuSuppliers extends Page implements HasTable
     }
 
     /**
-     * «فعال: …» on the supplier the website sells from now: a live flash deal's supplier first (S33, owner 2026-11-17),
+     * «فعال: …» on the supplier the website sells from now: a live flash deal's supplier first (S28, owner 2026-11-17),
      * else the default one and how it was chosen.
      */
     private function siteBadge(ProviderPrice $record): ?string

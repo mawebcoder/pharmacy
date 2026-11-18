@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Modules\Catalog\Actions\AddProductsToCollection;
+use App\Modules\Catalog\Database\Seeders\PopularCollectionSeeder;
 use App\Modules\Catalog\Database\Seeders\SearchShortcutsSeeder;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
@@ -34,7 +35,7 @@ use ImagickPixel;
 use RuntimeException;
 
 /**
- * Sample content for the home page (S13b), so every widget type has at least 6 items to show: 6 brands, 6
+ * Sample content for the home page (S14), so every widget type has at least 6 items to show: 6 brands, 6
  * categories, 6 featured tags, 12 products in stock, «محصولات محبوب» and a second collection, 6 banners and one
  * widget of each type. Images are generated colour blocks. Local and testing only; it refuses to run twice.
  *
@@ -69,6 +70,9 @@ final class HomePageDemoSeeder extends Seeder
         if (app()->isProduction()) {
             throw new RuntimeException('HomePageDemoSeeder adds sample data and does not run in production.');
         }
+
+        // The starting data the samples build on (migrations only create schema).
+        $this->call(PopularCollectionSeeder::class);
 
         if (Brand::query()->withTrashed()->where(Brand::COLUMN_SLUG, self::MARKER_SLUG)->exists()) {
             $this->command?->warn('Home page sample data is already there; nothing added.');

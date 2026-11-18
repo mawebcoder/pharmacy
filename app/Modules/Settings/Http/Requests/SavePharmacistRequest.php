@@ -9,7 +9,7 @@ use App\Modules\Settings\Models\Pharmacist;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Validation for a pharmacist (roadmap C5, S35); the Filament form applies the same baseRules(). The council number
+ * Validation for a pharmacist (roadmap C5, S30); the Filament form applies the same baseRules(). The council number
  * is digits, Persian or Latin.
  */
 final class SavePharmacistRequest extends FormRequest

@@ -19,8 +19,8 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * Storefront customers (roadmap D3.3, S17): a read-only list whose rows open the customer's page, with block and
- * unblock. Customers sign up themselves with an SMS code. Their orders (S29) and addresses are tabs on the page.
+ * Storefront customers (roadmap D3.3, S19): a read-only list whose rows open the customer's page, with block and
+ * unblock. Customers sign up themselves with an SMS code. Their orders (S24) and addresses are tabs on the page.
  */
 final class CustomerResource extends Resource
 {

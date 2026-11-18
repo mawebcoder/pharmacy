@@ -7,7 +7,7 @@ namespace App\Modules\Content\Queries;
 use App\Modules\Content\Models\Page;
 
 /**
- * Static pages as banner targets (roadmap S34): picker options by title, labels, and the URL of a page that is live.
+ * Static pages as banner targets (roadmap S29): picker options by title, labels, and the URL of a page that is live.
  */
 final readonly class PageLinks
 {

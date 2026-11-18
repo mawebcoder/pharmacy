@@ -6,7 +6,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * The fake gateway's «bank» page (S25, local and staging only, payments.fake_enabled): the amount and two buttons
+ * The fake gateway's «bank» page (S23, local and staging only, payments.fake_enabled): the amount and two buttons
  * that return to the normal callback, as a real bank would. See FakePaymentGateway.
  */
 new #[Title('درگاه آزمایشی')] class extends Component

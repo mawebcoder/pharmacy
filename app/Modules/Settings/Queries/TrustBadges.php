@@ -9,7 +9,7 @@ use App\Modules\Settings\Models\TrustBadge;
 use App\Modules\Settings\Support\TrustBadgeEmbed;
 
 /**
- * The footer's trust badges in the admin's order (roadmap S35): each is either cleaned embed HTML (e-Namad,
+ * The footer's trust badges in the admin's order (roadmap S30): each is either cleaned embed HTML (e-Namad,
  * Samandehi) or an image with an optional link. A badge with neither is left out. Not cached: its images are made in
  * the background and the list is one small query.
  */

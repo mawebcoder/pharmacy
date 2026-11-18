@@ -1,6 +1,6 @@
 {{--
     Site header (roadmap B9.1). Mobile 56px with search below, tablet 64px, desktop 72px.
-    Below the header row: the category bar and mega-menu (Catalog module, S08). The mini-cart total plugs in with S19.
+    Below the header row: the category bar and mega-menu (Catalog module, S08). The mini-cart total plugs in with S21.
 --}}
 {{-- Publishes the header's current height as --header-height for sticky bars below it (e.g. the brand letter bar).
      While the full-screen search is open (phones, tablets) the header, which holds it, rises above the bottom nav. --}}
@@ -14,7 +14,7 @@
     "
 >
     <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:h-16 md:gap-6 md:px-6 xl:h-18 xl:px-8">
-        {{-- Phones and tablets: «منو» opens the site menu (x-layout.mobile-menu, S34). --}}
+        {{-- Phones and tablets: «منو» opens the site menu (x-layout.mobile-menu, S29). --}}
         <button type="button" x-on:click="$tsui.open.slide('site-menu')" class="-ms-2 grid size-11 shrink-0 place-items-center rounded-card text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 xl:hidden" aria-label="منو" aria-controls="site-menu">
             <x-ts-icon icon="bars-3" class="size-6" />
         </button>
@@ -36,7 +36,7 @@
             <x-ui.pharmacist-chat label="مشاوره با داروساز" class="flex h-11 min-w-11 items-center justify-center gap-2 rounded-full px-2.5 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 xl:px-3" icon-class="size-6 text-primary-700 xl:size-5" label-class="sr-only xl:not-sr-only" />
             <livewire:identity::theme-toggle />
             @auth('customer')
-                {{-- Signed-in customer (S17): their name, the account area (S18) and sign-out; the page dims behind the menu
+                {{-- Signed-in customer (S19): their name, the account area (S20) and sign-out; the page dims behind the menu
                      (owner, 2026-11-15). --}}
                 <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
                     <x-layout.header-backdrop show="open" close="open = false" />
@@ -93,7 +93,7 @@
         </nav>
     </div>
 
-    {{-- Site links beside «دسته‌بندی کالاها» on desktop: the header menu from the admin («منوها», S34; owner, 2026-11-17). --}}
+    {{-- Site links beside «دسته‌بندی کالاها» on desktop: the header menu from the admin («منوها», S29; owner, 2026-11-17). --}}
     @php
         $siteLinks = app(\App\Modules\Content\Queries\MenuLinks::class)->for(\App\Modules\Content\Enums\MenuLocation::Header)['links'];
     @endphp

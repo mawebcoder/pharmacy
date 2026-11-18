@@ -10,7 +10,7 @@ use App\Modules\Cart\Queries\CurrentCart;
 use Illuminate\Http\JsonResponse;
 
 /**
- * GET /cart/quantities (S19): how many of each SKU the shopper (customer, or guest by the encrypted cart cookie) has,
+ * GET /cart/quantities (S21): how many of each SKU the shopper (customer, or guest by the encrypted cart cookie) has,
  * for the steppers on product cards. Never cached: it is per shopper.
  */
 final class CartQuantitiesController

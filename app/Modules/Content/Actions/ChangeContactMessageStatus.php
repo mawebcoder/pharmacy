@@ -8,7 +8,7 @@ use App\Modules\Content\Enums\ContactMessageStatus;
 use App\Modules\Content\Models\ContactMessage;
 
 /**
- * Moves a contact message on (roadmap S34): opening a new one marks it read; staff mark it answered once they have
+ * Moves a contact message on (roadmap S29): opening a new one marks it read; staff mark it answered once they have
  * replied (by phone or email, outside the site). A message never goes back to new.
  */
 final class ChangeContactMessageStatus

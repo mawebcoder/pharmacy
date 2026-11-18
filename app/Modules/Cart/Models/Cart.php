@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * A shopping cart (roadmap D3.4, S19): a customer's (customer_id, kept until checkout) or a guest's (the hash of the
+ * A shopping cart (roadmap D3.4, S21): a customer's (customer_id, kept until checkout) or a guest's (the hash of the
  * cookie token, kept 30 days). Not audited: carts are the shopper's own working rows.
  */
 final class Cart extends Model
@@ -72,7 +72,7 @@ final class Cart extends Model
     }
 
     /**
-     * The address picked on the checkout address step (S25); null means the customer's default.
+     * The address picked on the checkout address step (S23); null means the customer's default.
      */
     public function getAddressId(): ?int
     {

@@ -6,6 +6,7 @@ use App\Modules\Content\Actions\SaveBanner;
 use App\Modules\Content\Actions\SavePage;
 use App\Modules\Content\Data\BannerData;
 use App\Modules\Content\Data\PageData;
+use App\Modules\Content\Database\Seeders\DraftPagesSeeder;
 use App\Modules\Content\Enums\BannerPlace;
 use App\Modules\Content\Enums\HomeWidgetType;
 use App\Modules\Content\Enums\LinkType;
@@ -25,6 +26,11 @@ use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 
 use function Pest\Livewire\livewire;
+
+beforeEach(function (): void {
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(DraftPagesSeeder::class);
+});
 
 function pageAdmin(AdminRole $role): AdminUser
 {

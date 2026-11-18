@@ -12,7 +12,7 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * The desktop mini-cart in the header (roadmap B9.1, S19): the bag with the count and total, and on click a drop-down
+ * The desktop mini-cart in the header (roadmap B9.1, S21): the bag with the count and total, and on click a drop-down
  * of the lines. The lines load only when it is first opened and follow every cart change.
  */
 final class MiniCart extends Component

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Actions\ReplacePopularProducts;
+use App\Modules\Catalog\Database\Seeders\PopularCollectionSeeder;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Search\Jobs\RecalculatePopularProducts;
@@ -31,6 +32,8 @@ function popularProductIds(): array
 
 beforeEach(function (): void {
     $this->travelTo(Carbon::parse('2026-11-15 03:30'));
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(PopularCollectionSeeder::class);
 });
 
 it('ranks products by how often they were opened from search in the last 30 days, active ones only', function (): void {

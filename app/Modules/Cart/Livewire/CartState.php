@@ -18,7 +18,7 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * Behind every add-to-cart button (roadmap S19), once per page: seeds the Alpine «cart» store (quantity and limit per
+ * Behind every add-to-cart button (roadmap S21), once per page: seeds the Alpine «cart» store (quantity and limit per
  * SKU, item count, total) and handles the `cart-add` / `cart-set` / `cart-clear` browser events, then sends `cart-updated`
  * with the new state. No toast on a change (the stepper and header count show it; owner, 2026-11-14), except the free-shipping
  * progress when it is close; refusals (out of stock, limit, prescription) are shown as warnings.

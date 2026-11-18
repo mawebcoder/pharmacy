@@ -8,7 +8,7 @@ use App\Modules\Orders\Models\OrderPurchase;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Purchase documents in the admin (roadmap S30). super_admin passes every check through Shield; operators open
+ * Purchase documents in the admin (roadmap S25). super_admin passes every check through Shield; operators open
  * documents, type their rows and record what arrived. Documents are opened from their order, never deleted.
  */
 final class OrderPurchasePolicy

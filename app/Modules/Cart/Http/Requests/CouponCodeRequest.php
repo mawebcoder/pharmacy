@@ -9,7 +9,7 @@ use App\Modules\Cart\Models\Coupon;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Validation for a coupon code typed at checkout (roadmap C5.2, S20); the checkout form (S25) uses the same
+ * Validation for a coupon code typed at checkout (roadmap C5.2, S22); the checkout form (S23) uses the same
  * baseRules(). Codes are letters, digits and «-», upper-cased with Latin digits before checking.
  */
 final class CouponCodeRequest extends FormRequest

@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Filament\Resources\Products\Schemas;
 
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
+use App\Modules\Catalog\Filament\Forms\BoxCapacityFields;
 use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
@@ -219,7 +220,7 @@ final class ProductForm
     }
 
     /**
-     * The first SKU, asked for on create so every product has one (S13b). More SKUs, sizes, shipping details and the
+     * The first SKU, asked for on create so every product has one (S14). More SKUs, sizes, shipping details and the
      * suppliers (which give it a selling price, roadmap D3.2) are added on the edit page («تنوع‌ها»). Saved under
      * FIRST_VARIANT; the printed price is typed in toman. The SKU starts out of stock until it has a supplier.
      */
@@ -255,6 +256,7 @@ final class ProductForm
                     ->required()
                     ->helperText('وزن کالا با بسته‌بندی خودش؛ هزینه ارسال از آن حساب می‌شود.')
                     ->rules($rules[ProductVariant::COLUMN_WEIGHT_G]),
+                BoxCapacityFields::section()->columnSpanFull(),
             ]);
     }
 

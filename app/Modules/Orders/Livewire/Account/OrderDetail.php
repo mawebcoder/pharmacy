@@ -15,7 +15,7 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * One order in «سفارش‌ها» (owner, 2026-11-14; the full tracking page stays in S29): number, date, status with its
+ * One order in «سفارش‌ها» (owner, 2026-11-14; the full tracking page stays in S24): number, date, status with its
  * checkpoint tracker (OrderCheckpoints, owner 2026-11-16), items, address, totals and payment, with «پرداخت», «لغو سفارش» or «سفارش دوباره». Everything is read from
  * the order's own copies (roadmap D3.4 «Order pages read only these copies»), and only the owner can open it.
  */

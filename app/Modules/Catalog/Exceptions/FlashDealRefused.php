@@ -9,7 +9,7 @@ use App\Modules\Shared\Support\Toman;
 use RuntimeException;
 
 /**
- * A flash deal change or reservation that cannot be made (roadmap S33); the message is shown as is.
+ * A flash deal change or reservation that cannot be made (roadmap S28); the message is shown as is.
  */
 final class FlashDealRefused extends RuntimeException
 {

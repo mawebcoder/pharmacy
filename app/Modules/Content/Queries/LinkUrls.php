@@ -9,7 +9,7 @@ use App\Modules\Content\Enums\LinkType;
 use Illuminate\Support\Facades\Route;
 
 /**
- * The address a banner or menu item leads to now (roadmap S13b, S34), or null when its target is gone or hidden (the
+ * The address a banner or menu item leads to now (roadmap S14, S29), or null when its target is gone or hidden (the
  * banner or item is then not shown).
  */
 final readonly class LinkUrls

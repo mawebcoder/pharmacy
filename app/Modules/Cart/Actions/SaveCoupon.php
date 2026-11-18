@@ -9,7 +9,7 @@ use App\Modules\Cart\Models\Coupon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Creates or updates a coupon and its include lists (roadmap D3.4, S20).
+ * Creates or updates a coupon and its include lists (roadmap D3.4, S22).
  */
 final class SaveCoupon
 {

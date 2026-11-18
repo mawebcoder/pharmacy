@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use function Pest\Livewire\livewire;
 
 /*
-| «تماس با ما» (roadmap S34): the message is saved for staff; 3 messages every 10 minutes per IP and per mobile.
+| «تماس با ما» (roadmap S29): the message is saved for staff; 3 messages every 10 minutes per IP and per mobile.
 */
 
 /**

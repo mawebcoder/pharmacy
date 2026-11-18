@@ -7,7 +7,7 @@ namespace App\Modules\Identity\Actions;
 use App\Modules\Identity\Models\Customer;
 
 /**
- * Saves the name a customer gives after their first sign-in (roadmap S17); blank parts are stored as null.
+ * Saves the name a customer gives after their first sign-in (roadmap S19); blank parts are stored as null.
  */
 final class UpdateCustomerName
 {

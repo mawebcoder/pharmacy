@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * One supplier price upload from Excel (roadmap D13.9, S16): the file, where it is (PriceImportStatus), its row
+ * One supplier price upload from Excel (roadmap D13.9, S18): the file, where it is (PriceImportStatus), its row
  * counts and who uploaded it. Its checked rows are PriceImportRow.
  */
 final class PriceImport extends Model implements HasActivityLogLabel

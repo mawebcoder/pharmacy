@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where a SKU's commission came from (roadmap D3.2, S15b), most specific first: the SKU's supplier row, the product
+ * Where a SKU's commission came from (roadmap D3.2, S17), most specific first: the SKU's supplier row, the product
  * for that supplier, the product, the brand for that supplier, the brand.
  */
 enum CommissionSource: string implements HasLabel

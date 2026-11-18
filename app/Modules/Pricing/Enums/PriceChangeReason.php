@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Why a SKU price record was written (roadmap D3.2, S15).
+ * Why a SKU price record was written (roadmap D3.2, S16).
  */
 enum PriceChangeReason: string implements HasLabel
 {

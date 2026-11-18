@@ -7,7 +7,7 @@ namespace App\Modules\Cart\Data;
 use App\Modules\Cart\Models\Coupon;
 
 /**
- * A coupon code a signed-in customer typed at checkout, with their cart (roadmap C5.3, S20); the code is normalised.
+ * A coupon code a signed-in customer typed at checkout, with their cart (roadmap C5.3, S22); the code is normalised.
  */
 final readonly class CouponCodeData
 {

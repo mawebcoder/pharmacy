@@ -8,7 +8,7 @@ use App\Modules\Content\Models\Banner;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * The banner library (roadmap D3.6, S13b).
+ * The banner library (roadmap D3.6, S14).
  */
 final class BannerPolicy
 {

@@ -8,7 +8,7 @@ use App\Modules\Pricing\Enums\CommissionSource;
 use App\Modules\Pricing\Models\ProviderPrice;
 
 /**
- * One supplier's offer for a SKU (roadmap D3.2, S15b): its row, the commission that applies to it and from which
+ * One supplier's offer for a SKU (roadmap D3.2, S17): its row, the commission that applies to it and from which
  * level, the selling price it gives (rounded, capped by the printed price; null without a commission) and whether
  * the website can sell from it now.
  */

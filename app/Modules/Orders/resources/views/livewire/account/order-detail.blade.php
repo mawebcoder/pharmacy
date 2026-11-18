@@ -55,7 +55,7 @@
             <h2 id="order-progress" class="font-bold text-ink-900">روند سفارش</h2>
             <x-orders::checkpoints :checkpoints="$checkpoints" class="mt-4" />
 
-            {{-- The carrier's tracking code once the order is on its way (owner, 2026-11-16): the admin types it on «تحویل به حمل» until Tipax fills it (S27). --}}
+            {{-- The carrier's tracking code once the order is on its way (owner, 2026-11-16): the admin types it on «تحویل به حمل» until Tipax fills it (S35). --}}
             @if (in_array($status, [OrderStatus::OnTheWay, OrderStatus::Delivered], true))
                 <div class="mt-5 rounded-card border border-primary-700/20 bg-primary-50 p-3 md:p-4" x-data="{ copiedCode: false }">
                     <div class="flex flex-wrap items-center justify-between gap-3">

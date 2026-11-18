@@ -9,7 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Puts live flash deal prices on their SKUs in the background (roadmap S33; owner, 2026-11-17: all price work runs in
+ * Puts live flash deal prices on their SKUs in the background (roadmap S28; owner, 2026-11-17: all price work runs in
  * the background), on the «pricing» queue: every minute for deals that started or ended, and after a deal is saved or
  * deleted or its units are reserved or released, for those SKUs only.
  */

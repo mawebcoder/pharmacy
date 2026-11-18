@@ -9,7 +9,7 @@ use Closure;
 use Filament\Forms\Components\Select;
 
 /**
- * Admin selects whose options show each item's round image (S13b, decided 2026-11-07).
+ * Admin selects whose options show each item's round image (S14, decided 2026-11-07).
  * - images(): a select over a known list (brands, category paths, tags), searched by the plain label.
  * - skus(): pick products by SKU: one option per SKU with the product name and, below it, the SKU title, code and
  *   id; searched by product name, SKU code or id. The state holds variant ids (AdminOptions::productIdsOfSkus()).

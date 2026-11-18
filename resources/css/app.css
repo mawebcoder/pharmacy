@@ -231,7 +231,7 @@
     }
 }
 
-/* Static page bodies from the admin's rich editor (roadmap S34): readable Persian text, B3 tokens only. */
+/* Static page bodies from the admin's rich editor (roadmap S29): readable Persian text, B3 tokens only. */
 @layer components {
     .page-content {
         @apply space-y-4 text-base leading-8 text-ink-900;

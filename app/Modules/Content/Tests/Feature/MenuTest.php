@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Content\Database\Seeders\DraftPagesSeeder;
+use App\Modules\Content\Database\Seeders\MenusSeeder;
 use App\Modules\Content\Enums\LinkType;
 use App\Modules\Content\Enums\MenuIcon;
 use App\Modules\Content\Enums\MenuLocation;
@@ -22,8 +24,14 @@ use Filament\Facades\Filament;
 
 use function Pest\Livewire\livewire;
 
+beforeEach(function (): void {
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(DraftPagesSeeder::class);
+    $this->seed(MenusSeeder::class);
+});
+
 /*
-| Menus (roadmap S34; owner 2026-11-17): «دسته‌بندی کالاها» stays built from the categories; the header links beside
+| Menus (roadmap S29; owner 2026-11-17): «دسته‌بندی کالاها» stays built from the categories; the header links beside
 | it, the three footer columns and the phone and tablet menu are edited in «منوها». An item picks its target like a
 | banner does and is left out while that target is gone or hidden.
 */

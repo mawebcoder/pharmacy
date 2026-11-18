@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use UnitEnum;
 
 /**
- * «خرید از تأمین‌کننده» (roadmap S30, D13.6): the purchase document rows still to arrive, grouped by supplier, to
+ * «خرید از تأمین‌کننده» (roadmap S25, D13.6): the purchase document rows still to arrive, grouped by supplier, to
  * send to each supplier by print or Excel. Rows come only from documents the admins filled; each row opens its
  * document.
  */

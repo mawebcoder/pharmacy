@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where a menu is shown (roadmap D3.6, S34; owner 2026-11-17). «دسته‌بندی کالاها» and its mega-menu are not a menu:
+ * Where a menu is shown (roadmap D3.6, S29; owner 2026-11-17). «دسته‌بندی کالاها» and its mega-menu are not a menu:
  * they stay built from the categories.
  */
 enum MenuLocation: string implements HasLabel

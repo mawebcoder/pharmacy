@@ -1,5 +1,5 @@
 {{--
-    One social network's mark for the footer (roadmap S35), drawn in currentColor at the size of its class.
+    One social network's mark for the footer (roadmap S30), drawn in currentColor at the size of its class.
     <x-settings::social-icon :platform="SocialPlatform::Instagram" class="size-5" />
 --}}
 @props(['platform'])

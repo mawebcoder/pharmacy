@@ -32,7 +32,7 @@ use Illuminate\Support\Carbon;
 use UnitEnum;
 
 /**
- * The banner library («بنرها», roadmap D3.6, S13b). The admin places banners in home slider widgets; the
+ * The banner library («بنرها», roadmap D3.6, S14). The admin places banners in home slider widgets; the
  * «جایگاه بنرها» admin page for the page-top places was removed at the owner's request (2026-11-07).
  */
 final class BannerResource extends Resource

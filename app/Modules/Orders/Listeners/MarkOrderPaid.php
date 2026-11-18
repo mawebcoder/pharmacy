@@ -9,12 +9,14 @@ use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
+use App\Modules\Orders\Events\OrderPaid;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Payments\Events\PaymentSucceeded;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The payment was verified (roadmap D13.5): the order becomes paid and its coupon used. Runs once per order.
+ * The payment was verified (roadmap D13.5): the order becomes paid and its coupon used, then OrderPaid goes out (after
+ * commit; Shipping packs it, S31). Runs once per order.
  */
 final readonly class MarkOrderPaid
 {
@@ -35,6 +37,7 @@ final readonly class MarkOrderPaid
             ($this->changeStatus)($order, OrderStatus::Paid, OrderActor::System);
             $order->setPaymentStatus(PaymentStatus::Paid)->save();
             ($this->settleCoupon)($order->getId(), paid: true);
+            OrderPaid::dispatch($order->getId());
         });
     }
 }

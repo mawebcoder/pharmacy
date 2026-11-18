@@ -10,7 +10,7 @@ use App\Modules\Content\Models\MenuItem;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * The links of a menu as the storefront shows them (roadmap S34; owner 2026-11-17): its heading and its active items
+ * The links of a menu as the storefront shows them (roadmap S29; owner 2026-11-17): its heading and its active items
  * whose target is live, in order. Cached per location (D15 «menus»); cleared when a menu, an item or a page changes,
  * and kept at most ten minutes so a catalog item that is hidden drops out on its own.
  */

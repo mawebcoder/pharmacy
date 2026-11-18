@@ -11,7 +11,7 @@ use App\Modules\Orders\Support\PurchaseProgress;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Removes a purchase document row typed by mistake (roadmap S30); a row with units received or marked missing stays,
+ * Removes a purchase document row typed by mistake (roadmap S25); a row with units received or marked missing stays,
  * and so does every row once the document's 48-hour edit window has closed.
  */
 final readonly class DeletePurchaseItem

@@ -15,7 +15,7 @@ final class PaymentsServiceProvider extends ModuleServiceProvider
 {
     public function register(): void
     {
-        // The gateway from config/payments.php; S26 adds «zarinpal».
+        // The gateway from config/payments.php; S36 adds «zarinpal».
         $this->app->bind(PaymentGateway::class, fn (): PaymentGateway => match (config('payments.gateway')) {
             FakePaymentGateway::NAME => new FakePaymentGateway,
             default => throw new InvalidArgumentException('Unknown payment gateway «'.config('payments.gateway').'».'),
@@ -27,7 +27,7 @@ final class PaymentsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            // Payment attempts whose window passed without a callback (S25).
+            // Payment attempts whose window passed without a callback (S23).
             $schedule->job(new ExpireStalePayments)->everyMinute()->onOneServer();
         });
     }

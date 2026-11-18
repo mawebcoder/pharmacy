@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where one use of a coupon stands (roadmap D3.4, S20): applied at checkout (a log only), reserved when the payment
+ * Where one use of a coupon stands (roadmap D3.4, S22): applied at checkout (a log only), reserved when the payment
  * link is created, used once the payment is verified, released when the payment fails or expires. Only reserved
  * (while not expired) and used count toward the coupon's limits.
  */

@@ -9,7 +9,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * «زودمصرف» products for the /deals row (roadmap S33): their default SKU's selling supplier has near-expiry stock
+ * «زودمصرف» products for the /deals row (roadmap S28): their default SKU's selling supplier has near-expiry stock
  * (owner, 2026-11-17), sellable and in stock, newest first.
  */
 final readonly class NearExpiryProducts

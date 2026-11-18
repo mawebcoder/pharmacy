@@ -20,7 +20,7 @@ final class CatalogSlug
     {
         $source = $requested ?? (filled($nameEn) ? $nameEn : $nameFa);
 
-        return PersianSlug::unique($source, fn(string $slug): bool => $modelClass::withTrashed() // @phpstan-ignore staticMethod.notFound (soft-deleting models only)
+        return PersianSlug::unique($source, fn (string $slug): bool => $modelClass::withTrashed() // @phpstan-ignore staticMethod.notFound (soft-deleting models only)
             ->where('slug', $slug)
             ->when($ignoreId !== null, fn ($query) => $query->whereKeyNot($ignoreId))
             ->exists());

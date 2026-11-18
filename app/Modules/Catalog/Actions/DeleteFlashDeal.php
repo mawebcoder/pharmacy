@@ -9,7 +9,7 @@ use App\Modules\Catalog\Jobs\SyncFlashDeals;
 use App\Modules\Catalog\Models\FlashDeal;
 
 /**
- * Deletes a flash deal that sold nothing (roadmap S33); one with sales is switched off instead, so orders keep
+ * Deletes a flash deal that sold nothing (roadmap S28); one with sales is switched off instead, so orders keep
  * pointing at it. The SKU's price follows in the background (SyncFlashDeals).
  */
 final readonly class DeleteFlashDeal

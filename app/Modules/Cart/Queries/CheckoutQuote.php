@@ -15,7 +15,7 @@ use App\Modules\Identity\Queries\CustomerAddresses;
 use App\Modules\Settings\Queries\StoreSettings;
 
 /**
- * Works out checkout from the customer's cart as it is now (roadmap S25): current prices and stock, the coupon checked
+ * Works out checkout from the customer's cart as it is now (roadmap S23): current prices and stock, the coupon checked
  * on the fly (nothing is written), shipping at the flat rate («هزینه ارسال») unless the items reach the free-shipping
  * threshold or the coupon makes it free, and the picked address or else the default. PlaceOrder uses the same
  * quote, so what is charged is what was shown.

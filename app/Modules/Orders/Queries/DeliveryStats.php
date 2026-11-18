@@ -8,7 +8,7 @@ use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Models\Order;
 
 /**
- * What the store has delivered, for other modules (roadmap S35 trust counters): delivered orders and the cities they
+ * What the store has delivered, for other modules (roadmap S30 trust counters): delivered orders and the cities they
  * went to (from each order's address snapshot).
  */
 final readonly class DeliveryStats

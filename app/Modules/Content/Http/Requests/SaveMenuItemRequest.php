@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
 /**
- * Validation for a menu item (roadmap C5, S34). The Filament form applies the same baseRules(); the picked item and
+ * Validation for a menu item (roadmap C5, S29). The Filament form applies the same baseRules(); the picked item and
  * the https address are required by the form's fields for their own target types.
  */
 final class SaveMenuItemRequest extends FormRequest

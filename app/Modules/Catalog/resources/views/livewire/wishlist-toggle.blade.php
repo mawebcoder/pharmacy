@@ -1,4 +1,4 @@
-{{-- Seeds and keeps the Alpine «wishlist» store in step (roadmap S18): see App\Modules\Catalog\Livewire\WishlistToggle. --}}
+{{-- Seeds and keeps the Alpine «wishlist» store in step (roadmap S20): see App\Modules\Catalog\Livewire\WishlistToggle. --}}
 <div
     hidden
     x-data

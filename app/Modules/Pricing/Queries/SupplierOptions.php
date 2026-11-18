@@ -10,7 +10,7 @@ use App\Modules\Shared\Support\Toman;
 use Carbon\CarbonImmutable;
 
 /**
- * Suppliers for other modules' admin forms (roadmap S30): their names, and a supplier's current cost of a SKU, which
+ * Suppliers for other modules' admin forms (roadmap S25): their names, and a supplier's current cost of a SKU, which
  * the order purchase form shows only as a hint (the admin types what was really paid).
  */
 final readonly class SupplierOptions

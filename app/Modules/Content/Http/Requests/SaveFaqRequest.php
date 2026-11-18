@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
 /**
- * Validation for a question on /faq (roadmap C5, S34); the Filament form applies the same baseRules().
+ * Validation for a question on /faq (roadmap C5, S29); the Filament form applies the same baseRules().
  */
 final class SaveFaqRequest extends FormRequest
 {

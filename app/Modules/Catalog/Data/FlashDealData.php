@@ -8,7 +8,7 @@ use App\Modules\Catalog\Models\FlashDeal;
 use Illuminate\Support\Carbon;
 
 /**
- * A flash deal as the admin typed it (roadmap S33): SKU, the supplier it sells from (always chosen; null only before
+ * A flash deal as the admin typed it (roadmap S28): SKU, the supplier it sells from (always chosen; null only before
  * validation), deal price (rial), window, optional unit limit, on or off.
  */
 final readonly class FlashDealData

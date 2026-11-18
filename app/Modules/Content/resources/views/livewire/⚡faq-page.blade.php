@@ -6,7 +6,7 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * «پرسش‌های متداول» (roadmap B5 /faq, S34): the active questions under their group's heading, in the admin's order,
+ * «پرسش‌های متداول» (roadmap B5 /faq, S29): the active questions under their group's heading, in the admin's order,
  * each opening its answer in place. Groups without questions are left out.
  */
 new class extends Component

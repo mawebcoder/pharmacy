@@ -30,7 +30,7 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * «پرسش‌های متداول» (roadmap D3.6, S34): questions in a fixed list of groups, with plain-text answers, dragged into
+ * «پرسش‌های متداول» (roadmap D3.6, S29): questions in a fixed list of groups, with plain-text answers, dragged into
  * order; /faq shows the active ones by group. Writes go through the Content actions.
  */
 final class FaqResource extends Resource

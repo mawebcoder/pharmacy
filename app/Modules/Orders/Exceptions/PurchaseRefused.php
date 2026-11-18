@@ -8,7 +8,7 @@ use App\Modules\Shared\Exceptions\BaseException;
 use App\Modules\Shared\Support\PersianDigits;
 
 /**
- * A purchase document change that cannot be made (roadmap S30), with the reason for the admin.
+ * A purchase document change that cannot be made (roadmap S25), with the reason for the admin.
  */
 final class PurchaseRefused extends BaseException
 {

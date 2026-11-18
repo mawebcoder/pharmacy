@@ -33,7 +33,7 @@ return [
             'retries' => (int) env('MELIPAYAMAK_RETRIES', 3),
             'retry_sleep_ms' => (int) env('MELIPAYAMAK_RETRY_SLEEP_MS', 300),
 
-            // Template key => pattern bodyId approved in the Melli Payamak panel. S28 adds the order templates.
+            // Template key => pattern bodyId approved in the Melli Payamak panel. S37 adds the order templates.
             'patterns' => [
                 'otp' => env('MELIPAYAMAK_PATTERN_OTP'),
             ],

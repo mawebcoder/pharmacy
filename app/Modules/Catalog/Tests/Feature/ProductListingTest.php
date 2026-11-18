@@ -143,7 +143,7 @@ describe('filters', function (): void {
             ->attributeValues()->attach($this->gel);
         $cinereCream = sellable([Product::COLUMN_NAME_FA => 'کرم سینره', Product::COLUMN_BRAND_ID => $this->cinere->getId()], [ProductVariant::COLUMN_PRICE => 1_000_000]);
         $cinereCream->attributeValues()->attach($this->cream);
-        // A live flash deal (S33) at 10% off.
+        // A live flash deal (S28) at 10% off.
         FlashDeal::factory()->create([FlashDeal::COLUMN_VARIANT_ID => $cinereCream->variants()->sole()->getId(), FlashDeal::COLUMN_DEAL_PRICE => 900_000]);
         app(SyncFlashDealPrices::class)();
         indexProductsForSearch();
@@ -301,6 +301,6 @@ it('renders a listing page in a fixed number of queries', function (int $product
     $queries = count(DB::getQueryLog());
 
     // The same for 3 and 20 products; the ceiling includes the layout on a cold cache (menus, trust badges and
-    // counters since S34–S35).
+    // counters since S29–S30).
     expect($queries)->toBeLessThan(50);
 })->with([3, 20]);

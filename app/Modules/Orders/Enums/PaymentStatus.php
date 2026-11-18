@@ -9,7 +9,7 @@ use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
  * Where an order's money stands (roadmap D3.4): waiting at the gateway, paid, expired unpaid («منقضی‌شده», like the
- * order; owner, 2026-11-15, was «unpaid»), or owed back after a cancellation (refunded by hand until Zarinpal, S26).
+ * order; owner, 2026-11-15, was «unpaid»), or owed back after a cancellation (refunded by hand until Zarinpal, S36).
  */
 enum PaymentStatus: string implements HasLabel
 {

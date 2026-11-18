@@ -7,7 +7,7 @@ namespace App\Modules\Content\Actions;
 use App\Modules\Content\Models\Faq;
 
 /**
- * Removes a question from /faq (roadmap S34).
+ * Removes a question from /faq (roadmap S29).
  */
 final class DeleteFaq
 {

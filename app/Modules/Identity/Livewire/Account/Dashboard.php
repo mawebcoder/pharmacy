@@ -12,7 +12,7 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * Account home (roadmap B9.9, S18): greeting, default address, saved products, and (on phones) the account menu.
+ * Account home (roadmap B9.9, S20): greeting, default address, saved products, and (on phones) the account menu.
  */
 final class Dashboard extends Component
 {

@@ -37,9 +37,9 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use UnitEnum;
 
 /**
- * Suppliers («تأمین‌کنندگان», roadmap D3.2, S14): who we buy from. What each one charges per SKU is set on each SKU's
+ * Suppliers («تأمین‌کنندگان», roadmap D3.2, S15): who we buy from. What each one charges per SKU is set on each SKU's
  * suppliers page, on the supplier's view page (its SKUs table), or for many at once from Excel (the template and
- * import buttons above the table, roadmap S16). Switching a supplier off ignores all its prices (the SKUs are re-priced). Suppliers are
+ * import buttons above the table, roadmap S18). Switching a supplier off ignores all its prices (the SKUs are re-priced). Suppliers are
  * switched off rather than deleted, so price records keep them.
  */
 final class ProviderResource extends Resource

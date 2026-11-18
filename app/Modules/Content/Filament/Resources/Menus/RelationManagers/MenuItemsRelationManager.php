@@ -27,7 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 /**
- * A menu's links (roadmap S34; owner 2026-11-17): title, icon, where it leads (picked like a banner's target) and an
+ * A menu's links (roadmap S29; owner 2026-11-17): title, icon, where it leads (picked like a banner's target) and an
  * on/off switch, dragged into order. Writes go through the Content actions.
  */
 final class MenuItemsRelationManager extends RelationManager

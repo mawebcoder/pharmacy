@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A message sent from /contact (roadmap D3.6, S34). Staff read it in «پیام‌های تماس» and mark it answered; only the
+ * A message sent from /contact (roadmap D3.6, S29). Staff read it in «پیام‌های تماس» and mark it answered; only the
  * status is logged, not what the customer wrote.
  */
 final class ContactMessage extends Model implements HasActivityLogLabel

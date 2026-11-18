@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Suppliers' prices of SKUs (roadmap D3.2): the rows and which SKUs have any. Which supplier the website sells from
- * is ActiveSuppliers (S15b). Our costs: for the admin and the pricing engine only.
+ * is ActiveSuppliers (S17). Our costs: for the admin and the pricing engine only.
  */
 final readonly class SupplierPrices
 {

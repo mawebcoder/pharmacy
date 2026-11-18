@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Puts each live flash deal's price on its SKU and clears it from SKUs whose deal ended, sold out or was switched
- * off (roadmap S33), with the deal supplier's «زودمصرف» and expiry date while it runs (owner, 2026-11-17). Runs
+ * off (roadmap S28), with the deal supplier's «زودمصرف» and expiry date while it runs (owner, 2026-11-17). Runs
  * every minute (SyncFlashDeals) and after every deal change, reservation or release; the products whose SKUs changed
  * are re-indexed so search and cards show the new price. Pass SKU ids to sync only those.
  */

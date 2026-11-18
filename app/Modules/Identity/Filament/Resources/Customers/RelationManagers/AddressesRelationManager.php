@@ -14,7 +14,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * A customer's addresses on their admin page (roadmap S18), read-only: customers manage their own addresses.
+ * A customer's addresses on their admin page (roadmap S20), read-only: customers manage their own addresses.
  */
 final class AddressesRelationManager extends RelationManager
 {

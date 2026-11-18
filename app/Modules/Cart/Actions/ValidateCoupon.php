@@ -15,7 +15,7 @@ use App\Modules\Catalog\Queries\CouponCatalog;
 use Illuminate\Support\Carbon;
 
 /**
- * Checks a coupon against a cart and works out its discount (roadmap D3.4, S20); the cart page and checkout (S25)
+ * Checks a coupon against a cart and works out its discount (roadmap D3.4, S22); the cart page and checkout (S23)
  * both use it, so the rules live in one place. It only reads: checkout works the discount out on the fly. Limits count
  * uses that are used or reserved (not expired), never the checkout log. In order: active and not deleted, date window, a signed-in customer,
  * first order only, total and per-customer limits, the items it covers, the minimum on those items, then the

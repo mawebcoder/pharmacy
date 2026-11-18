@@ -11,7 +11,7 @@ use App\Modules\Catalog\Queries\PurchasableVariants;
 use Illuminate\Support\Facades\DB;
 
 /**
- * When a guest signs in (roadmap D13.3, owner 2026-11-14, S19): without a cart of their own, the guest cart becomes
+ * When a guest signs in (roadmap D13.3, owner 2026-11-14, S21): without a cart of their own, the guest cart becomes
  * theirs and its token hash is cleared; with one, the guest lines are added to it (same SKU: quantities added and
  * capped at the limit) and the guest cart is deleted. The cookie is removed either way.
  */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Catalog\Actions\AddProductsToCollection;
 use App\Modules\Catalog\Data\ListingCriteria;
+use App\Modules\Catalog\Database\Seeders\PopularCollectionSeeder;
 use App\Modules\Catalog\Database\Seeders\SearchShortcutsSeeder;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Models\Brand;
@@ -26,6 +27,8 @@ use Meilisearch\Client;
 use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(PopularCollectionSeeder::class);
     useSearchIndex();
     $this->vitamin = Product::factory()->active()->create([Product::COLUMN_NAME_FA => 'ویتامین D3 ۱۰۰۰ واحد', Product::COLUMN_SLUG => 'vitamin-d3']);
     ProductVariant::factory()->for($this->vitamin)->create();

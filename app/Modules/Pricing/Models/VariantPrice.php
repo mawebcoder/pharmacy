@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A SKU price record (roadmap D3.2, S15): the printed price, the supplier and cost used, the commission and where it
+ * A SKU price record (roadmap D3.2, S16): the printed price, the supplier and cost used, the commission and where it
  * came from, the selling price and the haraj at one moment. Never updated; the latest one is the SKU's price
  * (product_variants.current_price_id) and order items keep the id they were sold at. Money in Rial. A history table
  * itself, so it is not written to the activity log again.

@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * How the supplier the website sells a SKU from was chosen (roadmap D3.2, S15b).
+ * How the supplier the website sells a SKU from was chosen (roadmap D3.2, S17).
  */
 enum ProviderChoice: string implements HasLabel
 {
@@ -17,7 +17,7 @@ enum ProviderChoice: string implements HasLabel
     case PreferredSku = 'preferred_sku';
     case PreferredProduct = 'preferred_product';
     case Cheapest = 'cheapest';
-    // A live flash deal's supplier replaces the default one (S33, owner 2026-11-17); set on order items, not price records.
+    // A live flash deal's supplier replaces the default one (S28, owner 2026-11-17); set on order items, not price records.
     case FlashDeal = 'flash_deal';
 
     public function label(): string

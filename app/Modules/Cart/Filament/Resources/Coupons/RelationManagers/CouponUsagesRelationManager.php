@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * Each customer's use of the coupon through checkout (roadmap S20): applied at checkout, reserved at the gateway,
+ * Each customer's use of the coupon through checkout (roadmap S22): applied at checkout, reserved at the gateway,
  * used after payment or released when the order expired. Read-only.
  */
 final class CouponUsagesRelationManager extends RelationManager

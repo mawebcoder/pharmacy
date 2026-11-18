@@ -26,6 +26,7 @@ final class IdentityServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         Event::listen(Login::class, RecordAdminLogin::class);
+
         Event::listen([
             RoleAttachedEvent::class,
             RoleDetachedEvent::class,

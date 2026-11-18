@@ -17,7 +17,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * What one supplier charges us for one SKU («قیمت خرید از تأمین‌کننده», roadmap D3.2, S14): cost in Rial, whether
+ * What one supplier charges us for one SKU («قیمت خرید از تأمین‌کننده», roadmap D3.2, S15): cost in Rial, whether
  * the supplier has the SKU now («موجود نزد تأمین‌کننده»), whether the admin sells from it («فروش از این
  * تأمین‌کننده»), and how many hours it needs to deliver. Our cost: never shown on the storefront or sent to
  * Meilisearch. variant_id is a Catalog product_variants id (read as a foreign key only, roadmap C3 rule 1).
@@ -107,7 +107,7 @@ final class ProviderPrice extends Model implements HasActivityLogLabel
     }
 
     /**
-     * Commission for this SKU from this supplier (level 1, S15b); null uses the product or brand levels.
+     * Commission for this SKU from this supplier (level 1, S17); null uses the product or brand levels.
      */
     public function getCommissionPercent(): ?float
     {

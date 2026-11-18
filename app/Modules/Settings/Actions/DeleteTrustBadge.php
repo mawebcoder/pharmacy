@@ -7,7 +7,7 @@ namespace App\Modules\Settings\Actions;
 use App\Modules\Settings\Models\TrustBadge;
 
 /**
- * Removes a trust badge and its image (roadmap S35).
+ * Removes a trust badge and its image (roadmap S30).
  */
 final class DeleteTrustBadge
 {

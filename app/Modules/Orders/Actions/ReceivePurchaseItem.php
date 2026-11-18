@@ -11,7 +11,7 @@ use App\Modules\Orders\Support\PurchaseProgress;
 use Illuminate\Support\Facades\DB;
 
 /**
- * «ثبت دریافت» on a purchase document row (roadmap S30, D13.6): how many units arrived and how many are missing, with
+ * «ثبت دریافت» on a purchase document row (roadmap S25, D13.6): how many units arrived and how many are missing, with
  * a note for the missing ones (wait, substitute or refund is the admin's call). Together at most the row's quantity.
  * The order is ready to pack once every row of a fully covered document has arrived.
  */

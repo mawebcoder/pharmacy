@@ -1,5 +1,5 @@
 {{--
-    The phone and tablet menu (roadmap S34; owner 2026-11-17): the «منو» menu from the admin («منوها»), opened by the
+    The phone and tablet menu (roadmap S29; owner 2026-11-17): the «منو» menu from the admin («منوها»), opened by the
     «منو» button in the header below 1280 px. Items without a live target are left out (MenuLinks).
 --}}
 @php

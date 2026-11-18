@@ -13,7 +13,7 @@ use App\Modules\Shared\Support\IranMobile;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * Sends a 5-digit sign-in code by SMS (roadmap D13.1, S17). While the mobile's last code is still valid no new one is
+ * Sends a 5-digit sign-in code by SMS (roadmap D13.1, S19). While the mobile's last code is still valid no new one is
  * sent (OtpRefused::liveCodeExists, with the seconds left); otherwise 10 codes per day per mobile and 5 per hour per IP. Codes are random_int, unique among unexpired codes; only their keyed hash is stored and they are never logged; older codes for the mobile
  * are removed. The SMS goes out on the «sms» queue (SendSmsJob, encrypted). Returns the normalised mobile.
  */

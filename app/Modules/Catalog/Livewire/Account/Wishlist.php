@@ -12,7 +12,7 @@ use Livewire\WithPagination;
 use TallStackUi\Traits\Interactions;
 
 /**
- * «علاقه‌مندی‌ها» (roadmap B9.9, D3.3, S18): the signed-in customer's saved products as product cards, newest saved
+ * «علاقه‌مندی‌ها» (roadmap B9.9, D3.3, S20): the signed-in customer's saved products as product cards, newest saved
  * first, 24 per page, each with «حذف». Products no longer on the shop are left out.
  */
 final class Wishlist extends Component

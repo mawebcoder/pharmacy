@@ -20,7 +20,7 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * «اطلاعات حساب» (roadmap B9.9, S18): name, national id, email, birth date (Jalali picker, stored Gregorian) and
+ * «اطلاعات حساب» (roadmap B9.9, S20): name, national id, email, birth date (Jalali picker, stored Gregorian) and
  * gender; the mobile is the sign-in identity and cannot be changed here. The theme (owner, 2026-11-14) is saved as soon
  * as it is picked and applied to the page without a reload.
  */

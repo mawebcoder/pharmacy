@@ -10,7 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Closes payment attempts whose window passed without a callback (roadmap D7, S25). Runs every minute.
+ * Closes payment attempts whose window passed without a callback (roadmap D7, S23). Runs every minute.
  */
 final class ExpireStalePayments implements ShouldQueue
 {

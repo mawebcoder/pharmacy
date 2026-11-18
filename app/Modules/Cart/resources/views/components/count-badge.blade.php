@@ -1,4 +1,4 @@
-{{-- The cart's item count on the bag icon (roadmap B9.1, S19), from the Alpine «cart» store; hidden at zero. --}}
+{{-- The cart's item count on the bag icon (roadmap B9.1, S21), from the Alpine «cart» store; hidden at zero. --}}
 <span
     x-data
     x-show="$store.cart.count > 0"

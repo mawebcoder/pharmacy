@@ -11,7 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Reverts coupon reservations whose payment never completed in time (roadmap S20). They already stop counting toward
+ * Reverts coupon reservations whose payment never completed in time (roadmap S22). They already stop counting toward
  * limits once expired; this records the release. Runs every five minutes.
  */
 final class ReleaseExpiredCouponReservations implements ShouldQueue

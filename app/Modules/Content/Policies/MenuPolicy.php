@@ -8,7 +8,7 @@ use App\Modules\Content\Models\Menu;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Site menus (roadmap S34): the five menus exist from the migration, so they are only viewed and updated (heading and
+ * Site menus (roadmap S29): the five menus exist from the migration, so they are only viewed and updated (heading and
  * links). super_admin passes every check through Shield.
  */
 final class MenuPolicy

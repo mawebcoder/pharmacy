@@ -7,7 +7,7 @@ namespace App\Modules\Orders\Data;
 use Carbon\CarbonImmutable;
 
 /**
- * A purchase document row as the admin typed it (S30): which order item, from which supplier, how many, at what unit
+ * A purchase document row as the admin typed it (S25): which order item, from which supplier, how many, at what unit
  * cost (rial), and the units' expiry date for reference.
  */
 final readonly class PurchaseItemData

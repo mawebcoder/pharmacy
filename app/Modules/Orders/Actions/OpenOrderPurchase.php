@@ -13,7 +13,7 @@ use App\Modules\Orders\Support\PurchaseProgress;
 use Illuminate\Support\Facades\DB;
 
 /**
- * «ثبت سند خرید» (roadmap S30, owner 2026-11-16): an admin opens the order's purchase document, empty; its rows are
+ * «ثبت سند خرید» (roadmap S25, owner 2026-11-16): an admin opens the order's purchase document, empty; its rows are
  * typed by hand (SavePurchaseItem). One per order: opening it again returns the same document. Only for a paid order
  * that is not cancelled.
  */

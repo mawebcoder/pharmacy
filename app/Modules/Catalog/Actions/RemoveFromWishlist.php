@@ -7,7 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Models\Wishlist;
 
 /**
- * Removes a product from the customer's wishlist (roadmap S18).
+ * Removes a product from the customer's wishlist (roadmap S20).
  */
 final class RemoveFromWishlist
 {

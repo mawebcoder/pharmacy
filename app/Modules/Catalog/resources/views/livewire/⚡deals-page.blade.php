@@ -11,7 +11,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * «تخفیف‌ها» (/deals, roadmap B5, S33): the live flash deals with one countdown to the last deal's end, the discount
+ * «تخفیف‌ها» (/deals, roadmap B5, S28): the live flash deals with one countdown to the last deal's end, the discount
  * tiers as chips that open the discounted products (/products?off=N), and the «زودمصرف» row (the product list has no
  * near-expiry filter; owner, 2026-11-17). When the countdown reaches zero the page refreshes.
  */

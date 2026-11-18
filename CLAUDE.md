@@ -165,3 +165,24 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run `vendor/bin/pest` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>
+
+# graphify knowledge graph
+
+This project has a graphify knowledge graph at `app/graphify-out/` (git-ignored, built from `app/`). Use it before searching the code. Run every command from the project root.
+
+## Look things up in the graph first
+
+- Before you search or read code to answer a question or plan a change, check whether `app/graphify-out/graph.json` exists. If it does, query the graph first:
+  - `graphify query "<question>" --graph app/graphify-out/graph.json`: broad context, for example "how are products indexed in Meilisearch".
+  - `graphify explain "<Name>" --graph app/graphify-out/graph.json`: one class or concept and its neighbours, for example `graphify explain "ProductListing" --graph app/graphify-out/graph.json`.
+  - `graphify path "<A>" "<B>" --graph app/graphify-out/graph.json`: how two parts connect, for example `graphify path "SaveProductVariant" "ProductSearchIndex"`.
+  - `app/graphify-out/GRAPH_REPORT.md`: god nodes, communities and cross-module links, for a module overview.
+- If a name is ambiguous (exit code 3), retry with `path::Symbol`, for example `app/Modules/Catalog/Queries/ProductListing.php::ProductListing`.
+- Use the graph to find the right files, then read those files to confirm. The graph can be stale, so the code is the final source of truth.
+- If the graph is missing, search normally and suggest building it with `/graphify app`.
+
+## Update the graph after every implementation
+
+- After you finish an implementation (new or changed PHP, Blade or JS files), and before you report to the user, refresh the graph with `graphify update app` (it writes to `app/graphify-out/`). This step is AST-only, fast and free.
+- If docs changed, or files were deleted or moved, run `/graphify app --update` instead (or `--force` after deletions).
+- Say in the report that the graph was updated. Never commit `app/graphify-out/`.

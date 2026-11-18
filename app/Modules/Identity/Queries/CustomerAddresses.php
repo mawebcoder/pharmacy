@@ -9,7 +9,7 @@ use App\Modules\Identity\Models\Address;
 use App\Modules\Locations\Queries\DeliveryLocations;
 
 /**
- * A customer's addresses for checkout (roadmap S25), read by other modules: which address an order goes to (the one
+ * A customer's addresses for checkout (roadmap S23), read by other modules: which address an order goes to (the one
  * picked on the address step if it is still theirs, else their default, else their newest) and its snapshot.
  */
 final readonly class CustomerAddresses

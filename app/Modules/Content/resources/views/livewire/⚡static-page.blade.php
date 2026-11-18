@@ -6,7 +6,7 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * A static page (roadmap B5 /pages/{slug}, S34): breadcrumb, title and the body, cleaned again before it is shown
+ * A static page (roadmap B5 /pages/{slug}, S29): breadcrumb, title and the body, cleaned again before it is shown
  * (PageContent). Inactive, deleted or unknown pages are 404.
  */
 new class extends Component

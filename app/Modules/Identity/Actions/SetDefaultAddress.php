@@ -10,7 +10,7 @@ use App\Modules\Identity\Models\Customer;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Makes one of the customer's addresses their default (roadmap S18); the others stop being default.
+ * Makes one of the customer's addresses their default (roadmap S20); the others stop being default.
  */
 final class SetDefaultAddress
 {

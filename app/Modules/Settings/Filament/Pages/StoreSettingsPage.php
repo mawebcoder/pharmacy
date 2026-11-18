@@ -29,7 +29,7 @@ use Filament\Support\Icons\Heroicon;
 use UnitEnum;
 
 /**
- * «تنظیمات فروشگاه» (roadmap D3.6, started in S19; S35 adds the contact details and social links). «جستجو» pins
+ * «تنظیمات فروشگاه» (roadmap D3.6, started in S21; S30 adds the contact details and social links). «جستجو» pins
  * categories and brands to the search panel (owner, 2026-11-15).
  *
  * @property-read Schema $form

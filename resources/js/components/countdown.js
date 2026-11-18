@@ -1,4 +1,4 @@
-// Flash deal countdown (roadmap B10, S33): «HH:MM:SS» in Persian digits until `endsAt` (ISO time), hours over 24
+// Flash deal countdown (roadmap B10, S28): «HH:MM:SS» in Persian digits until `endsAt` (ISO time), hours over 24
 // included. At zero it stays at «۰۰:۰۰:۰۰» and, when given, calls `onEnd` once (e.g. to refresh the deals).
 const toPersian = (text) => String(text).replace(/\d/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
 

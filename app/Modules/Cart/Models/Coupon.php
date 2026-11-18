@@ -18,7 +18,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A discount code (roadmap D3.4, S20). Money is rial; a percent coupon's value is 1–100. The include lists hold
+ * A discount code (roadmap D3.4, S22). Money is rial; a percent coupon's value is 1–100. The include lists hold
  * catalog ids only (categories cover their subcategories; a product covers all its SKUs); with no list the coupon
  * covers the whole cart. Haraj (sale-priced) items are covered only when applies_to_sale_items is on.
  */

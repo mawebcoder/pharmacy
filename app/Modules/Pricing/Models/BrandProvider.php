@@ -11,7 +11,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A supplier's commission for one brand (roadmap D3.2, S15b, level 4: over the brand's own, under any product
+ * A supplier's commission for one brand (roadmap D3.2, S17, level 4: over the brand's own, under any product
  * commission). brand_id is a Catalog brands id (read as a foreign key only).
  */
 final class BrandProvider extends Model implements HasActivityLogLabel

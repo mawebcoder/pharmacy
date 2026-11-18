@@ -8,7 +8,7 @@ use App\Modules\Cart\Models\Coupon;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Coupons (roadmap D3.4, S20). super_admin passes every check through Shield; operators may look them up.
+ * Coupons (roadmap D3.4, S22). super_admin passes every check through Shield; operators may look them up.
  */
 final class CouponPolicy
 {

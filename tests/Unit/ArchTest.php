@@ -18,6 +18,7 @@ use App\Modules\Pricing\Models\ProviderPriceChange;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Search\Models\SearchLog;
 use App\Modules\Shared\Contracts\HasLabel;
+use App\Modules\Shipping\Models\OrderParcel;
 use App\Modules\System\Models\IntegrationLog;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ForceDeleteBulkAction;
@@ -70,10 +71,10 @@ foreach ($modules as $module) {
     arch("{$module} models record their changes in the audit log")
         ->expect("App\\Modules\\{$module}\\Models")
         ->toUseTrait(LogsActivity::class)
-        // Log tables are records themselves; auditing them would log every log row (the price history tables of S14
-        // and S15 and the import rows of S16 are such records). Media rows change on every processing step; changes to what an image belongs to
-        // are logged on the owner. Addresses, wishlists and carts are customers' own rows, written by them, not admin changes.
-        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class, Cart::class, CartItem::class, CouponUsage::class, OrderItem::class, OrderStatusLog::class, Payment::class]);
+        // Log tables are records themselves; auditing them would log every log row (the price history tables of S15
+        // and S16 and the import rows of S18 are such records). Media rows change on every processing step; changes to what an image belongs to
+        // are logged on the owner. Order parcels are written by packing, never by hand. Addresses, wishlists and carts are customers' own rows, written by them, not admin changes.
+        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class, Cart::class, CartItem::class, CouponUsage::class, OrderItem::class, OrderStatusLog::class, Payment::class, OrderParcel::class]);
 
     arch("{$module} enums have Persian labels")
         ->expect("App\\Modules\\{$module}\\Enums")

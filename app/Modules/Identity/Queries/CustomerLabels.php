@@ -7,7 +7,7 @@ namespace App\Modules\Identity\Queries;
 use App\Modules\Identity\Models\Customer;
 
 /**
- * «نام · موبایل» labels for customer ids in other modules' admin tables (e.g. coupon usages, S20).
+ * «نام · موبایل» labels for customer ids in other modules' admin tables (e.g. coupon usages, S22).
  */
 final readonly class CustomerLabels
 {

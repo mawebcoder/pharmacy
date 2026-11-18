@@ -8,8 +8,8 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Kinds of home page widget (roadmap D3.6, S13b). Each shows at most 6 items. S33 adds flash deals (bundles follow in
- * S33b).
+ * Kinds of home page widget (roadmap D3.6, S14). Each shows at most 6 items. S28 adds flash deals (bundles follow in
+ * S28b).
  */
 enum HomeWidgetType: string implements HasLabel
 {

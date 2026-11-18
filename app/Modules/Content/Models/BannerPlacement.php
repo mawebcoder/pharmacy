@@ -14,7 +14,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * One banner shown in one place, at a position (roadmap D3.6, S13b). place_id is the home widget, category,
+ * One banner shown in one place, at a position (roadmap D3.6, S14). place_id is the home widget, category,
  * collection, brand or tag id; null for the list pages.
  */
 final class BannerPlacement extends Model implements HasActivityLogLabel

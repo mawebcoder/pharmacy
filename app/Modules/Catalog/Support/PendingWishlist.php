@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Support;
 
 /**
- * The product a guest wanted to save before signing in (roadmap S18), kept in the session until they sign in.
+ * The product a guest wanted to save before signing in (roadmap S20), kept in the session until they sign in.
  */
 final class PendingWishlist
 {

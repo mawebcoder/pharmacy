@@ -10,7 +10,7 @@ use App\Modules\Cart\Models\CartItem;
 use App\Modules\Cart\Queries\CurrentCart;
 
 /**
- * «به‌روزرسانی سبد» (owner, 2026-11-14, S19): removes every line that can no longer be bought (no active supplier,
+ * «به‌روزرسانی سبد» (owner, 2026-11-14, S21): removes every line that can no longer be bought (no active supplier,
  * switched off, prescription, cold chain …), so the shopper can continue to checkout. Returns how many were removed.
  */
 final readonly class RemoveUnavailableCartItems

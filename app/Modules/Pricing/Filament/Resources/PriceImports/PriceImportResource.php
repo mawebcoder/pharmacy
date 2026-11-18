@@ -24,7 +24,7 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * Supplier price imports from Excel («ورودهای قیمت», roadmap D13.9, S16): each upload, its status and counts. New
+ * Supplier price imports from Excel («ورودهای قیمت», roadmap D13.9, S18): each upload, its status and counts. New
  * imports start from the suppliers list («ورود قیمت از اکسل»); each one's preview and «اعمال» are on its view page.
  */
 final class PriceImportResource extends Resource

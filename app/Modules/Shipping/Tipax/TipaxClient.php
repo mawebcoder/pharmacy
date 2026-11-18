@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
- * Tipax OM API v4, signing in through v3's Account/token, which v4 lacks (roadmap D6, S22; city calls brought forward in S18, decided 2026-11-14). Signs in with the account's
+ * Tipax OM API v4, signing in through v3's Account/token, which v4 lacks (roadmap D6, S33; city calls brought forward in S20, decided 2026-11-14). Signs in with the account's
  * username, password and API key, keeps the access token in the cache until shortly before it expires, and retries
  * timeouts and server errors. Every call is logged in «گزارش سرویس‌های بیرونی» with secrets hidden.
  */

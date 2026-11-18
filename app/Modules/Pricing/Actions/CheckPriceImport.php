@@ -24,7 +24,7 @@ use Throwable;
  * Reads an uploaded supplier price file and checks every row for the preview (roadmap D13.9): the supplier by id,
  * the SKU by our SKU code then barcode, the cost in toman, the two switches (بله/خیر; blank keeps the current value,
  * or «بله» for a new row), the lead time, the SKU × supplier commission («-» clears it) and «تأمین‌کننده انتخابی»
- * (S15b; one per SKU in a file). Each row keeps its old values and the selling price the new cost would
+ * (S17; one per SKU in a file). Each row keeps its old values and the selling price the new cost would
  * give with the commission. Nothing is saved to the supplier prices here.
  */
 final readonly class CheckPriceImport

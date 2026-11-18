@@ -42,7 +42,7 @@ use Illuminate\Support\Carbon;
 use UnitEnum;
 
 /**
- * Collections (roadmap S13b): hand-picked product lists in the admin's order, with an optional small icon and a
+ * Collections (roadmap S14): hand-picked product lists in the admin's order, with an optional small icon and a
  * schedule. «محصولات محبوب» is the system collection shown in the empty search box.
  */
 final class CollectionResource extends Resource

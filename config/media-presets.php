@@ -83,14 +83,14 @@ return [
             'widths' => [160, 320],
             'formats' => ['webp' => 90],
         ],
-        // Trust badges (S35): licences and seals, any shape.
+        // Trust badges (S30): licences and seals, any shape.
         'trust_badge' => [
             'min_width' => 80, 'min_height' => 80, 'ratio' => null,
             'max_kb' => 512, 'mimes' => ['image/svg+xml', 'image/png', 'image/webp', 'image/jpeg'],
             'widths' => [120, 240],
             'formats' => ['webp' => 90],
         ],
-        // Pharmacists (S35): a square portrait.
+        // Pharmacists (S30): a square portrait.
         'pharmacist_photo' => [
             'min_width' => 400, 'min_height' => 400, 'ratio' => 1,
             'max_kb' => 2048, 'mimes' => ['image/jpeg', 'image/png', 'image/webp'],
@@ -110,7 +110,7 @@ return [
         'category-icon' => ['preset' => 'category_icon', 'widths' => [96, 192], 'sizes' => '(min-width: 1280px) 64px, (min-width: 768px) 56px, 48px'],
         'category-banner-desktop' => ['preset' => 'category_banner_desktop', 'widths' => [768, 1280, 1920], 'sizes' => '(min-width: 1280px) 1216px, 100vw', 'placeholder' => 'thumbhash'],
         'category-banner-mobile' => ['preset' => 'category_banner_mobile', 'widths' => [480, 800], 'sizes' => '100vw', 'placeholder' => 'thumbhash'],
-        // Banners and sliders (roadmap D3.6, decided 2026-11-07 in S13b): desktop from 1280px, tablet from 768px, mobile below.
+        // Banners and sliders (roadmap D3.6, decided 2026-11-07 in S14): desktop from 1280px, tablet from 768px, mobile below.
         'banner-desktop' => ['preset' => 'banner_desktop', 'widths' => [1280, 1920], 'sizes' => '(min-width: 1280px) 1216px, 100vw', 'placeholder' => 'thumbhash'],
         'banner-tablet' => ['preset' => 'banner_tablet', 'widths' => [1024, 1536], 'sizes' => '100vw', 'placeholder' => 'thumbhash'],
         'banner-mobile' => ['preset' => 'banner_mobile', 'widths' => [480, 800], 'sizes' => '100vw', 'placeholder' => 'thumbhash'],

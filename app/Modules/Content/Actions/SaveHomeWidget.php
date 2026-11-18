@@ -10,7 +10,7 @@ use App\Modules\Content\Exceptions\HomeWidgetChangeRefused;
 use App\Modules\Content\Models\HomeWidget;
 
 /**
- * Creates or updates a home widget (roadmap D3.6, S13b): a collection rail needs its collection; brands, categories
+ * Creates or updates a home widget (roadmap D3.6, S14): a collection rail needs its collection; brands, categories
  * and tags need 1 to 6 items; there is at most one flash deal row (owner, 2026-11-17). A new widget goes to the end of
  * the page. A slider's banners are set with
  * SetPlaceBanners.

@@ -25,7 +25,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * What the two supplier-price tables share (a SKU's suppliers, a supplier's SKUs; roadmap D3.2, S15b): each row's
+ * What the two supplier-price tables share (a SKU's suppliers, a supplier's SKUs; roadmap D3.2, S17): each row's
  * commission and level and the selling price it gives, the switches (including «تأمین‌کننده انتخابی»), the shared form fields and the change history. Switches and
  * saves go through SaveProviderPrice, so the SKU is re-priced in the background.
  */

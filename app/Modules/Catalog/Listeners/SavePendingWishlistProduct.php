@@ -9,7 +9,7 @@ use App\Modules\Catalog\Support\PendingWishlist;
 use App\Modules\Identity\Events\CustomerLoggedIn;
 
 /**
- * A guest who pressed a heart was sent to sign in first (roadmap S18); once signed in, that product is saved.
+ * A guest who pressed a heart was sent to sign in first (roadmap S20); once signed in, that product is saved.
  */
 final readonly class SavePendingWishlistProduct
 {

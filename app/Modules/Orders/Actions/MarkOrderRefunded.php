@@ -11,7 +11,7 @@ use App\Modules\Shared\Support\Toman;
 use Illuminate\Support\Facades\DB;
 
 /**
- * «ثبت بازگشت وجه»: a super admin records that a cancelled order's money was paid back by hand (roadmap S29, until
+ * «ثبت بازگشت وجه»: a super admin records that a cancelled order's money was paid back by hand (roadmap S24, until
  * Zarinpal refunds), with the bank or gateway panel reference. Only an order «در انتظار بازگشت وجه»; the change is in
  * the order's audit log. The admin enters what was paid back for the products and for shipping (owner, 2026-11-16),
  * each at most what the customer paid for it (products: subtotal − coupon; shipping: shipping total), together more

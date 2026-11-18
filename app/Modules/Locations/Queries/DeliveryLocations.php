@@ -9,7 +9,7 @@ use App\Modules\Locations\Models\Province;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Places a customer may pick for a delivery address (roadmap S18), for other modules' selects and checks: only
+ * Places a customer may pick for a delivery address (roadmap S20), for other modules' selects and checks: only
  * cities with delivery switched on («ارسال فعال», S05) and their provinces. Cities are Tipax's (ids are Tipax city
  * ids), so no mapping is needed.
  */
@@ -98,7 +98,7 @@ final readonly class DeliveryLocations
     }
 
     /**
-     * A city with its province, for order snapshots (S25): names, Tipax ids (our ids are Tipax's) and whether
+     * A city with its province, for order snapshots (S23): names, Tipax ids (our ids are Tipax's) and whether
      * delivery is on. Null when the city is gone.
      *
      * @return array{province_id: int, province: string, city_id: int, city: string, is_delivery_enabled: bool}|null

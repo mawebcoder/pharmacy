@@ -14,7 +14,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A supplier we buy from («تأمین‌کننده», roadmap D3.2, S14), e.g. Sina's distribution company. What it charges per
+ * A supplier we buy from («تأمین‌کننده», roadmap D3.2, S15), e.g. Sina's distribution company. What it charges per
  * SKU is in provider_prices; an inactive supplier's prices are ignored.
  */
 final class Provider extends Model implements HasActivityLogLabel

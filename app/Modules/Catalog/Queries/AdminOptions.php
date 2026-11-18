@@ -16,7 +16,7 @@ use App\Modules\Shared\Support\PersianDigits;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Options for searchable admin selects, with each item's round image (S13b, decided 2026-11-07). Products are picked
+ * Options for searchable admin selects, with each item's round image (S14, decided 2026-11-07). Products are picked
  * by SKU: one option per SKU (key: the variant id) showing the product name and, below it, the SKU title, code and
  * id; matched by product name, SKU code or id. Use productIdsOfSkus() to save the products.
  * Types: sku, brand, category, collection, tag.

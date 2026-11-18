@@ -8,7 +8,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Wishlist;
 
 /**
- * Saves a product to the customer's wishlist once (roadmap S18); saving it again changes nothing. Only active
+ * Saves a product to the customer's wishlist once (roadmap S20); saving it again changes nothing. Only active
  * products can be saved. Returns whether the product is saved.
  */
 final class AddToWishlist

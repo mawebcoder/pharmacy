@@ -16,7 +16,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A static page (roadmap D3.6, S34) at /pages/{slug}: «درباره ما», «شرایط استفاده», … The body is rich-editor HTML,
+ * A static page (roadmap D3.6, S29) at /pages/{slug}: «درباره ما», «شرایط استفاده», … The body is rich-editor HTML,
  * sanitised again when shown; images in it live on the default filesystem disk. Only active pages are public.
  */
 final class Page extends Model implements HasActivityLogLabel

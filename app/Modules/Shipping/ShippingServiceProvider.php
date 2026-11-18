@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Shipping;
 
+use App\Modules\Orders\Events\OrderPaid;
 use App\Modules\Shared\ModuleServiceProvider;
+use App\Modules\Shipping\Listeners\PackPaidOrder;
 use App\Modules\Shipping\Tipax\TipaxClient;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Event;
 
 final class ShippingServiceProvider extends ModuleServiceProvider
 {
@@ -29,6 +32,9 @@ final class ShippingServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        // A paid order is packed into parcels (roadmap S31, owner 2026-11-17).
+        Event::listen(OrderPaid::class, PackPaidOrder::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             // Provinces and cities from Tipax (roadmap D4.3): Saturdays 03:00 Tehran time, besides every deploy.

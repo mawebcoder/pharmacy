@@ -12,7 +12,7 @@ use App\Modules\Cart\Models\Coupon;
 use App\Modules\Cart\Queries\CurrentCart;
 
 /**
- * Works out a coupon's discount for the customer's cart as it is now (roadmap S20), for checkout to show on the fly.
+ * Works out a coupon's discount for the customer's cart as it is now (roadmap S22), for checkout to show on the fly.
  * It writes nothing; ApplyCouponAtCheckout logs the code once the customer applies it.
  */
 final readonly class QuoteCoupon

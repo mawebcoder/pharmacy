@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where banners are shown (roadmap D3.6, S13b): a home slider widget, the top of one category, collection, brand or
+ * Where banners are shown (roadmap D3.6, S14): a home slider widget, the top of one category, collection, brand or
  * tag page, or the top of a list page. Each place shows at most 6 banners, as a slider when there are several.
  */
 enum BannerPlace: string implements HasLabel

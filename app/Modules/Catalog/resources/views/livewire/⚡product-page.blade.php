@@ -331,7 +331,7 @@ new class extends Component
                 <ul class="space-y-2 border-t border-line-200 pt-3 text-sm text-ink-500">
                     <li class="flex gap-2"><x-ts-icon icon="truck" class="size-5 shrink-0 text-primary-700" /><span>هزینه ارسال @toman($shippingRate)؛ رایگان برای خرید بالای @toman($freeShippingThreshold)</span></li>
                     <li class="flex gap-2"><x-ts-icon icon="shield-check" class="size-5 shrink-0 text-primary-700" /><span>خرید مستقیم از شرکت‌های پخش معتبر</span></li>
-                    {{-- B2 rule 3: the pharmacist in charge on every product (S35). --}}
+                    {{-- B2 rule 3: the pharmacist in charge on every product (S30). --}}
                     @if ($pharmacist !== null)
                         <li class="flex gap-2">
                             <x-ts-icon icon="user-circle" class="size-5 shrink-0 text-primary-700" />

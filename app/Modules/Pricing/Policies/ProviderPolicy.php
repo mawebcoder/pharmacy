@@ -8,7 +8,7 @@ use App\Modules\Pricing\Models\Provider;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Suppliers and their prices (roadmap S14). Supplier prices are our costs: whoever can view suppliers sees them on
+ * Suppliers and their prices (roadmap S15). Supplier prices are our costs: whoever can view suppliers sees them on
  * the SKU page; changing a supplier's prices needs Update:Provider.
  */
 final class ProviderPolicy

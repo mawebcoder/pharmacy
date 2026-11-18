@@ -8,7 +8,7 @@ use App\Modules\Content\Models\Faq;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Questions on /faq (roadmap S34). super_admin passes every check through Shield.
+ * Questions on /faq (roadmap S29). super_admin passes every check through Shield.
  */
 final class FaqPolicy
 {

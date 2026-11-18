@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
 use RuntimeException;
 
 /**
- * Sample flash deals (roadmap S33) so the home page «پیشنهاد لحظه‌ای» row and /deals have something to show: up to 6
+ * Sample flash deals (roadmap S28) so the home page «پیشنهاد لحظه‌ای» row and /deals have something to show: up to 6
  * products for sale get a deal at about 20% off their regular price, each with its own end (2 to 12 hours from now,
  * so the countdown runs to the last one), 20 units each, from the demo supplier «تأمین‌کننده نمونه (پیشنهاد لحظه‌ای)».
  * That supplier is added to the SKUs with «فروش از این تأمین‌کننده» off, so regular prices do not change. The home

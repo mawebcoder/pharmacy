@@ -8,7 +8,7 @@ use App\Modules\Content\Models\Page;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Static pages (roadmap D3.6, S34). super_admin passes every check through Shield.
+ * Static pages (roadmap D3.6, S29). super_admin passes every check through Shield.
  */
 final class PagePolicy
 {

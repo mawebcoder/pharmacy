@@ -12,7 +12,7 @@ use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
 use RuntimeException;
 
 /**
- * The supplier price Excel (roadmap D13.9, S16): its columns, the template (filled with the current supplier
+ * The supplier price Excel (roadmap D13.9, S18): its columns, the template (filled with the current supplier
  * prices, plus a guide sheet), reading an upload, and the error report. Money in the file is toman.
  */
 final class PriceSpreadsheet

@@ -12,7 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 
 /**
- * Laravel's default "web" guard user. Customers get their own model and table in S17.
+ * Laravel's default "web" guard user. Customers get their own model and table in S19.
  */
 #[Hidden([self::COLUMN_PASSWORD, self::COLUMN_REMEMBER_TOKEN])]
 class User extends Authenticatable

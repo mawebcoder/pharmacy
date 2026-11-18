@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One change of a supplier's price row of a SKU (roadmap D3.2, S14): the row's values after the change, who made it
+ * One change of a supplier's price row of a SKU (roadmap D3.2, S15): the row's values after the change, who made it
  * and when. Never updated. A history table itself, so it is not written to the activity log again.
  */
 final class ProviderPriceChange extends Model

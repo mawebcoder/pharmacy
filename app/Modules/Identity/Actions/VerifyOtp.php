@@ -12,7 +12,7 @@ use App\Modules\Shared\Support\PersianNormalizer;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Checks a sign-in code and signs the customer in on the «customer» guard (roadmap D13.1, S17), creating the
+ * Checks a sign-in code and signs the customer in on the «customer» guard (roadmap D13.1, S19), creating the
  * account on first sign-in. A code allows 5 tries and is used once. On APP_ENV=local the bypass code
  * (OTP_BYPASS_CODE) is accepted in place of the sent one. Blocked customers are refused. The caller
  * regenerates the session.

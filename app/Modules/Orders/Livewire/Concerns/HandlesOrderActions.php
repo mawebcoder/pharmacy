@@ -10,7 +10,7 @@ use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Models\Order;
 
 /**
- * «پرداخت» and «سفارش دوباره» for the customer's own orders (S25), shared by the order list, the order page and the
+ * «پرداخت» and «سفارش دوباره» for the customer's own orders (S23), shared by the order list, the order page and the
  * payment result page. Refusals show as a warning toast. «لغو سفارش» is only on the order page (OrderDetail; owner,
  * 2026-11-17).
  */

@@ -19,7 +19,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * The coupon form (roadmap D3.4, S20). A percent coupon has a value 1–100 and an optional cap; a fixed one an amount
+ * The coupon form (roadmap D3.4, S22). A percent coupon has a value 1–100 and an optional cap; a fixed one an amount
  * in toman; free shipping neither. «محدود به» lists are optional: left empty, the coupon covers the whole cart.
  * Products are picked by SKU (as elsewhere in the admin); what is saved is the product, with all its SKUs.
  */

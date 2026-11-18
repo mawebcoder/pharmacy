@@ -15,6 +15,8 @@ use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
+use App\Modules\Shipping\Database\Seeders\TipaxCartonsSeeder;
+use App\Modules\Shipping\Models\ShippingBox;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
@@ -23,7 +25,14 @@ use Illuminate\Support\Facades\Storage;
 
 use function Pest\Livewire\livewire;
 
+function tipaxCarton(int $size): int
+{
+    return ShippingBox::query()->where(ShippingBox::COLUMN_TIPAX_SIZE, $size)->sole()->getId();
+}
+
 beforeEach(function (): void {
+    // The boxes a SKU says how many of it fit (S31).
+    $this->seed(TipaxCartonsSeeder::class);
     Filament::setCurrentPanel('admin');
     Storage::fake('local');
     Storage::fake('media');
@@ -49,6 +58,7 @@ describe('as a content editor', function (): void {
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_TITLE_FA => '۵۰ میلی‌لیتر',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_OFFICIAL_PRICE => '485,000',
                 ProductForm::FIRST_VARIANT.'.'.ProductVariant::COLUMN_WEIGHT_G => 120,
+                ProductForm::FIRST_VARIANT.'.box_capacities.'.tipaxCarton(2) => 6,
             ])
             ->call('create')
             ->assertHasNoFormErrors()
@@ -89,6 +99,7 @@ describe('as a content editor', function (): void {
                     ProductVariant::COLUMN_TITLE_FA => $title,
                     ProductVariant::COLUMN_OFFICIAL_PRICE => $price,
                     ProductVariant::COLUMN_WEIGHT_G => 250,
+                    'box_capacities.'.tipaxCarton(2) => 6,
                     ProductVariant::COLUMN_IS_ACTIVE => true,
                 ])
                 ->assertHasNoFormErrors();

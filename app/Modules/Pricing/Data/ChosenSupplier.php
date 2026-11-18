@@ -7,7 +7,7 @@ namespace App\Modules\Pricing\Data;
 use App\Modules\Pricing\Enums\ProviderChoice;
 
 /**
- * The supplier the website sells a SKU from, and how it was chosen (roadmap D3.2, S15b).
+ * The supplier the website sells a SKU from, and how it was chosen (roadmap D3.2, S17).
  */
 final readonly class ChosenSupplier
 {

@@ -8,7 +8,7 @@ use App\Modules\Content\Models\MenuItem;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * A menu's links (roadmap S34): whoever may update menus adds, changes, reorders and removes them.
+ * A menu's links (roadmap S29): whoever may update menus adds, changes, reorders and removes them.
  */
 final class MenuItemPolicy
 {

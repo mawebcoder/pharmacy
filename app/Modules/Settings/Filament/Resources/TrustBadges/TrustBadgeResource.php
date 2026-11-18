@@ -31,7 +31,7 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * «نمادهای اعتماد» (roadmap D3.6, S35): the footer's seals and licences. Paste e-Namad's or Samandehi's code as they
+ * «نمادهای اعتماد» (roadmap D3.6, S30): the footer's seals and licences. Paste e-Namad's or Samandehi's code as they
  * hand it out (cleaned to their link and image), or upload an image with an optional link; dragged into order.
  */
 final class TrustBadgeResource extends Resource

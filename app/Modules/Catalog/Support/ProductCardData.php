@@ -11,7 +11,7 @@ use App\Modules\Catalog\Models\ProductVariant;
  * What a product card shows (roadmap B9.4): the default SKU (Product::getDefaultVariant()) with its price, the
  * struck-through price and stock, and one corner badge: «زودمصرف» whenever the product is flagged (owner, 2026-11-17:
  * always, with a line saying why it is discounted), else «جدید» for a new product without a discount.
- * $variantId is the SKU «افزودن به سبد» adds (S19). Needs the product's active variants loaded.
+ * $variantId is the SKU «افزودن به سبد» adds (S21). Needs the product's active variants loaded.
  */
 final readonly class ProductCardData
 {

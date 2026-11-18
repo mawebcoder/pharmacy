@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * A social network the store links to from the footer (roadmap D3.6 social links, S35). The footer draws each one's
+ * A social network the store links to from the footer (roadmap D3.6 social links, S30). The footer draws each one's
  * icon (settings::social-icon).
  */
 enum SocialPlatform: string implements HasLabel

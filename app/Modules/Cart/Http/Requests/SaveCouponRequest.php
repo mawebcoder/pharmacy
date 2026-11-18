@@ -13,7 +13,7 @@ use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\Rules\Unique;
 
 /**
- * Validation for a coupon (roadmap C5, S20); the Filament form applies the same baseRules(). Codes are unique
+ * Validation for a coupon (roadmap C5, S22); the Filament form applies the same baseRules(). Codes are unique
  * (deleted coupons included), letters A–Z, digits and «-».
  */
 final class SaveCouponRequest extends FormRequest

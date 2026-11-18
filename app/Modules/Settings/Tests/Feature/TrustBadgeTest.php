@@ -17,7 +17,7 @@ use Filament\Facades\Filament;
 use function Pest\Livewire\livewire;
 
 /*
-| Trust badges (roadmap S35): e-Namad's code is pasted as they hand it out and shown in every page's footer, cleaned
+| Trust badges (roadmap S30): e-Namad's code is pasted as they hand it out and shown in every page's footer, cleaned
 | to their own link and image.
 */
 

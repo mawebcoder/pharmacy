@@ -21,7 +21,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * The orders list (roadmap S29): newest first, from the order's own copies (customer and address snapshots), found by
+ * The orders list (roadmap S24): newest first, from the order's own copies (customer and address snapshots), found by
  * number or mobile, filtered by status, payment and date. A row opens the order's page.
  */
 final class OrdersTable

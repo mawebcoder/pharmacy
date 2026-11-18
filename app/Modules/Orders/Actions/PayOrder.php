@@ -11,7 +11,7 @@ use App\Modules\Payments\Data\PaymentRequestData;
 use App\Modules\Payments\Exceptions\GatewayUnavailable;
 
 /**
- * «پرداخت» on a pending order (roadmap S25, owner 2026-11-14): the order's open payment link is reused, or a new one
+ * «پرداخت» on a pending order (roadmap S23, owner 2026-11-14): the order's open payment link is reused, or a new one
  * is opened when the last attempt failed. The order keeps the prices, coupon and address it was created with.
  * Returns where to send the customer.
  */

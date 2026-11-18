@@ -11,8 +11,8 @@ use App\Modules\Content\Models\ContactMessage;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
- * Saves a message from /contact as new for staff (roadmap S34): at most 3 every 10 minutes from one IP and for one
- * mobile, refused with the minutes to wait (ContactMessageRefused). Staff are not told by SMS or email until S28.
+ * Saves a message from /contact as new for staff (roadmap S29): at most 3 every 10 minutes from one IP and for one
+ * mobile, refused with the minutes to wait (ContactMessageRefused). Staff are not told by SMS or email until S37.
  */
 final class SendContactMessage
 {

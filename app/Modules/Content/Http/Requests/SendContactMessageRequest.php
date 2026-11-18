@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
 /**
- * Validation for the /contact form (roadmap C5, S34); the Livewire page applies the same baseRules().
+ * Validation for the /contact form (roadmap C5, S29); the Livewire page applies the same baseRules().
  */
 final class SendContactMessageRequest extends FormRequest
 {

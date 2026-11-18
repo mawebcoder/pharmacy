@@ -7,7 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Models\Wishlist;
 
 /**
- * Saves a product to the customer's wishlist, or removes it when it is already saved (roadmap S18, heart button).
+ * Saves a product to the customer's wishlist, or removes it when it is already saved (roadmap S20, heart button).
  * Only active products can be added. Returns whether the product is saved now.
  */
 final class ToggleWishlist

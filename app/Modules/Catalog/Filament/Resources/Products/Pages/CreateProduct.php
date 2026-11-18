@@ -10,6 +10,7 @@ use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
+use App\Modules\Catalog\Filament\Forms\BoxCapacityFields;
 use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
 use App\Modules\Catalog\Filament\Resources\Products\Schemas\ProductForm;
 use Filament\Notifications\Notification;
@@ -35,10 +36,17 @@ final class CreateProduct extends CreateRecord
         unset($data[ProductForm::FIRST_VARIANT]);
 
         try {
-            return app(CreateProductAction::class)(
+            $product = app(CreateProductAction::class)(
                 ProductData::fromArray([...ProductForm::withAttributeValueIds($data), 'status' => ProductStatus::Draft]),
                 ProductVariantData::fromArray($firstVariant),
             );
+            $variant = $product->variants()->first();
+
+            if ($variant !== null) {
+                BoxCapacityFields::save($variant->getId(), $firstVariant);
+            }
+
+            return $product;
         } catch (AttributeChangeRefused|ProductChangeRefused $refused) {
             Notification::make()->danger()->title($refused->getMessage())->persistent()->send();
 

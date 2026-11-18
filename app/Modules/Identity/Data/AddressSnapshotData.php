@@ -7,7 +7,7 @@ namespace App\Modules\Identity\Data;
 use App\Modules\Identity\Support\AddressText;
 
 /**
- * A delivery address as an order keeps it (roadmap D3.4 «Snapshot rule», S25): every part copied, with the province
+ * A delivery address as an order keeps it (roadmap D3.4 «Snapshot rule», S23): every part copied, with the province
  * and city names and Tipax ids, so editing the address or the city later never changes a past order.
  */
 final readonly class AddressSnapshotData

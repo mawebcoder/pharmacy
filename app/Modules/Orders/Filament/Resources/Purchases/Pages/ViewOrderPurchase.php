@@ -17,7 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Livewire\Attributes\On;
 
 /**
- * A purchase document's page (S30): «سفارش» goes back to its order; «دریافت کامل همه ردیف‌ها» and the note are for
+ * A purchase document's page (S25): «سفارش» goes back to its order; «دریافت کامل همه ردیف‌ها» and the note are for
  * admins who may update it. Rows are added, changed and received in the relation manager.
  */
 final class ViewOrderPurchase extends ViewRecord

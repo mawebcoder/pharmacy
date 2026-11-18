@@ -70,7 +70,7 @@ final class CollectionProductsRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedPlus)
                     ->visible(fn (): bool => ! $this->isReadOnly())
                     ->schema([
-                        // Picked by SKU (decided 2026-11-07, S13b); the SKUs' products join the collection.
+                        // Picked by SKU (decided 2026-11-07, S14); the SKUs' products join the collection.
                         ImageSelect::skus(Select::make('sku_ids'))
                             ->label('محصولات')
                             ->multiple()

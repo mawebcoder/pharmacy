@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * The first products of a collection a shopper can buy now, in the admin's order: for the empty search box
- * («محصولات محبوب», roadmap D21.2) and the home page's collection widgets (at most 6 each, S13b). Products that are not
+ * («محصولات محبوب», roadmap D21.2) and the home page's collection widgets (at most 6 each, S14). Products that are not
  * for sale or whose default SKU is out of stock are skipped. Loaded with what product cards need.
  */
 final readonly class CollectionProducts

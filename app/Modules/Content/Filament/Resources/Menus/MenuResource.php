@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * «منوها» (roadmap D3.6, S34; owner 2026-11-17): the header links beside «دسته‌بندی کالاها», the three footer columns
+ * «منوها» (roadmap D3.6, S29; owner 2026-11-17): the header links beside «دسته‌بندی کالاها», the three footer columns
  * and the phone and tablet menu. The five menus come with the migration; the admin edits their headings and links.
  */
 final class MenuResource extends Resource

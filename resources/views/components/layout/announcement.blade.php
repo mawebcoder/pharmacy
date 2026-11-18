@@ -1,5 +1,5 @@
-{{-- One dismissible announcement line (roadmap B9.1, B8.2): the free-shipping amount from «تنظیمات فروشگاه» (S19);
-     other texts come from settings in S35. Hidden when there is no text. --}}
+{{-- One dismissible announcement line (roadmap B9.1, B8.2): the free-shipping amount from «تنظیمات فروشگاه» (S21);
+     other texts come from settings in S30. Hidden when there is no text. --}}
 @props(['text' => null])
 
 @php

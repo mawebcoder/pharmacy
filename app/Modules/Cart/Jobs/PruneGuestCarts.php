@@ -9,7 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Deletes guest carts whose 30 days have passed (roadmap D13.3, S19); customers' carts are kept.
+ * Deletes guest carts whose 30 days have passed (roadmap D13.3, S21); customers' carts are kept.
  */
 final class PruneGuestCarts implements ShouldQueue
 {

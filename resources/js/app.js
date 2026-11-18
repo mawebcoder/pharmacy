@@ -21,7 +21,7 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.store('cartRemoval', cartRemoval);
     window.Alpine.magic('copy', () => copyText);
 
-    // The shopper's cart for the add-to-cart buttons and the header (roadmap S19), seeded and updated by cart-state.
+    // The shopper's cart for the add-to-cart buttons and the header (roadmap S21), seeded and updated by cart-state.
     window.Alpine.store('cart', {
         items: {},
         limits: {},
@@ -49,7 +49,7 @@ document.addEventListener('alpine:init', () => {
         },
     });
 
-    // Saved product ids for the heart buttons (roadmap S18), seeded and updated by the wishlist-toggle component.
+    // Saved product ids for the heart buttons (roadmap S20), seeded and updated by the wishlist-toggle component.
     window.Alpine.store('wishlist', {
         ids: [],
         has(id) {

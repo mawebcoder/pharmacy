@@ -1,4 +1,4 @@
-{{-- Toast body after an add when the order is close to free shipping (owner, 2026-11-14, S19). Variables: $summary, $previousProgress (the bar grows from it). --}}
+{{-- Toast body after an add when the order is close to free shipping (owner, 2026-11-14, S21). Variables: $summary, $previousProgress (the bar grows from it). --}}
 @use('App\Modules\Shared\Support\Toman')
 
 <span class="block text-sm">{{ Toman::format($summary->remainingForFreeShipping()) }} تا ارسال رایگان</span>

@@ -9,7 +9,7 @@ use App\Modules\Catalog\Models\Wishlist;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
- * A customer's saved products (roadmap D3.3, S18), for the account pages and the heart buttons.
+ * A customer's saved products (roadmap D3.3, S20), for the account pages and the heart buttons.
  */
 final readonly class CustomerWishlist
 {

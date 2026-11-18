@@ -16,7 +16,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * A trust badge in the footer (roadmap D3.6, S35): the embed code e-Namad or Samandehi hands out (cleaned by
+ * A trust badge in the footer (roadmap D3.6, S30): the embed code e-Namad or Samandehi hands out (cleaned by
  * TrustBadgeEmbed), or an uploaded image such as a licence, with an optional link.
  */
 final class TrustBadge extends Model implements HasActivityLogLabel, HasImagePresets

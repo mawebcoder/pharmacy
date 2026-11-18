@@ -13,7 +13,7 @@ use App\Modules\Pricing\Queries\SupplierOptions;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Creates or changes a flash deal (roadmap S33): the deal price must be below the SKU's regular price (sale price
+ * Creates or changes a flash deal (roadmap S28): the deal price must be below the SKU's regular price (sale price
  * when set, else the price), a SKU has at most one active deal at a time, and the unit limit never drops below what
  * has been sold. The admin always chooses the supplier, which must carry the SKU (owner, 2026-11-17: for deals the
  * supplier is never inherited). The SKU's price follows in the background (SyncFlashDeals).

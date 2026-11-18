@@ -10,7 +10,7 @@ use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderPurchaseItem;
 
 /**
- * The final margin (roadmap S30, owner 2026-11-16): what the customer paid for the order's items less what the
+ * The final margin (roadmap S25, owner 2026-11-16): what the customer paid for the order's items less what the
  * purchase document's rows cost. Final only once the document covers every unit («ثبت‌شده» or later); until then the
  * order shows the checkout estimate (order_items.unit_cost), which is never overwritten.
  */

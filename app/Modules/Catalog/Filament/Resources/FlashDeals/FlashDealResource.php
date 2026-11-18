@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 /**
- * «پیشنهاد لحظه‌ای» (roadmap S33; in «فروش», owner 2026-11-17): a SKU at a deal price between two times, optionally for a limited number
+ * «پیشنهاد لحظه‌ای» (roadmap S28; in «فروش», owner 2026-11-17): a SKU at a deal price between two times, optionally for a limited number
  * of units. While it runs and has units left, the SKU sells at the deal price everywhere; then it goes back to its
  * regular price on its own.
  */
@@ -73,7 +73,7 @@ final class FlashDealResource extends Resource
                         ->label('تنوع (SKU)')
                         ->required()
                         ->live()
-                        // The supplier the site sells this SKU from now (S15b) unless the admin picks another.
+                        // The supplier the site sells this SKU from now (S17) unless the admin picks another.
                         ->afterStateUpdated(fn (Set $set, mixed $state) => $set(FlashDeal::COLUMN_PROVIDER_ID, blank($state) ? null : self::sellingSupplierId((int) $state)))
                         ->rules($rules[FlashDeal::COLUMN_VARIANT_ID])
                         ->columnSpanFull(),
@@ -202,7 +202,7 @@ final class FlashDealResource extends Resource
     }
 
     /**
-     * The supplier the site sells the SKU from now (its latest price record, S15b); null at the printed price.
+     * The supplier the site sells the SKU from now (its latest price record, S17); null at the printed price.
      */
     private static function sellingSupplierId(int $variantId): ?int
     {

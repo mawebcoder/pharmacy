@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * An order's purchase document (roadmap S30, owner 2026-11-16): being filled until every unit of every item has a
+ * An order's purchase document (roadmap S25, owner 2026-11-16): being filled until every unit of every item has a
  * supplier row, then registered, then received when every row has arrived. Worked out by PurchaseProgress.
  */
 enum PurchaseStatus: string implements HasLabel

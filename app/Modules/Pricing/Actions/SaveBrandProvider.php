@@ -8,7 +8,7 @@ use App\Modules\Pricing\Data\BrandProviderData;
 use App\Modules\Pricing\Models\BrandProvider;
 
 /**
- * Sets a supplier's commission for a brand (roadmap D3.2, S15b, level 4). The brand's SKUs that buy from this
+ * Sets a supplier's commission for a brand (roadmap D3.2, S17, level 4). The brand's SKUs that buy from this
  * supplier are re-priced in the background.
  */
 final class SaveBrandProvider

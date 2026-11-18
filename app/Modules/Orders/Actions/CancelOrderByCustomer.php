@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * The customer cancels their order while it is «پرداخت‌شده» or «در حال آماده‌سازی» (owner, 2026-11-16; once on its way,
  * nobody can).
- * The money is marked «در انتظار بازگشت وجه» for the admin to refund (by hand until Zarinpal, S26).
+ * The money is marked «در انتظار بازگشت وجه» for the admin to refund (by hand until Zarinpal, S36).
  */
 final readonly class CancelOrderByCustomer
 {

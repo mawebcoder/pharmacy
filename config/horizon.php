@@ -226,7 +226,7 @@ return [
             'nice' => 0,
         ],
 
-        // "price-import": supplier price Excel imports (roadmap D9, S16): reading and applying big files, one at a time.
+        // "price-import": supplier price Excel imports (roadmap D9, S18): reading and applying big files, one at a time.
         'supervisor-price-import' => [
             'connection' => 'redis',
             'queue' => ['price-import'],
@@ -241,7 +241,7 @@ return [
         ],
 
         // "search": Scout's Meilisearch indexing jobs (S12). One process, so the updates of a product reach
-        // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S13b).
+        // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S14).
         'supervisor-search' => [
             'connection' => 'redis',
             'queue' => ['search'],
@@ -255,7 +255,7 @@ return [
             'nice' => 0,
         ],
 
-        // "sms": SMS sends (roadmap D11.6, S17): short jobs, own workers so sign-in codes never wait behind other work.
+        // "sms": SMS sends (roadmap D11.6, S19): short jobs, own workers so sign-in codes never wait behind other work.
         'supervisor-sms' => [
             'connection' => 'redis',
             'queue' => ['sms'],

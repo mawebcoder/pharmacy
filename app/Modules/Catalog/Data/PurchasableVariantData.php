@@ -7,7 +7,7 @@ namespace App\Modules\Catalog\Data;
 use App\Modules\Media\Contracts\StoredImage;
 
 /**
- * What the cart needs to know about one SKU now (roadmap D13.3, S19): current prices (rial), whether it can be
+ * What the cart needs to know about one SKU now (roadmap D13.3, S21): current prices (rial), whether it can be
  * bought and why not, and its limit per order (SKU, else product, else the store setting).
  */
 final readonly class PurchasableVariantData

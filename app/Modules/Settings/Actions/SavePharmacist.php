@@ -9,7 +9,7 @@ use App\Modules\Settings\Models\Pharmacist;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Adds a pharmacist (at the end) or changes one (roadmap S35). The store has one pharmacist in charge: marking
+ * Adds a pharmacist (at the end) or changes one (roadmap S30). The store has one pharmacist in charge: marking
  * someone in charge takes it from whoever had it.
  */
 final class SavePharmacist

@@ -1,4 +1,4 @@
-{{-- «پیگیری سفارش» (roadmap S29): see App\Modules\Orders\Livewire\TrackOrder. Only the status, its history and the tracking code. --}}
+{{-- «پیگیری سفارش» (roadmap S24): see App\Modules\Orders\Livewire\TrackOrder. Only the status, its history and the tracking code. --}}
 @use('App\Modules\Shared\Support\JalaliDate')
 
 @php

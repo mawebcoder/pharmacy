@@ -17,11 +17,11 @@ final class CatalogServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        // A guest's heart click is saved once they sign in (roadmap S18).
+        // A guest's heart click is saved once they sign in (roadmap S20).
         Event::listen(CustomerLoggedIn::class, SavePendingWishlistProduct::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
-            // Flash deals that started or ended put or take their price on the SKU (roadmap S33).
+            // Flash deals that started or ended put or take their price on the SKU (roadmap S28).
             $schedule->job(new SyncFlashDeals)->everyMinute()->onOneServer();
         });
     }

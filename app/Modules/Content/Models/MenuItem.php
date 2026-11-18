@@ -18,7 +18,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * One link of a menu (roadmap D3.6, S34; owner 2026-11-17): a title, an optional icon, and a target picked like a
+ * One link of a menu (roadmap D3.6, S29; owner 2026-11-17): a title, an optional icon, and a target picked like a
  * banner's, so it follows slug changes; an item whose target is gone or hidden is left out of the menu.
  */
 final class MenuItem extends Model implements HasActivityLogLabel

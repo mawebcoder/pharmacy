@@ -12,10 +12,10 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * «تماس با ما» (roadmap B5 /contact, S34): name, mobile, optional email, a subject and the message, saved for staff
+ * «تماس با ما» (roadmap B5 /contact, S29): name, mobile, optional email, a subject and the message, saved for staff
  * in «پیام‌های تماس». At most 3 messages every 10 minutes per IP and per mobile (SendContactMessage). A signed-in
  * customer's name and mobile are filled in. Beside the form: phone, email, chat links, working hours and address from
- * the store settings (S35), order tracking and the FAQ.
+ * the store settings (S30), order tracking and the FAQ.
  */
 new class extends Component
 {

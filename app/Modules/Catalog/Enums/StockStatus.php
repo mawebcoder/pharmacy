@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Availability of a variant (roadmap D3.1). We hold no stock: this reflects the providers' availability (S14).
+ * Availability of a variant (roadmap D3.1). We hold no stock: this reflects the providers' availability (S15).
  */
 enum StockStatus: string implements HasLabel
 {

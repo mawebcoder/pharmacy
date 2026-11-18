@@ -23,9 +23,9 @@ use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
- * «آدرس‌ها» (roadmap B9.9, D3.3, S18): the customer's addresses as cards (at most 10) with add / edit in a modal,
+ * «آدرس‌ها» (roadmap B9.9, D3.3, S20): the customer's addresses as cards (at most 10) with add / edit in a modal,
  * «پیش‌فرض شود» and delete. Provinces and cities are Tipax's, limited to cities with delivery on (admin «شهرها»).
- * Writes go through the address actions. With forCheckout it is the checkout address step (S25): each card offers
+ * Writes go through the address actions. With forCheckout it is the checkout address step (S23): each card offers
  * «ارسال به این آدرس», which tells the page through the «address-picked» event.
  *
  * @property-read Collection<int, Address> $addresses
@@ -38,7 +38,7 @@ final class Addresses extends Component
 
     public bool $showForm = false;
 
-    /** Shown inside the checkout address step (S25): no account frame, «ارسال به این آدرس» on each card. */
+    /** Shown inside the checkout address step (S23): no account frame, «ارسال به این آدرس» on each card. */
     #[Locked]
     public bool $forCheckout = false;
 

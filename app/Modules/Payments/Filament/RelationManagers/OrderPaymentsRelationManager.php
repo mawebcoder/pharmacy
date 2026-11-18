@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * «تراکنش‌های پرداخت» on an order's admin page (roadmap S29, owner 2026-11-15): every payment attempt, newest first,
+ * «تراکنش‌های پرداخت» on an order's admin page (roadmap S24, owner 2026-11-15): every payment attempt, newest first,
  * read-only. At most one is paid. The relation is built here from the order record, so the Orders module does not
  * need the Payment model (module boundaries, C3).
  */

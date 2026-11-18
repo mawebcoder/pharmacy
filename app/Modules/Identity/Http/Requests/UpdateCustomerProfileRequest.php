@@ -32,7 +32,7 @@ final class UpdateCustomerProfileRequest extends FormRequest
             Customer::COLUMN_NATIONAL_ID => ['nullable', new IranianNationalId],
             Customer::COLUMN_EMAIL => ['nullable', 'email', 'max:120'],
             Customer::COLUMN_GENDER => ['nullable', Rule::enum(Gender::class)],
-            // The Jalali picker sends a Gregorian Y-m-d (decided 2026-11-14, S18).
+            // The Jalali picker sends a Gregorian Y-m-d (decided 2026-11-14, S20).
             Customer::COLUMN_BIRTH_DATE => ['nullable', 'date_format:Y-m-d', 'before:today', 'after:-110 years'],
         ];
     }

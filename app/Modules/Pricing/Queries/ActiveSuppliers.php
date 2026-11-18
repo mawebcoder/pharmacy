@@ -16,7 +16,7 @@ use App\Modules\Pricing\Models\ProductProvider;
 use App\Modules\Pricing\Models\ProviderPrice;
 
 /**
- * Which supplier the website sells each SKU from (roadmap D3.2, S15b).
+ * Which supplier the website sells each SKU from (roadmap D3.2, S17).
  *
  * Commission, per supplier, the first level that is set: SKU × supplier (the supplier's row), product × supplier,
  * product, brand × supplier, brand. Supplier: the SKU's preferred one while it can sell, else the product's preferred

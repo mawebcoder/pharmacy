@@ -9,7 +9,7 @@ use App\Modules\Catalog\Models\FlashDeal;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Gives a flash deal back the units of an order that expired unpaid or was cancelled (roadmap S33): a sold-out deal
+ * Gives a flash deal back the units of an order that expired unpaid or was cancelled (roadmap S28): a sold-out deal
  * that is still in its window goes live again (in the background).
  */
 final readonly class ReleaseFlashDealUnits

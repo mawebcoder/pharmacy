@@ -8,7 +8,7 @@ use App\Modules\Orders\Models\Order;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Orders in the admin (roadmap S29). super_admin passes every check through Shield; operators view orders and move
+ * Orders in the admin (roadmap S24). super_admin passes every check through Shield; operators view orders and move
  * their status (cancelling included). Recording a refund is money going out, so it is left to super admins.
  * Orders are never created or deleted in the admin.
  */

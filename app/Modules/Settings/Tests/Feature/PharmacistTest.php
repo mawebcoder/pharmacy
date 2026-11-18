@@ -17,7 +17,7 @@ use Filament\Facades\Filament;
 use function Pest\Livewire\livewire;
 
 /*
-| The pharmacist in charge (roadmap S35; B2 rule 3): on /pharmacist first, and named on every product page.
+| The pharmacist in charge (roadmap S30; B2 rule 3): on /pharmacist first, and named on every product page.
 */
 
 it('shows the pharmacist in charge first on /pharmacist, with the council number', function (): void {

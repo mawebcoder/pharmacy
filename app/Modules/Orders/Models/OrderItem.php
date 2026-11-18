@@ -215,7 +215,7 @@ final class OrderItem extends Model
     }
 
     /**
-     * The flash deal it was bought under (S33); its units are released when the order expires or is cancelled.
+     * The flash deal it was bought under (S28); its units are released when the order expires or is cancelled.
      */
     public function getFlashDealId(): ?int
     {
@@ -448,7 +448,7 @@ final class OrderItem extends Model
     }
 
     /**
-     * The purchase document rows that provided it (S30).
+     * The purchase document rows that provided it (S25).
      *
      * @return HasMany<OrderPurchaseItem, $this>
      */

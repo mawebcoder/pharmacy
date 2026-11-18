@@ -9,7 +9,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * The home page (roadmap B5, B9.2, S13b): the live widgets of «چیدمان صفحه اصلی» in the admin's order, each with 1 to
+ * The home page (roadmap B5, B9.2, S14): the live widgets of «چیدمان صفحه اصلی» in the admin's order, each with 1 to
  * 6 items; a widget with nothing to show is left out (HomeWidgetItems). With no widget to show, a short welcome and
  * the featured tags.
  */

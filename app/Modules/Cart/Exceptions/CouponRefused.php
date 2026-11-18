@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Why a coupon code cannot be used on this cart (roadmap S20); shown to the customer as is.
+ * Why a coupon code cannot be used on this cart (roadmap S22); shown to the customer as is.
  */
 final class CouponRefused extends BaseException
 {

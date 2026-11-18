@@ -8,7 +8,7 @@ use App\Modules\Content\Models\Menu;
 use App\Modules\Shared\Support\PersianNormalizer;
 
 /**
- * Changes a menu's heading (roadmap S34): the footer column's title; empty shows none.
+ * Changes a menu's heading (roadmap S29): the footer column's title; empty shows none.
  */
 final class SaveMenu
 {

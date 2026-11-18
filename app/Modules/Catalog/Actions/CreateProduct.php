@@ -14,7 +14,7 @@ use App\Modules\Catalog\Support\ProductAttributes;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Creates a product with its first SKU (every product has at least one, S13b). A new product has no photos yet, so it
+ * Creates a product with its first SKU (every product has at least one, S14). A new product has no photos yet, so it
  * is saved as a draft unless it can pass the activation checks (ProductActivation).
  */
 final class CreateProduct

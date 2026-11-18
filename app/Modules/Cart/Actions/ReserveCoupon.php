@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Reserves one use of a coupon when the payment link is created and the customer goes to the gateway (roadmap
- * D13.4; called by S25/S26 after validating the coupon against the order). The coupon row is locked and its rules
+ * D13.4; called by S23/S36 after validating the coupon against the order). The coupon row is locked and its rules
  * re-checked, so two customers paying at the same moment can never pass the total or per-customer limit. The
  * reservation lasts as long as a pending payment (config payments.pending_expiry_minutes); the customer's checkout
  * log row becomes the reservation.

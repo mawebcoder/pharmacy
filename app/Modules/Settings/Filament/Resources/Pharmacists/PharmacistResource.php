@@ -27,7 +27,7 @@ use Filament\Tables\Table;
 use UnitEnum;
 
 /**
- * «داروسازان» (roadmap D3.6, S35): name, council number, photo and bio; one is the pharmacist in charge, shown first
+ * «داروسازان» (roadmap D3.6, S30): name, council number, photo and bio; one is the pharmacist in charge, shown first
  * on /pharmacist and named on every product page.
  */
 final class PharmacistResource extends Resource

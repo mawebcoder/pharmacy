@@ -19,7 +19,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * An order (roadmap D3.4, S25), created when the customer goes to pay. It keeps copies of the address, customer,
+ * An order (roadmap D3.4, S23), created when the customer goes to pay. It keeps copies of the address, customer,
  * coupon and shipping quote, and its items copy names and prices, so later changes never alter it. Money in rial.
  * Status changes go through ChangeOrderStatus, which logs each one.
  */
@@ -87,14 +87,14 @@ final class Order extends Model implements HasActivityLogLabel
     public const string COLUMN_DELIVERED_AT = 'delivered_at';
 
     /**
-     * The carrier's tracking code, typed by the admin when the order goes on its way (S29; Tipax fills it from S27).
+     * The carrier's tracking code, typed by the admin when the order goes on its way (S24; Tipax fills it from S35).
      */
     public const string COLUMN_TRACKING_CODE = 'tracking_code';
 
     public const string COLUMN_REFUNDED_AT = 'refunded_at';
 
     /**
-     * The bank or gateway panel reference of a manual refund (S29).
+     * The bank or gateway panel reference of a manual refund (S24).
      */
     public const string COLUMN_REFUND_REFERENCE = 'refund_reference';
 
@@ -152,7 +152,7 @@ final class Order extends Model implements HasActivityLogLabel
     }
 
     /**
-     * How far its goods have been bought (S30, admin only); null while it has no purchase document.
+     * How far its goods have been bought (S25, admin only); null while it has no purchase document.
      */
     public function getSourcingStatus(): ?SourcingStatus
     {
@@ -525,7 +525,7 @@ final class Order extends Model implements HasActivityLogLabel
     }
 
     /**
-     * Its purchase document (S30), once an admin opened one.
+     * Its purchase document (S25), once an admin opened one.
      *
      * @return HasOne<OrderPurchase, $this>
      */

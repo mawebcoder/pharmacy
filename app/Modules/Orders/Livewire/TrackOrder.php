@@ -12,7 +12,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * «پیگیری سفارش» at /track (roadmap S29): order number and mobile show the order's status, its history and the
+ * «پیگیری سفارش» at /track (roadmap S24): order number and mobile show the order's status, its history and the
  * carrier's tracking code, without signing in. Nothing else of the order is shown. A wrong number and a wrong mobile
  * get the same answer, and each visitor has 10 tries a minute.
  */

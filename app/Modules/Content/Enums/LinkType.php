@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * Where a banner or a menu item leads (roadmap D3.6, S13b, S34). The admin picks the item; the URL is worked out when
+ * Where a banner or a menu item leads (roadmap D3.6, S14, S29). The admin picks the item; the URL is worked out when
  * it is shown (LinkUrls), so it follows slug changes. The catalog types are resolved through Catalog's CatalogLinks,
  * static pages through PageLinks, the site pages by route name.
  */

@@ -10,7 +10,7 @@ use App\Modules\Shared\Support\PersianDigits;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Typed store settings with their defaults (roadmap D3.6, started in S19), cached until SaveStoreSettings changes
+ * Typed store settings with their defaults (roadmap D3.6, started in S21), cached until SaveStoreSettings changes
  * them. Other modules read settings only through this query.
  */
 final readonly class StoreSettings
@@ -47,7 +47,7 @@ final readonly class StoreSettings
     public const string WORKING_HOURS = 'contact.working_hours';
 
     /**
-     * The footer's social links (S35): a list of ['platform' => SocialPlatform value, 'url' => https address], in order.
+     * The footer's social links (S30): a list of ['platform' => SocialPlatform value, 'url' => https address], in order.
      */
     public const string SOCIAL_LINKS = 'social.links';
 
@@ -107,7 +107,7 @@ final readonly class StoreSettings
     }
 
     /**
-     * The one shipping price (rial) until real shipping arrives in phase 8 (S25); free over the threshold.
+     * The one shipping price (rial) until real shipping arrives in phase 8 (S23); free over the threshold.
      */
     public function shippingFlatRate(): int
     {
@@ -186,7 +186,7 @@ final readonly class StoreSettings
     }
 
     /**
-     * The store's phone number as typed («۰۲۱-۱۲۳۴۵۶۷۸»), or null while the admin has not set one (S35).
+     * The store's phone number as typed («۰۲۱-۱۲۳۴۵۶۷۸»), or null while the admin has not set one (S30).
      */
     public function phone(): ?string
     {
@@ -222,7 +222,7 @@ final readonly class StoreSettings
     }
 
     /**
-     * The social links in the admin's order (S35); links to an unknown network are left out.
+     * The social links in the admin's order (S30); links to an unknown network are left out.
      *
      * @return list<array{platform: SocialPlatform, url: string}>
      */

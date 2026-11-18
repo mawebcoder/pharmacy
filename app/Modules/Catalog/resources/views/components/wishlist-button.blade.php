@@ -1,5 +1,5 @@
 {{--
-    Heart button (roadmap S18): saves or removes a product from the wishlist; its state comes from the Alpine
+    Heart button (roadmap S20): saves or removes a product from the wishlist; its state comes from the Alpine
     «wishlist» store. Guests are asked to sign in first. <x-catalog::wishlist-button :product-id="$product->getId()" />
 --}}
 @props(['productId'])

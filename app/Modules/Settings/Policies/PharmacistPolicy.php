@@ -8,7 +8,7 @@ use App\Modules\Settings\Models\Pharmacist;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Pharmacists (roadmap S35): no role is granted them, so only super_admin (through Shield) manages them.
+ * Pharmacists (roadmap S30): no role is granted them, so only super_admin (through Shield) manages them.
  */
 final class PharmacistPolicy
 {

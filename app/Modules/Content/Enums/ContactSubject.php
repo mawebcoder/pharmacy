@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * What a contact message is about (roadmap S34), picked on /contact.
+ * What a contact message is about (roadmap S29), picked on /contact.
  */
 enum ContactSubject: string implements HasLabel
 {

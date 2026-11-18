@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 
 /**
- * The guest cart cookie (roadmap D13.3, owner 2026-11-14, S19): a 40-character random token, never the cart id,
+ * The guest cart cookie (roadmap D13.3, owner 2026-11-14, S21): a 40-character random token, never the cart id,
  * encrypted and signed by the web middleware (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days.
  * The database keeps only its SHA-256 hash.
  */

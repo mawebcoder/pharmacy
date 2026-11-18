@@ -8,7 +8,7 @@ use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
- * How far an order's goods have been bought (roadmap S30, owner 2026-11-16), for the admin only: the order keeps its
+ * How far an order's goods have been bought (roadmap S25, owner 2026-11-16), for the admin only: the order keeps its
  * seven statuses (D3.5). An order without a purchase document has none («بدون سند خرید»). Set by PurchaseProgress.
  */
 enum SourcingStatus: string implements HasLabel

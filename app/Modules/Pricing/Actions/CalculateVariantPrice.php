@@ -12,7 +12,7 @@ use App\Modules\Pricing\Models\VariantPrice;
 
 /**
  * The pricing engine (roadmap D3.2): selling price = the chosen supplier's cost × (1 + its commission %), rounded up
- * to 1,000 toman, never above the printed price (ActiveSuppliers picks the supplier and its commission level, S15b);
+ * to 1,000 toman, never above the printed price (ActiveSuppliers picks the supplier and its commission level, S17);
  * the haraj price is the haraj percentage (the SKU's own, else the product's) off the selling price, rounded down to
  * whole toman (owner, 2026-11-17), so it follows every cost and commission change.
  *

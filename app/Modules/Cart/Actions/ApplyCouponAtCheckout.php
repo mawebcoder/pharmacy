@@ -11,7 +11,7 @@ use App\Modules\Cart\Exceptions\CouponRefused;
 use App\Modules\Cart\Models\CouponUsage;
 
 /**
- * The customer applies a code at checkout (roadmap S20, called by S25): the discount is worked out on the fly and the
+ * The customer applies a code at checkout (roadmap S22, called by S23): the discount is worked out on the fly and the
  * use is logged as «checkout», which does not count toward the coupon's limits. Applying the same code again
  * refreshes that log instead of adding rows.
  */

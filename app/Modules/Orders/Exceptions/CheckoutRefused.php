@@ -8,7 +8,7 @@ use App\Modules\Shared\Exceptions\BaseException;
 use App\Modules\Shared\Support\Toman;
 
 /**
- * Why «پرداخت» did not create an order (roadmap S25, owner 2026-11-14: everything is checked again at that moment);
+ * Why «پرداخت» did not create an order (roadmap S23, owner 2026-11-14: everything is checked again at that moment);
  * checkout reloads with the new figures and shows this.
  */
 final class CheckoutRefused extends BaseException

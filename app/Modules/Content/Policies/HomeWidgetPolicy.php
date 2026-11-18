@@ -8,7 +8,7 @@ use App\Modules\Content\Models\HomeWidget;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Home page widgets («چیدمان صفحه اصلی», roadmap D3.6, S13b).
+ * Home page widgets («چیدمان صفحه اصلی», roadmap D3.6, S14).
  */
 final class HomeWidgetPolicy
 {

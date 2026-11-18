@@ -18,7 +18,7 @@ final class CartServiceProvider extends ModuleServiceProvider
 {
     public function register(): void
     {
-        // «First order only» coupons ask the order history; the Orders module (S25) replaces this binding.
+        // «First order only» coupons ask the order history; the Orders module (S23) replaces this binding.
         $this->app->bindIf(CustomerOrderHistory::class, NoOrdersYet::class);
     }
 
@@ -33,7 +33,7 @@ final class CartServiceProvider extends ModuleServiceProvider
             // Expired guest carts: daily 04:00 Tehran time.
             $schedule->job(new PruneGuestCarts)->dailyAt('04:00')->timezone((string) config('app.display_timezone'))->onOneServer();
 
-            // Coupon reservations whose payment never completed (S20).
+            // Coupon reservations whose payment never completed (S22).
             $schedule->job(new ReleaseExpiredCouponReservations)->everyFiveMinutes()->onOneServer();
         });
     }

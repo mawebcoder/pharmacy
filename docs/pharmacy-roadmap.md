@@ -10,7 +10,7 @@
 - Part B: Product, design system, design standards, screen specifications and competitor insights (B1–B13)
 - Part C: Architecture, stack and standards
 - Part D: Data model, flows, routes, integrations, images, security, testing, DevOps, search engine (D21), reporting & warehouse (D22)
-- Part E: Implementation steps (S00–S40), AI working agreement, entity → step index (E5) and the implementation skill (E6)
+- Part E: Implementation steps (S00–S45), AI working agreement, entity → step index (E5) and the implementation skill (E6)
 - Appendix: glossaries, env template, sources
 
 ---
@@ -156,13 +156,13 @@ Typography scale (mobile / desktop): H1 24/32 px, H2 20/24, H3 17/20, body 15/16
 
 | Route | Page | Key sections / components |
 |---|---|---|
-| `/` | Home | Built by the admin from widgets (D3.6 «Home widgets»): slider, collection rails, brands, categories, tags, trust; later flash deal and bundles (S33) |
+| `/` | Home | Built by the admin from widgets (D3.6 «Home widgets»): slider, collection rails, brands, categories, tags, trust; later flash deal and bundles (S28) |
 | `/collections/{slug}` | Collection PLP | Same as PLP; `popular` is the system collection «محصولات محبوب» |
 | `/categories/{slug}` and `/categories/{category}/{subcategory}` | Category PLP, subcategory PLP | Breadcrumb (خانه › category › subcategory), banner, a swipeable row of boxes — «همه» (the category) and its subcategories, the open one marked — **only subcategories with at least one product for sale** (owner, 2026-11-15), filters (brand, form, suitable-for, price, in-stock, discount %), sort, pagination. A category lists the products of all its subcategories |
 | `/products` | All products («همه کالاها») | The PLP without a scope (owner, 2026-11-15); the target of the empty-result and 404 buttons |
 | any unknown address | 404 page | Designed like the empty states (owner, 2026-11-15): icon, short message and one button «مشاهده همه کالاها» → `/products` (`resources/views/errors/404.blade.php`) |
 | `/brands` and `/brands/{slug}` | Brands list, brand PLP | A–Z index, logo grid (each logo in a white well with a border, owner 2026-11-14); brand header + PLP |
-| `/categories`, `/collections`, `/collections/{slug}` | Categories list, collections list, collection PLP | `/categories`: only the categories (not their subcategories), as a grid of tiles with each category's round icon (3 / 4 / 6 per row; owner, 2026-11-14/15) / collection tiles; optional banner or slider on top (S13b). Addresses use full words (decided 2026-11-07, S13b); the first short ones `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` redirect permanently (301). Tags stay at `/t/{slug}`. |
+| `/categories`, `/collections`, `/collections/{slug}` | Categories list, collections list, collection PLP | `/categories`: only the categories (not their subcategories), as a grid of tiles with each category's round icon (3 / 4 / 6 per row; owner, 2026-11-14/15) / collection tiles; optional banner or slider on top (S14). Addresses use full words (decided 2026-11-07, S14); the first short ones `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` redirect permanently (301). Tags stay at `/t/{slug}`. |
 | `/t/{slug}` | Tag PLP (need/nutrient) | Same as PLP |
 | `/search?q=` | Search PLP | Suggestions, synonyms, "did you mean", zero-result helper (like the empty cart, with «مشاهده همه دسته‌بندی‌ها»; owner, 2026-11-15). The empty search box shows «محصولات محبوب» (D21.2). **One search bar** (owner, 2026-11-15): the page has no box of its own; the header's box holds the query, and without a query (the «جستجو» tab) it gets the cursor |
 | `/products/{slug}` | Product detail (PDP) | Gallery + zoom, brand, badges, price, variant picker, expiry, stock, qty, add-to-cart, sticky buy bar (mobile), tabs (description, ingredients, usage, warnings, side effects, FAQ, reviews), related, ask a pharmacist |
@@ -323,11 +323,11 @@ One-tap removal (owner, 2026-11-15): a bin beside each line's total (cart page) 
 **Phones (owner, 2026-11-15):** the cart's fixed bar shows «جمع سبد» and the amount beside «ادامه خرید»; the cart and both checkout steps have no footer (tablets and up keep it).
 **Confirmation dialog (owner, 2026-11-15):** storefront confirmations use the site's own dialog (`x-ui.confirm-dialog`, `$store.confirm.ask()`; a bottom sheet on phones, a centred dialog from tablets up), never the browser's `confirm()` or `wire:confirm`: «حذف همه», cancelling an order, deleting an address (their buttons spin until the server answers). **On phones every modal is a bottom sheet that can be dragged down to close** (TallStackUI modals with `handle`; our sheets and the filter panel with `x-swipe-close`).
 
-### B9.7 Checkout (as built in S25; owner, 2026-11-14)
+### B9.7 Checkout (as built in S23; owner, 2026-11-14)
 - **Address step (owner, 2026-11-15)**: «بازگشت به سبد» on top of the page; on phones «ادامه با آدرس انتخاب‌شده» is a fixed bar above the bottom navigation, like the cart's; it is always shown and disabled until an address is chosen. Every input of the address form has a placeholder; deleting an address shows a spinner on its button until done.
 - **Flow**: cart «ادامه خرید» → `/checkout/address` **always** → `/checkout` («بازبینی و پرداخت») → gateway → `/checkout/result/{order}`. Guests sign in first and come back to the address step. Stepper on top: آدرس ارسال ← بازبینی و پرداخت (a shipping step returns with real shipping options in phase 7).
 - **Address step**: the customer's address cards (the same list as «آدرس‌ها»: add, edit, make default, delete) with «ارسال به این آدرس» on each; the add/edit form opens in a right-to-left modal; no map pin.
-- **Review**: address with «تغییر آدرس», «ارسال» (one flat «هزینه ارسال», «رایگان» over the threshold or with a free-shipping coupon), items (collapsed on mobile), order note, coupon field (collapsible), totals, «پرداخت <total>». No terms checkbox or terms link on checkout (owner, 2026-11-15); the static pages (terms, privacy, …) are to be linked from the customer's profile later. **Nothing clickable on checkout leads outside the purchase** (owner, 2026-11-15): only the steps back (address, cart) and paying. Under «ارسال» a hint says the parcel's «کد رهگیری» appears on the order's detail page in the account after dispatch (owner, 2026-11-15) — **S27/S29 must show the tracking code there**. Items that can no longer be bought are named in a warning and the button reads «ابتدا سبد خرید را اصلاح کنید».
+- **Review**: address with «تغییر آدرس», «ارسال» (one flat «هزینه ارسال», «رایگان» over the threshold or with a free-shipping coupon), items (collapsed on mobile), order note, coupon field (collapsible), totals, «پرداخت <total>». No terms checkbox or terms link on checkout (owner, 2026-11-15); the static pages (terms, privacy, …) are to be linked from the customer's profile later. **Nothing clickable on checkout leads outside the purchase** (owner, 2026-11-15): only the steps back (address, cart) and paying. Under «ارسال» a hint says the parcel's «کد رهگیری» appears on the order's detail page in the account after dispatch (owner, 2026-11-15) — **S35/S24 must show the tracking code there**. Items that can no longer be bought are named in a warning and the button reads «ابتدا سبد خرید را اصلاح کنید».
 - Desktop: content with the summary column on the end side; mobile: sticky pay button.
 - Never show fees for the first time at the last step.
 
@@ -437,8 +437,8 @@ Icons: Heroicons outline 24 px (20 px in dense UI), stroke 1.5; mirrored when di
 | `laravel/telescope` | Local debugging only | Dev |
 | `laravel/scout` | Search abstraction | Search |
 | `meilisearch/meilisearch-php:^1.17` | Meilisearch client, used from the MVP (decided 2026-11-07 in S12); guzzlehttp/psr7 already provides the HTTP factories, so `http-interop/http-factory-guzzle` is not needed | Search |
-| `swiper` (npm, pinned `14.3.0`) | Home page sliders: banners and, when their items do not fit, the collection, brand, category, tag and trust rows; touch, pen and mouse swipe in every browser incl. Firefox for Android (decided 2026-11-09, S13b) | Content |
-| `openspout/openspout:^4.32` | Excel/CSV reading and writing: search synonyms import (S12), provider price import (S14) | Search, Pricing |
+| `swiper` (npm, pinned `14.3.0`) | Home page sliders: banners and, when their items do not fit, the collection, brand, category, tag and trust rows; touch, pen and mouse swipe in every browser incl. Firefox for Android (decided 2026-11-09, S14) | Content |
+| `openspout/openspout:^4.32` | Excel/CSV reading and writing: search synonyms import (S12), provider price import (S15) | Search, Pricing |
 | `mews/purifier` or Symfony HtmlSanitizer | Sanitize rich text | Shared |
 | `sentry/sentry-laravel` | Error tracking | System |
 | `melipayamak/php` (optional) or own HTTP client | Melli Payamak SMS (D11.6) [CONFIRM package] | Notifications |
@@ -804,7 +804,7 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 **subcategories** (owner, 2026-11-15: **two levels, subcategories in their own table**): `category_id`, `name_fa`, `name_en`, `slug` (unique among all subcategories, deleted ones included), `description`, `sort`, `is_active`, `seo_title`, `seo_description`, soft deletes; the same images and presets as categories. Page `/categories/{category}/{subcategory}`, shown while it and its category are active. Managed in the category's «زیردسته‌ها» tab (add, edit, drag order, delete, restore); **a subcategory used by products cannot be deleted**, and a category with subcategories cannot be deleted. Own Meilisearch index `subcategories` (search suggestions). The migration `2026_11_23_090000` moved every lower-level category into this table (products, extra placements, images, banner placements and links; coupon lists point at the top category; home widget and pinned search ids of lower levels were dropped).
 
-**brands**: `name_fa`, `name_en`, `slug`, `country`, `description`, `commission_percent` (nullable, S15; D3.2), `is_active`, `seo_title`, `seo_description`. The logo is the medialibrary collection `logo` (preset `brand_logo`), not an `*_image_id` column (decided 2026-11-07 in S09).
+**brands**: `name_fa`, `name_en`, `slug`, `country`, `description`, `commission_percent` (nullable, S16; D3.2), `is_active`, `seo_title`, `seo_description`. The logo is the medialibrary collection `logo` (preset `brand_logo`), not an `*_image_id` column (decided 2026-11-07 in S09).
 
 **products**
 
@@ -832,14 +832,14 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | sku, barcode | string | |
 | title_fa | string | e.g. "۳۰ عددی", "طعم پرتقال" |
 | sort | int | admin's order (drag and drop); decides the next SKU when the default is out of stock |
-| official_price | bigint Rial nullable | «قیمت مصرف‌کننده (روی جعبه)», the compare-at price: caps price and sale price for every product type; required for medicines. From S15 it lives on the price record (D3.2) |
-| price | bigint Rial | «قیمت فروش»: our selling price. From S15 it is calculated only (supplier price + commission, D3.2) and lives on the price record; the admin cannot type it |
-| sale_price | bigint Rial nullable | «قیمت حراج»: **worked out by the pricing engine** from `haraj_percent` (owner, 2026-11-17); from S15 it lives on the price record |
+| official_price | bigint Rial nullable | «قیمت مصرف‌کننده (روی جعبه)», the compare-at price: caps price and sale price for every product type; required for medicines. From S16 it lives on the price record (D3.2) |
+| price | bigint Rial | «قیمت فروش»: our selling price. From S16 it is calculated only (supplier price + commission, D3.2) and lives on the price record; the admin cannot type it |
+| sale_price | bigint Rial nullable | «قیمت حراج»: **worked out by the pricing engine** from `haraj_percent` (owner, 2026-11-17); from S16 it lives on the price record |
 | haraj_percent | decimal(5,2) nullable | the SKU's own haraj percentage (0–90); overrides `products.haraj_percent`; null inherits it, 0 = no haraj on this SKU |
-| current_price_id | FK nullable | the latest `variant_prices` record (S15) |
+| current_price_id | FK nullable | the latest `variant_prices` record (S16) |
 | stock_status | enum | `available`, `on_request`, `out_of_stock` (no own stock; reflects provider availability) |
 
-**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S30 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. **«زودمصرف» is per supplier** (owner, 2026-11-17; replaces the product switch `products.is_near_expiry` of 2026-11-16): each supplier row of a SKU (`provider_prices.is_near_expiry` + required `expiry_date`) says whether that supplier's stock is near expiry. The pricing engine copies the selling supplier's flag and date onto the price record (`variant_prices`) and the SKU (`product_variants.is_near_expiry`, `expiry_date`); while a flash deal runs, its supplier's row decides. A near-expiry SKU shows the card badge, and its product page shows «تاریخ انقضا: …» (Jalali) instead of the shelf-life guarantee; a product is «زودمصرف» in search and in the admin product list filter (used to find products to put on haraj) when any of its SKUs is. The price import keeps a row's flag and date; Excel columns for them are not built yet.
+**No expiry date and no «کج‌جعبه» on SKUs** (owner, 2026-11-16; `expiry_date` and `is_damaged_box` dropped): the store has no warehouse yet, buys from the supplier after the order is placed and sells only sound goods, so no exact expiry date is promised. Instead each product has **`products.min_shelf_life_months`** («تضمین اعتبار (ماه)», months only, optional), shown on the product page as «تضمین اعتبار: حداقل N ماه». The real expiry of what was bought is recorded on the S25 purchase document row (`order_purchase_items.expiry_date`), for reference only; nothing checks it. **«زودمصرف» is per supplier** (owner, 2026-11-17; replaces the product switch `products.is_near_expiry` of 2026-11-16): each supplier row of a SKU (`provider_prices.is_near_expiry` + required `expiry_date`) says whether that supplier's stock is near expiry. The pricing engine copies the selling supplier's flag and date onto the price record (`variant_prices`) and the SKU (`product_variants.is_near_expiry`, `expiry_date`); while a flash deal runs, its supplier's row decides. A near-expiry SKU shows the card badge, and its product page shows «تاریخ انقضا: …» (Jalali) instead of the shelf-life guarantee; a product is «زودمصرف» in search and in the admin product list filter (used to find products to put on haraj) when any of its SKUs is. The price import keeps a row's flag and date; Excel columns for them are not built yet.
 | weight_g | int | packaged weight; **required** in the admin (owner, 2026-11-17: shipping prices depend on it); length, width and height stay optional |
 | length_mm, width_mm, height_mm | int | packaged dimensions |
 | dimensions_verified | bool | true after someone measured it |
@@ -850,9 +850,9 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 | image | medialibrary `image` (optional) | the SKU's own photo (another pack or flavour; preset `product`); falls back to the product's main photo in the admin table, cart and the S13 variant picker (decided 2026-11-07) |
 | is_active | bool | |
 
-**At least one SKU** (decided 2026-11-07, S13b): the product create form asks for the first SKU (title, SKU code, stock, box/selling/sale price) and `CreateProduct` saves both in one transaction and makes it the default; deleting a product's last SKU is refused, even for a draft.
+**At least one SKU** (decided 2026-11-07, S14): the product create form asks for the first SKU (title, SKU code, stock, box/selling/sale price) and `CreateProduct` saves both in one transaction and makes it the default; deleting a product's last SKU is refused, even for a draft.
 
-**Default SKU** (decided 2026-11-07, S12): `Product::getDefaultVariant()` is the SKU shown on cards, in quick view and in the search box, sent to Meilisearch, and added by «افزودن به سبد» (S19): the admin's choice (`default_variant_id`) while it is active and in stock; otherwise the first active, in-stock variant in `sort` order; when nothing is in stock, the admin's choice or else the first active variant (shown «ناموجود»). Only the choice is stored, so the default returns to it by itself once it is back in stock. Admin: «پیش‌فرض کن» in the variants table, drag to reorder (`SetDefaultVariant`, `ReorderProductVariants`). The struck-through price is the box price whenever the customer pays less (`compareAtPrice()`; without a box price, the price before the sale), and discount % is measured against it. The variant form shows a «قیمت‌ها چطور کار می‌کنند» guide above the price fields; S15 adds the engine paragraphs to it.
+**Default SKU** (decided 2026-11-07, S12): `Product::getDefaultVariant()` is the SKU shown on cards, in quick view and in the search box, sent to Meilisearch, and added by «افزودن به سبد» (S21): the admin's choice (`default_variant_id`) while it is active and in stock; otherwise the first active, in-stock variant in `sort` order; when nothing is in stock, the admin's choice or else the first active variant (shown «ناموجود»). Only the choice is stored, so the default returns to it by itself once it is back in stock. Admin: «پیش‌فرض کن» in the variants table, drag to reorder (`SetDefaultVariant`, `ReorderProductVariants`). The struck-through price is the box price whenever the customer pays less (`compareAtPrice()`; without a box price, the price before the sale), and discount % is measured against it. The variant form shows a «قیمت‌ها چطور کار می‌کنند» guide above the price fields; S16 adds the engine paragraphs to it.
 
 **collections** (decided 2026-11-07): `name_fa`, `name_en`, `slug`, `description`, optional icon (preset `category_icon`, shown at 24 px), `is_system` (not deletable), `is_active`, `starts_at`, `ends_at`, `sort`. Pivot **collection_product** (`collection_id`, `product_id`, `sort`): hand-picked products in the admin's order. Page `/collections/{slug}` uses the PLP (Meilisearch filter `collection_ids`; changing a collection refreshes its products' documents). The system collection `popular` («محصولات محبوب», created by the migration, slug fixed) feeds the empty search box and can be a home widget. The collection page's default sort is «پیشنهادی» (the admin's order): Meilisearch has no per-collection position, so the listing takes every matching id (≤ 2000), orders them by `collection_product.sort` and pages them itself; the database fallback orders the same way. Admins pick products by SKU (one option per SKU with image, name, SKU title · code · #id); the product is what gets saved.
 
@@ -878,9 +878,9 @@ Conventions: every table has `id` (bigint), `created_at`, `updated_at`. `slug` c
 
 **provider_prices**: `provider_id`, `variant_id`, `cost` (Rial, what we pay), `is_available` («موجود نزد تأمین‌کننده»: set by the supplier or the Excel import), `is_enabled` («فروش از این تأمین‌کننده»: the admin's own on/off, owner 2026-11-09), `lead_time_hours`, `updated_at`. Unique (`provider_id`, `variant_id`). **provider_price_changes** keeps every change of a row (cost, both switches, lead time, who, when). Suppliers and their prices are shown **only on the SKU page** (one page per SKU, opened from the product's SKU table) to admins with supplier permission (super admin by default); each row shows its cost and the selling price it would give with the commission. **Active supplier** = the cheapest row that is enabled, available and whose provider is active; stopping it hands over to the next cheapest automatically (site and Meilisearch follow). The product's SKU table shows the active supplier («تأمین‌کننده فعال») to the same admins. An inactive provider's rows are ignored.
 
-**Commission** (owner, 2026-11-14, S15b): five levels; for each supplier of a SKU the first that is set applies: (1) **SKU × supplier** (`provider_prices.commission_percent`), (2) **product × supplier** (`product_providers.commission_percent`), (3) **product** (`products.commission_percent`), (4) **brand × supplier** (`brand_providers.commission_percent`), (5) **brand** (`brands.commission_percent`). A SKU cannot be saved when neither its product nor its brand has a general commission; the supplier levels only override it.
+**Commission** (owner, 2026-11-14, S17): five levels; for each supplier of a SKU the first that is set applies: (1) **SKU × supplier** (`provider_prices.commission_percent`), (2) **product × supplier** (`product_providers.commission_percent`), (3) **product** (`products.commission_percent`), (4) **brand × supplier** (`brand_providers.commission_percent`), (5) **brand** (`brands.commission_percent`). A SKU cannot be saved when neither its product nor its brand has a general commission; the supplier levels only override it.
 
-**Which supplier the website sells from** (owner, 2026-11-14, S15b): the SKU's preferred supplier («تأمین‌کننده انتخابی», `provider_prices.is_preferred`, one per SKU) while it can sell; else the product's preferred supplier (`product_providers.is_preferred`, one per product) while it can sell for that SKU; else the supplier whose **selling price is lowest** (each cost with its own commission; ties go to the lower cost); else the printed price. Price records keep `provider_choice` (`preferred_sku`, `preferred_product`, `cheapest`) and the commission level in `commission_source`; order items snapshot both (D3.4). A **«راهنمای قیمت‌گذاری»** page in the admin (قیمت‌گذاری menu, every admin) teaches the whole model with definitions, examples, where each thing is set and common questions.
+**Which supplier the website sells from** (owner, 2026-11-14, S17): the SKU's preferred supplier («تأمین‌کننده انتخابی», `provider_prices.is_preferred`, one per SKU) while it can sell; else the product's preferred supplier (`product_providers.is_preferred`, one per product) while it can sell for that SKU; else the supplier whose **selling price is lowest** (each cost with its own commission; ties go to the lower cost); else the printed price. Price records keep `provider_choice` (`preferred_sku`, `preferred_product`, `cheapest`) and the commission level in `commission_source`; order items snapshot both (D3.4). A **«راهنمای قیمت‌گذاری»** page in the admin (قیمت‌گذاری menu, every admin) teaches the whole model with definitions, examples, where each thing is set and common questions.
 
 **Pricing engine** (`Pricing\Actions\CalculateVariantPrice`):
 ```
@@ -892,13 +892,13 @@ haraj          = typed by the admin, optional, must be below the selling price
 ```
 Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % → selling 935,000 toman; with a haraj of 899,000 the customer pays 899,000 and the margin is 49,000. **No supplier, or no active supplier → the SKU is sold at its printed price** and stays in stock (owner, 2026-11-09; flag `sold_at_printed`); only a SKU with neither an active supplier nor a printed price is «ناموجود» (its last price is kept). A new SKU starts out of stock until the job has priced it. A haraj that is no longer below a new selling price is removed, noted on the record, and flagged.
 
-**Storage** (decided 2026-11-09, S14/S15): the records below are the source of truth; `product_variants.price` is a copy of the latest record's selling price written only by the pricing job in the same transaction (search, cards and listings keep reading one row). `official_price` (printed) and the **haraj percentage** (`products.haraj_percent`, overridden per SKU by `product_variants.haraj_percent`; owner, 2026-11-17) are the admin's inputs; the engine works the haraj price out at every recalculation as selling price × (1 − %), rounded down to whole toman, so it follows every supplier cost, commission and supplier change, and copies it into each record (`sale_price`). A fixed haraj amount is no longer entered (it drifted as costs changed); existing ones were converted to their percentage. A new record is written only when something in it changes. **Stock is automatic** (the admin no longer chooses it): in stock when sold from an active supplier or at the printed price, out of stock otherwise. SKUs without any supplier row are listed as «بدون تأمین‌کننده» (they sell at the printed price, so the commission does not shape their margin). `php artisan pricing:recalculate` queues every SKU once after the deploy and runs nightly at 03:00 Tehran time; only real changes are recorded. The SKU page shows the price records as a full table (time, reason, supplier, cost, commission and source, printed, selling, haraj, margin per unit, notes, who), refreshed every 10 s. **Guides** (owner, 2026-11-09): the SKU page, the SKU form, and the commission fields on the product and brand forms show a short Persian guide with a worked example of how pricing works.
+**Storage** (decided 2026-11-09, S15/S16): the records below are the source of truth; `product_variants.price` is a copy of the latest record's selling price written only by the pricing job in the same transaction (search, cards and listings keep reading one row). `official_price` (printed) and the **haraj percentage** (`products.haraj_percent`, overridden per SKU by `product_variants.haraj_percent`; owner, 2026-11-17) are the admin's inputs; the engine works the haraj price out at every recalculation as selling price × (1 − %), rounded down to whole toman, so it follows every supplier cost, commission and supplier change, and copies it into each record (`sale_price`). A fixed haraj amount is no longer entered (it drifted as costs changed); existing ones were converted to their percentage. A new record is written only when something in it changes. **Stock is automatic** (the admin no longer chooses it): in stock when sold from an active supplier or at the printed price, out of stock otherwise. SKUs without any supplier row are listed as «بدون تأمین‌کننده» (they sell at the printed price, so the commission does not shape their margin). `php artisan pricing:recalculate` queues every SKU once after the deploy and runs nightly at 03:00 Tehran time; only real changes are recorded. The SKU page shows the price records as a full table (time, reason, supplier, cost, commission and source, printed, selling, haraj, margin per unit, notes, who), refreshed every 10 s. **Guides** (owner, 2026-11-09): the SKU page, the SKU form, and the commission fields on the product and brand forms show a short Persian guide with a worked example of how pricing works.
 
-**variant_prices** (price records, never updated): `variant_id`, `official_price` (printed), `provider_id` + `provider_cost` (the supplier price used), `commission_percent`, `commission_source` (`product`, `brand`), `price` (selling), `sale_price` (haraj), `reason` (`printed_changed`, `haraj_changed`, `commission_changed`, `provider_price_changed`, `import`, `initial`), `changed_by` (admin id, nullable for jobs), `flags` (json: `capped_by_printed`, `haraj_removed`, `change_over_15_percent`), `created_at`. Any change of the printed price, the haraj, the commission (product or brand) or a supplier price creates a new record. `product_variants.current_price_id` points to the latest record and the site always reads prices from it. **Order items keep `variant_price_id`** (S25/S29), so the sold price, printed price, haraj, commission and supplier cost of that moment stay with the order for real-margin reports. Provider costs never reach Meilisearch or any storefront view.
+**variant_prices** (price records, never updated): `variant_id`, `official_price` (printed), `provider_id` + `provider_cost` (the supplier price used), `commission_percent`, `commission_source` (`product`, `brand`), `price` (selling), `sale_price` (haraj), `reason` (`printed_changed`, `haraj_changed`, `commission_changed`, `provider_price_changed`, `import`, `initial`), `changed_by` (admin id, nullable for jobs), `flags` (json: `capped_by_printed`, `haraj_removed`, `change_over_15_percent`), `created_at`. Any change of the printed price, the haraj, the commission (product or brand) or a supplier price creates a new record. `product_variants.current_price_id` points to the latest record and the site always reads prices from it. **Order items keep `variant_price_id`** (S23/S24), so the sold price, printed price, haraj, commission and supplier cost of that moment stay with the order for real-margin reports. Provider costs never reach Meilisearch or any storefront view.
 
 **Background work** (owner, 2026-11-09): every price calculation runs in a job on the **`pricing`** queue (`RecalculateVariantPrice`, `RecalculatePrices` for a brand, a product or everything); Excel imports run on their own **`price-import`** queue. The admin form shows the expected selling price live while typing; the saved record is written by the job.
 
-**price_imports** (as built in S16): `file_path`, `original_name`, `status` (`pending`, `processing`, `previewed`, `applying`, `done`, `failed`), `rows_total`, `rows_matched`, `rows_updated`, `rows_failed`, `error` (file could not be read), `admin_id`, `applied_at`; each row names its own supplier, so there is no `provider_id`. **price_import_rows**: the checked rows for the preview (supplier, matched SKU and how, new and old cost and switches, lead time, the selling price the new cost gives with the commission, whether it changes anything, or the reason it cannot be imported, and the raw cells). The error report is generated from these rows when downloaded.
+**price_imports** (as built in S18): `file_path`, `original_name`, `status` (`pending`, `processing`, `previewed`, `applying`, `done`, `failed`), `rows_total`, `rows_matched`, `rows_updated`, `rows_failed`, `error` (file could not be read), `admin_id`, `applied_at`; each row names its own supplier, so there is no `provider_id`. **price_import_rows**: the checked rows for the preview (supplier, matched SKU and how, new and old cost and switches, lead time, the selling price the new cost gives with the commission, whether it changes anything, or the reason it cannot be imported, and the raw cells). The error report is generated from these rows when downloaded.
 
 ### D3.3 Customers
 
@@ -906,7 +906,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 **otp_codes**: `mobile`, `code_hash`, `purpose` (`login`), `expires_at` (2 min), `attempts`, `ip`. Rate limit: 1 per 2 min per mobile, 5 per hour per IP.
 
-**addresses**: `customer_id`, `title`, `receiver_name`, `receiver_mobile`, `province_id`, `city_id` (Tipax ids, D4), `main_street` (required in the form), `side_street`, `alley`, `block`, `plaque`, `unit`, `floor`, `full_address` (now optional «توضیحات تکمیلی»; owner, 2026-11-14), `postal_code`, `is_default`; **one generator, `Identity\Support\AddressText`** (`line()`, `sections()`), builds the address text everywhere (address cards in the account and checkout, checkout summary, orders) in the Iran Post order: province، city، main street، side street، alley، block، plaque، floor، unit، extra directions. **Postal code** (owner, 2026-11-14): 10 digits, the first five never 0 or 2, not one digit repeated (`Shared\Rules\IranianPostalCode`). **Receiver mobile**: real operator prefixes only (`IranMobile`; 0900 added, owner 2026-11-14); soft deletes (orders keep `address_id` beside their snapshot). No map pin, coordinates, region or neighbourhood (owner, 2026-11-14, S18). At most 10 per customer; the first (or the one marked) is the only default; deleting the default promotes the newest remaining address. Cities offered: Tipax cities with «ارسال فعال» on.
+**addresses**: `customer_id`, `title`, `receiver_name`, `receiver_mobile`, `province_id`, `city_id` (Tipax ids, D4), `main_street` (required in the form), `side_street`, `alley`, `block`, `plaque`, `unit`, `floor`, `full_address` (now optional «توضیحات تکمیلی»; owner, 2026-11-14), `postal_code`, `is_default`; **one generator, `Identity\Support\AddressText`** (`line()`, `sections()`), builds the address text everywhere (address cards in the account and checkout, checkout summary, orders) in the Iran Post order: province، city، main street، side street، alley، block، plaque، floor، unit، extra directions. **Postal code** (owner, 2026-11-14): 10 digits, the first five never 0 or 2, not one digit repeated (`Shared\Rules\IranianPostalCode`). **Receiver mobile**: real operator prefixes only (`IranMobile`; 0900 added, owner 2026-11-14); soft deletes (orders keep `address_id` beside their snapshot). No map pin, coordinates, region or neighbourhood (owner, 2026-11-14, S20). At most 10 per customer; the first (or the one marked) is the only default; deleting the default promotes the newest remaining address. Cities offered: Tipax cities with «ارسال فعال» on.
 
 **wishlists**: `customer_id`, `product_id`.
 **reviews**: `product_id`, `customer_id`, `order_item_id` (nullable → verified buyer), `rating` 1–5, `body`, `status` (`pending`, `approved`, `rejected`).
@@ -915,16 +915,16 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.4 Cart, checkout and orders
 
-**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `address_id` (S25: the address picked for this order; without a pick, or when it was deleted, checkout uses the customer's **default** address; picking for an order never changes the default; owner, 2026-11-14), `shipping_quote_id` (S21), `expires_at` (guests, 30 days).
+**carts**: `customer_id` (nullable, unique), `session_token_hash` (guest: SHA-256 of the cookie token, never the token), `address_id` (S23: the address picked for this order; without a pick, or when it was deleted, checkout uses the customer's **default** address; picking for an order never changes the default; owner, 2026-11-14), `shipping_quote_id` (S31), `expires_at` (guests, 30 days).
 **cart_items**: `cart_id`, `variant_id`, `quantity`, `unit_price_snapshot` (the price last shown, only to tell the shopper it changed; the cart always uses the current price). Unique (`cart_id`, `variant_id`).
 
-**Cart rules** (owner, 2026-11-14, S19): the **guest cart cookie** `cart_token` holds a 40-character random token (never the cart id), encrypted and signed (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days; created on the first add. **Limit per order** per SKU: the SKU's `max_per_order`, else `products.max_per_order`, else the store setting «حداکثر تعداد هر کالا در یک سفارش» (default 10); «+» greys out at the limit. **On sign-in**: without a cart of their own the guest cart becomes the customer's and its token hash is cleared; with one, the guest lines are added to it (quantities summed, capped at the limit) and the guest cart is deleted; the cookie is removed. **Unavailable lines** (no active supplier so out of stock, switched off, prescription, cold chain): greyed with the reason, left out of the total; «ادامه خرید» stays disabled until «به‌روزرسانی سبد» removes them. **Price change**: shown once on the line («قیمت این کالا از … به … کاهش/افزایش یافت»), then taken as seen. **Feedback**: no toast on add/remove (the stepper and header count show it); after an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar; refusals show as warnings. **Product cards**: «+» on every in-stock card, then a «− n +» stepper on its own line under a fixed two-line price area (same layout with or without haraj); on hover only the card border changes colour (owner, 2026-11-14; was a lift with a shadow). A deleted account's leftover session counts as a guest. `GET /cart/quantities` returns `{ data: { items: { <variant id>: <qty> }, count } }` (lightweight, `no-store`, 120/min) for the cards. Expired guest carts are deleted daily (04:00).
-**settings** (started in S19): key/value, read through `Settings\Queries\StoreSettings` (cached); admin «تنظیمات فروشگاه» (super admin): `cart.max_quantity_per_order` (10), `cart.free_shipping_threshold` (5,000,000 rial = 500,000 toman; 0 = off; shown in the cart and the announcement bar), `shipping.flat_rate` («هزینه ارسال», 500,000 rial, S25), and «تماس» (owner, 2026-11-14): `contact.whatsapp_number` (normalised `09…`, links `wa.me/98…`), `contact.telegram_username` (5–32 letters, digits or `_`, accepts `@name` or a `t.me` link; links `t.me/<name>`), `contact.chat_message_product` (draft with `{product}`, `{variant}` in brackets when a SKU was picked, `{link}`) and `contact.chat_message_general` (header). «مشاوره با داروساز» (header, WhatsApp icon, icon-only below desktop) and «سؤال خود را اینجا بپرسید» (product page) open a confirmation, then the chat with the draft; with both apps set the sheet offers both; with neither, the buttons are hidden. S35 adds the rest.
+**Cart rules** (owner, 2026-11-14, S21): the **guest cart cookie** `cart_token` holds a 40-character random token (never the cart id), encrypted and signed (EncryptCookies), HttpOnly, SameSite=Lax, Secure on HTTPS, 30 days; created on the first add. **Limit per order** per SKU: the SKU's `max_per_order`, else `products.max_per_order`, else the store setting «حداکثر تعداد هر کالا در یک سفارش» (default 10); «+» greys out at the limit. **On sign-in**: without a cart of their own the guest cart becomes the customer's and its token hash is cleared; with one, the guest lines are added to it (quantities summed, capped at the limit) and the guest cart is deleted; the cookie is removed. **Unavailable lines** (no active supplier so out of stock, switched off, prescription, cold chain): greyed with the reason, left out of the total; «ادامه خرید» stays disabled until «به‌روزرسانی سبد» removes them. **Price change**: shown once on the line («قیمت این کالا از … به … کاهش/افزایش یافت»), then taken as seen. **Feedback**: no toast on add/remove (the stepper and header count show it); after an add, when 40 % or less of the free-shipping amount is left, a toast shows the progress bar; refusals show as warnings. **Product cards**: «+» on every in-stock card, then a «− n +» stepper on its own line under a fixed two-line price area (same layout with or without haraj); on hover only the card border changes colour (owner, 2026-11-14; was a lift with a shadow). A deleted account's leftover session counts as a guest. `GET /cart/quantities` returns `{ data: { items: { <variant id>: <qty> }, count } }` (lightweight, `no-store`, 120/min) for the cards. Expired guest carts are deleted daily (04:00).
+**settings** (started in S21): key/value, read through `Settings\Queries\StoreSettings` (cached); admin «تنظیمات فروشگاه» (super admin): `cart.max_quantity_per_order` (10), `cart.free_shipping_threshold` (5,000,000 rial = 500,000 toman; 0 = off; shown in the cart and the announcement bar), `shipping.flat_rate` («هزینه ارسال», 500,000 rial, S23), and «تماس» (owner, 2026-11-14): `contact.whatsapp_number` (normalised `09…`, links `wa.me/98…`), `contact.telegram_username` (5–32 letters, digits or `_`, accepts `@name` or a `t.me` link; links `t.me/<name>`), `contact.chat_message_product` (draft with `{product}`, `{variant}` in brackets when a SKU was picked, `{link}`) and `contact.chat_message_general` (header). «مشاوره با داروساز» (header, WhatsApp icon, icon-only below desktop) and «سؤال خود را اینجا بپرسید» (product page) open a confirmation, then the chat with the draft; with both apps set the sheet offers both; with neither, the buttons are hidden. S30 adds the rest.
 
 **coupons**: `code` (unique, case-insensitive; stored upper-case with Latin digits), `type` (`percent`, `fixed`, `free_shipping`), `value` (percent 1–100, or rial), `max_discount` (percent only), `min_order_amount`, `applies_to_sale_items`, `starts_at`, `ends_at`, `usage_limit_total`, `usage_limit_per_customer`, `first_order_only`, `is_active`, soft deletes. Pivots **coupon_categories**, **coupon_brands**, **coupon_products** (include lists).
-**coupon_usages**: `coupon_id`, `customer_id`, `order_id` (foreign key added with the orders table, S25), `discount_amount`, `status` (`CouponUsageStatus`: `checkout`, `reserved`, `used`, `released`), `reserved_until`, `used_at`, `released_at`, timestamps.
+**coupon_usages**: `coupon_id`, `customer_id`, `order_id` (foreign key added with the orders table, S23), `discount_amount`, `status` (`CouponUsageStatus`: `checkout`, `reserved`, `used`, `released`), `reserved_until`, `used_at`, `released_at`, timestamps.
 
-**Coupon rules** (owner, 2026-11-14, S20): **one coupon per order**. The include lists are optional: **all empty = the whole cart**; when filled, an item is covered if its product is listed, its brand is listed, or it sits in a listed category **or in one of its subcategories** (main or extra; owner, 2026-11-15) (any list may match); a listed product covers **all its SKUs**; no exclude lists. **The coupon is applied at checkout, not in the cart** (owner, 2026-11-14: the cart may belong to a guest; checkout always has a signed-in customer), and carts store no coupon. **Haraj (sale-priced) items** are covered only when the coupon's «شامل کالاهای حراج» switch is on. The **minimum order counts only the covered items**, and the discount applies only to them: percent of the covered amount (capped by `max_discount`), a fixed amount never above the covered amount, rounded down to whole toman; free shipping gives no item discount. **Checkout works the discount out on the fly** (`Cart\Actions\QuoteCoupon` → `ValidateCoupon`, which only reads). **Usage lifecycle** (owner, 2026-11-14), one `coupon_usages` row per customer and coupon: (1) the customer applies the code at checkout → `checkout` (a log only; applying again refreshes it; `ApplyCouponAtCheckout`); (2) the payment link is created and the customer goes to the gateway → `reserved` until `config('payments.pending_expiry_minutes')` (`PAYMENT_PENDING_EXPIRY_MINUTES`, the gateway's pending-order expiry; `ReserveCoupon` locks the coupon row and re-checks the limits); (3) the payment is verified → `used` (`MarkCouponUsed`, S26); (4) the payment fails, is cancelled or the order expires → `released` (`ReleaseCoupon`; `ReleaseExpiredCouponReservations` runs every 5 minutes). **Limits count `used` and unexpired `reserved` uses**, never `checkout` or `released`; «first order only» asks `Cart\Contracts\CustomerOrderHistory` (S25 binds the Orders implementation). **The coupon discount comes out of the store's margin** in reports (net margin formula), not the suppliers'.
+**Coupon rules** (owner, 2026-11-14, S22): **one coupon per order**. The include lists are optional: **all empty = the whole cart**; when filled, an item is covered if its product is listed, its brand is listed, or it sits in a listed category **or in one of its subcategories** (main or extra; owner, 2026-11-15) (any list may match); a listed product covers **all its SKUs**; no exclude lists. **The coupon is applied at checkout, not in the cart** (owner, 2026-11-14: the cart may belong to a guest; checkout always has a signed-in customer), and carts store no coupon. **Haraj (sale-priced) items** are covered only when the coupon's «شامل کالاهای حراج» switch is on. The **minimum order counts only the covered items**, and the discount applies only to them: percent of the covered amount (capped by `max_discount`), a fixed amount never above the covered amount, rounded down to whole toman; free shipping gives no item discount. **Checkout works the discount out on the fly** (`Cart\Actions\QuoteCoupon` → `ValidateCoupon`, which only reads). **Usage lifecycle** (owner, 2026-11-14), one `coupon_usages` row per customer and coupon: (1) the customer applies the code at checkout → `checkout` (a log only; applying again refreshes it; `ApplyCouponAtCheckout`); (2) the payment link is created and the customer goes to the gateway → `reserved` until `config('payments.pending_expiry_minutes')` (`PAYMENT_PENDING_EXPIRY_MINUTES`, the gateway's pending-order expiry; `ReserveCoupon` locks the coupon row and re-checks the limits); (3) the payment is verified → `used` (`MarkCouponUsed`, S36); (4) the payment fails, is cancelled or the order expires → `released` (`ReleaseCoupon`; `ReleaseExpiredCouponReservations` runs every 5 minutes). **Limits count `used` and unexpired `reserved` uses**, never `checkout` or `released`; «first order only» asks `Cart\Contracts\CustomerOrderHistory` (S23 binds the Orders implementation). **The coupon discount comes out of the store's margin** in reports (net margin formula), not the suppliers'.
 
 **orders**
 
@@ -933,9 +933,9 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | number | human-readable, e.g. `PH-140508-000123` |
 | customer_id | |
 | status | see D3.5 |
-| payment_status | `pending`, `paid`, `expired` («منقضی‌شده», expired unpaid; was `unpaid`, owner 2026-11-15), `refund_pending` (cancelled after payment), `refunded` (as built in S25) |
-| tracking_code | the carrier's tracking code, typed by the admin at «تحویل به حمل» (S29); Tipax fills it from S27 |
-| refunded_at, refund_reference | when a manual refund was recorded and its bank or gateway panel reference (S29, super admins only) |
+| payment_status | `pending`, `paid`, `expired` («منقضی‌شده», expired unpaid; was `unpaid`, owner 2026-11-15), `refund_pending` (cancelled after payment), `refunded` (as built in S23) |
+| tracking_code | the carrier's tracking code, typed by the admin at «تحویل به حمل» (S24); Tipax fills it from S35 |
+| refunded_at, refund_reference | when a manual refund was recorded and its bank or gateway panel reference (S24, super admins only) |
 | address_id | the address used (null when deleted); the snapshot is what counts |
 | address_snapshot | JSON copy of the address: title, receiver name and mobile, province and city names with their Tipax ids, every street part, plaque, unit, floor, extra directions, postal code |
 | customer_snapshot | JSON: customer name and mobile at ordering |
@@ -944,25 +944,25 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 | coupon_id, coupon_code, coupon_snapshot | the coupon's rules at ordering (type, value, limits, caps) as JSON |
 | shipping_method | `tipax`, `own_courier` |
 | carrier_service_id | FK to `carrier_services` |
-| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate. Until phase 7 (S25): price, whether free and why (threshold or coupon), and the flat rate and threshold in force |
+| shipping_quote_snapshot | JSON of the chosen quote: carrier, service, price, chargeable weight, packages with sizes, Tipax city ids, delivery estimate. Until phase 7 (S23): price, whether free and why (threshold or coupon), and the flat rate and threshold in force |
 | payment_fee | Rial; the gateway fee of that payment, for net margin |
 | shipping_cost_quoted, shipping_cost_actual | Rial; actual comes from Tipax after pickup |
 | delivery_slot_id | own courier only |
 | customer_note, admin_note | |
 | placed_at, paid_at, cancelled_at, delivered_at | |
-| expires_at | when an unpaid order expires (`config('payments.pending_expiry_minutes')`, S25) |
+| expires_at | when an unpaid order expires (`config('payments.pending_expiry_minutes')`, S23) |
 
-**order_items** (as built in S25): `order_id`, `variant_id`, `product_id`, `variant_price_id` (the price record it was sold at, D3.2), `product_name`, `variant_title`, `sku`, `brand_name`, `image_url`, `product_type`, `requires_prescription`, `quantity`, `product_snapshot` (JSON: product and SKU details), `provider_id`, `provider_name`, `unit_cost`, `commission_percent`, `commission_source`, `provider_choice`, `official_price`, `list_price`, `sale_price`, `unit_price`, `haraj_discount_unit` / `haraj_discount_total` (list price − unit price), `coupon_discount_unit` / `coupon_discount_total` (the item's share of the coupon discount; was `discount`), `paid_unit` / `paid_total` (what the customer paid; was `total`). **Order items have no status** (owner, 2026-11-14). **Item coupon discounts add up to the order's `discount_total`, and item paid totals to `subtotal − discount_total`** (owner, 2026-11-16). Per-unit amounts are kept for returns (owner, 2026-11-16): `paid_unit` is rounded down (a return never refunds more than was paid) and `coupon_discount_unit = unit_price − paid_unit`; returning n units refunds n × `paid_unit`, and the item's last returned units also take the remainder (`paid_total − paid_unit × quantity`, under `quantity` rial). The admin order page shows each item's list price, haraj and coupon discounts and paid amount, per unit with the item total.
+**order_items** (as built in S23): `order_id`, `variant_id`, `product_id`, `variant_price_id` (the price record it was sold at, D3.2), `product_name`, `variant_title`, `sku`, `brand_name`, `image_url`, `product_type`, `requires_prescription`, `quantity`, `product_snapshot` (JSON: product and SKU details), `provider_id`, `provider_name`, `unit_cost`, `commission_percent`, `commission_source`, `provider_choice`, `official_price`, `list_price`, `sale_price`, `unit_price`, `haraj_discount_unit` / `haraj_discount_total` (list price − unit price), `coupon_discount_unit` / `coupon_discount_total` (the item's share of the coupon discount; was `discount`), `paid_unit` / `paid_total` (what the customer paid; was `total`). **Order items have no status** (owner, 2026-11-14). **Item coupon discounts add up to the order's `discount_total`, and item paid totals to `subtotal − discount_total`** (owner, 2026-11-16). Per-unit amounts are kept for returns (owner, 2026-11-16): `paid_unit` is rounded down (a return never refunds more than was paid) and `coupon_discount_unit = unit_price − paid_unit`; returning n units refunds n × `paid_unit`, and the item's last returned units also take the remainder (`paid_total − paid_unit × quantity`, under `quantity` rial). The admin order page shows each item's list price, haraj and coupon discounts and paid amount, per unit with the item total.
 
-**Snapshot rule** (owner, 2026-11-14, S18): an order keeps a JSON or column copy of **everything that can change later**, so editing a product, price, supplier, commission, coupon, address, city or customer never changes a past order or its reports. Order items also copy `product_name`, `variant_title`, `sku`, `brand_name`, `image_url` (the card size), `product_type` and `requires_prescription` (now taken from `product_type = rx`), besides the prices below.
+**Snapshot rule** (owner, 2026-11-14, S20): an order keeps a JSON or column copy of **everything that can change later**, so editing a product, price, supplier, commission, coupon, address, city or customer never changes a past order or its reports. Order items also copy `product_name`, `variant_title`, `sku`, `brand_name`, `image_url` (the card size), `product_type` and `requires_prescription` (now taken from `product_type = rx`), besides the prices below.
 
-**Price snapshot on every order item** (owner, 2026-11-14): the commission lives on products and brands and supplier costs change, so when the customer places the order (`PlaceOrder`, S25) each item copies the values of that moment onto itself, not only the `variant_price_id`: `provider_id` and `unit_cost` (the active supplier and its cost, null when sold at the printed price), `commission_percent` and `commission_source` (one of the five levels), `provider_choice` (preferred or cheapest), `official_price` (printed), `list_price` (selling price before haraj), `sale_price` (haraj), `unit_price` (what the customer pays). Gross and net margin reports (S41, S42) read these columns, so later changes to a commission, a supplier cost or a price record never change a past order.
+**Price snapshot on every order item** (owner, 2026-11-14): the commission lives on products and brands and supplier costs change, so when the customer places the order (`PlaceOrder`, S23) each item copies the values of that moment onto itself, not only the `variant_price_id`: `provider_id` and `unit_cost` (the active supplier and its cost, null when sold at the printed price), `commission_percent` and `commission_source` (one of the five levels), `provider_choice` (preferred or cheapest), `official_price` (printed), `list_price` (selling price before haraj), `sale_price` (haraj), `unit_price` (what the customer pays). Gross and net margin reports (S43, S44) read these columns, so later changes to a commission, a supplier cost or a price record never change a past order.
 
 **order_status_logs** (owner, 2026-11-14; was `order_status_histories`): `order_id`, `from_status`, `to_status`, `actor_type` (`system`, `admin`, `customer`, `carrier`), `actor_id`, `note`, `created_at`. One row for every change of an order's status; never updated.
 
-**Order pages read only these copies** (owner, 2026-11-14): the profile order list and detail (S29) and the admin order pages render from the order's snapshots, never from the live product, address, coupon or customer.
+**Order pages read only these copies** (owner, 2026-11-14): the profile order list and detail (S24) and the admin order pages render from the order's snapshots, never from the live product, address, coupon or customer.
 
-**order_purchases** (S30, owner 2026-11-16; replaces the per-supplier `provider_purchases`): one per order (`order_id` unique), `status` (`draft` until every unit of every item has a row, `registered`, `received` once every row arrived), `total_cost`, `note`, `opened_by`, `registered_at`, `received_at`; **order_purchase_items**: `order_purchase_id`, `order_item_id`, `provider_id`, `provider_name`, `quantity`, `unit_cost` (what was really paid), `received_quantity`, `missing_quantity`, `missing_note`. **orders.sourcing_status** (admin only): null («بدون سند خرید»), `awaiting_receipt`, `partially_received`, `ready_to_pack`.
+**order_purchases** (S25, owner 2026-11-16; replaces the per-supplier `provider_purchases`): one per order (`order_id` unique), `status` (`draft` until every unit of every item has a row, `registered`, `received` once every row arrived), `total_cost`, `note`, `opened_by`, `registered_at`, `received_at`; **order_purchase_items**: `order_purchase_id`, `order_item_id`, `provider_id`, `provider_name`, `quantity`, `unit_cost` (what was really paid), `received_quantity`, `missing_quantity`, `missing_note`. **orders.sourcing_status** (admin only): null («بدون سند خرید»), `awaiting_receipt`, `partially_received`, `ready_to_pack`.
 
 **return_requests**: `order_id`, `status` (`requested`, `approved`, `rejected`, `received`, `refunded`), `reason`, `refund_amount`; **return_request_items**.
 
@@ -976,24 +976,24 @@ Seven statuses (owner, 2026-11-14; replaces the longer machine), `Orders\Enums\O
 | `expired` | not paid in time (coupon released) | system (`ExpirePendingOrders`, every minute) |
 | `paid` | payment verified (also from `expired` when a payment is verified late) | system |
 | `processing` | the store is preparing it | admin only |
-| `on_the_way` | handed to the carrier | admin; Tipax from S27 (actor `carrier`) |
-| `delivered` | received | admin; Tipax from S27 (actor `carrier`) |
+| `on_the_way` | handed to the carrier | admin; Tipax from S35 (actor `carrier`) |
+| `delivered` | received | admin; Tipax from S35 (actor `carrier`) |
 | `cancelled` | cancelled (payment marked for refund) | customer while `paid` or `processing`; admin while `paid`, `processing` or `delivered`; nobody while `on_the_way` (owner, 2026-11-16) |
 
-Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_status_logs` (actor `system`, `admin`, `customer` or `carrier`); it may send an SMS (S28). A failed payment leaves the order `pending` until it expires.
+Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_status_logs` (actor `system`, `admin`, `customer` or `carrier`); it may send an SMS (S37). A failed payment leaves the order `pending` until it expires.
 
 ### D3.6 Content, settings, search, admin
 
-- **Home widgets** (decided 2026-11-07; replaces `home_sections` and banner slots): **home_widgets**: `type` (`slider`, `collection`, `brands`, `categories`, `tags`, `trust`; S33 adds `flash_deal`, `bundles`), `title_fa`, `settings` (json: e.g. `collection_id`, ordered `brand_ids` / `category_ids`), `sort`, `is_active`, `starts_at`, `ends_at`. The admin adds, sets up, schedules and drags widgets into order on «چیدمان صفحه اصلی», with a preview link. **Every widget shows at most 6 items** (6 banners, 6 cards, 6 logos, 6 icons, 6 chips); a collection rail adds «مشاهده همه». ≤ 8 live widgets (the page warns). **A widget is shown only with at least one item** (owner, 2026-11-07): a slider needs a visible banner, a collection rail an in-stock product of a visible collection, brands / categories / tags an active item; the trust block is always shown (`Content\Queries\HomeWidgetItems`). The «در صفحه» column of «چیدمان صفحه اصلی» says why a widget is hidden; with no widget to show, the home page shows a short welcome. **Sliders** (owner, 2026-11-09): the banner slider swipes with an arrow on each side and no dots; the other rows become sliders with side arrows only when their items do not fit on the screen (Swiper, C2). **No rendered-HTML cache** for the home page (decided 2026-11-07, S13b): widget queries are light and cards must show live prices.
-- **banners** (decided 2026-11-07): a library («بنرها») of banners created once and reused: `title`, `link_type` (`category`, `subcategory` (owner, 2026-11-15), `collection`, `brand`, `tag`, `product`, `page` (a static page, S34), `categories_list`, `collections_list`, `brands_list`, `external`), `link_id` (for an item), `external_url` (for `external`; opens in a new tab with `rel="noopener"`), `is_active`, `starts_at`, `ends_at`; images: medialibrary collections `desktop` (1920×600), `tablet` (1536×768), `mobile` (800×1000) (D14.2). The admin picks the target item rather than typing its URL, so links follow slug changes and a banner whose target is gone or inactive is hidden.
-- **banner_placements** (as built in S13b): `banner_id`, `place` (`home_widget`, `category`, `subcategory` (owner, 2026-11-15), `collection`, `brand`, `tag`, `categories_list`, `collections_list`, `brands_list`), `place_id` (the widget, category, subcategory, collection, brand or tag id; null for the list pages), `sort`. A place shows one banner, or a slider when it has several; **at most 6 per place**; a banner whose target is hidden or gone is not shown. The admin sets banners only in home slider widgets: the «جایگاه بنرها» page for the page-top places was removed at the owner's request (2026-11-07), so the storefront still renders page-top banners but nothing sets them for now. The S07 category banner images stay as the category page's banner until the owner decides to retire them (that means rewriting the S09 image tests).
-- **flash_deals** (as built in S33, owner 2026-11-16/17; lives in Catalog because it sets SKU prices): `variant_id`, `provider_id` (**required**: the supplier the deal sells from, e.g. one giving a big discount or with stock close to expiry; while the deal runs it **replaces the SKU's default supplier**), `deal_price`, `starts_at`, `ends_at` (each SKU its own window), `quantity_limit` (optional), `sold_count`, `is_active`. While live and not sold out, `SyncFlashDealPrices` (every minute and after every change) copies the price onto the SKU (`product_variants.flash_deal_price`, `flash_deal_id`); `ProductVariant::currentPrice()` = deal price ?? haraj ?? price, so cards, search, cart, checkout and orders follow; the pricing engine and the haraj price are untouched. Units are reserved at «پرداخت» (locked; never past the limit) and released when the order expires or is cancelled (`order_items.flash_deal_id`); order items record the deal's supplier and cost (`provider_choice = flash_deal`). The home page has **one** «پیشنهاد لحظه‌ای» widget, turned on or off from the button above the deals list; its single countdown (HH:MM:SS, Persian digits) runs to the **latest** end among the live deals.
-- **pages** (built ahead of S34, owner 2026-11-14): `title`, `slug` (URL `/pages/{slug}`; lower-case letters, Persian letters or digits joined by «-», unique), `body` (rich-editor HTML), `is_active`, `seo_title`, `seo_description`, soft deletes. The eight footer pages (`about`, `terms`, `privacy`, `returns`, `shipping`, `payment-methods`, `buying-guide`, `licenses`) are created as unpublished drafts. Admin «صفحه‌های ثابت» (group «محتوا») with Filament's rich editor; **images in a page are uploaded to the default filesystem disk** (`FILESYSTEM_DISK`: local in development, S3 on the server; not base64), private, and shown through signed URLs. **The body is cleaned on save and again when shown** (`Content\Support\PageHtml`: script-like elements removed with their content, `strip_tags` to the editor's tags, Symfony HtmlSanitizer with per-tag attributes, no `on*` handlers or `javascript:`/`data:` URLs, links `rel="noopener noreferrer"`, style reduced to text alignment); title and SEO texts are stored as plain text and escaped by Blade. Banners can link to a page (`link_type` `page`, picked by title); a banner whose page is unpublished or deleted is not shown.
+- **Home widgets** (decided 2026-11-07; replaces `home_sections` and banner slots): **home_widgets**: `type` (`slider`, `collection`, `brands`, `categories`, `tags`, `trust`; S28 adds `flash_deal`, `bundles`), `title_fa`, `settings` (json: e.g. `collection_id`, ordered `brand_ids` / `category_ids`), `sort`, `is_active`, `starts_at`, `ends_at`. The admin adds, sets up, schedules and drags widgets into order on «چیدمان صفحه اصلی», with a preview link. **Every widget shows at most 6 items** (6 banners, 6 cards, 6 logos, 6 icons, 6 chips); a collection rail adds «مشاهده همه». ≤ 8 live widgets (the page warns). **A widget is shown only with at least one item** (owner, 2026-11-07): a slider needs a visible banner, a collection rail an in-stock product of a visible collection, brands / categories / tags an active item; the trust block is always shown (`Content\Queries\HomeWidgetItems`). The «در صفحه» column of «چیدمان صفحه اصلی» says why a widget is hidden; with no widget to show, the home page shows a short welcome. **Sliders** (owner, 2026-11-09): the banner slider swipes with an arrow on each side and no dots; the other rows become sliders with side arrows only when their items do not fit on the screen (Swiper, C2). **No rendered-HTML cache** for the home page (decided 2026-11-07, S14): widget queries are light and cards must show live prices.
+- **banners** (decided 2026-11-07): a library («بنرها») of banners created once and reused: `title`, `link_type` (`category`, `subcategory` (owner, 2026-11-15), `collection`, `brand`, `tag`, `product`, `page` (a static page, S29), `categories_list`, `collections_list`, `brands_list`, `external`), `link_id` (for an item), `external_url` (for `external`; opens in a new tab with `rel="noopener"`), `is_active`, `starts_at`, `ends_at`; images: medialibrary collections `desktop` (1920×600), `tablet` (1536×768), `mobile` (800×1000) (D14.2). The admin picks the target item rather than typing its URL, so links follow slug changes and a banner whose target is gone or inactive is hidden.
+- **banner_placements** (as built in S14): `banner_id`, `place` (`home_widget`, `category`, `subcategory` (owner, 2026-11-15), `collection`, `brand`, `tag`, `categories_list`, `collections_list`, `brands_list`), `place_id` (the widget, category, subcategory, collection, brand or tag id; null for the list pages), `sort`. A place shows one banner, or a slider when it has several; **at most 6 per place**; a banner whose target is hidden or gone is not shown. The admin sets banners only in home slider widgets: the «جایگاه بنرها» page for the page-top places was removed at the owner's request (2026-11-07), so the storefront still renders page-top banners but nothing sets them for now. The S07 category banner images stay as the category page's banner until the owner decides to retire them (that means rewriting the S09 image tests).
+- **flash_deals** (as built in S28, owner 2026-11-16/17; lives in Catalog because it sets SKU prices): `variant_id`, `provider_id` (**required**: the supplier the deal sells from, e.g. one giving a big discount or with stock close to expiry; while the deal runs it **replaces the SKU's default supplier**), `deal_price`, `starts_at`, `ends_at` (each SKU its own window), `quantity_limit` (optional), `sold_count`, `is_active`. While live and not sold out, `SyncFlashDealPrices` (every minute and after every change) copies the price onto the SKU (`product_variants.flash_deal_price`, `flash_deal_id`); `ProductVariant::currentPrice()` = deal price ?? haraj ?? price, so cards, search, cart, checkout and orders follow; the pricing engine and the haraj price are untouched. Units are reserved at «پرداخت» (locked; never past the limit) and released when the order expires or is cancelled (`order_items.flash_deal_id`); order items record the deal's supplier and cost (`provider_choice = flash_deal`). The home page has **one** «پیشنهاد لحظه‌ای» widget, turned on or off from the button above the deals list; its single countdown (HH:MM:SS, Persian digits) runs to the **latest** end among the live deals.
+- **pages** (built ahead of S29, owner 2026-11-14): `title`, `slug` (URL `/pages/{slug}`; lower-case letters, Persian letters or digits joined by «-», unique), `body` (rich-editor HTML), `is_active`, `seo_title`, `seo_description`, soft deletes. The eight footer pages (`about`, `terms`, `privacy`, `returns`, `shipping`, `payment-methods`, `buying-guide`, `licenses`) are created as unpublished drafts. Admin «صفحه‌های ثابت» (group «محتوا») with Filament's rich editor; **images in a page are uploaded to the default filesystem disk** (`FILESYSTEM_DISK`: local in development, S3 on the server; not base64), private, and shown through signed URLs. **The body is cleaned on save and again when shown** (`Content\Support\PageHtml`: script-like elements removed with their content, `strip_tags` to the editor's tags, Symfony HtmlSanitizer with per-tag attributes, no `on*` handlers or `javascript:`/`data:` URLs, links `rel="noopener noreferrer"`, style reduced to text alignment); title and SEO texts are stored as plain text and escaped by Blade. Banners can link to a page (`link_type` `page`, picked by title); a banner whose page is unpublished or deleted is not shown.
 - **faqs**: `group`, `question`, `answer`, `sort`.
 - **menus** / **menu_items**: `location` (`header`, `footer_1`, `footer_2`, `mobile`), `title`, `url`, `parent_id`, `sort`.
 - **contact_messages**: `name`, `mobile`, `email`, `subject`, `body`, `status`.
-- **settings**: key/value in `settings` (see «settings» above; S35 added `contact.phone`, `contact.email`, `contact.address`, `contact.working_hours` and `social.links`; `site_name`, `logo_image_id`, `min_order_amount`, `maintenance_mode`, `origin_address_id` come with the steps that need them).
-- **social_links**: kept in settings as `social.links` (platform, url, in order; S35), not a table.
+- **settings**: key/value in `settings` (see «settings» above; S30 added `contact.phone`, `contact.email`, `contact.address`, `contact.working_hours` and `social.links`; `site_name`, `logo_image_id`, `min_order_amount`, `maintenance_mode`, `origin_address_id` come with the steps that need them).
+- **social_links**: kept in settings as `social.links` (platform, url, in order; S30), not a table.
 - **trust_badges**: `title`, `embed_code` (e-Namad or Samandehi, cleaned), image (medialibrary «image», preset `trust_badge`), `link_url`, `sort`, `is_active`.
 - **pharmacists**: `full_name`, `license_number`, photo (medialibrary «photo», preset `pharmacist_photo`), `bio`, `is_responsible` (one at a time), `sort`.
 - **seo_redirects**: `from_path`, `to_path`, `status_code`.
@@ -1008,13 +1008,13 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 
 ## D4. Locations
 
-**Locations follow Tipax** (owner, 2026-11-14, S18): provinces and cities come from the Tipax API and use Tipax's ids, so addresses, quotes and shipments need no mapping. Counties, regions, neighbourhoods and the earlier open dataset (sajaddp, GPL) are gone.
+**Locations follow Tipax** (owner, 2026-11-14, S20): provinces and cities come from the Tipax API and use Tipax's ids, so addresses, quotes and shipments need no mapping. Counties, regions, neighbourhoods and the earlier open dataset (sajaddp, GPL) are gone.
 
-> **Change (owner, 2026-11-17): Tipax goes through Tapin (D6.0).** Tapin numbers provinces and cities its own way (`location/public/all/province/filter/`, `…/city/filter/`, each city with a `tipax.is_available` flag). S22 decides how our cities meet Tapin's:
+> **Change (owner, 2026-11-17): Tipax goes through Tapin (D6.0).** Tapin numbers provinces and cities its own way (`location/public/all/province/filter/`, `…/city/filter/`, each city with a `tipax.is_available` flag). S33 decides how our cities meet Tapin's:
 > - **switch the city source to Tapin** (recommended): `tapin:sync-cities` replaces `tipax:sync-cities`, ids become Tapin's, and «ارسال فعال» follows `tipax.is_available`; existing addresses are re-pointed by name in one migration;
 > - **or keep Tipax's list** and store each city's Tapin id beside it.
 >
-> Tapin also needs the recipient's map point, which S18 dropped («no map pin»). **[CONFIRM] in S22:** a map pin on the address form, or the city's centre point (Tapin accepts «an approximate point in the recipient's city»).
+> Tapin also needs the recipient's map point, which S20 dropped («no map pin»). **[CONFIRM] in S33:** a map pin on the address form, or the city's centre point (Tapin accepts «an approximate point in the recipient's city»).
 
 ### D4.1 Source data
 - Tipax OM API **v4** (specs `https://omtestapi.tipax.ir/swagger/v4/swagger.json` and `/swagger/v3/swagger.json`, checked 2026-11-14): `GET /api/OM/v4/Cities/plusstate` → a bare array of `OmCityListWithStateDto` `{ id, title, abbreviation, stateId, stateTitle, jetId, latitude, longitude }`; `GET /api/OM/v4/Cities/BranchCities` → `OmCityListDto` (no `stateTitle`); `GET /api/OM/v4/States` → `OmProvinceListDto` `{ id, title, … }`. All need a Bearer token; **sign-in exists only in v3**: `POST /api/OM/v3/Account/token` `{ username, password, apiKey }` → `{ accessToken, refreshToken, expiresIn }` (v4 has only `Account/RefreshToken`). No endpoint returns regions or neighbourhoods.
@@ -1024,7 +1024,7 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 - **cities**: `id` (= Tipax city id), `province_id`, `name_fa`, `latitude`, `longitude` (Tipax's; 0 means unknown), `has_tipax_branch`, `is_delivery_enabled` (admin «ارسال فعال»), `tipax_synced_at`.
 
 ### D4.3 Tipax city sync
-1. `php artisan tipax:sync-cities` (Shipping `TipaxClient`, built in S18): signs in, loads `Cities/plusstate` and `Cities/BranchCities`, and upserts provinces and cities by Tipax id (`Locations\Actions\ImportTipaxCities`). Names, coordinates and branch flags follow Tipax; «ارسال فعال» is kept; cities Tipax stops listing are kept (addresses may use them) and counted. One activity entry per run. Runs **on every deploy after `migrate`** and weekly (Saturday 03:00 Tehran). A failure changes nothing and exits non-zero.
+1. `php artisan tipax:sync-cities` (Shipping `TipaxClient`, built in S20): signs in, loads `Cities/plusstate` and `Cities/BranchCities`, and upserts provinces and cities by Tipax id (`Locations\Actions\ImportTipaxCities`). Names, coordinates and branch flags follow Tipax; «ارسال فعال» is kept; cities Tipax stops listing are kept (addresses may use them) and counted. One activity entry per run. Runs **on every deploy after `migrate`** and weekly (Saturday 03:00 Tehran). A failure changes nothing and exits non-zero.
 2. `php artisan locations:import-tipax {file} {--branches=}` imports the same JSON from files (offline machines, tests).
 3. The address form and checkout offer cities with «ارسال فعال» on.
 
@@ -1036,8 +1036,8 @@ Every change goes through `Orders\Actions\ChangeOrderStatus` and writes `order_s
 > - Tapin takes length, width and height as **5 cm** by agreement with Tipax.
 > - The parcel weighs **1–6 kg** (items plus packaging; under 1 kg is sent as 1 kg).
 > - The declared value is at least **4,000,000 rial**.
-> - Tapin returns the price; the volumetric estimate and the box packer below no longer apply to Tipax. They stay only as background for the own courier (S24), which prices by zone.
-> - An order over 6 kg is split into several Tapin orders. **[CONFIRM] in S23:** split, or refuse online checkout over 6 kg.
+> - Tapin returns the price; the volumetric estimate and the box packer below no longer apply to Tipax. They stay only as background for the own courier (S32), which prices by zone.
+> - An order over 6 kg is split into several Tapin orders. **[CONFIRM] in S34:** split, or refuse online checkout over 6 kg.
 
 - Tipax receives **weight (kg), length, width, height (cm) and declared value (Rial)** per package and returns the price; Tipax applies its own volumetric rules. **[CONFIRM]** the volumetric divisor with Tipax account manager; we keep our own estimate only for the fallback table.
 - Our estimate (fallback and sanity check): `volumetric_kg = L×W×H(cm) / divisor` (default divisor 5000, stored on `carriers`), `chargeable = max(actual_kg, volumetric_kg)`.
@@ -1366,7 +1366,7 @@ Headers: `Content-Type: application/json`, `Accept: application/json`. Sandbox: 
 | 100 / 101 | Success / already verified |
 
 ### D7.4 Payment tables
-- **payments** (as built in S25; owner, 2026-11-14): one row per payment attempt (link): `order_id`, `gateway` (`fake` until S26), `amount` (Rial), `authority` (unique), `url` (the gateway page), `status` (`pending`, `paid`, `failed`, `expired`; `PaymentAttemptStatus`), `expires_at`, `ref_id`, `card_pan`, `failure_reason`, `verified_at`, `failed_at`. **At most one open link per order**: «پرداخت» reuses the open (pending, unexpired) link; a new one only after a failed attempt; none after the order expired (`OpenPaymentLink` locks the order's attempts). `HandlePaymentCallback` locks, verifies and sends `PaymentSucceeded` once; `ExpireStalePayments` runs every minute. **At most one successful payment per order** (owner, 2026-11-15, S29): the callback locks all of the order's attempts; when another is already paid, this one is not verified (the gateway returns the money) and is marked failed «سفارش قبلاً پرداخت شده است»; a unique key on the virtual column `paid_order_id` is the backstop. Every attempt shows in «تراکنش‌های پرداخت» on the admin order page. S26 adds Zarinpal's fields (`card_hash`, `fee_type`, `fee`, raw request/response).
+- **payments** (as built in S23; owner, 2026-11-14): one row per payment attempt (link): `order_id`, `gateway` (`fake` until S36), `amount` (Rial), `authority` (unique), `url` (the gateway page), `status` (`pending`, `paid`, `failed`, `expired`; `PaymentAttemptStatus`), `expires_at`, `ref_id`, `card_pan`, `failure_reason`, `verified_at`, `failed_at`. **At most one open link per order**: «پرداخت» reuses the open (pending, unexpired) link; a new one only after a failed attempt; none after the order expired (`OpenPaymentLink` locks the order's attempts). `HandlePaymentCallback` locks, verifies and sends `PaymentSucceeded` once; `ExpireStalePayments` runs every minute. **At most one successful payment per order** (owner, 2026-11-15, S24): the callback locks all of the order's attempts; when another is already paid, this one is not verified (the gateway returns the money) and is marked failed «سفارش قبلاً پرداخت شده است»; a unique key on the virtual column `paid_order_id` is the backstop. Every attempt shows in «تراکنش‌های پرداخت» on the admin order page. S36 adds Zarinpal's fields (`card_hash`, `fee_type`, `fee`, raw request/response).
 - **payment_refunds**: `payment_id`, `amount`, `method` (`reverse`, `panel`, `manual_transfer`), `status`, `reference`, `admin_id`.
 
 ### D7.5 Security rules
@@ -1414,7 +1414,7 @@ BNPL (Snapp Pay, Torob Pay, Digipay) is phase 2 behind the same `PaymentGateway`
 | Job | Schedule | Queue |
 |---|---|---|
 | ReconcileZarinpalPayments | every 10 min | `payments` |
-| ExpireStalePayments (payment links past `expires_at` → `expired`) and ExpirePendingOrders (unpaid orders → `expired`, coupon released) (S25) | every minute | `payments`, `orders` |
+| ExpireStalePayments (payment links past `expires_at` → `expired`) and ExpirePendingOrders (unpaid orders → `expired`, coupon released) (S23) | every minute | `payments`, `orders` |
 | PollTipaxTracking | every 30 min | `shipping` |
 | TipaxSyncCities | weekly | `shipping` |
 | RecalculateVariantPrice / RecalculatePrices (after supplier price, printed price, haraj, commission or import changes) | on demand + nightly | `pricing` |
@@ -1435,7 +1435,7 @@ Use Laravel Horizon for queue monitoring.
 4. Tipax order callback payload, retry policy and signature; V3 webhook event payload.
 5. Tipax rules for shipping supplements and OTC medicines (content type "داروهای مجاز").
 6. Zarinpal refund API access after 30 minutes; Melli Payamak REST response JSON shape, credit-check method and PHP SDK package name (D11.6).
-7. ~~Licence of the location dataset (GPL-3.0)~~: resolved, locations come from Tipax (2026-11-14, S18).
+7. ~~Licence of the location dataset (GPL-3.0)~~: resolved, locations come from Tipax (2026-11-14, S20).
 8. Legal: partner pharmacy before enabling OTC / prescription products. [CONFIRM] OTC selling was enabled by the owner on 2026-11-07 (S10) ahead of this check; prescription products stay blocked.
 
 ---
@@ -1794,6 +1794,7 @@ Exclude webhook routes from CSRF and rate-limit them (e.g. 120/min).
 ### D12.1 Conventions
 - InnoDB, `utf8mb4`, collation `utf8mb4_unicode_ci` (switch to `utf8mb4_persian_ci` for name columns sorted in Persian).
 - Primary keys `bigIncrements('id')`; foreign keys `foreignId('x_id')->constrained()->cascadeOnUpdate()` with `restrictOnDelete()` for business data, `cascadeOnDelete()` only for pure child rows (cart_items, bundle_items, pivots).
+- **Migrations create schema only, one table per migration** (owner, 2026-11-17). Starting data (system collection, draft pages, menus, Tipax cartons) lives in idempotent seeders called from `DatabaseSeeder`, which the deploy runs. A foreign key between two tables that refer to each other is added in its own later migration. On 2026-11-17 all migrations were regenerated from the final schema in this shape (82 files; the schema was checked identical).
 - Money: `unsignedBigInteger` Rial. Percent: `decimal(5,2)`. Weights/dimensions: `unsignedInteger` (g, mm).
 - Enums: `string(32)` column + PHP backed enum cast (not MySQL ENUM, so new values need no ALTER).
 - JSON: `json` columns for snapshots and raw payloads; never query inside them on hot paths.
@@ -1922,7 +1923,7 @@ Casts: enums (`ProductType`, `ProductStatus`, `StockStatus`, `OrderStatus`, `Pay
 3. Guest cart keyed by `session_token` cookie (30 days); merged on login.
 
 ### D13.4 Checkout
-As built in S25 (owner, 2026-11-14):
+As built in S23 (owner, 2026-11-14):
 1. Address step (always): pick or add an address (no map pin; only cities with delivery on). The pick is stored on the cart (`PickCartAddress`).
 2. Review (`/checkout`): `Cart\Queries\CheckoutQuote` works out the cart, the coupon on the fly, the flat shipping and the address snapshot.
 3. «پرداخت»: `Orders\Actions\PlaceOrder` (cache lock per customer, transaction) **creates the order only now**, after checking everything again: items buyable and within limits, current prices against the total shown, coupon still valid (then reserved), address theirs and its city deliverable. If anything changed, no order; the page reloads with the reason. Then it copies the snapshots, shares the coupon discount over the items, **empties the cart** and opens the payment link (`Payments\Actions\OpenPaymentLink`) → gateway.
@@ -1930,10 +1931,10 @@ As built in S25 (owner, 2026-11-14):
 5. Phase 7 adds the shipping step: `Shipping\Actions\QuoteCart` packs items into boxes (D5) and quotes Tipax and own courier.
 
 ### D13.5 Payment
-See D7.2. On verify success: `Payments\Events\PaymentSucceeded` (sent once) → (a) Orders: `MarkOrderPaid` moves the order to `paid` (also from `expired` when verified late) and marks the coupon used (`SettleOrderCoupon`, S25); (b) Pricing: create provider purchase draft (S30); (c) Notifications: SMS `order_paid` (S28). On NOK or cancel: the attempt is `failed` and the order stays `pending`, payable again until it expires; on expiry the order becomes `expired` and the coupon is released (owner, 2026-11-14).
+See D7.2. On verify success: `Payments\Events\PaymentSucceeded` (sent once) → (a) Orders: `MarkOrderPaid` moves the order to `paid` (also from `expired` when verified late) and marks the coupon used (`SettleOrderCoupon`, S23); (b) Pricing: create provider purchase draft (S25); (c) Notifications: SMS `order_paid` (S37). On NOK or cancel: the attempt is `failed` and the order stays `pending`, payable again until it expires; on expiry the order becomes `expired` and the coupon is released (owner, 2026-11-14).
 
 ### D13.6 Sourcing (buying from provider)
-As built in S30 (owner, 2026-11-16):
+As built in S25 (owner, 2026-11-16):
 1. **The system creates no purchase rows or costs.** On a paid order the admin presses «ثبت سند خرید»: an empty purchase document opens, linked to the order both ways.
 2. The admin adds rows: first the order item (the list shows only items with units left, «۱ از ۳ عدد باقی‌مانده (۲ عدد ثبت شده)»; the customer's paid amount fills in read only), then the supplier, quantity (at most the units left; filled with them) and the unit cost really paid (the supplier's current price is a hint only). An item may be split over suppliers. A cost at or above what the customer paid per unit shows a warning box and a warning after saving; it is still allowed. Rows can be added, changed or removed until **48 hours after the document is registered** (`OrderPurchase::EDIT_WINDOW_HOURS`); after that only receiving is recorded. The order's page shows the document in its own «سند خرید» section (status, edit deadline, cost, final margin, rows) with a link to the document.
 3. «خرید از تأمین‌کننده» lists the rows still to arrive, grouped by supplier, to print or download as Excel.
@@ -2060,7 +2061,7 @@ public function registerMediaConversions(?Media $media = null): void
 | GET | `/t/{tag:slug}` | `Catalog\Livewire\TagPage` | tags.show |
 | GET | `/search` | `Search\Livewire\SearchPage` | search |
 | GET | `/products/{slug}` | `catalog::product-page` | products.show |
-| GET | `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` | 301 to the full-word addresses (S13b) | — |
+| GET | `/b`, `/b/{slug}`, `/c/{slug}`, `/p/{slug}` | 301 to the full-word addresses (S14) | — |
 | GET | `/deals` | `Content\Livewire\DealsPage` | deals |
 | GET | `/bundles/{bundle:slug}` | `Catalog\Livewire\BundlePage` | bundles.show |
 | GET | `/cart` | `Cart\Livewire\CartPage` | cart |
@@ -2111,7 +2112,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 |---|---|
 | Admin access | Separate `admin` guard and `admin_users` table; **Filament MFA (TOTP) mandatory**; strong passwords; session timeout 30 min idle; optional IP allowlist for `/admin` in Nginx |
 | Authorization | spatie/laravel-permission roles (`super_admin`, `operator`, `content_editor`, `pharmacist` P2); a Policy for every Filament resource; deny by default |
-| Customer auth | **Laravel Sanctum** (decided 2026-11-06): storefront customers authenticate through Sanctum (stateful, cookie-based for the Livewire storefront and its AJAX endpoints; the same setup issues tokens for the P2 `/api/v1` apps); exact guard setup confirmed in the S17 plan. OTP only; rate limits (D13.1); codes hashed; session regenerated on login; `remember` cookie 30 days, `secure`, `httponly`, `samesite=lax` |
+| Customer auth | **Laravel Sanctum** (decided 2026-11-06): storefront customers authenticate through Sanctum (stateful, cookie-based for the Livewire storefront and its AJAX endpoints; the same setup issues tokens for the P2 `/api/v1` apps); exact guard setup confirmed in the S19 plan. OTP only; rate limits (D13.1); codes hashed; session regenerated on login; `remember` cookie 30 days, `secure`, `httponly`, `samesite=lax` |
 | CSRF | On all web forms (Livewire handles it); excluded only for webhooks |
 | Input | Validation on every input; Persian digit normalisation; rich text sanitized (purifier) before save; no raw `{!! !!}` except sanitized HTML |
 | Mass assignment | No `$fillable` and never `$guarded = []`: models stay fully guarded and are written only through setters and `save()` (decided 2026-11-07) |
@@ -2132,7 +2133,7 @@ Widgets: SalesStats, OrdersByStatus, SourcingBacklog, ShipmentsInTransit, Margin
 ---
 
 ## D17. Performance and caching
-- Redis cache for: settings, menus (tags `content`; the home page is not cached, S13b), category tree, PLP filter facets, PDP view model (tag `product:{id}`); invalidate via model events.
+- Redis cache for: settings, menus (tags `content`; the home page is not cached, S14), category tree, PLP filter facets, PDP view model (tag `product:{id}`); invalidate via model events.
 - Eager loading everywhere (`preventLazyLoading()` in non-production).
 - `php artisan optimize` on deploy (config, route, view, event cache); OPcache + JIT on.
 - Livewire: `#[Lazy]` for below-the-fold sections, `wire:model.live.debounce.300ms` for search, avoid big public properties (pass ids, not models).
@@ -2199,12 +2200,12 @@ redirect_stderr=true
 stdout_logfile=/var/www/app/storage/logs/horizon.log
 stopwaitsecs=3600
 ```
-`config/horizon.php` supervisors: `payments` (priority, 2 processes), `shipping` (2), `notifications` (2), `media` (2, memory 512 MB, timeout 300), `default,pricing` (2). `pricing` (price calculations, D3.2), `price-import` (supplier Excel imports, own supervisor, 1 process), `search` (Scout indexing): **1 process**, so a product's updates reach Meilisearch in order (decided 2026-11-09, S13b: parallel workers let an older snapshot overwrite a newer one).
+`config/horizon.php` supervisors: `payments` (priority, 2 processes), `shipping` (2), `notifications` (2), `media` (2, memory 512 MB, timeout 300), `default,pricing` (2). `pricing` (price calculations, D3.2), `price-import` (supplier Excel imports, own supervisor, 1 process), `search` (Scout indexing): **1 process**, so a product's updates reach Meilisearch in order (decided 2026-11-09, S14: parallel workers let an older snapshot overwrite a newer one).
 
 Cron: `* * * * * www-data php /var/www/app/current/artisan schedule:run >> /dev/null 2>&1`.
 
 ### D19.4 Deploy (zero-downtime)
-`git pull` (or release folder) → `composer install --no-dev --optimize-autoloader` → `npm ci && npm run build` (CI) → `php artisan migrate --force` → `php artisan tipax:sync-cities` (provinces and cities from Tipax, D4.3) → `php artisan optimize` → `php artisan filament:optimize` → `php artisan horizon:terminate` → reload PHP-FPM. Tools: Laravel Envoy or Deployer.
+`git pull` (or release folder) → `composer install --no-dev --optimize-autoloader` → `npm ci && npm run build` (CI) → `php artisan migrate --force` → `php artisan db:seed --force` (starting data; each seeder adds only what is missing) → `php artisan tipax:sync-cities` (provinces and cities from Tipax, D4.3) → `php artisan optimize` → `php artisan filament:optimize` → `php artisan horizon:terminate` → reload PHP-FPM. Tools: Laravel Envoy or Deployer.
 
 ### D19.5 CI (GitHub/GitLab)
 On every push: Pint (test mode), Larastan, `composer audit`, `php artisan test --parallel` (MySQL + Redis services), `npm run build`. On `main`: deploy to staging. Production deploy is manual approval.
@@ -2801,14 +2802,29 @@ Never: commit or push without explicit approval; call real Tipax/Zarinpal produc
 | Phase | Steps |
 |---|---|
 | 0 Foundation | S00–S05 |
-| 1 Catalog & media | S06–S13 |
-| 2 Pricing & providers | S14–S16 |
-| 3 Customers & cart | S17–S20 |
-| 4 Checkout (stand-ins for shipping and payments) | S25 |
-| 5 Orders operations | S29–S32 |
-| 6 Content and trust | S33–S35 |
-| 7 Shipping and external integrations | S21, S24 (shipping foundation and own courier zones; owner 2026-11-14), S22, S23, S26, S27, S28 (Tipax, Zarinpal, SMS; owner 2026-11-09) |
-| 8 SEO, search tuning, hardening & reporting, then launch | S36, S43 (site search tuning, added 2026-11-17), S37–S39, S41–S42 (moved after the main functionality, owner 2026-11-17), then S40 |
+| 1 Catalog & media (S14: collections and the home page builder) | S06–S14 |
+| 2 Pricing & providers | S15–S18 |
+| 3 Customers & cart | S19–S22 |
+| 4 Checkout (stand-ins for shipping and payments) | S23 |
+| 5 Orders operations | S24–S27 |
+| 6 Content and trust | S28–S30 |
+| 7 Shipping and external integrations | S31, S32 (shipping foundation and own courier zones; owner 2026-11-14), S33–S37 (Tapin/Tipax, Zarinpal, SMS; owner 2026-11-09/17) |
+| 8 SEO, search tuning, hardening & reporting, then launch | S38–S44 (moved after the main functionality, owner 2026-11-17; S39 site search tuning added the same day), then S45 |
+
+**Renumbered in build order (owner, 2026-11-17; Tipax shipment registration S35 before Zarinpal S36).** Commits made before that day use the old numbers:
+
+| Old | New | Old | New | Old | New | Old | New |
+|---|---|---|---|---|---|---|---|
+| S00–S13 | same | S18 | S20 | S32 | S27 | S27 | S35 |
+| S13b | S14 | S19 | S21 | S33 (S33b) | S28 (S28b) | S28 | S37 |
+| S14 | S15 | S20 | S22 | S34 | S29 | S36 | S38 |
+| S15 | S16 | S25 | S23 | S35 | S30 | S43 | S39 |
+| S15b | S17 | S29 | S24 | S21 | S31 | S37 | S40 |
+| S16 | S18 | S30 | S25 | S24 | S32 | S38 | S41 |
+| S17 | S19 | S31 | S26 | S22 | S33 | S39 | S42 |
+| | | | | S23 | S34 | S41 | S43 |
+| | | | | S26 | S36 | S42 | S44 |
+| | | | | | | S40 | S45 |
 
 ## E3. Steps
 
@@ -2842,7 +2858,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S05 Locations
 - **Refs:** D4, D11.5
-- **Rebuilt in S18 (owner, 2026-11-14):** provinces and cities now come from Tipax with Tipax ids (D4); counties, regions, neighbourhoods and the sajaddp import were removed.
+- **Rebuilt in S20 (owner, 2026-11-14):** provinces and cities now come from Tipax with Tipax ids (D4); counties, regions, neighbourhoods and the sajaddp import were removed.
 - **Build:** provinces/counties/cities/regions/neighbourhoods tables + models, `locations:import` from sajaddp JSON, optional Tehran neighbourhoods, Filament read/edit (enable delivery cities).
 - **Tests:** import command with fixture creates expected counts; city belongs to province.
 
@@ -2869,7 +2885,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 
 ### S10 Products and variants
 - **Refs:** D3.1, D12.2, D12.3, D15.3
-- **Decisions (2026-11-07):** only Rx is blocked (OTC sellable); slugs from the English name, else Persian; admins type prices in toman until the pricing engine (S15), which then sets `price`; activation needs a brand, primary category (since 2026-11-15: a main subcategory, which every product must have), an active variant with a price and at least one photo; medicines need an official price and are never priced above it.
+- **Decisions (2026-11-07):** only Rx is blocked (OTC sellable); slugs from the English name, else Persian; admins type prices in toman until the pricing engine (S16), which then sets `price`; activation needs a brand, primary category (since 2026-11-15: a main subcategory, which every product must have), an active variant with a price and at least one photo; medicines need an official price and are never priced above it.
 - **Build:** products, product_variants, categories pivot, FAQs, relations; ProductResource with tabs and Variants relation manager; dimension/weight fields + `dimensions_verified`; `requires_prescription` guard; `Brand::products()` and `Brand::hasProducts()` checking it (a brand with products cannot be deleted, decided 2026-11-07 in S07).
 - **Tests:** create product with 2 variants; rx product cannot be activated for sale in MVP; deleting a brand that has products is refused; factories.
 
@@ -2879,107 +2895,107 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Tests:** attach values/tags; chip links to `/t/{slug}`.
 
 ### S12 PLP and search
-- **Decisions (2026-11-07):** default SKU per product with fallback in admin order, the SKU list with price, sale price and compare-at (box) price in the Meilisearch document, `price`/`discount_pct` filters and sorts from the default SKU, discount measured against the box price, box-price cap for every product type, search-box rows show the price (add-to-cart button in S19) — see D3.1 «Default SKU»; Meilisearch now (see D21 update) for search and listings; numbered pages + «نمایش بیشتر»; a simple `/p/{slug}` product page now (S13 builds the full page); Search module owns the box, `/search`, synonyms (+ Excel/CSV import), logs and insights, and asks Catalog through its queries; the MySQL `innodb_ft_min_token_size = 2` setting is kept in the Docker config.
+- **Decisions (2026-11-07):** default SKU per product with fallback in admin order, the SKU list with price, sale price and compare-at (box) price in the Meilisearch document, `price`/`discount_pct` filters and sorts from the default SKU, discount measured against the box price, box-price cap for every product type, search-box rows show the price (add-to-cart button in S21) — see D3.1 «Default SKU»; Meilisearch now (see D21 update) for search and listings; numbered pages + «نمایش بیشتر»; a simple `/p/{slug}` product page now (S13 builds the full page); Search module owns the box, `/search`, synonyms (+ Excel/CSV import), logs and insights, and asks Catalog through its queries; the MySQL `innodb_ft_min_token_size = 2` setting is kept in the Docker config.
 - **Refs:** D21 (search engine plan, SR1–SR5), D13.2, D15.1, D17, B1, B7–B13
 - **Build:** CategoryPage, BrandPage, TagPage, SearchPage with filters (brand, form, suitable-for, price, in-stock, discount %), sort, cursor pagination, mobile filter slide, quick view, instant search box, Scout database driver, synonyms, search logs.
 - **Tests:** filter combinations, Persian normalisation in search, zero-result logging, query count bounded (no N+1).
 
 ### S13 PDP
 - **Refs:** B5 (PDP), B1 (Darunet PDP), D14.3 (PDP), D13.11 (stock alert), B7–B13
-- **Build:** ProductPage with gallery/zoom, variant picker (opens on the default SKU; **no picker when the product has one SKU**, decided 2026-11-07 in S13b; shows each SKU's own image when it has one), optional SKU image upload in the variant form + round thumbnail in the variants table, price, expiry, badges, tabs, related, sticky buy bar, stock alert, product questions (submit), reviews list (approved only).
+- **Build:** ProductPage with gallery/zoom, variant picker (opens on the default SKU; **no picker when the product has one SKU**, decided 2026-11-07 in S14; shows each SKU's own image when it has one), optional SKU image upload in the variant form + round thumbnail in the variants table, price, expiry, badges, tabs, related, sticky buy bar, stock alert, product questions (submit), reviews list (approved only).
 - **Tests:** renders variant change, shows expiry, rx product shows "not available online yet", stock alert subscription.
 
-### S13b Collections, popular products and home page builder
-- **Decisions (2026-11-07):** banners are a reusable library with a picked link target (category, collection, brand, tag, product, the categories / collections / brands list pages, or an external URL) and can be placed on the home page (slider widget) and at the top of category, collection, brand, tag and list pages; collections are hand-picked product lists; «محصولات محبوب» is a system collection; the empty search box shows its first 6 in-stock products as cards (phone: swipeable row with the next card peeking; tablet/desktop: 3 × 2 grid) with «مشاهده همه» → `/collections/popular`, the cards get «+ افزودن به سبد» in S19; the admin builds the home page from widgets (slider, collection, brands, categories, tags, trust), each showing at most 6 items. **Changed (owner, 2026-11-14): «محصولات محبوب» is no longer hand-picked**; `Search\Jobs\RecalculatePopularProducts` recalculates it nightly at 03:30 Tehran from the products opened from search in the last 30 days (top 24, active only) through `Catalog\Actions\ReplacePopularProducts`, and keeps the current list when there were no clicks.
+### S14 Collections, popular products and home page builder
+- **Decisions (2026-11-07):** banners are a reusable library with a picked link target (category, collection, brand, tag, product, the categories / collections / brands list pages, or an external URL) and can be placed on the home page (slider widget) and at the top of category, collection, brand, tag and list pages; collections are hand-picked product lists; «محصولات محبوب» is a system collection; the empty search box shows its first 6 in-stock products as cards (phone: swipeable row with the next card peeking; tablet/desktop: 3 × 2 grid) with «مشاهده همه» → `/collections/popular`, the cards get «+ افزودن به سبد» in S21; the admin builds the home page from widgets (slider, collection, brands, categories, tags, trust), each showing at most 6 items. **Changed (owner, 2026-11-14): «محصولات محبوب» is no longer hand-picked**; `Search\Jobs\RecalculatePopularProducts` recalculates it nightly at 03:30 Tehran from the products opened from search in the last 30 days (top 24, active only) through `Catalog\Actions\ReplacePopularProducts`, and keeps the current list when there were no clicks.
 - **More decisions (2026-11-07 – 2026-11-09):** admin selects show round images (brands, categories, tags, collections); products are picked by SKU and the product is saved; every product has at least one SKU (asked on create; the last cannot be deleted); full-word addresses with 301s from the short ones; no home page HTML cache; widgets show only with at least one item, and the admin says why one is hidden; «جایگاه بنرها» removed from the admin (banners are set in home sliders only); Swiper sliders (banner slider always, other rows only when they overflow); `HomePageDemoSeeder` for sample data (`php artisan db:seed --class=HomePageDemoSeeder`, not in production).
 - **Refs:** D3.1 (collections), D3.6 (home widgets, banners), B5, B9.2, D14.2 (banner presets), D21.2, B7–B13
 - **Build:** banners library + banner_placements (Filament «بنرها»: images, link target picker, schedule), banner/slider at the top of category, collection, brand, tag and list pages (rendered; no admin screen sets them, see D3.6), `/categories` and `/collections` list pages; collections + collection_product, Filament «کالکشن‌ها» (product picker, drag order, schedule; system collection not deletable), `/collections/{slug}` PLP, `collection_ids` in the Meilisearch document; empty-search popular products in the search box; home_widgets + banners, Filament «چیدمان صفحه اصلی» (widget forms per type, banners tab for sliders, drag order, schedule, preview, warnings over 8 widgets), Home page rendering the widgets that have items (no HTML cache).
 - **Tests:** banner link resolves for each target type and follows a slug change; banner with an inactive target or outside its schedule is hidden; ≤ 6 banners per placement; collection page lists only its products in admin order; schedule hides expired collections, widgets and banners; empty search shows ≤ 6 in-stock popular products; every widget renders ≤ 6 items; widget order; widgets without items are left out and the admin shows why; system collection cannot be deleted.
 
-### S14 Providers and provider prices
-- **Built together with S15** (owner, 2026-11-09): switching suppliers changes the selling price, so suppliers, commission, price records and the engine land on one branch (one commit per step).
+### S15 Providers and provider prices
+- **Built together with S16** (owner, 2026-11-09): switching suppliers changes the selling price, so suppliers, commission, price records and the engine land on one branch (one commit per step).
 - **Refs:** D3.2, A1
-- **Build:** Pricing module: providers, provider_prices, Filament «تأمین‌کنندگان» (list, form, active switch, and a view page with a relation-manager table of the supplier's SKUs and their price information, owner 2026-11-09; its sales widgets come in S42); a «قیمت خرید از تأمین‌کننده» table on each SKU (provider, cost in toman, available, lead time; add / edit / remove). Availability → SKU `stock_status` (any available provider → `available`, none → `out_of_stock`; SKUs with no provider rows keep their manual status until S15) through an action that calls `ProductSearchIndex::refresh` (the default SKU may switch). Provider costs never reach the storefront or Meilisearch.
+- **Build:** Pricing module: providers, provider_prices, Filament «تأمین‌کنندگان» (list, form, active switch, and a view page with a relation-manager table of the supplier's SKUs and their price information, owner 2026-11-09; its sales widgets come in S44); a «قیمت خرید از تأمین‌کننده» table on each SKU (provider, cost in toman, available, lead time; add / edit / remove). Availability → SKU `stock_status` (any available provider → `available`, none → `out_of_stock`; SKUs with no provider rows keep their manual status until S16) through an action that calls `ProductSearchIndex::refresh` (the default SKU may switch). Provider costs never reach the storefront or Meilisearch.
 - **Tests:** cheapest available provider selection (inactive providers and unavailable rows ignored); availability switches stock and the default SKU in the search document; costs are not in the search document; permissions.
 
-### S15 Pricing engine and price records
+### S16 Pricing engine and price records
 - **Refs:** D3.2 (engine, variant_prices), D9
 - **Build:** `brands.commission_percent`, `products.commission_percent`; `variant_prices` + `product_variants.current_price_id` (migration copies today's prices into an `initial` record per SKU and drops the old price columns once everything reads from the record); `CalculateVariantPrice` action; `RecalculateVariantPrice` and `RecalculatePrices` jobs on the `pricing` queue (after supplier price, printed price, haraj, product or brand commission changes; refresh the search index); rounding up to 1,000 toman; printed-price cap with the «سود کمتر از کمیسیون» flag; haraj rule; SKU form with a read-only selling price shown live, printed and haraj inputs, and the price history; SKU save refused without a commission; flag > 15 % changes in the history; a list of SKUs that cannot be priced (no commission or no supplier price). Replaces the S12 rules (default %, «قیمت دستی»). Update the pricing guide in the SKU form.
 - **Tests:** product commission over brand, brand fallback, no commission refused, cheapest supplier, rounding, printed cap + flag, haraj below price and removed when no longer below, every trigger creates one record, latest record is read, jobs run on `pricing`, initial records from existing prices, 100 % branch coverage of the engine.
 
-### S15b Commission per supplier and preferred supplier
+### S17 Commission per supplier and preferred supplier
 - **Refs:** D3.2 (commission levels, which supplier sells), D13.9
 - **Built (2026-11-15):** `product_providers`, `brand_providers`, `provider_prices.commission_percent` / `is_preferred`, `variant_prices.provider_choice`; `ActiveSuppliers` (offers per supplier with commission and level, preferred → lowest selling price); SKU page columns «کمیسیون» (with level), «قیمت فروش با کمیسیون», «تأمین‌کننده انتخابی»; «تأمین‌کنندگان محصول» on the product form, «کمیسیون به تفکیک تأمین‌کننده» on the brand form; Excel columns «کمیسیون (٪)» («-» clears) and «تأمین‌کننده انتخابی»; repricing of exactly the affected SKUs on `pricing`; «راهنمای قیمت‌گذاری» page; inline guides updated.
 - **Tests:** each commission level over the next, preferred SKU and product suppliers and their fallback to the lowest selling price, lowest selling price over lowest cost, brand × supplier change reprices only that brand's SKUs of that supplier, Excel columns, records keep level and choice.
 
-### S16 Price import
+### S18 Price import
 - **Refs:** D13.9, D3.2
 - **As built (2026-11-14):** «دانلود قالب اکسل» and «ورود قیمت از اکسل» above the suppliers table (owner, 2026-11-10); the template is filled with every current supplier price (columns: supplier id, supplier name for reference, SKU code, barcode, product name for reference, cost in toman, «موجود نزد تأمین‌کننده», «فروش از این تأمین‌کننده», lead time) plus a guide sheet; rows are matched by our SKU code, then barcode (no name matching: a wrong match would set a wrong cost); blank switch or lead-time cells keep the current value (a new row starts «بله»); rows missing from the file are left unchanged; «ورودهای قیمت» lists every import, and its page shows the preview with «اعمال» and the error report download; super admins only by default.
-- **Build:** upload a supplier Excel/CSV (each row names its supplier by `provider_id`, owner 2026-11-09, so one file may cover several suppliers) → `ParsePriceImport` job (OpenSpout) on the **`price-import`** queue matches rows (barcode → SKU code → name similarity, flagged) → preview page (old cost, new cost, new selling price, change %) → apply → `ApplyPriceImport` job (same queue) updates provider_prices and availability, then the S15 engine reprices on `pricing`; error report download; its own Horizon supervisor for `price-import`.
+- **Build:** upload a supplier Excel/CSV (each row names its supplier by `provider_id`, owner 2026-11-09, so one file may cover several suppliers) → `ParsePriceImport` job (OpenSpout) on the **`price-import`** queue matches rows (barcode → SKU code → name similarity, flagged) → preview page (old cost, new cost, new selling price, change %) → apply → `ApplyPriceImport` job (same queue) updates provider_prices and availability, then the S16 engine reprices on `pricing`; error report download; its own Horizon supervisor for `price-import`.
 - **Tests:** fixture file with matched/unmatched rows; preview changes nothing; apply updates provider prices and creates price records; jobs on the right queues.
 
-### S17 Customer OTP auth
+### S19 Customer OTP auth
 - **Refs:** D13.1, D3.3, D16, D11.6, B7–B13
-- **Build:** `laravel/sanctum` (storefront customer authentication, D16), customers, otp_codes, OtpLogin Livewire, rate limits, profile completion. Decided 2026-11-14: Melli Payamak is built here, not in S28. SMS providers are a strategy: `SmsProvider` enum (only `Melipayamak` today) → `SmsManager` picks the `SmsSender`; `SMS_PRETEND` (on by default) logs instead of sending; base URL, path, username, API key, pattern ids, connect/request timeouts and retries come from config/.env. Every SMS goes through `SendSmsJob` on its own `sms` queue (encrypted payload, 3 HTTP retries on connection errors/5xx, 3 job tries with backoff 10 s/30 s for retryable failures, expires 60 s after dispatch) and writes `sms_logs` (provider, template, masked mobile, non-secret variables, pretend flag, result) with an admin «گزارش پیامک‌ها» list. Codes: 5 digits from `random_int`, unique among unexpired codes, stored as an HMAC, valid 2 minutes, 5 tries; while a code is live no new one is sent and the page shows the server message with the seconds left; 10 codes/day per mobile, 5/hour per IP. Mobiles must match Iranian operator prefixes (`IranianMobile` rule). Local only: bypass code `OTP_BYPASS_CODE` (flag `OTP_BYPASS_ENABLED`, on by default; never outside APP_ENV=local). Customer-facing errors extend `Shared\Exceptions\BaseException` and render `{"message", "code"}` as JSON. Admin «مشتریان»: list, clickable rows to a customer page, block/unblock (orders relation manager: S29).
-- **Tests:** rate limits, live-code refusal, expiry, attempts, bypass (local only), login + session regeneration, `CustomerLoggedIn` event for the guest cart merge (S19), Melli Payamak `Http::fake()` success/errors/retries/redaction, job retry rules, admin list/view/block.
+- **Build:** `laravel/sanctum` (storefront customer authentication, D16), customers, otp_codes, OtpLogin Livewire, rate limits, profile completion. Decided 2026-11-14: Melli Payamak is built here, not in S37. SMS providers are a strategy: `SmsProvider` enum (only `Melipayamak` today) → `SmsManager` picks the `SmsSender`; `SMS_PRETEND` (on by default) logs instead of sending; base URL, path, username, API key, pattern ids, connect/request timeouts and retries come from config/.env. Every SMS goes through `SendSmsJob` on its own `sms` queue (encrypted payload, 3 HTTP retries on connection errors/5xx, 3 job tries with backoff 10 s/30 s for retryable failures, expires 60 s after dispatch) and writes `sms_logs` (provider, template, masked mobile, non-secret variables, pretend flag, result) with an admin «گزارش پیامک‌ها» list. Codes: 5 digits from `random_int`, unique among unexpired codes, stored as an HMAC, valid 2 minutes, 5 tries; while a code is live no new one is sent and the page shows the server message with the seconds left; 10 codes/day per mobile, 5/hour per IP. Mobiles must match Iranian operator prefixes (`IranianMobile` rule). Local only: bypass code `OTP_BYPASS_CODE` (flag `OTP_BYPASS_ENABLED`, on by default; never outside APP_ENV=local). Customer-facing errors extend `Shared\Exceptions\BaseException` and render `{"message", "code"}` as JSON. Admin «مشتریان»: list, clickable rows to a customer page, block/unblock (orders relation manager: S24).
+- **Tests:** rate limits, live-code refusal, expiry, attempts, bypass (local only), login + session regeneration, `CustomerLoggedIn` event for the guest cart merge (S21), Melli Payamak `Http::fake()` success/errors/retries/redaction, job retry rules, admin list/view/block.
 
-### S18 Addresses and account area
+### S20 Addresses and account area
 - **Refs:** D3.3, B5 (account), B7–B13
-- **Decisions (owner, 2026-11-14):** no map pin or coordinates; **locations follow Tipax** (D4: Tipax ids, no mapping, regions and neighbourhoods dropped; `tipax:sync-cities` with a minimal `TipaxClient` built here and run on every deploy); cities offered are those with «ارسال فعال»; the account menu shows «سفارش‌ها» (S29 fills it) and «نظرات من» (S13 fills it) with empty states; the wishlist heart sits on the product card, quick view and product page; a guest's click remembers the product, sends them to `/login`, and a `CustomerLoggedIn` listener saves it before they return; profile birth date uses the Jalali picker (stored Gregorian); orders snapshot everything that can change (D3.4 «Snapshot rule»); no new package.
+- **Decisions (owner, 2026-11-14):** no map pin or coordinates; **locations follow Tipax** (D4: Tipax ids, no mapping, regions and neighbourhoods dropped; `tipax:sync-cities` with a minimal `TipaxClient` built here and run on every deploy); cities offered are those with «ارسال فعال»; the account menu shows «سفارش‌ها» (S24 fills it) and «نظرات من» (S13 fills it) with empty states; the wishlist heart sits on the product card, quick view and product page; a guest's click remembers the product, sends them to `/login`, and a `CustomerLoggedIn` listener saves it before they return; profile birth date uses the Jalali picker (stored Gregorian); orders snapshot everything that can change (D3.4 «Snapshot rule»); no new package.
 - **Build:** addresses with Locations selects, account dashboard, profile, wishlist, my reviews; a heart button on the product card, quick view and product page adds to the wishlist (guests get the OTP login first, then the product is saved); read-only «آدرس‌ها» on the admin customer page.
 - **Tests:** owner-only access (policy), default address switching, delivery-city check, 10-address limit, profile validation, wishlist toggle and guest flow, Tipax sync with faked HTTP.
 
-### S19 Cart
+### S21 Cart
 - **Refs:** D13.3, D3.4, B7–B13
 - **Decisions (owner, 2026-11-14):** see D3.4 «Cart rules»: quantity stepper on cards, toast only for the free-shipping nudge and refusals, limit per order SKU → product → store setting, guest cart by an encrypted random-token cookie (hash in the database), merge on sign-in (assign or merge-and-delete), unavailable lines block checkout until «به‌روزرسانی سبد», price-change alert once, `GET /cart/quantities`; a product with one SKU shows no SKU list on the product page, just «افزودن به سبد» (it adds the default SKU everywhere); minimal «تنظیمات فروشگاه».
-- **Build:** carts/cart_items, add-to-cart action + button (on the card and quick view: a «+» that adds the default SKU — not on the search box's product rows since 2026-11-15 (owner: the name needs the room) —, with a «تغییر» link to the product page; decided 2026-11-07, S12; S13b's empty-search popular cards and home collection rows get the same «+ افزودن به سبد»), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
+- **Build:** carts/cart_items, add-to-cart action + button (on the card and quick view: a «+» that adds the default SKU — not on the search box's product rows since 2026-11-15 (owner: the name needs the room) —, with a «تغییر» link to the product page; decided 2026-11-07, S12; S14's empty-search popular cards and home collection rows get the same «+ افزودن به سبد»), mini-cart, CartPage, guest cookie, merge on login, free-shipping progress.
 - **Tests:** qty limits, rx/cold-chain blocked, price snapshot refresh, merge.
 
-### S20 Coupons
+### S22 Coupons
 - **Refs:** D3.4 (coupons)
 - **Build:** coupons, usages, include lists, validation action, Filament resource, apply/remove in cart. Rules decided 2026-11-14: see D3.4 «Coupon rules».
 - **Tests:** each coupon type, limits per customer/total, date window, first-order-only, concurrency (lock).
 
-### S25 Checkout wizard
+### S23 Checkout wizard
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
-- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering (`PH-{Jalali Ym}-{id, 6 digits}`), status `pending`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S26, phase 7); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S19 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S21), own courier zones (S24) and Tipax quotes (S23) in phase 7 (owner, 2026-11-14).
+- **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering (`PH-{Jalali Ym}-{id, 6 digits}`), status `pending`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S36, phase 7); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S21 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S31), own courier zones (S32) and Tipax quotes (S34) in phase 7 (owner, 2026-11-14).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content (address, customer, coupon, shipping quote and every item field of the D3.4 «Snapshot rule»; editing the product, price, address or city afterwards leaves the order unchanged).
 - **Built (owner, 2026-11-14):** the address step and review page (B9.7, D13.4), `PlaceOrder` with re-checks and snapshots, the seven statuses and `ChangeOrderStatus` (D3.5), payments with one link per order and the fake gateway (`config('payments.gateway') = 'fake'`, refused unless `payments.fake_enabled`, so production can never take fake payments), `/checkout/result/{order}` (paid, failed-but-payable, expired), «سفارش‌ها» with «پرداخت», «لغو سفارش» and «سفارش دوباره» (`ReorderItems`: still-buyable items back into the cart at today's price, added and capped; the rest reported), addresses in parts with `AddressText`, the flat shipping setting, owner-only checks on every account action. Also in this step at the owner's request: dark mode and the design system (B3), Iranian postal-code rules and the 0900 prefix (D3.3), the product page layout ahead of S13 (B9.5) and the WhatsApp/Telegram contact settings (D3.4 settings).
 
-### S29 Order admin and state machine
+### S24 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
 - **Customer order pages (owner, 2026-11-17):**
   - In «سفارش‌ها», each card has a «جزئیات سفارش» button and no «لغو سفارش».
   - The order page has «سفارش دوباره» as a filled button at the top, and «لغو سفارش» at the bottom only, while the order can still be cancelled.
-- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S27 in phase 7), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (the read-only order detail page `/account/orders/{id}` was built early with S25: header card, items, status history, address and payment summary; owner, 2026-11-14) (`Orders\Actions\ReorderItems`; the list already has it since S25), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S17; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
+- **Build:** OrderResource view (status timeline, items with cost/margin), guarded transitions as Filament actions through `ChangeOrderStatus` (D3.5; admin cancel while `paid` or `processing`; shipment status set by hand until Tipax tracking, S35 in phase 7), cancellation + refund flow, customer OrderDetail with tracking timeline and «سفارش دوباره» (the read-only order detail page `/account/orders/{id}` was built early with S23: header card, items, status history, address and payment summary; owner, 2026-11-14) (`Orders\Actions\ReorderItems`; the list already has it since S23), guest tracking. **The profile order detail and the admin order pages render only from the order's snapshots** (owner, 2026-11-14). On the admin customer page (CustomerResource view, S19; decided 2026-11-14): an «سفارش‌ها» relation manager listing the customer's orders (number, date, status, items, total, payment); each row is clickable and opens that order's OrderResource view page in a new tab.
 - **Tests:** allowed/forbidden transitions, refund on cancel, customer sees only own orders, the customer page lists only that customer's orders and each row links to its order view (new tab).
 - **As built (owner, 2026-11-15):** «سفارش‌ها» in «فروش» (`OrderResource`): list (number, date, customer and mobile from the snapshot, status, items, total, payment; search by number or mobile; filters by status, payment, date) and a view page from the snapshots only (summary with tracking code and refund, items with supplier, purchase price and gross margin, totals, customer and address, status history with who and why). Header actions show only when the move is allowed (D3.5): «شروع آماده‌سازی», «تحویل به حمل» (tracking code required; `SendOrderOnItsWay`), «تحویل شد», «لغو سفارش» (reason required; `CancelOrderByAdmin`, payment → refund pending), «ثبت بازگشت وجه» (reference required; `MarkOrderRefunded`, super admins only; the amount paid back for the products and for shipping, `refund_items_amount` / `refund_shipping_amount`, prefilled with the full amounts and at most what was paid for each, owner 2026-11-16; when an order with free shipping is cancelled after delivery, the product refund starts at what was paid less the free shipping the store paid for, `shipping_discount`), «یادداشت مدیر». Operators get `ViewAny/View/Update:Order`; `Refund:Order` is left to super admins; content editors see no orders. Tabs: «تراکنش‌های پرداخت» on the order (`Payments\Filament\RelationManagers\OrderPaymentsRelationManager`) and «سفارش‌ها» on the customer (`Orders\Filament\RelationManagers\CustomerOrdersRelationManager`, rows open in a new tab); both build their relation from the owner record, keeping module boundaries. Customers see the tracking code on their order page; `/track` («پیگیری سفارش») finds an order by number plus the customer's or receiver's mobile and shows only its status, history and tracking code, with the same answer for any mismatch.
 
-### S30 Provider purchases (sourcing)
+### S25 Provider purchases (sourcing)
 - **Refs:** D13.6, D3.4 (provider_purchases)
 - **Build:** auto-draft purchases from paid orders grouped by provider, print/Excel export, receive quantities, missing-item handling. **What we actually pay the supplier is recorded on the purchase, never overwriting `order_items.unit_cost`** (owner, 2026-11-14).
 - **Tests:** grouping, partial receive → order stays sourcing, full receive → ready_to_pack.
 - **As built (owner, 2026-11-16):** one purchase document per order, filled by hand, instead of auto-drafted per-supplier purchases (D13.6, D3.4 order_purchases). «اسناد خرید» and «خرید از تأمین‌کننده» in «فروش»; on the order: «ثبت سند خرید» / «سند خرید», «تأمین سفارش» status and the final margin; the order list has a «تأمین» column and filter. Operators get `ViewAny/View/Create/Update:OrderPurchase`; content editors see none. The order keeps its seven statuses (D3.5): sourcing is a separate admin-only field. Tests: no rows on payment, open and link both ways, split rows never past the ordered quantity, registered only when fully covered, partial and full receive, final margin, shipping gated on full receipt, remaining-units list, loss warning, supplier list and Excel, roles.
 
-### S31 Packing
+### S26 Packing
 - **Refs:** D13.7
-- **Build:** packing screen (confirm weight; suggested boxes come with the S21 box packer in phase 7, owner 2026-11-14), packing slip print, triggers shipment registration.
+- **Build:** packing screen (confirm weight; suggested boxes come with the S31 box packer in phase 7, owner 2026-11-14), packing slip print, triggers shipment registration.
 - **Tests:** packed transition requires weights; triggers job.
 
-### S32 Returns
+### S27 Returns
 - **Refs:** D13.8, D6.3 (ReturnRegisterOrder)
 - **Build:** return requests (customer + admin), Tipax return order, refund.
 - **Tests:** 7-day window, approval flow.
 
-### S33 Home, banners, deals
+### S28 Home, banners, deals
 - **Refs:** B1, B5 (home, deals), D3.6 (content), D14.3 (hero), B7–B13
-- **Build:** flash deals + countdown and `flash_deal` / `bundles` home widget types (the builder, banners and sliders come in S13b), deals hub (tiers, near-expiry), bundles page. (Damaged-box and the `MarkNearExpiry` job were removed by the owner, 2026-11-16.)
+- **Build:** flash deals + countdown and `flash_deal` / `bundles` home widget types (the builder, banners and sliders come in S14), deals hub (tiers, near-expiry), bundles page. (Damaged-box and the `MarkNearExpiry` job were removed by the owner, 2026-11-16.)
 - **Tests:** scheduling windows, flash deal sold-count lock, near-expiry flagging.
-- **As built (owner, 2026-11-16/17):** «پیشنهادهای لحظه‌ای» in «فروش» (super admins; moved from «محتوا», owner 2026-11-17): per SKU a required supplier (pre-filled with the site's current one), deal price, window and optional unit limit; the form shows the SKU's box, selling, haraj and current prices and warns when the deal price is at or below the supplier's cost. Deals are refused when not cheaper than the regular price, overlapping another active deal of the SKU, or below what sold. One «پیشنهاد لحظه‌ای» home widget (on/off from the list) and `/deals` («تخفیف‌ها»: live deals with the countdown, discount chips to `/products?off=N`, «زودمصرف» row; the home row's «مشاهده همه» lands on `/products?deal=1`, the product list limited to live deals with all its other filters and a chip that clears it; the filter panel has **neither a deal nor a «زودمصرف» filter**, owner 2026-11-17). Bundles and the `bundles` widget move to S33b.
+- **As built (owner, 2026-11-16/17):** «پیشنهادهای لحظه‌ای» in «فروش» (super admins; moved from «محتوا», owner 2026-11-17): per SKU a required supplier (pre-filled with the site's current one), deal price, window and optional unit limit; the form shows the SKU's box, selling, haraj and current prices and warns when the deal price is at or below the supplier's cost. Deals are refused when not cheaper than the regular price, overlapping another active deal of the SKU, or below what sold. One «پیشنهاد لحظه‌ای» home widget (on/off from the list) and `/deals` («تخفیف‌ها»: live deals with the countdown, discount chips to `/products?off=N`, «زودمصرف» row; the home row's «مشاهده همه» lands on `/products?deal=1`, the product list limited to live deals with all its other filters and a chip that clears it; the filter panel has **neither a deal nor a «زودمصرف» filter**, owner 2026-11-17). Bundles and the `bundles` widget move to S28b.
 
-### S34 Static pages, FAQ, contact, menus
+### S29 Static pages, FAQ, contact, menus
 - **Refs:** D3.6, B5, B7–B13
-- **Build:** pages, FAQ, menus (header/footer/mobile), contact form with rate limit. **Pages were built ahead** (owner, 2026-11-14; see D3.6 «pages»): admin «صفحه‌های ثابت» with the rich editor, `/pages/{slug}`, the eight footer pages as drafts, cleaned HTML and a «یک صفحه ثابت» banner link. S34 still builds FAQ, menus and the contact form.
+- **Build:** pages, FAQ, menus (header/footer/mobile), contact form with rate limit. **Pages were built ahead** (owner, 2026-11-14; see D3.6 «pages»): admin «صفحه‌های ثابت» with the rich editor, `/pages/{slug}`, the eight footer pages as drafts, cleaned HTML and a «یک صفحه ثابت» banner link. S29 still builds FAQ, menus and the contact form.
 - **Decided (owner, 2026-11-17):**
   - **Menus:** «دسته‌بندی کالاها» and its mega-menu stay hard-coded. Everything else is edited in «منوها» (group «محتوا»):
     - the header site links beside it;
@@ -2990,14 +3006,14 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
   - **Menu data:** no nesting (`parent_id` dropped). Tables `menus` (one per location, with a heading) and `menu_items`. They are created with today's links in a migration and cached per location, cleared when a menu, item or page changes.
   - **FAQ:** groups are a fixed list (سفارش و ارسال، پرداخت، بازگشت کالا، حساب کاربری، دارو و نسخه، سایر). Answers are plain text. `/faq` shows active questions by group as an accordion.
   - **Contact:** name, mobile, optional email, a subject from a fixed list, and the message. Limited to 3 sends per 10 minutes per IP and per mobile.
-  - **Contact admin:** «پیام‌های تماس» with statuses new, read and answered, and a badge counting new messages. Opening a message marks it read. There is no SMS or email to staff until S28.
+  - **Contact admin:** «پیام‌های تماس» with statuses new, read and answered, and a badge counting new messages. Opening a message marks it read. There is no SMS or email to staff until S37.
 - **Tests:** sanitized HTML, rate limit on contact.
 
-### S35 Settings and trust
+### S30 Settings and trust
 - **Refs:** D3.6 (settings, social, trust badges, pharmacists), B2 rule 3, B7–B13
 - **Build:** spatie/laravel-settings page, social links, trust badges (e-Namad embed), pharmacist page, trust counters (live).
 - **As built (owner, 2026-11-17):**
-  - **Settings storage:** no `spatie/laravel-settings`. The S19 key/value store (`StoreSettings`, cached, cleared on save) gets «اطلاعات تماس» (`contact.phone`, `contact.email`, `contact.address`, `contact.working_hours`) and «شبکه‌های اجتماعی» (`social.links`: an ordered list of platform and https address; `social_links` is not a table). These are shown in the footer's «ارتباط با ما» column (with drawn icons) and in the `/contact` side box.
+  - **Settings storage:** no `spatie/laravel-settings`. The S21 key/value store (`StoreSettings`, cached, cleared on save) gets «اطلاعات تماس» (`contact.phone`, `contact.email`, `contact.address`, `contact.working_hours`) and «شبکه‌های اجتماعی» (`social.links`: an ordered list of platform and https address; `social_links` is not a table). These are shown in the footer's «ارتباط با ما» column (with drawn icons) and in the `/contact` side box.
   - **Trust badges:** «نمادهای اعتماد» (super admin) holds the `trust_badges` table, ordered by drag.
     - A badge is either e-Namad's or Samandehi's code, pasted as they hand it out, or an uploaded image with an optional link.
     - The code is cleaned on save and when shown (`TrustBadgeEmbed`): only `<a>`/`<img>` over https on enamad.ir or samandehi.ir hosts, with `referrerpolicy`, and links get `rel="noopener"` but never `noreferrer`, because e-Namad checks the referrer.
@@ -3013,33 +3029,54 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
     - The row sits under the trust block in the footer and in the home trust widget.
 - **Tests:** settings cache invalidation; e-Namad embed renders.
 
-> **Phase 7: Shipping and external integrations (owner, 2026-11-09; shipping added 2026-11-14; moved before SEO, hardening and reporting, owner 2026-11-17).** The shipping foundation (S21) and own courier zones (S24) come first, then Tipax (S22, S23, S27), Zarinpal (S26) and SMS (S28), right after the content steps (S33–S35) and before SEO, hardening and reporting (S40 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S17), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S25), shipment status and own-courier deliveries set by hand (S29).
+> **Phase 7: Shipping and external integrations (owner, 2026-11-09; shipping added 2026-11-14; moved before SEO, hardening and reporting, owner 2026-11-17).** The shipping foundation (S31) and own courier zones (S32) come first, then Tipax (S33, S34, S35), Zarinpal (S36) and SMS (S37), right after the content steps (S28–S30) and before SEO, hardening and reporting (S45 needs them). Until then the earlier steps run on stand-ins: SMS through the `log` driver (S19), checkout payments through the fake gateway and shipping at one flat rate from the store settings with the free-shipping threshold (S23), shipment status and own-courier deliveries set by hand (S24).
 
-### S21 Shipping foundation
-- **Moved to phase 7** (built after S35, before the Tipax steps; owner, 2026-11-14/17); until then checkout charges the S25 flat rate.
+### S31 Shipping foundation
+- **Moved to phase 7** (built after S30, before the Tipax steps; owner, 2026-11-14/17); until then checkout charges the S23 flat rate.
 - **Refs:** D5, D5.1, D6.8
-- **Changed for Tapin (owner, 2026-11-17; D5, D6.0):** every order is one parcel of fixed size, so there are no shipping boxes or box packer, and the pickup address lives in the Tapin panel (no `origins`).
-- **Build:**
-  - `carriers` (Tipax via Tapin, own courier) and `carrier_services` (Tapin service 7 same-city, 2 between-city, with delivery days), with Filament screens;
+- **Changed for Tapin (owner, 2026-11-17; D5, D6.0):** Tapin prices by weight only (sizes are sent as 5 cm, at most 6 kg a parcel), and the pickup address lives in the Tapin panel (no `origins`).
+- **Boxing («بسته‌بندی», owner 2026-11-17/18):** we have no reliable product sizes, so **each SKU says how many of it fit each box** (2026-11-18; replaces the size types and the capacity table of the day before, as more accurate).
+  - Admin «ارسال» → «بسته‌بندی» holds «کارتن‌ها»; the numbers live on each SKU.
+  - **«کارتن‌ها»** (`shipping_boxes`): name, Tipax size number, inner length × width × height in cm, the box's own weight in g (with filler), **the most a parcel in it may weigh** (`max_weight_g`, box included, at most 6 kg; owner 2026-11-17: thin small cartons take less, seeded 2 kg for size 1, 3 kg for sizes 2 and 10, 4 kg for size 3, 6 kg for the rest), sort, on/off. `TipaxCartonsSeeder` adds Tipax's standard cartons 1–11 from Tapin's guide, with estimated weights to correct.
+  - **«جا در کارتن‌ها» on the SKU form** (`variant_box_capacities`: SKU, box, pieces): for every available box, how many pieces of this SKU fit it; empty means it does not fit. **At least one box is required**, like the weight. «کپی از تنوع دیگر» copies the numbers from a similar SKU. The product create page asks the same for the first SKU.
+  - The order item snapshot keeps the SKU's numbers (box id → pieces) with its weight, so later edits never change a paid order.
+  - **`BoxPacker`:**
+    - Each piece takes 1/(pieces that fit) of a box, and mixed items add up: 6 of a SKU that fits 12 and 3 of one that fits 6 fill one box.
+    - **A box is full when either limit is reached first** (owner, 2026-11-17): its own maximum weight including the box (never above 6 kg), or its space by the SKUs' numbers. The next item then opens a new box.
+    - **Fewest boxes per order first, then the smallest box for each** (owner, 2026-11-17).
+    - It first tries **one box for everything**: the boxes from smallest to largest, taking the first within both limits. Smallest-first is kept on purpose: a larger box does not always take what a smaller one does (a flat box, or a lower weight limit), so stopping at the first miss from the top could skip a smaller box that fits.
+    - Only when even the largest box cannot take everything does it split: items largest first, a first fill, then for up to 16 items a search for the fewest boxes. Each parcel then gets its smallest box.
+    - «ارسال جداگانه» items get their own box.
+    - A parcel with any liquid or fragile item is «مایعات-شکستنی» for Tipax.
+    - A SKU without a weight is packed as 300 g and the parcel is marked an estimate; a SKU with no box numbers fits no box.
+    - An item no box takes gets a parcel with no box, for staff.
+  - **After payment, in the background** (owner, 2026-11-17/18): when an order becomes paid, `OrderPaid` goes out after the payment commits and a queued listener (`PackPaidOrder`, «default» queue) packs it; its parcels are stored on it (`order_parcels`: box and its sizes and weight as they were, items, item weight, total weight, Tipax item type, estimate flag). The admin order page shows them with «بسته‌بندی دوباره» while the order is paid or processing.
+  - Checkout prices shipping from the same packing in S34 (until then the flat rate).
+  - An admin list «تنوع‌های بدون وزن یا جا در کارتن» (under «ارسال») shows what still needs filling in.
+- **Then (rest of S31):**
+  - `carriers` (Tipax via Tapin, own courier) and `carrier_services` (Tapin service 7 same-city, 2 between-city);
   - the `ShippingCarrier` contract and DTOs (`Parcel`, `Quote`, `ShipmentResult`, `TrackingStatus`);
-  - `ParcelBuilder`: an order or cart becomes one parcel. Weight is the sum of the SKUs' weights plus a packaging weight from settings, at least 1 kg. Declared value is the items' value, at least 4,000,000 rial. The item type is 4 «مایعات-شکستنی» when any item is liquid or fragile, else 1. Orders over 6 kg are flagged (**[CONFIRM] in S23:** split or refuse);
-  - a fallback `RateTable` by weight band × same city / same province / other province, for when Tapin does not answer (the quote is marked an estimate);
-  - rounding of shown prices (`shipping_rules`: round up only);
-  - an admin list of SKUs without a weight.
-- **Tests:** parcel weight (sum plus packaging, 1 kg minimum, over 6 kg flagged), declared value minimum, liquid or fragile item type, fallback rate by band and distance, rounding.
+  - a fallback `RateTable` by weight band × same city / same province / other province, used when Tapin does not answer (the quote is marked an estimate);
+  - rounding of shown prices.
+- **Tests:**
+  - packing: one box; smallest box chosen; a SKU with no box numbers; mixed fractions; one bigger box rather than two; a box's own weight limit; the 6 kg split; space before weight; the fewest boxes where largest-first would need one more; «ارسال جداگانه»; no box fits; defaults for missing data; liquid or fragile type;
+  - packing queued after payment, parcels stored, and repacking;
+  - «جا در کارتن‌ها» on the SKU form: at least one box, saving, clearing a box, copying from another SKU;
+  - the box admin (Tipax cartons seeded once, a box's maximum weight between its own weight and 6 kg);
+  - fallback rate by band and distance; rounding.
 
-### S24 Own courier zones
-- **Moved to phase 7** (built after S21; owner, 2026-11-14); until then own-courier deliveries are arranged by hand in the order admin (S29).
+### S32 Own courier zones
+- **Moved to phase 7** (built after S31; owner, 2026-11-14); until then own-courier deliveries are arranged by hand in the order admin (S24).
 - **Refs:** D5.1 (zones, slots, couriers)
-- **Note (2026-11-14, S18):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
+- **Note (2026-11-14, S20):** addresses have no map pin, region or neighbourhood, so zones work from the Tipax city plus postal-code ranges (or the admin picks the zone for an order).
 - **Build:** delivery zones (city + postal-code ranges), slots with capacity, couriers, `OwnCourierCarrier::quote()`.
 - **Tests:** address in zone, slot capacity exhausted.
 
-### S22 Tipax client and reference sync
-- **Moved to phase 7** (built after S35; owner, 2026-11-09/17).
+### S33 Tipax client and reference sync
+- **Moved to phase 7** (built after S30; owner, 2026-11-09/17).
 - **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
-- **Already done in S18:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
-- **Changed for Tapin (owner, 2026-11-17; D6.0):** the S18 `TipaxClient` is replaced by a `TapinClient`; there is no sign-in, origin registration or webhook registration.
+- **Already done in S20:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
+- **Changed for Tapin (owner, 2026-11-17; D6.0):** the S20 `TipaxClient` is replaced by a `TapinClient`; there is no sign-in, origin registration or webhook registration.
 - **Build:**
   - `TapinClient` (Bearer token, `shop_id`, retries, timeouts, every call logged with secrets hidden, `returns.status` checked);
   - `tapin:ping`;
@@ -3049,25 +3086,19 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
   - a wallet balance on the admin dashboard.
 - **Tests:** `Http::fake` fixtures from the guide for options, cities and errors (`returns.status` not 20 or 21); the city import.
 
-### S23 Tipax quotes in checkout
-- **Moved to phase 7**; built after S21 and S24. Until then checkout charges the S25 flat rate.
+### S34 Tipax quotes in checkout
+- **Moved to phase 7**; built after S31 and S32. Until then checkout charges the S23 flat rate.
 - **Refs:** D6.4, D13.4 step 2
 - **Changed for Tapin (owner, 2026-11-17; D6.0):** quotes come from Tapin's `check-price`.
 - **Build:**
   - `TapinTipaxCarrier::quote()`: one parcel from `ParcelBuilder`, service 7 inside the shop's city else 2, prepaid, delivery to the door, pickup per settings;
   - the price shown is `total_send_price` with tax, rounded;
   - `shipping_quotes` cache (20 min), the free-shipping threshold and coupons as today, and a fallback estimate on timeout;
-  - orders over 6 kg per the S21 decision.
+  - orders over 6 kg per the S31 decision.
 - **Tests:** request body and price mapping from the guide's fixture, cache hit, timeout → fallback estimate, same-city vs between-city service.
 
-### S26 Zarinpal payments
-- **Moved to phase 7**; until then checkout pays through the S25 fake gateway.
-- **Refs:** D7 (all), D11.4, D16 (payments)
-- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing `Payments\Contracts\PaymentGateway` (S25); `config/payments.php` gets the gateway block (merchant id, sandbox, callback) (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
-- **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
-
-### S27 Tipax shipment registration and tracking
-- **Moved to phase 7**; until then shipment status is set by hand in the order admin (S29).
+### S35 Tipax shipment registration and tracking
+- **Moved to phase 7**; until then shipment status is set by hand in the order admin (S24).
 - **Refs:** D6.5, D6.7, D11.3 (D–E), D13.7
 - **Changed for Tapin (owner, 2026-11-17; D6.0):** no webhooks; status comes from polling.
 - **Build:**
@@ -3080,21 +3111,27 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
   - a low wallet balance blocks confirmation with a clear message.
 - **Tests:** idempotent registration, ready-to-send stores the barcode, status mapping per code, polling only open shipments, cancel, low-balance refusal.
 
-### S28 Notifications (SMS via Melli Payamak)
-- **Moved to phase 7.** The Melli Payamak sender, `SmsManager`, `SendSmsJob`, `sms_logs` and `sms:test` were built in S17 (2026-11-14); this step adds the order templates.
+### S36 Zarinpal payments
+- **Moved to phase 7**; until then checkout pays through the S23 fake gateway.
+- **Refs:** D7 (all), D11.4, D16 (payments)
+- **Build:** payments/payment_refunds, `ZarinpalGateway` implementing `Payments\Contracts\PaymentGateway` (S23); `config/payments.php` gets the gateway block (merchant id, sandbox, callback) (replaces the fake gateway outside local/testing) (request, verify, inquiry, unverified, reverse), callback controller, PaymentResult page, `OrderPaid` event, `ReconcileZarinpalPayments`, `ExpirePendingPayments`, `zarinpal:ping`.
+- **Tests:** success 100, already verified 101, NOK, amount mismatch −50, reconciliation, reverse; 100 % branch coverage of verify.
+
+### S37 Notifications (SMS via Melli Payamak)
+- **Moved to phase 7.** The Melli Payamak sender, `SmsManager`, `SendSmsJob`, `sms_logs` and `sms:test` were built in S19 (2026-11-14); this step adds the order templates.
 - **Refs:** D11.6, D3.6 (templates), D13.1
 - **Build:** order templates ↔ pattern ids (config/sms.php), low-credit alert; events → SMS (otp, order_paid, order_shipped, order_out_for_delivery, order_delivered, payment_failed, stock_available).
 - **Tests:** `Http::fake()` for success recId and each error class (retryable vs not), args joined with `;`, OTP never logged in plain text, queued sending.
 
-> **Phase 8: SEO, hardening and reporting, built after the shipping and payment steps (owner, 2026-11-17: the main functionality comes first).** S36, S43 (site search tuning, added 2026-11-17), S37, S38, S39, S41 and S42 run after S28 and right before launch (S40).
+> **Phase 8: SEO, hardening and reporting, built after the shipping and payment steps (owner, 2026-11-17: the main functionality comes first).** S38, S39 (site search tuning, added 2026-11-17), S40, S41, S42, S43 and S44 run after S37 and right before launch (S45).
 
-### S36 SEO
+### S38 SEO
 - **Refs:** D3.6 (seo_redirects), B5
 - **Build:** meta tags per page, Open Graph, JSON-LD (Product, BreadcrumbList, Organization), sitemap.xml, robots.txt, redirects middleware, canonical URLs for filters.
 - **Tests:** JSON-LD present on PDP, redirect 301, sitemap includes active products only.
 
-### S43 Site search tuning
-- **Added (owner, 2026-11-17):** built in phase 8 right after S36, before launch. S12 built the search (Meilisearch, Persian normalisation, synonyms with Excel import, search logs and the insights page); this step tunes it with real queries.
+### S39 Site search tuning
+- **Added (owner, 2026-11-17):** built in phase 8 right after S38, before launch. S12 built the search (Meilisearch, Persian normalisation, synonyms with Excel import, search logs and the insights page); this step tunes it with real queries.
 - **Refs:** D21 (search plan, D21.3 normalisation, D21.5 Meilisearch), S12, B7–B13
 - **Build:**
   - **Relevance:** review the ranking rules and searchable-attribute order against the 200 most frequent queries in the search logs, with a fixed list of expected first results per query. Boost products for sale and in stock over the rest; use sales from order items as a popularity signal.
@@ -3106,38 +3143,38 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
   - **Speed:** p95 under 50 ms in Meilisearch for the instant box, measured on the production-size index.
 - **Tests:** expected first results for the fixed query list (a regression suite), normalisation variants find the same products, stop words ignored, typo rules per attribute, zero-result and low-click lists, the «منظورتان» suggestion.
 
-### S37 Security hardening
+### S40 Security hardening
 - **Refs:** D16
 - **Build:** security headers/CSP, rate limiters, log redaction review, admin IP allowlist option, `composer audit` in CI, privacy export/delete.
 - **Tests:** headers present, throttles return 429, redaction test.
 
-### S38 Performance
+### S41 Performance
 - **Refs:** D17, D14, B2 rule 10
 - **Build:** caching layer + invalidation, lazy Livewire sections, query optimisation, Lighthouse pass on Home/PLP/PDP (mobile).
 - **Tests:** query-count assertions on PLP/PDP; cache invalidation tests.
 
-### S39 Observability, backups, ops
+### S42 Observability, backups, ops
 - **Refs:** D19, D20
 - **Build:** Horizon config + Supervisor file, scheduler, Sentry, Pulse, health checks + alerts, backups + restore runbook, deploy script.
 - **Tests:** health check endpoints; scheduler list matches D9.
 
-### S41 Reporting warehouse
+### S43 Reporting warehouse
 - **Refs:** D22.2, D22.3, D22.4, D22.5, D12.1
 - **Build:** `reporting` DB connection + migrations for all `rpt_*` tables and `rpt_refresh_runs`, builders (fact first, then aggregates), `RefreshWarehouse` action, `RefreshReportingWarehouse` job, twice-daily schedule + weekly full rebuild with table swap, health check (13 h), Refresh-now action, `analytics_events` table + async tracking for R12/R23.
 - **Tests:** D22.5 (totals, allocation sums, idempotency, window, swap, health).
 
-### S42 Dashboard and report pages
+### S44 Dashboard and report pages
 - **Refs:** D22.1, D22.4, B12, B7–B13
 - **Build:** **SKU sales on the SKU page** (owner, 2026-11-09): widgets and charts inside each SKU's suppliers page showing how much was sold (quantity and money), how much was bought from each supplier and sold per supplier, and the SKU's total gross and net margin (from order items' `variant_price_id` records and the reporting facts; filters by date range / Jalali month); **supplier sales on the supplier view page** (owner, 2026-11-09): widgets and charts showing how many products were sold that were bought from this supplier, which products and SKUs, at which prices (selling, haraj, supplier cost from each order item's price record), how much money was sold from this supplier, and its other sales reports (gross/net margin, top SKUs, sales over time; same filters); dashboard widgets (KPIs R1/R2, sales & margin chart, live R8/R10/R26), report pages per group with filters (date range, Jalali month, category, brand, provider) and CSV/XLSX export; ★ reports in MVP, others behind a feature flag until data exists; role-based visibility.
 - **Tests:** SKU page widgets: quantity, revenue, per-supplier split and gross/net margin match seeded order items; supplier page widgets: quantity, products sold, prices and revenue from this supplier match seeded order items; widgets render from seeded `rpt_*` data; live widgets query counts bounded; access by role; export matches filters.
 
-### S40 Launch
+### S45 Launch
 - **Refs:** D11.9, A3, A4
 - **Build:** production credentials (Tipax, Zarinpal, Melli Payamak), reporting warehouse first run verified, go-live checklist, demo data removed, soft-launch feedback fixes, browser smoke tests on mobile/tablet/desktop.
 - **Tests:** full Pest browser smoke suite green against staging.
 
 ## E4. Using the `implement-roadmap-section` skill
-- Run it with a step id or entity: `S07`, `S26`, or `Brands`.
+- Run it with a step id or entity: `S07`, `S36`, or `Brands`.
 - Entity names map to steps in **E5**; the full skill text is in **E6**.
 - The skill locates `pharmacy-roadmap.md` in the repo (copy it to `docs/pharmacy-roadmap.md`), reads the step and referenced sections, and follows E1 exactly.
 - Progress is tracked in `ROADMAP_PROGRESS.md`; the skill refuses to start a step whose dependencies (earlier phase steps) are not done, unless the user says to.
@@ -3162,37 +3199,37 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 | Similar products (nightly batch) | S13 + D21.6 (SR4) | Search / Catalog |
 | Meilisearch, hybrid/semantic search, embeddings (P2) | D21.9 SR6–SR9 | Search |
 | PDP, reviews display, product questions, stock alerts, SKU images | S13 | Catalog |
-| Collections, popular products (empty search box), home page builder (widgets, sliders), banners library and placements | S13b | Catalog / Search / Content |
-| Providers, provider prices | S14 | Pricing |
-| Pricing rules, pricing engine | S15 | Pricing |
-| Price imports | S16 | Pricing |
-| Customers, OTP codes, login | S17 | Identity |
-| Addresses, account area, wishlist | S18 | Identity / Catalog |
-| Cart, cart items, mini-cart | S19 | Cart |
-| Coupons, coupon usages | S20 | Cart |
-| Carriers, carrier services, shipping boxes, origins, shipping rules, box packer | S21 | Shipping |
-| Tapin client (Tipax via Tapin), city sync, codes | S22 | Shipping |
-| Shipping quotes (Tipax) | S23 | Shipping |
-| Delivery zones, delivery slots, couriers | S24 | Shipping |
-| Checkout wizard, orders, order items, order numbering | S25 | Checkout / Orders |
-| Payments, payment refunds, Zarinpal | S26 | Payments |
-| Shipments, shipment packages, shipment events, Tipax webhooks | S27 | Shipping |
-| Notification templates, notification logs, SMS (Melli Payamak), OTP delivery | S28 | Notifications |
-| Order admin, order status logs, cancellations, customer order pages | S29 | Orders |
-| Provider purchases (sourcing) | S30 | Orders / Pricing |
-| Packing | S31 | Orders / Shipping |
-| Return requests | S32 | Orders |
-| Banners, home sections, flash deals, deals hub, bundles page | S33 | Content / Catalog |
-| Static pages, FAQ, menus, contact messages | S34 | Content |
-| Settings, social links, trust badges, pharmacists | S35 | Settings |
-| SEO redirects, sitemap, meta, JSON-LD | S36 | Seo |
-| Security hardening | S37 | System |
-| Performance and caching | S38 | System |
-| Horizon, Supervisor, monitoring, backups, deploy | S39 | System |
-| Reporting warehouse (`rpt_*` tables, 12-hour refresh) | S41 | Reporting |
-| Dashboard and reports R1–R27 | S42 | Reporting |
-| Site search tuning (relevance, typos, stop words, zero-result fixes) | S43 | Search |
-| Launch | S40 | — |
+| Collections, popular products (empty search box), home page builder (widgets, sliders), banners library and placements | S14 | Catalog / Search / Content |
+| Providers, provider prices | S15 | Pricing |
+| Pricing rules, pricing engine | S16 | Pricing |
+| Price imports | S18 | Pricing |
+| Customers, OTP codes, login | S19 | Identity |
+| Addresses, account area, wishlist | S20 | Identity / Catalog |
+| Cart, cart items, mini-cart | S21 | Cart |
+| Coupons, coupon usages | S22 | Cart |
+| Carriers, carrier services, shipping boxes, origins, shipping rules, box packer | S31 | Shipping |
+| Tapin client (Tipax via Tapin), city sync, codes | S33 | Shipping |
+| Shipping quotes (Tipax) | S34 | Shipping |
+| Delivery zones, delivery slots, couriers | S32 | Shipping |
+| Checkout wizard, orders, order items, order numbering | S23 | Checkout / Orders |
+| Payments, payment refunds, Zarinpal | S36 | Payments |
+| Shipments, shipment packages, shipment events, Tipax webhooks | S35 | Shipping |
+| Notification templates, notification logs, SMS (Melli Payamak), OTP delivery | S37 | Notifications |
+| Order admin, order status logs, cancellations, customer order pages | S24 | Orders |
+| Provider purchases (sourcing) | S25 | Orders / Pricing |
+| Packing | S26 | Orders / Shipping |
+| Return requests | S27 | Orders |
+| Banners, home sections, flash deals, deals hub, bundles page | S28 | Content / Catalog |
+| Static pages, FAQ, menus, contact messages | S29 | Content |
+| Settings, social links, trust badges, pharmacists | S30 | Settings |
+| SEO redirects, sitemap, meta, JSON-LD | S38 | Seo |
+| Security hardening | S40 | System |
+| Performance and caching | S41 | System |
+| Horizon, Supervisor, monitoring, backups, deploy | S42 | System |
+| Reporting warehouse (`rpt_*` tables, 12-hour refresh) | S43 | Reporting |
+| Dashboard and reports R1–R27 | S44 | Reporting |
+| Site search tuning (relevance, typos, stop words, zero-result fixes) | S39 | Search |
+| Launch | S45 | — |
 
 ## E6. The `implement-roadmap-section` skill (full instructions)
 
@@ -3209,7 +3246,7 @@ description: Implement one step or entity (e.g. S07, Brands) of the online pharm
 
 # Implement a roadmap section
 
-Use this skill when the user asks to implement a step (`S00`–`S40`) or an entity/module (e.g. "Brands", "Coupons", "Zarinpal", "Checkout") of the online pharmacy project (Laravel + Filament 5 admin + Livewire 4/TallStackUI v4 storefront, MySQL, Redis, Horizon/Supervisor).
+Use this skill when the user asks to implement a step (`S00`–`S45`) or an entity/module (e.g. "Brands", "Coupons", "Zarinpal", "Checkout") of the online pharmacy project (Laravel + Filament 5 admin + Livewire 4/TallStackUI v4 storefront, MySQL, Redis, Horizon/Supervisor).
 
 The argument is a step id or entity name. If none is given, ask which step to implement and suggest the next unfinished one from `ROADMAP_PROGRESS.md`.
 

@@ -19,7 +19,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Checkout step 2, «بازبینی و پرداخت» (roadmap B9.7, D13.4, S25). Everything is worked out on the fly from the cart
+ * Checkout step 2, «بازبینی و پرداخت» (roadmap B9.7, D13.4, S23). Everything is worked out on the fly from the cart
  * now and nothing is written until «پرداخت»: the address (picked, else default; «تغییر» goes back), shipping at the
  * flat rate or free, the items, the coupon (applied codes are only logged), the totals. «پرداخت» runs PlaceOrder,
  * which checks it all again and creates the order; then the customer goes to the gateway.

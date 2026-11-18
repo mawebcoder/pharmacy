@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Database\Seeders\PopularCollectionSeeder;
 use App\Modules\Catalog\Filament\Resources\Collections\Pages\EditCollection;
 use App\Modules\Catalog\Filament\Resources\Collections\RelationManagers\CollectionProductsRelationManager;
 use App\Modules\Catalog\Models\Product;
@@ -18,6 +19,8 @@ use Filament\Facades\Filament;
 use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
+    // Starting data the migrations no longer insert (owner, 2026-11-17).
+    $this->seed(PopularCollectionSeeder::class);
     Filament::setCurrentPanel('admin');
     $this->seed(RolesSeeder::class);
 });

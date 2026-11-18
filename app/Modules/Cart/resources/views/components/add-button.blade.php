@@ -1,5 +1,5 @@
 {{--
-    Add to cart (roadmap S19): a small light square «+» (owner, 2026-11-14), or a full-width button when wide, until the SKU is in the cart, then a «− n +» stepper (the minus becomes a bin at 1).
+    Add to cart (roadmap S21): a small light square «+» (owner, 2026-11-14), or a full-width button when wide, until the SKU is in the cart, then a «− n +» stepper (the minus becomes a bin at 1).
     State comes from the Alpine «cart» store; changes go to the CartState component. While a change is on its way the
     button keeps its size and shows a spinner in place of its icon (or of the quantity in the stepper) and ignores
     clicks, until CartState answers with «cart-settled» (owner, 2026-11-14). The bin at 1 (and a cart line's own bin)

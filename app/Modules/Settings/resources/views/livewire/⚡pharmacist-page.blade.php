@@ -5,7 +5,7 @@ use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 /**
- * «داروساز مسئول» (roadmap B5 /pharmacist, S35): the pharmacist in charge first, with photo, council number and bio,
+ * «داروساز مسئول» (roadmap B5 /pharmacist, S30): the pharmacist in charge first, with photo, council number and bio,
  * then the store's other pharmacists.
  */
 new class extends Component

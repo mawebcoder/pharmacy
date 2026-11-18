@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * The store's pharmacists (roadmap S35). Other modules read them only through this query: the pharmacist in charge's
+ * The store's pharmacists (roadmap S30). Other modules read them only through this query: the pharmacist in charge's
  * name and council number are cached, because every product page shows them.
  */
 final readonly class Pharmacists

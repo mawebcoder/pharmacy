@@ -8,7 +8,7 @@ use App\Modules\Content\Models\ContactMessage;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 
 /**
- * Messages from /contact (roadmap S34): read and marked answered; nobody creates, edits or deletes them in the admin.
+ * Messages from /contact (roadmap S29): read and marked answered; nobody creates, edits or deletes them in the admin.
  */
 final class ContactMessagePolicy
 {

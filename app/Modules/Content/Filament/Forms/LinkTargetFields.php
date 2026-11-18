@@ -14,7 +14,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
 
 /**
- * Where a banner or menu item leads (roadmap S13b, S34): the target type, a picker per item type and the https
+ * Where a banner or menu item leads (roadmap S14, S29): the target type, a picker per item type and the https
  * address. Each item type has its own picker field; toLinkId() turns them into link_id and withPickers() fills them
  * back. The record's columns are link_type, link_id and external_url.
  */

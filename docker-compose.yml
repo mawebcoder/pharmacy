@@ -52,7 +52,7 @@ services:
     image: pharmacy/nginx:dev
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-7000}:80"
+      - "0.0.0.0:${APP_PORT:-7000}:80"
     volumes:
       - ./:/var/www/html:ro
     networks:
