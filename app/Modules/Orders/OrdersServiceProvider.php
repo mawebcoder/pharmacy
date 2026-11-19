@@ -6,6 +6,7 @@ namespace App\Modules\Orders;
 
 use App\Modules\Cart\Contracts\CustomerOrderHistory;
 use App\Modules\Orders\Jobs\ExpirePendingOrders;
+use App\Modules\Orders\Jobs\MarkDeliveredOrders;
 use App\Modules\Orders\Listeners\MarkOrderPaid;
 use App\Modules\Orders\Queries\PlacedOrderHistory;
 use App\Modules\Payments\Events\PaymentSucceeded;
@@ -30,6 +31,8 @@ final class OrdersServiceProvider extends ModuleServiceProvider
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             // Unpaid orders past their payment window (S23).
             $schedule->job(new ExpirePendingOrders)->everyMinute()->onOneServer();
+            // Orders Tipax has delivered become «تحویل شد» (S37, owner 2026-11-19): every night at 00:00 Tehran time.
+            $schedule->job(new MarkDeliveredOrders)->dailyAt('00:00')->timezone((string) config('app.display_timezone'))->onOneServer();
         });
     }
 }

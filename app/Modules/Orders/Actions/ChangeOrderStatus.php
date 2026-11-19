@@ -8,6 +8,7 @@ use App\Modules\Catalog\Actions\ReleaseFlashDealUnits;
 use App\Modules\Catalog\Actions\ReserveFlashDealUnits;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
+use App\Modules\Orders\Events\OrderCancelled;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
@@ -51,6 +52,11 @@ final class ChangeOrderStatus
 
             self::log($order->getId(), $from, $to, $actor, $actorId, $note);
             $this->settleFlashDealUnits($order, $from, $to);
+
+            // The customer's SMS (S37); sent after the commit.
+            if ($to === OrderStatus::Cancelled) {
+                OrderCancelled::dispatch($order->getId());
+            }
         });
     }
 

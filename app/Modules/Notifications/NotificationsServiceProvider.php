@@ -7,6 +7,7 @@ namespace App\Modules\Notifications;
 use App\Modules\Notifications\Drivers\KavenegarSmsSender;
 use App\Modules\Notifications\Listeners\SendOrderSms;
 use App\Modules\Notifications\Support\SmsManager;
+use App\Modules\Orders\Events\OrderCancelled;
 use App\Modules\Orders\Events\OrderOnItsWay;
 use App\Modules\Orders\Events\OrderPaid;
 use App\Modules\Shared\ModuleServiceProvider;
@@ -32,6 +33,6 @@ final class NotificationsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         // Order news by SMS (S37).
-        Event::listen([OrderPaid::class, OrderOnItsWay::class], SendOrderSms::class);
+        Event::listen([OrderPaid::class, OrderOnItsWay::class, OrderCancelled::class], SendOrderSms::class);
     }
 }

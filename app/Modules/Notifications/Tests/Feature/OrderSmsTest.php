@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use App\Modules\Notifications\Enums\SmsTemplate;
 use App\Modules\Notifications\Jobs\SendSmsJob;
+use App\Modules\Orders\Actions\ChangeOrderStatus;
+use App\Modules\Orders\Enums\OrderActor;
+use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Events\OrderOnItsWay;
 use App\Modules\Orders\Events\OrderPaid;
 use App\Modules\Orders\Models\Order;
@@ -48,4 +51,13 @@ it('calls a customer who gave no name «مشتری»', function (): void {
     event(new OrderPaid($order->getId()));
 
     Queue::assertPushed(SendSmsJob::class, fn (SendSmsJob $job): bool => $job->message->args === ['مشتری', 'PH-140508-000125']);
+});
+
+it('texts the name and order number when an order is cancelled, by the customer or an admin', function (): void {
+    $order = Order::factory()->paid()->create([Order::COLUMN_NUMBER => 'PH-140508-000126']);
+
+    app(ChangeOrderStatus::class)($order, OrderStatus::Cancelled, OrderActor::Admin, 1);
+
+    Queue::assertPushed(SendSmsJob::class, fn (SendSmsJob $job): bool => $job->message->template === SmsTemplate::OrderCancelled
+        && $job->message->args === ['سارا رضایی', 'PH-140508-000126']);
 });

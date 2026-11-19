@@ -12,6 +12,11 @@ use Illuminate\Support\Carbon;
  */
 final readonly class ParcelStatusData
 {
+    /**
+     * Words in a finished parcel's status that mean it did not reach the customer.
+     */
+    private const array NOT_DELIVERED = ['برگشت', 'مرجوع', 'عودت', 'ابطال', 'لغو'];
+
     public function __construct(
         public ?string $status,
         public ?string $destinationCity,
@@ -19,6 +24,25 @@ final readonly class ParcelStatusData
         public ?string $deliveredAt,
         public ?Carbon $syncedAt,
     ) {}
+
+    /**
+     * Whether the parcel reached the customer (owner, 2026-11-19): Tipax gave it a completion time and its status is not a
+     * return or cancellation. «در حال تحویل» has no completion time yet. [CONFIRM] against real Tipax answers.
+     */
+    public function isDelivered(): bool
+    {
+        if ($this->deliveredAt === null) {
+            return false;
+        }
+
+        foreach (self::NOT_DELIVERED as $word) {
+            if (str_contains((string) $this->status, $word)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /**
      * @param  array<string, mixed>  $tracking  Tipax's BriefTracking answer

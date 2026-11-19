@@ -35,13 +35,13 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S28 | Home, banners, deals (flash deals, /deals; bundles in S28b) | done | 2026-11-17 | 5be9dc0 |
 | S29 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
 | S30 | Settings and trust | done | 2026-11-17 | 19e2024 |
-| S31 | Shipping foundation | in progress (boxing done) | 2026-11-18 | 97ed5e4 |
-| S32 | Own courier zones | todo | | |
+| S31 | Shipping foundation (Tipax only: no carrier tables; owner 2026-11-19) | done | 2026-11-19 | 9b4f40b |
+| S32 | Own courier zones | dropped (Tipax only; owner 2026-11-19) | 2026-11-19 | |
 | S33 | Tipax client and reference sync (Tipax direct; origin registration moved to S35) | done | 2026-11-19 | b0691ee |
-| S34 | Tipax quotes in checkout | in progress | 2026-11-18 | |
+| S34 | Tipax quotes in checkout | done | 2026-11-19 | c71c2f1 |
 | S35 | Tipax shipment registration and tracking (on hold: branch drop-off by hand) | todo | | |
 | S36 | Zarinpal payments (refunds and reverse later) | done | 2026-11-18 | d3283f1 |
-| S37 | Notifications (SMS) | todo | | |
+| S37 | Notifications (SMS) | in progress (paid, on the way; delivered, cancelled, payment failed left) | 2026-11-19 | b92bbbd |
 | S38 | SEO | todo | | |
 | S39 | Site search tuning | todo | | |
 | S40 | Security hardening | todo | | |
