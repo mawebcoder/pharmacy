@@ -197,7 +197,9 @@ final class ViewOrder extends ViewRecord
                         ->label('ثبت بازگشت وجه')
                         ->icon(Heroicon::OutlinedBanknotes)
                         ->color('warning')
-                        ->visible(fn (): bool => $this->order()->getPaymentStatus() === PaymentStatus::RefundPending
+                        // An order that went out is refunded on its return, after Tipax picks it up (S27, owner 2026-11-19).
+                        ->visible(fn (OrderReturns $returns): bool => $this->order()->getPaymentStatus() === PaymentStatus::RefundPending
+                            && ! $returns->wentOut($this->order())
                             && (auth('admin')->user()?->can('refund', $this->order()) ?? false))
                         ->modalHeading('ثبت بازگشت وجه')
                         ->modalDescription('وقتی مبلغ را از بانک یا پنل درگاه به مشتری برگرداندید، مبلغ کالاها و هزینه ارسالِ برگشتی و شماره پیگیری آن را وارد کنید.')

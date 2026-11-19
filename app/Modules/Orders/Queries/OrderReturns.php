@@ -22,18 +22,28 @@ final readonly class OrderReturns
     public function __construct(private TipaxShipments $shipments) {}
 
     /**
-     * A delivered order, or a cancelled one that had gone out (registered with Tipax or given a code by hand), with
-     * units no open return holds.
+     * A paid order not sent yet (its items need no pickup, owner 2026-11-19), a delivered one, or a cancelled one that
+     * had gone out, with units no open return holds. A cancelled order that never went out is refunded on the order.
      */
     public function canReturn(Order $order): bool
     {
-        $wentOut = match ($order->getStatus()) {
-            OrderStatus::Delivered => true,
-            OrderStatus::Cancelled => $order->getTrackingCode() !== null || $this->shipments->wasSent($order->getId()),
+        $returnable = match ($order->getStatus()) {
+            OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Delivered => true,
+            OrderStatus::Cancelled => $this->wentOut($order),
             default => false,
         };
 
-        return $wentOut && array_sum($this->remaining($order)) > 0;
+        return $returnable && array_sum($this->remaining($order)) > 0;
+    }
+
+    /**
+     * The order's parcels left us (registered with Tipax or given a code by hand): its items come back through Tipax.
+     */
+    public function wentOut(Order $order): bool
+    {
+        return in_array($order->getStatus(), [OrderStatus::OnTheWay, OrderStatus::Delivered], true)
+            || $order->getTrackingCode() !== null
+            || $this->shipments->wasSent($order->getId());
     }
 
     /**

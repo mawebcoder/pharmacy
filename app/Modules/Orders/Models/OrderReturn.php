@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Models;
 use App\Modules\Orders\Enums\OrderReturnStatus;
 use App\Modules\Orders\Enums\ReturnScope;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shipping\Enums\TipaxParcelStage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -33,6 +34,8 @@ final class OrderReturn extends Model implements HasActivityLogLabel
 
     public const string COLUMN_IS_FULL = 'is_full';
 
+    public const string COLUMN_NEEDS_PICKUP = 'needs_pickup';
+
     public const string COLUMN_REASON = 'reason';
 
     public const string COLUMN_ITEMS_REFUND = 'items_refund';
@@ -48,6 +51,22 @@ final class OrderReturn extends Model implements HasActivityLogLabel
     public const string COLUMN_PARCELS = 'parcels';
 
     public const string COLUMN_TRACKING_CODES = 'tracking_codes';
+
+    public const string COLUMN_TIPAX_STATUS = 'tipax_status';
+
+    public const string COLUMN_TIPAX_STAGE = 'tipax_stage';
+
+    public const string COLUMN_TIPAX_CHECKED_AT = 'tipax_checked_at';
+
+    public const string COLUMN_PICKED_UP_AT = 'picked_up_at';
+
+    public const string COLUMN_RECEIVED_AT = 'received_at';
+
+    public const string COLUMN_REFUNDED_AT = 'refunded_at';
+
+    public const string COLUMN_REFUNDED_BY = 'refunded_by';
+
+    public const string COLUMN_REFUND_REFERENCE = 'refund_reference';
 
     public const string COLUMN_CREATED_BY = 'created_by';
 
@@ -106,6 +125,120 @@ final class OrderReturn extends Model implements HasActivityLogLabel
     public function setIsFull(bool $value): static
     {
         return $this->setAttribute(self::COLUMN_IS_FULL, $value);
+    }
+
+    /**
+     * Tipax collects it from the customer (the items had gone out); items never sent need no pickup.
+     */
+    public function needsPickup(): bool
+    {
+        return (bool) ($this->getAttribute(self::COLUMN_NEEDS_PICKUP) ?? true);
+    }
+
+    public function setNeedsPickup(bool $value): static
+    {
+        return $this->setAttribute(self::COLUMN_NEEDS_PICKUP, $value);
+    }
+
+    public function getTipaxStatus(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_TIPAX_STATUS);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setTipaxStatus(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TIPAX_STATUS, $value === null ? null : mb_substr($value, 0, 255));
+    }
+
+    public function getTipaxStage(): ?TipaxParcelStage
+    {
+        return $this->getAttribute(self::COLUMN_TIPAX_STAGE);
+    }
+
+    public function setTipaxStage(?TipaxParcelStage $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TIPAX_STAGE, $value);
+    }
+
+    public function getTipaxCheckedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_TIPAX_CHECKED_AT);
+    }
+
+    public function setTipaxCheckedAt(?Carbon $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TIPAX_CHECKED_AT, $value);
+    }
+
+    public function getPickedUpAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_PICKED_UP_AT);
+    }
+
+    public function setPickedUpAt(?Carbon $value): static
+    {
+        return $this->setAttribute(self::COLUMN_PICKED_UP_AT, $value);
+    }
+
+    public function getReceivedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_RECEIVED_AT);
+    }
+
+    public function setReceivedAt(?Carbon $value): static
+    {
+        return $this->setAttribute(self::COLUMN_RECEIVED_AT, $value);
+    }
+
+    public function getRefundedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_REFUNDED_AT);
+    }
+
+    public function setRefundedAt(?Carbon $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUNDED_AT, $value);
+    }
+
+    public function setRefundedBy(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUNDED_BY, $value);
+    }
+
+    public function getRefundReference(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_REFUND_REFERENCE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setRefundReference(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUND_REFERENCE, $value);
+    }
+
+    /**
+     * The money may go back (owner, 2026-11-19): items never sent at once after approval; items coming back only once
+     * Tipax picked them up (and not when Tipax sent them back to the customer).
+     */
+    public function isRefundable(): bool
+    {
+        if (! $this->needsPickup()) {
+            return $this->getStatus() === OrderReturnStatus::Approved;
+        }
+
+        return in_array($this->getStatus(), [OrderReturnStatus::PickedUp, OrderReturnStatus::Received], true)
+            && $this->getTipaxStage() !== TipaxParcelStage::SentBack;
+    }
+
+    /**
+     * Still waiting on Tipax: approved and not yet received at the warehouse.
+     */
+    public function isAwaitingTipax(): bool
+    {
+        return $this->needsPickup() && in_array($this->getStatus(), [OrderReturnStatus::Approved, OrderReturnStatus::PickedUp], true);
     }
 
     public function getScope(): ReturnScope
@@ -320,7 +453,7 @@ final class OrderReturn extends Model implements HasActivityLogLabel
     {
         return LogOptions::defaults()
             ->useLogName('orders')
-            ->logOnly([self::COLUMN_STATUS, self::COLUMN_CANCEL_REASON])
+            ->logOnly([self::COLUMN_STATUS, self::COLUMN_CANCEL_REASON, self::COLUMN_REFUND_REFERENCE])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -333,6 +466,12 @@ final class OrderReturn extends Model implements HasActivityLogLabel
         return [
             self::COLUMN_STATUS => OrderReturnStatus::class,
             self::COLUMN_IS_FULL => 'boolean',
+            self::COLUMN_NEEDS_PICKUP => 'boolean',
+            self::COLUMN_TIPAX_STAGE => TipaxParcelStage::class,
+            self::COLUMN_TIPAX_CHECKED_AT => 'datetime',
+            self::COLUMN_PICKED_UP_AT => 'datetime',
+            self::COLUMN_RECEIVED_AT => 'datetime',
+            self::COLUMN_REFUNDED_AT => 'datetime',
             self::COLUMN_ITEMS_REFUND => 'integer',
             self::COLUMN_SHIPPING_FEE_REFUND => 'integer',
             self::COLUMN_RETURN_SHIPPING_PRICE => 'integer',

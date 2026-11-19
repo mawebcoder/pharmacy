@@ -11,6 +11,7 @@ use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Support\TipaxParties;
 use App\Modules\Shipping\Actions\RegisterTipaxShipment;
 use App\Modules\Shipping\Data\TipaxRegistrationData;
+use App\Modules\Shipping\Enums\TipaxParcelStage;
 use App\Modules\Shipping\Enums\TipaxShipmentKind;
 use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
 use App\Modules\Shipping\Queries\ReturnShipping;
@@ -19,7 +20,7 @@ use App\Modules\Shipping\Queries\ReturnShipping;
  * «تأیید» on a draft return (roadmap S27, owner 2026-11-19): registers its parcels with Tipax as an order of their own,
  * collected from the customer and delivered to the warehouse (Tipax's ReturnRegisterOrder needs Tipax's internal ids
  * we do not get), traced as the return's number (PH-…-R2). The customer is texted the return code. When Tipax refuses,
- * the return stays a draft.
+ * the return stays a draft. A return of items never sent is only approved: nothing to collect.
  */
 final readonly class ApproveOrderReturn
 {
@@ -30,7 +31,7 @@ final readonly class ApproveOrderReturn
     ) {}
 
     /**
-     * @return list<string> the return's tracking codes
+     * @return list<string> the return's tracking codes (none when nothing is collected)
      *
      * @throws OrderRefused
      */
@@ -38,6 +39,13 @@ final readonly class ApproveOrderReturn
     {
         if ($return->getStatus() !== OrderReturnStatus::Draft) {
             throw OrderRefused::returnNotDraft();
+        }
+
+        if (! $return->needsPickup()) {
+            // Items never sent: nothing to collect; the refund may be recorded at once.
+            $return->setStatus(OrderReturnStatus::Approved)->setApprovedBy($adminId)->setApprovedAt(now())->save();
+
+            return [];
         }
 
         $order = $return->getOrder();
@@ -66,6 +74,8 @@ final readonly class ApproveOrderReturn
 
         $return->setStatus(OrderReturnStatus::Approved)
             ->setTrackingCodes($codes)
+            ->setTipaxStage(TipaxParcelStage::AwaitingPickup)
+            ->setTipaxStatus('ثبت اولیه')
             ->setApprovedBy($adminId)
             ->setApprovedAt(now())
             ->save();

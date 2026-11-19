@@ -65,7 +65,7 @@ final class OrderRefused extends BaseException
 
     public static function notReturnable(): self
     {
-        return new self('مرجوعی فقط برای سفارش تحویل‌شده، یا لغوشده‌ای که ارسال شده بود، و فقط برای کالاهایی که هنوز مرجوع نشده‌اند ثبت می‌شود.', 'order_not_returnable');
+        return new self('مرجوعی فقط برای سفارش پرداخت‌شده‌ای که هنوز ارسال نشده، سفارش تحویل‌شده، یا لغوشده‌ای که ارسال شده بود، و فقط برای کالاهایی که هنوز مرجوع نشده‌اند ثبت می‌شود.', 'order_not_returnable');
     }
 
     public static function returnEmpty(): self
@@ -81,6 +81,21 @@ final class OrderRefused extends BaseException
     public static function returnNotDraft(): self
     {
         return new self('فقط مرجوعیِ پیش‌نویس تأیید می‌شود.', 'order_return_not_draft');
+    }
+
+    public static function returnPickedUp(): self
+    {
+        return new self('تیپاکس مرسوله مرجوعی را جمع‌آوری کرده است؛ این مرجوعی لغو نمی‌شود.', 'order_return_picked_up');
+    }
+
+    public static function returnNotRefundable(): self
+    {
+        return new self('بازگشت وجه پس از جمع‌آوری مرجوعی توسط تیپاکس ثبت می‌شود (برای کالای ارسال‌نشده، پس از تأیید).', 'order_return_not_refundable');
+    }
+
+    public static function refundThroughReturn(): self
+    {
+        return new self('این سفارش ارسال شده بود؛ بازگشت وجه از «ثبت مرجوعی» و پس از جمع‌آوری توسط تیپاکس ثبت می‌شود.', 'order_refund_through_return');
     }
 
     public static function returnAlreadyCancelled(): self

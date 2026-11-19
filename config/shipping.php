@@ -53,6 +53,7 @@ return [
             'register_order' => env('TIPAX_PATH_REGISTER_ORDER', '/api/OM/v4/OmOrder'),
             // The tracking code goes at the end (S27: cancelling a return's pickup).
             'cancel_parcel' => env('TIPAX_PATH_CANCEL_PARCEL', '/api/OM/v4/Parcels/Cancel'),
+            'track_by_codes' => env('TIPAX_PATH_TRACK_BY_CODES', '/api/OM/v4/Tracking/ByTrackingCode'),
         ],
         'pricing' => [
             // A TipaxPaymentType value: 10 prepaid by the sender (D6.6).

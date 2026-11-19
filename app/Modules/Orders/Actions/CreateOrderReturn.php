@@ -17,8 +17,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Opens an order return as a draft (roadmap S27, owner 2026-11-19): the units coming back (at most what no open return
- * holds), what the customer paid per unit, the refund, and Tipax's price for collecting only those units from the
- * customer (boxed again). Nothing is sent to Tipax until the return is approved.
+ * holds), what the customer paid per unit, the refund, and, when the items had gone out, Tipax's price for collecting
+ * only those units from the customer (boxed again). Nothing is sent to Tipax until the return is approved. Items never
+ * sent need no pickup.
  */
 final readonly class CreateOrderReturn
 {
@@ -57,16 +58,18 @@ final readonly class CreateOrderReturn
             }
         }
 
-        $parcels = $this->shipping->parcels($order->getId(), $quantities);
+        // Items never sent stay with us: nothing to box, price or collect (owner, 2026-11-19).
+        $needsPickup = $this->returns->wentOut($order);
+        $parcels = $needsPickup ? $this->shipping->parcels($order->getId(), $quantities) : [];
         $serviceId = $order->getShippingQuoteSnapshot()['details']['service_id'] ?? null;
-        $price = $this->shipping->price(
+        $price = $needsPickup ? $this->shipping->price(
             (int) ($order->getAddressSnapshot()['city_id'] ?? 0),
             $this->settings->shippingOriginCityId(),
             $parcels,
             is_numeric($serviceId) ? (int) $serviceId : null,
-        );
+        ) : null;
 
-        $return = DB::transaction(function () use ($order, $quantities, $reason, $adminId, $parcels, $price): OrderReturn {
+        $return = DB::transaction(function () use ($order, $quantities, $reason, $adminId, $parcels, $price, $needsPickup): OrderReturn {
             $sequence = (int) OrderReturn::query()->where(OrderReturn::COLUMN_ORDER_ID, $order->getId())->lockForUpdate()->max(OrderReturn::COLUMN_SEQUENCE) + 1;
             $reason = trim((string) $reason);
 
@@ -75,6 +78,7 @@ final readonly class CreateOrderReturn
                 ->setSequence($sequence)
                 ->setStatus(OrderReturnStatus::Draft)
                 ->setIsFull(OrderReturns::coversAll($order, $quantities))
+                ->setNeedsPickup($needsPickup)
                 ->setReason($reason === '' ? null : $reason)
                 ->setReturnShippingPrice($price?->price)
                 ->setReturnServiceId(is_numeric($price?->details['service_id'] ?? null) ? (int) $price->details['service_id'] : null)

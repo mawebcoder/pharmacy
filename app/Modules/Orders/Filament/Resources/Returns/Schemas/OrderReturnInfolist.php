@@ -11,6 +11,7 @@ use App\Modules\Orders\Models\OrderReturnItem;
 use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
+use App\Modules\Shipping\Enums\TipaxParcelStage;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
@@ -47,10 +48,19 @@ final class OrderReturnInfolist
                         ->badge()
                         ->formatStateUsing(fn (OrderReturnStatus $state): string => $state->label())
                         ->color(fn (OrderReturnStatus $state): string => $state->color()),
+                    TextEntry::make('pickup')
+                        ->label('بازگشت کالا')
+                        ->state(fn (OrderReturn $record): string => $record->needsPickup() ? 'جمع‌آوری توسط تیپاکس' : 'ارسال نشده بود؛ بدون جمع‌آوری'),
                     TextEntry::make(OrderReturn::COLUMN_REASON)->label('دلیل')->placeholder('—')->columnSpanFull(),
                     self::date(OrderReturn::COLUMN_CREATED_AT, 'ثبت'),
                     self::date(OrderReturn::COLUMN_APPROVED_AT, 'تأیید'),
                     self::date(OrderReturn::COLUMN_CANCELLED_AT, 'لغو'),
+                    self::date(OrderReturn::COLUMN_REFUNDED_AT, 'بازگشت وجه'),
+                    TextEntry::make(OrderReturn::COLUMN_REFUND_REFERENCE)
+                        ->label('شماره پیگیری بازگشت وجه')
+                        ->copyable()
+                        ->extraAttributes(['dir' => 'ltr'])
+                        ->visible(fn (OrderReturn $record): bool => $record->getRefundReference() !== null),
                     TextEntry::make(OrderReturn::COLUMN_CANCEL_REASON)
                         ->label('دلیل لغو')
                         ->visible(fn (OrderReturn $record): bool => $record->getCancelReason() !== null),
@@ -88,6 +98,7 @@ final class OrderReturnInfolist
                 ]),
             Section::make('ارسال مرجوعی با تیپاکس')
                 ->columnSpanFull()
+                ->visible(fn (OrderReturn $record): bool => $record->needsPickup())
                 ->columns(['default' => 1, 'md' => 2, 'xl' => 4])
                 ->schema([
                     TextEntry::make(OrderReturn::COLUMN_RETURN_SHIPPING_PRICE)
@@ -105,6 +116,15 @@ final class OrderReturnInfolist
                         ))
                         ->listWithLineBreaks()
                         ->placeholder('—'),
+                    TextEntry::make(OrderReturn::COLUMN_TIPAX_STAGE)
+                        ->label('وضعیت در تیپاکس')
+                        ->badge()
+                        ->formatStateUsing(fn (TipaxParcelStage $state): string => $state->label())
+                        ->helperText(fn (OrderReturn $record): ?string => $record->getTipaxStatus())
+                        ->placeholder('پس از تأیید'),
+                    self::date(OrderReturn::COLUMN_TIPAX_CHECKED_AT, 'آخرین استعلام'),
+                    self::date(OrderReturn::COLUMN_PICKED_UP_AT, 'جمع‌آوری'),
+                    self::date(OrderReturn::COLUMN_RECEIVED_AT, 'تحویل انبار'),
                     TextEntry::make(OrderReturn::COLUMN_TRACKING_CODES)
                         ->label('کد رهگیری مرجوعی')
                         ->state(fn (OrderReturn $record): array => $record->getTrackingCodes())

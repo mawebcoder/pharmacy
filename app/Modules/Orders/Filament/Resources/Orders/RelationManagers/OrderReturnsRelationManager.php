@@ -16,8 +16,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * «مرجوعی‌ها» on the order's page (S27, owner 2026-11-19): each return with full or partial, status, refund and Tipax's
- * price; a row opens the return. «ثبت مرجوعی» opens a new one for this order.
+ * «مرجوعی‌ها» on the order's page (S27, owner 2026-11-19): each return with full or partial, status, Tipax's latest
+ * status and «استعلام از تیپاکس» on its row, refund and Tipax's price; a row opens the return. «ثبت مرجوعی» opens a new
+ * one for this order. Returns are not edited here.
  */
 final class OrderReturnsRelationManager extends RelationManager
 {
@@ -32,11 +33,6 @@ final class OrderReturnsRelationManager extends RelationManager
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         return auth('admin')->user()?->can('viewAny', OrderReturn::class) ?? false;
-    }
-
-    public function isReadOnly(): bool
-    {
-        return true;
     }
 
     public function table(Table $table): Table

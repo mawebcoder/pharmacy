@@ -6,20 +6,26 @@ namespace App\Modules\Orders\Filament\Resources\Returns\Pages;
 
 use App\Modules\Orders\Actions\ApproveOrderReturn;
 use App\Modules\Orders\Actions\CancelOrderReturn;
+use App\Modules\Orders\Actions\InquireOrderReturn;
+use App\Modules\Orders\Actions\RecordReturnRefund;
 use App\Modules\Orders\Enums\OrderReturnStatus;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Filament\Resources\Returns\OrderReturnResource;
 use App\Modules\Orders\Models\OrderReturn;
+use App\Modules\Shared\Support\Toman;
+use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 
 /**
- * A return's page (S27): «تأیید» registers the pickup with Tipax and texts the customer the code; «لغو مرجوعی» also
- * cancels it at Tipax when approved. Both ask first.
+ * A return's page (S27): «تأیید» registers the pickup with Tipax and texts the customer the code; «استعلام از تیپاکس»
+ * follows the pickup; «ثبت بازگشت وجه» only once Tipax picked it up (items never sent: once approved); «لغو مرجوعی»
+ * only before pickup, also at Tipax.
  */
 final class ViewOrderReturn extends ViewRecord
 {
@@ -39,12 +45,14 @@ final class ViewOrderReturn extends ViewRecord
                 ->color('gray')
                 ->url(fn (): string => OrderResource::getUrl('view', ['record' => $this->orderReturn()->getOrderId()])),
             Action::make('approve')
-                ->label('تأیید و ثبت در تیپاکس')
+                ->label(fn (): string => $this->orderReturn()->needsPickup() ? 'تأیید و ثبت در تیپاکس' : 'تأیید')
                 ->icon(Heroicon::OutlinedCheckCircle)
                 ->color('success')
                 ->visible(fn (): bool => $this->mayUpdate() && $this->orderReturn()->getStatus() === OrderReturnStatus::Draft)
                 ->requiresConfirmation()
-                ->modalDescription('تیپاکس بسته‌ها را از آدرس مشتری جمع‌آوری و به انبار می‌آورد؛ کد رهگیری مرجوعی برای مشتری پیامک می‌شود.')
+                ->modalDescription(fn (): string => $this->orderReturn()->needsPickup()
+                    ? 'تیپاکس بسته‌ها را از آدرس مشتری جمع‌آوری و به انبار می‌آورد؛ کد رهگیری مرجوعی برای مشتری پیامک می‌شود. بازگشت وجه پس از جمع‌آوری ثبت می‌شود.'
+                    : 'این کالاها ارسال نشده بودند؛ پس از تأیید، بازگشت وجه را ثبت کنید.')
                 ->action(function (ApproveOrderReturn $approve): void {
                     try {
                         $codes = $approve($this->orderReturn(), $this->adminId());
@@ -55,16 +63,63 @@ final class ViewOrderReturn extends ViewRecord
                     }
 
                     $this->record = $this->orderReturn()->refresh();
+
+                    if ($codes === []) {
+                        Notification::make()->success()->title('مرجوعی تأیید شد.')->send();
+
+                        return;
+                    }
+
                     Notification::make()->success()->title('مرجوعی در تیپاکس ثبت شد.')->body('کد رهگیری: '.implode('، ', $codes))->persistent()->send();
+                }),
+            Action::make('inquire')
+                ->label('استعلام از تیپاکس')
+                ->icon(Heroicon::OutlinedMapPin)
+                ->color('gray')
+                ->visible(fn (): bool => $this->orderReturn()->needsPickup() && $this->orderReturn()->getTrackingCodes() !== [])
+                ->action(function (InquireOrderReturn $inquire): void {
+                    try {
+                        $progress = $inquire($this->orderReturn());
+                    } catch (TipaxRequestFailed $failed) {
+                        Notification::make()->danger()->title('تیپاکس پاسخ نداد.')->body($failed->getMessage())->send();
+
+                        return;
+                    }
+
+                    $this->record = $this->orderReturn()->refresh();
+                    Notification::make()->success()
+                        ->title('وضعیت تیپاکس: '.($progress?->stage->label() ?? 'نامشخص'))
+                        ->body($progress?->status)
+                        ->send();
+                }),
+            Action::make('recordRefund')
+                ->label('ثبت بازگشت وجه')
+                ->icon(Heroicon::OutlinedBanknotes)
+                ->color('success')
+                ->visible(fn (): bool => $this->mayUpdate() && $this->orderReturn()->isRefundable())
+                ->modalHeading('ثبت بازگشت وجه مرجوعی')
+                ->modalDescription(fn (): string => 'وقتی '.Toman::format($this->orderReturn()->getRefundTotal()).' را از بانک یا پنل درگاه به مشتری برگرداندید، شماره پیگیری آن را وارد کنید.')
+                ->schema([TextInput::make('reference')->label('شماره پیگیری بازگشت وجه')->required()->maxLength(100)->extraInputAttributes(['dir' => 'ltr'])])
+                ->action(function (array $data, RecordReturnRefund $recordRefund): void {
+                    try {
+                        $recordRefund($this->orderReturn(), (string) $data['reference'], $this->adminId());
+                    } catch (OrderRefused $refused) {
+                        Notification::make()->danger()->title($refused->getMessage())->send();
+
+                        return;
+                    }
+
+                    $this->record = $this->orderReturn()->refresh();
+                    Notification::make()->success()->title('بازگشت وجه ثبت شد.')->send();
                 }),
             Action::make('cancel')
                 ->label('لغو مرجوعی')
                 ->icon(Heroicon::OutlinedXCircle)
                 ->color('danger')
-                ->visible(fn (): bool => $this->mayUpdate() && $this->orderReturn()->getStatus() !== OrderReturnStatus::Cancelled)
+                ->visible(fn (): bool => $this->mayUpdate() && in_array($this->orderReturn()->getStatus(), [OrderReturnStatus::Draft, OrderReturnStatus::Approved], true))
                 ->requiresConfirmation()
-                ->modalDescription(fn (): string => $this->orderReturn()->getStatus() === OrderReturnStatus::Approved
-                    ? 'جمع‌آوری در تیپاکس هم لغو می‌شود؛ اگر تیپاکس بسته را برداشته باشد، لغو انجام نمی‌شود.'
+                ->modalDescription(fn (): string => $this->orderReturn()->getStatus() === OrderReturnStatus::Approved && $this->orderReturn()->needsPickup()
+                    ? 'وضعیت از تیپاکس پرسیده می‌شود و جمع‌آوری در تیپاکس هم لغو می‌شود؛ اگر تیپاکس بسته را جمع‌آوری کرده باشد، لغو انجام نمی‌شود.'
                     : 'کالاهای این مرجوعی دوباره قابل مرجوع می‌شوند.')
                 ->schema([Textarea::make('reason')->label('دلیل لغو')->maxLength(500)->rows(3)])
                 ->action(function (array $data, CancelOrderReturn $cancel): void {

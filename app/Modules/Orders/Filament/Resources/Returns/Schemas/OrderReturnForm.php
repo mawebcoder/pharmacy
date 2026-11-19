@@ -20,8 +20,8 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 /**
- * «ثبت مرجوعی» (S27, owner 2026-11-19): pick a delivered order, or a cancelled one that went out, then how many units of
- * each item come back (at most what no open return holds). A cancelled order starts with every unit, a delivered one
+ * «ثبت مرجوعی» (S27, owner 2026-11-19): pick a paid order not sent yet, a delivered one, or a cancelled one that went
+ * out, then how many units of each item come back (at most what no open return holds). A cancelled order starts with every unit, a delivered one
  * with none.
  */
 final class OrderReturnForm
@@ -38,14 +38,14 @@ final class OrderReturnForm
                         ->searchable()
                         ->live()
                         ->getSearchResultsUsing(fn (string $search): array => Order::query()
-                            ->whereIn(Order::COLUMN_STATUS, [OrderStatus::Delivered, OrderStatus::Cancelled])
+                            ->whereIn(Order::COLUMN_STATUS, [OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Delivered, OrderStatus::Cancelled])
                             ->where(Order::COLUMN_NUMBER, 'like', '%'.trim($search).'%')
                             ->orderByDesc(Order::COLUMN_ID)
                             ->limit(20)
                             ->pluck(Order::COLUMN_NUMBER, Order::COLUMN_ID)
                             ->all())
                         ->getOptionLabelUsing(fn (mixed $value): ?string => is_numeric($value) ? Order::query()->find((int) $value)?->getNumber() : null)
-                        ->helperText('سفارش تحویل‌شده، یا لغوشده‌ای که ارسال شده بود.')
+                        ->helperText('سفارش پرداخت‌شده‌ای که هنوز ارسال نشده (بدون جمع‌آوری، بازگشت وجه پس از تأیید)، سفارش تحویل‌شده، یا لغوشده‌ای که ارسال شده بود.')
                         ->afterStateUpdated(fn (Set $set, mixed $state) => $set('items', is_numeric($state) ? self::itemRows((int) $state) : [])),
                     Textarea::make('reason')->label('دلیل مرجوعی')->maxLength(2000)->rows(3),
                 ]),

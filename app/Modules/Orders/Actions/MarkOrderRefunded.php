@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Actions;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Queries\OrderReturns;
 use App\Modules\Shared\Support\Toman;
 use Illuminate\Support\Facades\DB;
 
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  */
 final readonly class MarkOrderRefunded
 {
+    public function __construct(private OrderReturns $returns) {}
+
     /**
      * @throws OrderRefused
      */
@@ -29,6 +32,11 @@ final readonly class MarkOrderRefunded
 
             if ($order->getPaymentStatus() !== PaymentStatus::RefundPending) {
                 throw OrderRefused::notRefundable();
+            }
+
+            // An order that went out is refunded through its return, once Tipax picked it up (owner, 2026-11-19).
+            if ($this->returns->wentOut($order)) {
+                throw OrderRefused::refundThroughReturn();
             }
 
             if ($itemsAmount > $order->getItemsPaidTotal()) {

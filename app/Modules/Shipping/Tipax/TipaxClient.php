@@ -23,7 +23,7 @@ final readonly class TipaxClient
     private const string TOKEN_CACHE_KEY = 'shipping:tipax:access_token';
 
     /**
-     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string, register_order: string, cancel_parcel: string}  $paths
+     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string, register_order: string, cancel_parcel: string, track_by_codes: string}  $paths
      */
     public function __construct(
         private string $baseUrl,
@@ -286,6 +286,44 @@ final readonly class TipaxClient
         if (is_array($answer) && ($answer['isSuccess'] ?? true) === false) {
             throw TipaxRequestFailed::refused('cancel_parcel', (string) ($answer['message'] ?? $answer['statusCode'] ?? ''));
         }
+    }
+
+    /**
+     * Several parcels' statuses in one call (`POST Tracking/ByTrackingCode`, OmTrackingListDto; roadmap S27): Tipax's
+     * parcel status id (as in `GET ParcelStatus`) and its title. A parcel no branch has handled yet is left out.
+     *
+     * @param  list<string>  $trackingCodes
+     * @return array<string, array{status_id: int|null, status: string|null}> by tracking code
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function trackByCodes(array $trackingCodes): array
+    {
+        $response = $this->send(
+            'track_by_codes',
+            fn (PendingRequest $request): Response => $request->withToken($this->token())->post($this->url($this->paths['track_by_codes']), $trackingCodes),
+            timeoutSeconds: $this->pricingTimeoutSeconds,
+            retries: 0,
+        );
+        $body = $response->json();
+
+        if (is_array($body) && ($body['isSuccess'] ?? true) === false) {
+            throw TipaxRequestFailed::refused('track_by_codes', (string) ($body['message'] ?? $body['statusCode'] ?? ''));
+        }
+
+        $rows = is_array($body) && is_array($body['data'] ?? null) ? $body['data'] : ($body ?? []);
+        $parcels = [];
+
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            if (is_array($row) && is_string($row['trackingCode'] ?? null)) {
+                $parcels[$row['trackingCode']] = [
+                    'status_id' => is_numeric($row['statusId'] ?? null) ? (int) $row['statusId'] : null,
+                    'status' => is_string($row['status'] ?? null) && trim($row['status']) !== '' ? trim($row['status']) : null,
+                ];
+            }
+        }
+
+        return $parcels;
     }
 
     /**

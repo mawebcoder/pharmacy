@@ -8,8 +8,12 @@ use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Orders\Actions\ApproveOrderReturn;
 use App\Modules\Orders\Actions\CancelOrderReturn;
 use App\Modules\Orders\Actions\CreateOrderReturn;
+use App\Modules\Orders\Actions\InquireOrderReturn;
+use App\Modules\Orders\Actions\MarkOrderRefunded;
+use App\Modules\Orders\Actions\RecordReturnRefund;
 use App\Modules\Orders\Enums\OrderReturnStatus;
 use App\Modules\Orders\Enums\OrderStatus;
+use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Enums\ReturnScope;
 use App\Modules\Orders\Events\OrderReturnRegistered;
 use App\Modules\Orders\Exceptions\OrderRefused;
@@ -18,6 +22,7 @@ use App\Modules\Orders\Filament\Resources\Orders\RelationManagers\OrderReturnsRe
 use App\Modules\Orders\Filament\Resources\Returns\OrderReturnResource;
 use App\Modules\Orders\Filament\Resources\Returns\Pages\CreateOrderReturn as CreateOrderReturnPage;
 use App\Modules\Orders\Filament\Resources\Returns\Pages\ViewOrderReturn;
+use App\Modules\Orders\Jobs\CheckOrderReturns;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderReturn;
@@ -25,6 +30,7 @@ use App\Modules\Orders\Queries\OrderReturns;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shipping\Database\Seeders\TipaxCartonsSeeder;
+use App\Modules\Shipping\Enums\TipaxParcelStage;
 use App\Modules\Shipping\Models\ShippingBox;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Repeater;
@@ -60,6 +66,8 @@ beforeEach(function (): void {
     ]);
     $this->refuse = false;
     $this->nextCode = 'TIPAX-RET-1';
+    // Tipax's parcel status id for the return's parcels (GET ParcelStatus); null while no branch has handled them.
+    $this->parcelStatusId = null;
     // Two services on the way back: express (1) 250,000 and same day (12) 200,000 rial per parcel.
     Http::fake(fn (Request $request) => match (true) {
         str_ends_with($request->url(), 'Account/token') => Http::response(['accessToken' => 'token-123', 'expiresIn' => 3600]),
@@ -72,6 +80,11 @@ beforeEach(function (): void {
             'regularRate' => ['serviceId' => $package['serviceId'], 'finalPrice' => $package['serviceId'] === 12 ? 200_000 : 250_000],
         ], $request['packageInputs'])),
         str_contains($request->url(), 'Parcels/Cancel') => Http::response(['isSuccess' => true]),
+        str_ends_with($request->url(), 'Tracking/ByTrackingCode') => Http::response($this->parcelStatusId === null ? [] : array_map(fn (string $code): array => [
+            'trackingCode' => $code, 'statusId' => $this->parcelStatusId, 'status' => match ($this->parcelStatusId) {
+                38 => 'جمع آوری شد', 50 => 'تحویل به گیرنده', 51 => 'عودت شد', default => 'در دست جمع آوری',
+            },
+        ], $request->data())),
         default => Http::response(['trackingCodesWithTitles' => [['trackingCode' => $this->nextCode, 'customTitle' => 'x']], 'correlationId' => 'corr-r']),
     });
     $this->order = Order::factory()->paid()->create([
@@ -160,10 +173,13 @@ it('takes a cancelled order that went out back in full, the shipping fee include
     expect($return)->getScope()->toBe(ReturnScope::Full)->getRefundTotal()->toBe(3_500_000);
 });
 
-it('opens no return for an order that has not gone out, or with nothing picked', function (): void {
+it('opens no return for an unpaid order, one on its way, one cancelled before it was sent, or with nothing picked', function (): void {
     expect(fn () => openReturn($this->order, []))->toThrow(OrderRefused::class, 'دست‌کم یک کالا');
 
-    $this->order->setStatus(OrderStatus::Processing)->save();
+    $this->order->setStatus(OrderStatus::Pending)->save();
+    expect(fn () => openReturn($this->order, [$this->cream->getId() => 1]))->toThrow(OrderRefused::class, 'مرجوعی فقط');
+
+    $this->order->setStatus(OrderStatus::OnTheWay)->save();
     expect(fn () => openReturn($this->order, [$this->cream->getId() => 1]))->toThrow(OrderRefused::class, 'مرجوعی فقط');
 
     $this->order->setStatus(OrderStatus::Cancelled)->save(); // cancelled before it was sent
@@ -219,6 +235,85 @@ it('keeps an approved return when Tipax will not cancel it', function (): void {
     expect($return->refresh()->getStatus())->toBe(OrderReturnStatus::Approved);
 });
 
+it('follows the pickup with Tipax: picked up, then received at the warehouse', function (): void {
+    $return = openReturn($this->order, [$this->cream->getId() => 1]);
+    app(ApproveOrderReturn::class)($return, 1);
+
+    app(InquireOrderReturn::class)($return->refresh());
+    expect($return)->getStatus()->toBe(OrderReturnStatus::Approved)->getTipaxStage()->toBe(TipaxParcelStage::AwaitingPickup)->getPickedUpAt()->toBeNull();
+
+    $this->parcelStatusId = 38;
+    app(InquireOrderReturn::class)($return);
+    expect($return->refresh())->getStatus()->toBe(OrderReturnStatus::PickedUp)->getTipaxStatus()->toBe('جمع آوری شد')->getPickedUpAt()->not->toBeNull();
+
+    $this->parcelStatusId = 50;
+    app(CheckOrderReturns::class)->handle(app(InquireOrderReturn::class)); // the nightly check
+    expect($return->refresh())->getStatus()->toBe(OrderReturnStatus::Received)->getReceivedAt()->not->toBeNull();
+    Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), 'Tracking/ByTrackingCode') && $request->data() === ['TIPAX-RET-1']);
+});
+
+it('will not cancel a return Tipax has picked up, and never asks Tipax to cancel it', function (): void {
+    $return = openReturn($this->order, [$this->cream->getId() => 1]);
+    app(ApproveOrderReturn::class)($return, 1);
+    $this->parcelStatusId = 38;
+
+    expect(fn () => app(CancelOrderReturn::class)($return->refresh(), null, 1))->toThrow(OrderRefused::class, 'جمع‌آوری کرده');
+    expect($return->refresh()->getStatus())->toBe(OrderReturnStatus::PickedUp);
+    Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'Parcels/Cancel'));
+});
+
+it('records the refund only after Tipax picked the return up, and not when Tipax sent it back', function (): void {
+    $return = openReturn($this->order, [$this->cream->getId() => 1]);
+    app(ApproveOrderReturn::class)($return, 1);
+
+    expect(fn () => app(RecordReturnRefund::class)($return->refresh(), 'REF-1', 1))->toThrow(OrderRefused::class, 'پس از جمع‌آوری');
+
+    $this->parcelStatusId = 51;
+    app(InquireOrderReturn::class)($return->refresh());
+    expect(fn () => app(RecordReturnRefund::class)($return->refresh(), 'REF-1', 1))->toThrow(OrderRefused::class, 'پس از جمع‌آوری');
+
+    $this->parcelStatusId = 38;
+    $other = openReturn($this->order, [$this->serum->getId() => 1]);
+    app(ApproveOrderReturn::class)($other, 1);
+    app(InquireOrderReturn::class)($other->refresh());
+    app(RecordReturnRefund::class)($other->refresh(), ' REF-2 ', 1);
+
+    expect($other->refresh())->getStatus()->toBe(OrderReturnStatus::Refunded)->getRefundReference()->toBe('REF-2')->getRefundedAt()->not->toBeNull();
+});
+
+it('refunds a cancelled order that went out only through its return, after pickup', function (): void {
+    $this->order->setStatus(OrderStatus::Cancelled)->setPaymentStatus(PaymentStatus::RefundPending)->setTrackingCode('HAND-1')->save();
+
+    expect(fn () => app(MarkOrderRefunded::class)($this->order, 'REF-1', 1_000_000, 0))->toThrow(OrderRefused::class, 'از «ثبت مرجوعی»');
+
+    $return = openReturn($this->order, [$this->cream->getId() => 3, $this->serum->getId() => 1]);
+    app(ApproveOrderReturn::class)($return, 1);
+    $this->parcelStatusId = 38;
+    app(InquireOrderReturn::class)($return->refresh());
+    app(RecordReturnRefund::class)($return->refresh(), 'REF-9', 1);
+
+    expect($this->order->refresh())
+        ->getPaymentStatus()->toBe(PaymentStatus::Refunded)
+        ->getRefundReference()->toBe('REF-9')
+        ->getRefundItemsAmount()->toBe(3_000_000)
+        ->getRefundShippingAmount()->toBe(500_000);
+});
+
+it('returns items never sent without Tipax, refunded as soon as the return is approved', function (): void {
+    $this->order->setStatus(OrderStatus::Processing)->save();
+    $requestsBefore = count(Http::recorded());
+
+    $return = openReturn($this->order, [$this->serum->getId() => 1]);
+    expect($return)->needsPickup()->toBeFalse()->getReturnShippingPrice()->toBeNull()->getParcels()->toBe([])
+        ->and(fn () => app(RecordReturnRefund::class)($return, 'REF-3', 1))->toThrow(OrderRefused::class);
+
+    expect(app(ApproveOrderReturn::class)($return, 1))->toBe([]);
+    app(RecordReturnRefund::class)($return->refresh(), 'REF-3', 1);
+
+    expect($return->refresh()->getStatus())->toBe(OrderReturnStatus::Refunded)
+        ->and(count(Http::recorded()))->toBe($requestsBefore);
+});
+
 describe('in the admin', function (): void {
     beforeEach(function (): void {
         Filament::setCurrentPanel('admin');
@@ -266,7 +361,7 @@ describe('in the admin', function (): void {
         expect(OrderReturn::query()->count())->toBe(0);
     });
 
-    it('approves and cancels on the return\'s page, and shows the returns with their badge on the order\'s page', function (): void {
+    it('approves, follows Tipax on the return\'s row and refunds after pickup, with the badge on the order\'s page', function (): void {
         $return = openReturn($this->order, [$this->cream->getId() => 1]);
 
         livewire(ViewOrderReturn::class, ['record' => $return->getRouteKey()])
@@ -277,9 +372,25 @@ describe('in the admin', function (): void {
         expect($return->refresh()->getStatus())->toBe(OrderReturnStatus::Approved);
 
         livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])->assertSee('مرجوعی جزئی');
+        $this->parcelStatusId = 38;
         livewire(OrderReturnsRelationManager::class, ['ownerRecord' => $this->order, 'pageClass' => ViewOrder::class])
             ->assertCanSeeTableRecords([$return])
-            ->assertSee('PH-140508-000300-R1');
+            ->assertSee('PH-140508-000300-R1')
+            ->assertSee('در انتظار جمع‌آوری')
+            ->callTableAction('inquire', $return)
+            ->assertNotified()
+            ->assertSee('جمع‌آوری شد');
+        expect($return->refresh()->getStatus())->toBe(OrderReturnStatus::PickedUp);
+
+        livewire(ViewOrderReturn::class, ['record' => $return->getRouteKey()])
+            ->assertActionHidden('cancel')
+            ->callAction('recordRefund', ['reference' => 'REF-7'])
+            ->assertNotified('بازگشت وجه ثبت شد.');
+        expect($return->refresh()->getStatus())->toBe(OrderReturnStatus::Refunded);
+    });
+
+    it('cancels a draft on the return\'s page', function (): void {
+        $return = openReturn($this->order, [$this->cream->getId() => 1]);
 
         livewire(ViewOrderReturn::class, ['record' => $return->getRouteKey()])
             ->callAction('cancel', ['reason' => 'اشتباه'])
