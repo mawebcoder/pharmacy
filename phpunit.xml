@@ -33,6 +33,12 @@
         <env name="TIPAX_USERNAME" value=""/>
         <env name="TIPAX_PASSWORD" value=""/>
         <env name="TIPAX_API_KEY" value=""/>
+        <env name="SMS_PROVIDER" value="melipayamak"/>
+        <env name="SMS_PRETEND" value="true"/>
+        <env name="MELIPAYAMAK_USERNAME" value=""/>
+        <env name="MELIPAYAMAK_API_KEY" value=""/>
+        <env name="KAVENEGAR_API_KEY" value=""/>
+        <env name="ZARINPAL_MERCHANT_ID" value=""/>
         <env name="PAYMENT_FAKE_ENABLED" value="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

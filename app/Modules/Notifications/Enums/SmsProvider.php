@@ -16,11 +16,13 @@ enum SmsProvider: string implements HasLabel
     use LabelledEnum;
 
     case Melipayamak = 'melipayamak';
+    case Kavenegar = 'kavenegar';
 
     public function label(): string
     {
         return match ($this) {
             self::Melipayamak => 'ملی پیامک',
+            self::Kavenegar => 'کاوه‌نگار',
         };
     }
 

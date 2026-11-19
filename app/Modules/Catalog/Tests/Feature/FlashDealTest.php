@@ -118,6 +118,7 @@ it('never sells more units than the deal\'s limit, and units come back when rele
 });
 
 it('counts down to the last live deal\'s end', function (): void {
+    $this->freezeTime();
     $other = ProductVariant::factory()->for(Product::factory()->active())->create([ProductVariant::COLUMN_PRICE => 1_000_000]);
     dealFor($this->variant, [FlashDeal::COLUMN_ENDS_AT => now()->addHours(2)]);
     dealFor($other, [FlashDeal::COLUMN_ENDS_AT => now()->addHours(5)]);

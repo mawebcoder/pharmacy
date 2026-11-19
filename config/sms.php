@@ -7,8 +7,8 @@ declare(strict_types=1);
 | SMS (roadmap D11.6)
 |--------------------------------------------------------------------------
 |
-| SMS go through the provider named here (App\Modules\Notifications\Enums\SmsProvider); each provider has its own
-| block with credentials and template key => pattern id. With «pretend» on (the default, for local and testing)
+| SMS go through the provider named here (App\Modules\Notifications\Enums\SmsProvider): «melipayamak» or «kavenegar»;
+| each provider has its own block with credentials and template key => pattern id (Kavenegar: template name). With «pretend» on (the default, for local and testing)
 | nothing is sent: the message goes to the application log and sms_logs marks it as a pretend send.
 |
 */
@@ -36,6 +36,20 @@ return [
             // Template key => pattern bodyId approved in the Melli Payamak panel. S37 adds the order templates.
             'patterns' => [
                 'otp' => env('MELIPAYAMAK_PATTERN_OTP'),
+            ],
+        ],
+
+        // Kavenegar through its package (kavenegar/php; owner 2026-11-18): template SMS with verify/lookup.
+        'kavenegar' => [
+            'api_key' => env('KAVENEGAR_API_KEY'),
+            // The sender line, for plain messages (template SMS go out on Kavenegar's own service lines).
+            'sender' => env('KAVENEGAR_SENDER'),
+            'base_url' => env('KAVENEGAR_BASE_URL', 'https://api.kavenegar.com'),
+
+            // Template key => template name approved in the Kavenegar panel; its %token%, %token2%, %token3% take the
+            // message's variables in order.
+            'patterns' => [
+                'otp' => env('KAVENEGAR_TEMPLATE_OTP'),
             ],
         ],
     ],

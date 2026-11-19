@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Notifications\Support;
 
 use App\Modules\Notifications\Contracts\SmsSender;
+use App\Modules\Notifications\Drivers\KavenegarSmsSender;
 use App\Modules\Notifications\Drivers\LogSmsSender;
 use App\Modules\Notifications\Drivers\MelipayamakSmsSender;
 use App\Modules\Notifications\Enums\SmsProvider;
 use App\Modules\Notifications\Enums\SmsTemplate;
+use Kavenegar\KavenegarApi;
 
 /**
  * Picks the SMS sender for a provider (roadmap D11.6, strategy pattern). The provider comes from SMS_PROVIDER unless
@@ -48,6 +50,7 @@ final class SmsManager
                 retries: (int) $this->setting($provider, 'retries'),
                 retrySleepMs: (int) $this->setting($provider, 'retry_sleep_ms'),
             ),
+            SmsProvider::Kavenegar => new KavenegarSmsSender(fn (): KavenegarApi => app(KavenegarApi::class)),
         };
     }
 
