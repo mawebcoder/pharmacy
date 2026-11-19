@@ -1,6 +1,7 @@
 {{-- One order (owner, 2026-11-14): see App\Modules\Profile\Livewire\OrderDetail. Read only from the order's copies. --}}
 @use('App\Modules\Identity\Support\AddressText')
 @use('App\Modules\Orders\Enums\OrderStatus')
+@use('App\Modules\Orders\Support\PrintFrame')
 @use('App\Modules\Shared\Support\JalaliDate')
 @use('App\Modules\Shared\Support\PersianDigits')
 
@@ -174,6 +175,13 @@
                         <div class="flex justify-between gap-3"><dt class="text-ink-500">کد پیگیری پرداخت</dt><dd class="text-ink-900" dir="ltr">{{ PersianDigits::toPersian($reference) }}</dd></div>
                     @endif
                 </dl>
+                {{-- «فاکتور فروش» of a paid order (owner, 2026-11-19): opens the print dialog on this page, no new tab. --}}
+                @if ($order->getPaidAt())
+                    <button type="button" x-data x-on:click="{{ PrintFrame::script(route('account.orders.invoice', $order->getId())) }}" class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-card px-3 text-sm font-medium text-primary-700 ring-1 ring-primary-700/20 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
+                        <x-ts-icon icon="printer" class="size-5" />
+                        چاپ فاکتور
+                    </button>
+                @endif
             </section>
         </div>
     </div>

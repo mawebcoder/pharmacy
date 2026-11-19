@@ -19,6 +19,7 @@
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.4",
         "meilisearch/meilisearch-php": "^1.17",
+        "mpdf/mpdf": "^8.2",
         "novadaemon/filament-pretty-json": "^4.2",
         "openspout/openspout": "^4.32",
         "rhukster/dom-sanitizer": "^1.0",

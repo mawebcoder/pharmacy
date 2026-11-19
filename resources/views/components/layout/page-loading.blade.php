@@ -4,8 +4,7 @@
     the new page swaps in (which replaces this layer with a fresh, hidden one). kindOf() picks the shape from the
     destination URL. Plain links and ordinary form posts (logout, the search form, the gateway) show it too, until the
     browser leaves. It shows only after 150 ms, so a page that arrives at once does not flash. Screen readers hear
-    «در حال بارگذاری صفحه…». Plain Tailwind (animate-pulse), no extra package. Locally, LOCAL_LOADING_DELAY_MS holds
-    requests back so it can be seen (DelayLoadingLocally).
+    «در حال بارگذاری صفحه…». Plain Tailwind (animate-pulse), no extra package.
 --}}
 @php
     $bar = 'rounded-full bg-line-200';

@@ -72,6 +72,7 @@ final readonly class PackOrder
                     ->setTotalWeightG($parcel->totalWeightG)
                     ->setDeclaredValue($parcel->declaredValue)
                     ->setContentType($parcel->content)
+                    ->setTipaxContentId($parcel->tipaxContentId)
                     ->setIsEstimate($parcel->isEstimate);
                 $row->save();
                 $parcels[] = $row;

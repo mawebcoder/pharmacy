@@ -39,6 +39,7 @@ return [
                 'order_paid' => env('MELIPAYAMAK_PATTERN_ORDER_PAID'),
                 'order_on_the_way' => env('MELIPAYAMAK_PATTERN_ORDER_SHIPPED'),
                 'order_cancelled' => env('MELIPAYAMAK_PATTERN_ORDER_CANCELLED'),
+                'order_return' => env('MELIPAYAMAK_PATTERN_ORDER_RETURN'),
             ],
         ],
 
@@ -56,6 +57,7 @@ return [
                 'order_paid' => env('KAVENEGAR_TEMPLATE_ORDER_PAID'),
                 'order_on_the_way' => env('KAVENEGAR_TEMPLATE_ORDER_ON_THE_WAY'),
                 'order_cancelled' => env('KAVENEGAR_TEMPLATE_ORDER_CANCELLED'),
+                'order_return' => env('KAVENEGAR_TEMPLATE_ORDER_RETURN'),
             ],
         ],
     ],

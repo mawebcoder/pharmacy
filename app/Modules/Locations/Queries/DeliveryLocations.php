@@ -101,7 +101,7 @@ final readonly class DeliveryLocations
      * A city with its province, for order snapshots (S23): names, Tipax ids (our ids are Tipax's) and whether
      * delivery is on. Null when the city is gone.
      *
-     * @return array{province_id: int, province: string, city_id: int, city: string, is_delivery_enabled: bool}|null
+     * @return array{province_id: int, province: string, city_id: int, city: string, is_delivery_enabled: bool, latitude: float|null, longitude: float|null}|null
      */
     public function place(int $cityId): ?array
     {
@@ -117,6 +117,8 @@ final readonly class DeliveryLocations
             'city_id' => $city->getId(),
             'city' => $city->getNameFa(),
             'is_delivery_enabled' => $city->isDeliveryEnabled(),
+            'latitude' => $city->getLatitude(),
+            'longitude' => $city->getLongitude(),
         ];
     }
 }

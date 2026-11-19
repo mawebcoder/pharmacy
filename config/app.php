@@ -106,18 +106,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Loading delay (local demo)
-    |--------------------------------------------------------------------------
-    |
-    | Milliseconds to hold back Livewire requests (wire:navigate pages and component updates) so skeletons and
-    | spinners can be seen locally (DelayLoadingLocally). Only on APP_ENV=local; 0 turns it off.
-    |
-    */
-
-    'local_loading_delay_ms' => (int) env('LOCAL_LOADING_DELAY_MS', 0),
-
-    /*
-    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

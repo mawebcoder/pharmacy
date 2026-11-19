@@ -172,10 +172,10 @@ describe('as an operator', function (): void {
         $order->setStatus(OrderStatus::Processing)->setSourcingStatus(SourcingStatus::ReadyToPack)->save();
 
         livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->callAction('sendOnItsWay', ['tracking_code' => ''])
+            ->callAction('sendOnItsWayManually', ['tracking_code' => ''])
             ->assertHasActionErrors(['tracking_code' => 'required']);
         livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->callAction('sendOnItsWay', ['tracking_code' => 'TPX-778812'])
+            ->callAction('sendOnItsWayManually', ['tracking_code' => 'TPX-778812'])
             ->assertHasNoActionErrors();
 
         expect($order->refresh())->getStatus()->toBe(OrderStatus::OnTheWay)->getTrackingCode()->toBe('TPX-778812');

@@ -22,6 +22,8 @@ enum SmsTemplate: string implements HasLabel
     case OrderOnTheWay = 'order_on_the_way';
     // Cancelled by the customer or an admin: [customer name, order number] (owner, 2026-11-19).
     case OrderCancelled = 'order_cancelled';
+    // Its return registered with Tipax: [customer name, order number, return tracking code] (owner, 2026-11-19).
+    case OrderReturn = 'order_return';
 
     public function label(): string
     {
@@ -30,6 +32,7 @@ enum SmsTemplate: string implements HasLabel
             self::OrderPaid => 'پرداخت سفارش',
             self::OrderOnTheWay => 'ارسال سفارش',
             self::OrderCancelled => 'لغو سفارش',
+            self::OrderReturn => 'مرجوعی سفارش',
         };
     }
 
@@ -40,7 +43,7 @@ enum SmsTemplate: string implements HasLabel
     {
         return match ($this) {
             self::Otp => true,
-            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled => false,
+            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled, self::OrderReturn => false,
         };
     }
 
@@ -51,7 +54,7 @@ enum SmsTemplate: string implements HasLabel
     {
         return match ($this) {
             self::Otp => 60,
-            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled => 3600,
+            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled, self::OrderReturn => 3600,
         };
     }
 }

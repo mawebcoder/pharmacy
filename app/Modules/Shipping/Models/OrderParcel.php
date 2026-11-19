@@ -34,6 +34,8 @@ final class OrderParcel extends Model
 
     public const string COLUMN_CONTENT_TYPE = 'content_type';
 
+    public const string COLUMN_TIPAX_CONTENT_ID = 'tipax_content_id';
+
     public const string COLUMN_IS_ESTIMATE = 'is_estimate';
 
     public function getId(): int
@@ -159,6 +161,18 @@ final class OrderParcel extends Model
     public function setIsEstimate(bool $isEstimate): static
     {
         return $this->setAttribute(self::COLUMN_IS_ESTIMATE, $isEstimate);
+    }
+
+    public function getTipaxContentId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_TIPAX_CONTENT_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setTipaxContentId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TIPAX_CONTENT_ID, $value);
     }
 
     /**

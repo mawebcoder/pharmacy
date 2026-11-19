@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Modules\Shared\Exceptions\BaseException;
-use App\Modules\Shared\Http\Middleware\DelayLoadingLocally;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,7 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->appendToGroup('web', DelayLoadingLocally::class);
+        // Carriers post their results here from outside; each webhook checks its own secret (S35).
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Customer-facing refusals render themselves as {message, code} (BaseException::render) and are not errors.

@@ -10,6 +10,7 @@ use App\Modules\Notifications\Support\SmsManager;
 use App\Modules\Orders\Events\OrderCancelled;
 use App\Modules\Orders\Events\OrderOnItsWay;
 use App\Modules\Orders\Events\OrderPaid;
+use App\Modules\Orders\Events\OrderReturnRegistered;
 use App\Modules\Shared\ModuleServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Kavenegar\KavenegarApi;
@@ -33,6 +34,6 @@ final class NotificationsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         // Order news by SMS (S37).
-        Event::listen([OrderPaid::class, OrderOnItsWay::class, OrderCancelled::class], SendOrderSms::class);
+        Event::listen([OrderPaid::class, OrderOnItsWay::class, OrderCancelled::class, OrderReturnRegistered::class], SendOrderSms::class);
     }
 }

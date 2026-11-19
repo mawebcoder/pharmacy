@@ -47,6 +47,26 @@ final class OrderRefused extends BaseException
         return new self('مبلغی برای بازگشت وارد نشده است.', 'order_refund_empty');
     }
 
+    public static function senderIncomplete(): self
+    {
+        return new self('اطلاعات فرستنده (نام، موبایل، آدرس انبار و شهر مبدأ) در «تنظیمات فروشگاه» کامل نیست.', 'order_sender_incomplete');
+    }
+
+    public static function notPacked(): self
+    {
+        return new self('این سفارش هنوز بسته‌بندی نشده است؛ «بسته‌بندی دوباره» را بزنید.', 'order_not_packed');
+    }
+
+    public static function carrierRefused(string $reason): self
+    {
+        return new self('ثبت در تیپاکس انجام نشد: '.$reason, 'order_carrier_refused', Response::HTTP_BAD_GATEWAY);
+    }
+
+    public static function notReturnable(): self
+    {
+        return new self('مرجوعی فقط برای سفارش لغوشده یا تحویل‌شده‌ای ثبت می‌شود که با تیپاکس ارسال شده و مرجوعی‌اش هنوز ثبت نشده است.', 'order_not_returnable');
+    }
+
     public static function notSourced(): self
     {
         return new self('تحویل به حمل فقط پس از دریافت کامل سند خرید این سفارش ممکن است.', 'order_not_sourced');

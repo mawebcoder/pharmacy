@@ -24,6 +24,8 @@ use App\Modules\Shipping\Enums\TipaxPriceUnit;
 return [
     'tipax' => [
         'enabled' => (bool) env('TIPAX_ENABLED', true),
+        // Sent as a query parameter on the callback addresses Tipax calls after a registration (S35).
+        'webhook_secret' => env('TIPAX_WEBHOOK_SECRET'),
         'base_url' => env('TIPAX_BASE_URL', 'https://omtestapi.tipax.ir'),
         'username' => env('TIPAX_USERNAME'),
         'password' => env('TIPAX_PASSWORD'),
@@ -48,6 +50,7 @@ return [
             'packaging_contents' => env('TIPAX_PATH_PACKAGING_CONTENTS', '/api/OM/v4/PackingType/GetPackagingContents'),
             // The tracking code goes at the end.
             'brief_tracking' => env('TIPAX_PATH_BRIEF_TRACKING', '/api/OM/v4/Tracking/BriefTracking'),
+            'register_order' => env('TIPAX_PATH_REGISTER_ORDER', '/api/OM/v4/OmOrder'),
         ],
         'pricing' => [
             // A TipaxPaymentType value: 10 prepaid by the sender (D6.6).

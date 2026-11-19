@@ -8,8 +8,10 @@ use App\Modules\Orders\Actions\CancelOrderByAdmin;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Actions\MarkOrderRefunded;
 use App\Modules\Orders\Actions\OpenOrderPurchase;
+use App\Modules\Orders\Actions\RegisterOrderReturn;
 use App\Modules\Orders\Actions\SaveAdminNote;
 use App\Modules\Orders\Actions\SendOrderOnItsWay;
+use App\Modules\Orders\Actions\ShipOrderWithTipax;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
@@ -20,6 +22,8 @@ use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Filament\Resources\Purchases\OrderPurchaseResource;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderPurchase;
+use App\Modules\Orders\Queries\OrderInvoice;
+use App\Modules\Orders\Support\PrintFrame;
 use App\Modules\Shared\Support\Toman;
 use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
 use App\Modules\Shipping\Queries\ParcelTrackingStatus;
@@ -51,6 +55,7 @@ final class ViewOrder extends ViewRecord
             // Status changes stay separate buttons, each confirmed (owner, 2026-11-19).
             $this->move('startProcessing', 'شروع آماده‌سازی', OrderStatus::Processing, Heroicon::OutlinedArchiveBox)
                 ->color('primary'),
+            // Registered with Tipax, which gives the tracking code (S35, owner 2026-11-19); typing it by hand is in the menu.
             Action::make('sendOnItsWay')
                 ->label('تحویل به حمل')
                 ->icon(Heroicon::OutlinedTruck)
@@ -58,16 +63,20 @@ final class ViewOrder extends ViewRecord
                 ->visible(fn (): bool => $this->mayMoveTo(OrderStatus::OnTheWay))
                 ->disabled(fn (): bool => $this->order()->getSourcingStatus() !== SourcingStatus::ReadyToPack)
                 ->tooltip(fn (): ?string => $this->order()->getSourcingStatus() !== SourcingStatus::ReadyToPack ? 'پس از دریافت کامل سند خرید فعال می‌شود.' : null)
-                ->modalHeading('تحویل سفارش به شرکت حمل')
-                ->schema([
-                    TextInput::make('tracking_code')
-                        ->label('کد رهگیری')
-                        ->required()
-                        ->maxLength(64)
-                        ->extraInputAttributes(['dir' => 'ltr'])
-                        ->helperText('مشتری این کد را در صفحه سفارش و «پیگیری سفارش» می‌بیند.'),
-                ])
-                ->action(fn (array $data, SendOrderOnItsWay $send) => $this->attempt(fn () => $send($this->order(), (string) $data['tracking_code'], $this->adminId()))),
+                ->requiresConfirmation()
+                ->modalHeading('ثبت در تیپاکس و تحویل به حمل')
+                ->modalDescription('بسته‌های این سفارش در تیپاکس ثبت می‌شوند و کد رهگیری برای مشتری پیامک می‌شود.')
+                ->action(function (ShipOrderWithTipax $ship): void {
+                    try {
+                        $codes = $ship($this->order(), $this->adminId());
+                    } catch (OrderRefused $refused) {
+                        Notification::make()->danger()->title($refused->getMessage())->send();
+
+                        return;
+                    }
+
+                    Notification::make()->success()->title('در تیپاکس ثبت شد.')->body('کد رهگیری: '.implode('، ', $codes))->persistent()->send();
+                }),
             $this->move('markDelivered', 'تحویل شد', OrderStatus::Delivered, Heroicon::OutlinedCheckBadge)
                 ->color('success')
                 ->requiresConfirmation(),
@@ -85,6 +94,68 @@ final class ViewOrder extends ViewRecord
             // Everything else in one menu behind three dots (owner, 2026-11-19), in sections: shipping, purchase, other.
             ActionGroup::make([
                 ActionGroup::make([
+                    Action::make('sendOnItsWayManually')
+                        ->label('ثبت دستی کد رهگیری')
+                        ->icon(Heroicon::OutlinedTruck)
+                        ->color('gray')
+                        ->visible(fn (): bool => $this->mayMoveTo(OrderStatus::OnTheWay))
+                        ->disabled(fn (): bool => $this->order()->getSourcingStatus() !== SourcingStatus::ReadyToPack)
+                        ->tooltip(fn (): ?string => $this->order()->getSourcingStatus() !== SourcingStatus::ReadyToPack ? 'پس از دریافت کامل سند خرید فعال می‌شود.' : null)
+                        ->modalHeading('تحویل به حمل با کد رهگیری دستی')
+                        ->schema([
+                            TextInput::make('tracking_code')
+                                ->label('کد رهگیری')
+                                ->required()
+                                ->maxLength(64)
+                                ->extraInputAttributes(['dir' => 'ltr'])
+                                ->helperText('مشتری این کد را در صفحه سفارش و «پیگیری سفارش» می‌بیند.'),
+                        ])
+                        ->action(fn (array $data, SendOrderOnItsWay $send) => $this->attempt(fn () => $send($this->order(), (string) $data['tracking_code'], $this->adminId()))),
+                    // A cancelled order that went out with Tipax: register its way back (owner, 2026-11-19).
+                    Action::make('registerReturn')
+                        ->label('ثبت مرجوعی در تیپاکس')
+                        ->icon(Heroicon::OutlinedArrowUturnLeft)
+                        ->color('warning')
+                        ->visible(fn (RegisterOrderReturn $return): bool => $this->mayUpdate() && $this->order()->getStatus() === OrderStatus::Cancelled && $return->applies($this->order()))
+                        ->requiresConfirmation()
+                        ->modalDescription('بسته‌ها از آدرس مشتری جمع‌آوری و به انبار برگردانده می‌شوند؛ کد رهگیری مرجوعی برای مشتری پیامک می‌شود.')
+                        ->action(function (RegisterOrderReturn $return): void {
+                            try {
+                                $codes = $return($this->order());
+                            } catch (OrderRefused $refused) {
+                                Notification::make()->danger()->title($refused->getMessage())->send();
+
+                                return;
+                            }
+
+                            Notification::make()->success()->title('مرجوعی در تیپاکس ثبت شد.')->body('کد رهگیری: '.implode('، ', $codes))->persistent()->send();
+                        }),
+                    // A delivered order the customer sends back: Tipax collects it from them (owner, 2026-11-19).
+                    Action::make('registerCustomerReturn')
+                        ->label('ثبت مرجوعی از مشتری')
+                        ->icon(Heroicon::OutlinedArrowUturnLeft)
+                        ->color('warning')
+                        ->visible(fn (RegisterOrderReturn $return): bool => $this->mayUpdate() && $this->order()->getStatus() === OrderStatus::Delivered && $return->applies($this->order()))
+                        ->requiresConfirmation()
+                        ->modalDescription('بسته‌ها از آدرس مشتری جمع‌آوری و به انبار برگردانده می‌شوند؛ کد رهگیری مرجوعی برای مشتری پیامک می‌شود.')
+                        ->action(function (RegisterOrderReturn $return): void {
+                            try {
+                                $codes = $return($this->order());
+                            } catch (OrderRefused $refused) {
+                                Notification::make()->danger()->title($refused->getMessage())->send();
+
+                                return;
+                            }
+
+                            Notification::make()->success()->title('مرجوعی در تیپاکس ثبت شد.')->body('کد رهگیری: '.implode('، ', $codes))->persistent()->send();
+                        }),
+                    // «فاکتور فروش» with the tracking code (owner, 2026-11-19): opens the print dialog, no new tab.
+                    Action::make('printInvoice')
+                        ->label('چاپ فاکتور')
+                        ->icon(Heroicon::OutlinedPrinter)
+                        ->color('gray')
+                        ->visible(fn (): bool => OrderInvoice::isAvailable($this->order()))
+                        ->alpineClickHandler(fn (): string => PrintFrame::script(route('orders.invoice.print', $this->order()->getId()))),
                     // Tipax's parcel status, asked when the admin clicks (owner, 2026-11-19); the answer also reaches the customer's page.
                     Action::make('trackParcel')
                         ->label('استعلام از تیپاکس')

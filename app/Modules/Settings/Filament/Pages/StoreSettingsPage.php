@@ -11,6 +11,7 @@ use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shared\Rules\IranianMobile;
+use App\Modules\Shared\Rules\IranianPostalCode;
 use App\Modules\Shared\Support\IranMobile;
 use App\Modules\Shipping\Enums\TipaxReferenceType;
 use App\Modules\Shipping\Queries\TipaxReferences;
@@ -67,6 +68,7 @@ final class StoreSettingsPage extends Page
             'shipping_flat_rate' => $settings->shippingFlatRate(),
             'shipping_origin_city_id' => $settings->shippingOriginCityId(),
             'shipping_markup_percent' => $settings->shippingMarkupPercent(),
+            ...array_combine(array_map(fn (string $key): string => 'sender_'.$key, array_keys($settings->shippingSender())), $settings->shippingSender()),
             'tipax_pack_type' => $settings->tipaxCode(StoreSettings::TIPAX_PACK_TYPE) ?? (int) config('shipping.tipax.pricing.pack_type'),
             'tipax_packing_id' => $settings->tipaxCode(StoreSettings::TIPAX_PACKING_ID) ?? (int) config('shipping.tipax.pricing.packing_id'),
             'tipax_content_general_id' => $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_GENERAL_ID) ?? (int) config('shipping.tipax.pricing.content_general_id'),
@@ -137,6 +139,17 @@ final class StoreSettingsPage extends Page
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                             ->required()
                             ->helperText('وقتی تیپاکس پاسخ ندهد یا شهر مبدأ انتخاب نشده باشد، همین مبلغ حساب می‌شود؛ بالای حد ارسال رایگان یا با کوپن ارسال رایگان، رایگان است.'),
+                    ]),
+                Section::make('فرستنده بسته‌ها')
+                    ->description('هنگام ثبت سفارش در تیپاکس («تحویل به حمل») و ثبت مرجوعی به‌عنوان فرستنده (و مقصد مرجوعی) فرستاده می‌شود؛ شهر همان «شهر مبدأ ارسال» است.')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('sender_name')->label('نام فرستنده')->maxLength(120),
+                        TextInput::make('sender_mobile')->label('موبایل فرستنده')->rules([new IranianMobile])->extraInputAttributes(['dir' => 'ltr']),
+                        Textarea::make('sender_address')->label('آدرس کامل انبار')->rows(2)->maxLength(500)->columnSpanFull(),
+                        TextInput::make('sender_postal_code')->label('کد پستی')->rules([new IranianPostalCode])->extraInputAttributes(['dir' => 'ltr']),
+                        TextInput::make('sender_latitude')->label('عرض جغرافیایی')->numeric()->extraInputAttributes(['dir' => 'ltr']),
+                        TextInput::make('sender_longitude')->label('طول جغرافیایی')->numeric()->extraInputAttributes(['dir' => 'ltr']),
                     ]),
                 Section::make('کدهای تیپاکس')
                     ->description('با هر بسته برای استعلام قیمت به تیپاکس فرستاده می‌شوند. فهرست‌ها هر شب از تیپاکس به‌روز می‌شوند (php artisan tipax:sync-reference)؛ بسته‌بندی و محتوا باید از همان نوع بسته باشند.')
@@ -271,6 +284,12 @@ final class StoreSettingsPage extends Page
             StoreSettings::SHIPPING_FLAT_RATE => (int) $data['shipping_flat_rate'],
             StoreSettings::SHIPPING_ORIGIN_CITY_ID => (int) ($data['shipping_origin_city_id'] ?? 0),
             StoreSettings::SHIPPING_MARKUP_PERCENT => (int) $data['shipping_markup_percent'],
+            StoreSettings::SHIPPING_SENDER_NAME => trim(strip_tags((string) ($data['sender_name'] ?? ''))),
+            StoreSettings::SHIPPING_SENDER_MOBILE => IranMobile::normalize((string) ($data['sender_mobile'] ?? '')) ?? '',
+            StoreSettings::SHIPPING_SENDER_ADDRESS => trim(strip_tags((string) ($data['sender_address'] ?? ''))),
+            StoreSettings::SHIPPING_SENDER_POSTAL_CODE => trim((string) ($data['sender_postal_code'] ?? '')),
+            StoreSettings::SHIPPING_SENDER_LATITUDE => trim((string) ($data['sender_latitude'] ?? '')),
+            StoreSettings::SHIPPING_SENDER_LONGITUDE => trim((string) ($data['sender_longitude'] ?? '')),
             StoreSettings::TIPAX_PACK_TYPE => (int) $data['tipax_pack_type'],
             StoreSettings::TIPAX_PACKING_ID => (int) $data['tipax_packing_id'],
             StoreSettings::TIPAX_CONTENT_GENERAL_ID => (int) $data['tipax_content_general_id'],

@@ -17,6 +17,7 @@ use App\Modules\Shipping\Pricing\Strategies\FlatRateShippingPrice;
 use App\Modules\Shipping\Pricing\Strategies\RateTableShippingPrice;
 use App\Modules\Shipping\Pricing\Strategies\TipaxShippingPrice;
 use App\Modules\Shipping\Queries\ParcelTrackingStatus;
+use App\Modules\Shipping\Tipax\Adapters\TipaxOrderRequestAdapter;
 use App\Modules\Shipping\Tipax\Adapters\TipaxPriceRequestAdapter;
 use App\Modules\Shipping\Tipax\Adapters\TipaxPriceResponseAdapter;
 use App\Modules\Shipping\Tipax\TipaxClient;
@@ -74,6 +75,23 @@ final class ShippingServiceProvider extends ModuleServiceProvider
             enabled: (bool) config('shipping.tipax.enabled'),
             servicesCacheHours: (int) config('shipping.pricing.services_cache_hours'),
         ));
+
+        // Registering orders with Tipax (S35): the same codes as pricing (store settings, else .env).
+        $this->app->bind(TipaxOrderRequestAdapter::class, function (Application $app): TipaxOrderRequestAdapter {
+            $settings = $app->make(StoreSettings::class);
+
+            return new TipaxOrderRequestAdapter(
+                paymentType: TipaxPaymentType::from((int) config('shipping.tipax.pricing.payment_type')),
+                pickupType: TipaxPickupType::from((int) config('shipping.tipax.pricing.pickup_type')),
+                distributionType: TipaxDistributionType::from((int) config('shipping.tipax.pricing.distribution_type')),
+                packingId: $settings->tipaxCode(StoreSettings::TIPAX_PACKING_ID) ?? (int) config('shipping.tipax.pricing.packing_id'),
+                packType: $settings->tipaxCode(StoreSettings::TIPAX_PACK_TYPE) ?? (int) config('shipping.tipax.pricing.pack_type'),
+                contentGeneralId: $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_GENERAL_ID) ?? (int) config('shipping.tipax.pricing.content_general_id'),
+                contentLiquidId: $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_LIQUID_ID) ?? (int) config('shipping.tipax.pricing.content_liquid_id'),
+                unboxedSizeCm: (int) config('shipping.tipax.pricing.unboxed_size_cm'),
+                minWeightKg: (float) config('shipping.tipax.pricing.min_weight_kg'),
+            );
+        });
 
         // A parcel's status on the order page, asked from Tipax at most once per «tracking_refresh_minutes» (S37).
         $this->app->bind(ParcelTrackingStatus::class, fn (Application $app): ParcelTrackingStatus => new ParcelTrackingStatus(

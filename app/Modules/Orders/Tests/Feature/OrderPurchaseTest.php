@@ -182,7 +182,7 @@ it('enables «تحویل به حمل» only once the purchase document has fully
 
     livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])
         ->assertActionEnabled('sendOnItsWay')
-        ->callAction('sendOnItsWay', ['tracking_code' => 'TPX-1'])
+        ->callAction('sendOnItsWayManually', ['tracking_code' => 'TPX-1'])
         ->assertHasNoActionErrors();
 
     expect($this->order->refresh()->getStatus())->toBe(OrderStatus::OnTheWay);

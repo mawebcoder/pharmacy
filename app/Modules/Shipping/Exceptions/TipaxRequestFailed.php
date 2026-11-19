@@ -32,7 +32,8 @@ final class TipaxRequestFailed extends RuntimeException
      */
     public static function refused(string $operation, string $statusCode): self
     {
-        return new self("Tipax refused {$operation} ({$statusCode}).");
+        // A Persian message from Tipax is shown as it is; a bare status code gets a short English frame for admins.
+        return new self(preg_match('/\p{Arabic}/u', $statusCode) === 1 ? $statusCode : "Tipax refused {$operation} ({$statusCode}).");
     }
 
     public static function unexpected(string $operation): self

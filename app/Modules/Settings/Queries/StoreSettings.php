@@ -35,6 +35,21 @@ final readonly class StoreSettings
     public const string SHIPPING_MARKUP_PERCENT = 'shipping.markup_percent';
 
     /**
+     * Who sends the parcels and from where, for registering them with Tipax (S35, owner 2026-11-19).
+     */
+    public const string SHIPPING_SENDER_NAME = 'shipping.sender_name';
+
+    public const string SHIPPING_SENDER_MOBILE = 'shipping.sender_mobile';
+
+    public const string SHIPPING_SENDER_ADDRESS = 'shipping.sender_address';
+
+    public const string SHIPPING_SENDER_POSTAL_CODE = 'shipping.sender_postal_code';
+
+    public const string SHIPPING_SENDER_LATITUDE = 'shipping.sender_latitude';
+
+    public const string SHIPPING_SENDER_LONGITUDE = 'shipping.sender_longitude';
+
+    /**
      * Tipax's codes sent with every package (S33): picked from Tipax's own lists; empty means the .env default.
      */
     public const string TIPAX_PACK_TYPE = 'tipax.pack_type';
@@ -90,6 +105,12 @@ final readonly class StoreSettings
         self::SHIPPING_FLAT_RATE => 500_000,
         self::SHIPPING_ORIGIN_CITY_ID => null,
         self::SHIPPING_MARKUP_PERCENT => 0,
+        self::SHIPPING_SENDER_NAME => '',
+        self::SHIPPING_SENDER_MOBILE => '',
+        self::SHIPPING_SENDER_ADDRESS => '',
+        self::SHIPPING_SENDER_POSTAL_CODE => '',
+        self::SHIPPING_SENDER_LATITUDE => '',
+        self::SHIPPING_SENDER_LONGITUDE => '',
         self::TIPAX_PACK_TYPE => null,
         self::TIPAX_PACKING_ID => null,
         self::TIPAX_CONTENT_GENERAL_ID => null,
@@ -158,6 +179,24 @@ final readonly class StoreSettings
     public function shippingMarkupPercent(): int
     {
         return min(self::MAX_SHIPPING_MARKUP_PERCENT, max(0, (int) $this->get(self::SHIPPING_MARKUP_PERCENT)));
+    }
+
+    /**
+     * The warehouse as Tipax's sender (S35): name, mobile, full address, postal code and map point; empty strings where
+     * the admin has not filled them in.
+     *
+     * @return array{name: string, mobile: string, address: string, postal_code: string, latitude: string, longitude: string}
+     */
+    public function shippingSender(): array
+    {
+        return [
+            'name' => (string) $this->get(self::SHIPPING_SENDER_NAME),
+            'mobile' => (string) $this->get(self::SHIPPING_SENDER_MOBILE),
+            'address' => (string) $this->get(self::SHIPPING_SENDER_ADDRESS),
+            'postal_code' => (string) $this->get(self::SHIPPING_SENDER_POSTAL_CODE),
+            'latitude' => (string) $this->get(self::SHIPPING_SENDER_LATITUDE),
+            'longitude' => (string) $this->get(self::SHIPPING_SENDER_LONGITUDE),
+        ];
     }
 
     /**

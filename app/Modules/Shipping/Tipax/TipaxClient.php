@@ -23,7 +23,7 @@ final readonly class TipaxClient
     private const string TOKEN_CACHE_KEY = 'shipping:tipax:access_token';
 
     /**
-     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string}  $paths
+     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string, register_order: string}  $paths
      */
     public function __construct(
         private string $baseUrl,
@@ -226,6 +226,49 @@ final readonly class TipaxClient
     }
 
     /**
+     * Registers an order (`POST OmOrder`, OmV4OrderRegisterCuDto): Tipax answers at once with a tracking code per
+     * package and a correlation id; the final result comes later on the callback addresses. Not retried, so a timeout
+     * never registers twice.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array{correlation_id: string|null, tracking_codes: list<string>, raw: array<string, mixed>}
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function registerOrder(array $body): array
+    {
+        $response = $this->send(
+            'register_order',
+            fn (PendingRequest $request): Response => $request->withToken($this->token())->post($this->url($this->paths['register_order']), $body),
+            retries: 0,
+        );
+        $answer = $response->json();
+
+        if (is_array($answer) && ($answer['isSuccess'] ?? true) === false) {
+            throw TipaxRequestFailed::refused('register_order', (string) ($answer['message'] ?? $answer['statusCode'] ?? ''));
+        }
+
+        $data = is_array($answer) && is_array($answer['data'] ?? null) ? $answer['data'] : $answer;
+        $codes = [];
+
+        foreach ((array) (is_array($data) ? ($data['trackingCodesWithTitles'] ?? []) : []) as $row) {
+            if (is_array($row) && is_string($row['trackingCode'] ?? null) && $row['trackingCode'] !== '') {
+                $codes[] = $row['trackingCode'];
+            }
+        }
+
+        if (! is_array($data) || $codes === []) {
+            throw TipaxRequestFailed::unexpected('register_order');
+        }
+
+        return [
+            'correlation_id' => is_string($data['correlationId'] ?? null) ? $data['correlationId'] : null,
+            'tracking_codes' => $codes,
+            'raw' => $data,
+        ];
+    }
+
+    /**
      * A parcel's status (`GET Tracking/BriefTracking/{trackingCode}`, JetTrackingBriefListDto): contractStatusName,
      * receiverCityName, terminateTime, terminateBranch, distanceDay … The status page waits on it, so the short timeout
      * and no retry.
@@ -358,7 +401,12 @@ final readonly class TipaxClient
                 Cache::forget(self::TOKEN_CACHE_KEY);
             }
 
-            throw TipaxRequestFailed::failed($operation, $exception->response->status());
+            // Tipax's own reason when it gives one, e.g. «فرمت اشتباه است» or «سرویس در این مسیر فعال نیست».
+            $message = $exception->response->json('message');
+
+            throw is_string($message) && $message !== ''
+                ? TipaxRequestFailed::refused($operation, $message)
+                : TipaxRequestFailed::failed($operation, $exception->response->status());
         }
     }
 
