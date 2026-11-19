@@ -47,6 +47,7 @@ final readonly class ShippingPriceRequest
             $parcel->totalWeightG,
             $parcel->declaredValue,
             $parcel->content->value,
+            $parcel->tipaxContentId,
         ], $this->parcels);
 
         return hash('xxh128', (string) json_encode([$this->originCityId, $this->destinationCityId, $parcels]));

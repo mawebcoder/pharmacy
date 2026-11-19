@@ -21,6 +21,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 use function Pest\Livewire\livewire;
@@ -147,6 +148,22 @@ describe('as a content editor', function (): void {
             ->fillForm([Product::COLUMN_MIN_SHELF_LIFE_MONTHS => '1.5'])
             ->call('save')
             ->assertHasFormErrors([Product::COLUMN_MIN_SHELF_LIFE_MONTHS]);
+    });
+
+    it('saves the product\'s Tipax content and whether it is liquid or fragile', function (): void {
+        // A content synced from Tipax (tipax:sync-reference) of the store's pack type, 20 by default.
+        DB::table('tipax_references')->insert(['type' => 'content', 'external_id' => 9, 'title' => 'عمومی', 'pack_type' => 20, 'created_at' => now(), 'updated_at' => now()]);
+        $product = Product::factory()->withVariants()->create();
+
+        livewire(EditProduct::class, ['record' => $product->getRouteKey()])
+            ->fillForm([Product::COLUMN_TIPAX_CONTENT_ID => 9, Product::COLUMN_IS_LIQUID => true, Product::COLUMN_IS_FRAGILE => false])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        expect($product->fresh())
+            ->getTipaxContentId()->toBe(9)
+            ->isLiquid()->toBeTrue()
+            ->isFragile()->toBeFalse();
     });
 
     it('shows what is missing when a product cannot be activated', function (): void {

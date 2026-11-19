@@ -7,7 +7,8 @@ namespace App\Modules\Shipping\Data;
 /**
  * One line to pack (roadmap S31): a key the caller knows it by (an order item id), its title, quantity, weight of one
  * piece (null when the SKU has none), how many pieces fit each box (box id => pieces; a missing box does not take it;
- * owner, 2026-11-18), one piece's value in rial, and whether it ships alone or is liquid or fragile.
+ * owner, 2026-11-18), one piece's value in rial, whether it ships alone or is liquid or fragile, and its product's
+ * Tipax content (owner, 2026-11-19; null: the store default).
  */
 final readonly class PackItem
 {
@@ -24,6 +25,7 @@ final readonly class PackItem
         public int $unitValue,
         public bool $shipSeparately = false,
         public bool $liquidOrFragile = false,
+        public ?int $tipaxContentId = null,
     ) {}
 
     /**

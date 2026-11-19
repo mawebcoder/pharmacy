@@ -16,6 +16,7 @@ use App\Modules\Shipping\Pricing\ShippingPriceCalculator;
 use App\Modules\Shipping\Pricing\Strategies\FlatRateShippingPrice;
 use App\Modules\Shipping\Pricing\Strategies\RateTableShippingPrice;
 use App\Modules\Shipping\Pricing\Strategies\TipaxShippingPrice;
+use App\Modules\Shipping\Queries\ParcelTrackingStatus;
 use App\Modules\Shipping\Tipax\Adapters\TipaxPriceRequestAdapter;
 use App\Modules\Shipping\Tipax\Adapters\TipaxPriceResponseAdapter;
 use App\Modules\Shipping\Tipax\TipaxClient;
@@ -72,6 +73,12 @@ final class ShippingServiceProvider extends ModuleServiceProvider
             responseAdapter: $app->make(TipaxPriceResponseAdapter::class),
             enabled: (bool) config('shipping.tipax.enabled'),
             servicesCacheHours: (int) config('shipping.pricing.services_cache_hours'),
+        ));
+
+        // A parcel's status on the order page, asked from Tipax at most once per «tracking_refresh_minutes» (S37).
+        $this->app->bind(ParcelTrackingStatus::class, fn (Application $app): ParcelTrackingStatus => new ParcelTrackingStatus(
+            $app->make(TipaxClient::class),
+            (int) config('shipping.pricing.tracking_refresh_minutes'),
         ));
 
         // One strategy per shipping service; a new service (e.g. the own courier, S32) is added to this list.

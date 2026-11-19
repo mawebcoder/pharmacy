@@ -74,10 +74,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
 
     public const string COLUMN_SHIP_SEPARATELY = 'ship_separately';
 
-    public const string COLUMN_IS_FRAGILE = 'is_fragile';
-
-    public const string COLUMN_IS_LIQUID = 'is_liquid';
-
     public const string COLUMN_REQUIRES_COLD_CHAIN = 'requires_cold_chain';
 
     public const string COLUMN_MAX_PER_ORDER = 'max_per_order';
@@ -356,36 +352,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_SHIP_SEPARATELY, $value);
     }
 
-    public function isFragile(): bool
-    {
-        return (bool) $this->getAttribute(self::COLUMN_IS_FRAGILE);
-    }
-
-    public function getIsFragile(): bool
-    {
-        return $this->isFragile();
-    }
-
-    public function setIsFragile(bool $value): static
-    {
-        return $this->setAttribute(self::COLUMN_IS_FRAGILE, $value);
-    }
-
-    public function isLiquid(): bool
-    {
-        return (bool) $this->getAttribute(self::COLUMN_IS_LIQUID);
-    }
-
-    public function getIsLiquid(): bool
-    {
-        return $this->isLiquid();
-    }
-
-    public function setIsLiquid(bool $value): static
-    {
-        return $this->setAttribute(self::COLUMN_IS_LIQUID, $value);
-    }
-
     public function requiresColdChain(): bool
     {
         return (bool) $this->getAttribute(self::COLUMN_REQUIRES_COLD_CHAIN);
@@ -581,8 +547,6 @@ final class ProductVariant extends Model implements HasActivityLogLabel
             self::COLUMN_HEIGHT_MM => 'integer',
             self::COLUMN_DIMENSIONS_VERIFIED => 'boolean',
             self::COLUMN_SHIP_SEPARATELY => 'boolean',
-            self::COLUMN_IS_FRAGILE => 'boolean',
-            self::COLUMN_IS_LIQUID => 'boolean',
             self::COLUMN_REQUIRES_COLD_CHAIN => 'boolean',
             self::COLUMN_MAX_PER_ORDER => 'integer',
             self::COLUMN_IS_ACTIVE => 'boolean',

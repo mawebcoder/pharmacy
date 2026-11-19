@@ -27,8 +27,6 @@ final class SendSmsJob implements ShouldBeEncrypted, ShouldQueue
 
     public int $timeout = 30;
 
-    public const int EXPIRES_AFTER_SECONDS = 60;
-
     public function __construct(
         public readonly SmsMessageData $message,
     ) {
@@ -46,11 +44,11 @@ final class SendSmsJob implements ShouldBeEncrypted, ShouldQueue
     }
 
     /**
-     * Set when the job is queued: no try starts after this.
+     * Set when the job is queued: no try starts after this (a minute for a sign-in code, longer for order news).
      */
     public function retryUntil(): DateTimeInterface
     {
-        return now()->addSeconds(self::EXPIRES_AFTER_SECONDS);
+        return now()->addSeconds($this->message->template->expiresAfterSeconds());
     }
 
     public function handle(SendTemplatedSms $send): void

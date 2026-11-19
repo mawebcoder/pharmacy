@@ -36,6 +36,8 @@ return [
             // Template key => pattern bodyId approved in the Melli Payamak panel. S37 adds the order templates.
             'patterns' => [
                 'otp' => env('MELIPAYAMAK_PATTERN_OTP'),
+                'order_paid' => env('MELIPAYAMAK_PATTERN_ORDER_PAID'),
+                'order_on_the_way' => env('MELIPAYAMAK_PATTERN_ORDER_SHIPPED'),
             ],
         ],
 
@@ -50,6 +52,8 @@ return [
             // message's variables in order.
             'patterns' => [
                 'otp' => env('KAVENEGAR_TEMPLATE_OTP'),
+                'order_paid' => env('KAVENEGAR_TEMPLATE_ORDER_PAID'),
+                'order_on_the_way' => env('KAVENEGAR_TEMPLATE_ORDER_ON_THE_WAY'),
             ],
         ],
     ],

@@ -257,6 +257,7 @@ final readonly class BoxPacker
         $value = 0;
         $liquid = false;
         $estimate = false;
+        $contentIds = [];
 
         foreach ($pieces as $piece) {
             $item = $piece['item'];
@@ -266,7 +267,11 @@ final readonly class BoxPacker
             $value += $item->unitValue;
             $liquid = $liquid || $item->liquidOrFragile;
             $estimate = $estimate || $piece['estimate'];
+            $contentIds[(string) $item->tipaxContentId] = $item->tipaxContentId;
         }
+
+        // The Tipax content the parcel's products share, if they all name the same one (owner, 2026-11-19).
+        $sharedContentId = count($contentIds) === 1 ? reset($contentIds) : null;
 
         return new PackedParcel(
             box: $box,
@@ -276,6 +281,7 @@ final readonly class BoxPacker
             declaredValue: $value,
             content: $liquid ? ParcelContent::LiquidFragile : ParcelContent::General,
             isEstimate: $estimate,
+            tipaxContentId: $sharedContentId,
         );
     }
 }

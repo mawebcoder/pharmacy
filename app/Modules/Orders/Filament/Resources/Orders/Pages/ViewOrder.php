@@ -21,6 +21,8 @@ use App\Modules\Orders\Filament\Resources\Purchases\OrderPurchaseResource;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderPurchase;
 use App\Modules\Shared\Support\Toman;
+use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
+use App\Modules\Shipping\Queries\ParcelTrackingStatus;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -72,6 +74,33 @@ final class ViewOrder extends ViewRecord
                 }),
             $this->move('startProcessing', 'شروع آماده‌سازی', OrderStatus::Processing, Heroicon::OutlinedArchiveBox)
                 ->color('primary'),
+            // Tipax's parcel status, asked when the admin clicks (owner, 2026-11-19); the answer also reaches the customer's page.
+            Action::make('trackParcel')
+                ->label('استعلام از تیپاکس')
+                ->icon(Heroicon::OutlinedMapPin)
+                ->color('gray')
+                ->visible(fn (): bool => filled($this->order()->getTrackingCode())
+                    && (auth('admin')->user()?->can('view', $this->order()) ?? false))
+                ->action(function (ParcelTrackingStatus $parcels): void {
+                    try {
+                        $parcel = $parcels->checkNow($this->order()->getId(), (string) $this->order()->getTrackingCode());
+                    } catch (TipaxRequestFailed $failed) {
+                        Notification::make()->danger()->title('تیپاکس پاسخ نداد.')->body($failed->getMessage())->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title('وضعیت مرسوله: '.($parcel->status ?? 'نامشخص'))
+                        ->body(implode(' · ', array_filter([
+                            $parcel->destinationCity === null ? null : 'مقصد: '.$parcel->destinationCity,
+                            $parcel->branch === null ? null : 'نمایندگی: '.$parcel->branch,
+                            $parcel->deliveredAt === null ? null : 'تحویل: '.$parcel->deliveredAt,
+                        ])) ?: null)
+                        ->persistent()
+                        ->send();
+                }),
             Action::make('sendOnItsWay')
                 ->label('تحویل به حمل')
                 ->icon(Heroicon::OutlinedTruck)

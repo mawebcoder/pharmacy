@@ -8,8 +8,8 @@ use App\Modules\Cart\Data\AppliedCouponData;
 use App\Modules\Cart\Data\CartLineData;
 use App\Modules\Cart\Exceptions\CouponRefused;
 use App\Modules\Cart\Queries\CheckoutCart;
-use App\Modules\Checkout\Data\CheckoutQuoteData;
 use App\Modules\Catalog\Queries\OrderItemSnapshots;
+use App\Modules\Checkout\Data\CheckoutQuoteData;
 use App\Modules\Identity\Queries\CustomerAddresses;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shipping\Data\PackItem;
@@ -101,6 +101,8 @@ final readonly class CheckoutQuote
 
             /** @var array<string, mixed> $sku */
             $sku = $snapshots[$line->variant->variantId]['sku'] ?? [];
+            /** @var array<string, mixed> $product */
+            $product = $snapshots[$line->variant->variantId]['product'] ?? [];
             $weight = $sku['weight_g'] ?? null;
             $capacities = [];
 
@@ -119,7 +121,8 @@ final readonly class CheckoutQuote
                 boxCapacities: $capacities,
                 unitValue: intdiv($line->lineTotal, max(1, $line->quantity)),
                 shipSeparately: (bool) ($sku['ship_separately'] ?? false),
-                liquidOrFragile: (bool) ($sku['is_liquid'] ?? false) || (bool) ($sku['is_fragile'] ?? false),
+                liquidOrFragile: (bool) ($product['is_liquid'] ?? false) || (bool) ($product['is_fragile'] ?? false),
+                tipaxContentId: is_numeric($product['tipax_content_id'] ?? null) ? (int) $product['tipax_content_id'] : null,
             );
         }
 

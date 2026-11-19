@@ -46,6 +46,8 @@ return [
             'pack_types' => env('TIPAX_PATH_PACK_TYPES', '/api/OM/v4/PackingType/GetPackTypes'),
             'packing_types' => env('TIPAX_PATH_PACKING_TYPES', '/api/OM/v4/PackingType/GetPackingTypes'),
             'packaging_contents' => env('TIPAX_PATH_PACKAGING_CONTENTS', '/api/OM/v4/PackingType/GetPackagingContents'),
+            // The tracking code goes at the end.
+            'brief_tracking' => env('TIPAX_PATH_BRIEF_TRACKING', '/api/OM/v4/Tracking/BriefTracking'),
         ],
         'pricing' => [
             // A TipaxPaymentType value: 10 prepaid by the sender (D6.6).
@@ -77,5 +79,7 @@ return [
         'services_cache_hours' => 24,
         // Shown prices are rounded up to this many rial (1,000 toman).
         'round_up_to_rial' => 10_000,
+        // A parcel's status on the order page is asked from Tipax at most this often (minutes; owner, 2026-11-19).
+        'tracking_refresh_minutes' => 60,
     ],
 ];

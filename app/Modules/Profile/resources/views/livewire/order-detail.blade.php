@@ -57,7 +57,7 @@
 
             {{-- The carrier's tracking code once the order is on its way (owner, 2026-11-16): the admin types it on «تحویل به حمل» until Tipax fills it (S35). --}}
             @if (in_array($status, [OrderStatus::OnTheWay, OrderStatus::Delivered], true))
-                <div class="mt-5 rounded-card border border-primary-700/20 bg-primary-50 p-3 md:p-4" x-data="{ copiedCode: false }">
+                <div class="mt-5 rounded-card border border-primary-700/20 bg-primary-50 p-3 md:p-4">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div class="flex min-w-0 items-center gap-3">
                             <span class="grid size-10 shrink-0 place-items-center rounded-full bg-card text-primary-700">
@@ -72,14 +72,40 @@
                                 @endif
                             </div>
                         </div>
-                        @if ($order->getTrackingCode())
-                            <button type="button" x-on:click="$copy(@js($order->getTrackingCode())).then((ok) => { copiedCode = ok; setTimeout(() => (copiedCode = false), 2000) })" class="inline-flex min-h-11 items-center gap-1 rounded-card bg-card px-3 text-sm font-medium text-primary-700 ring-1 ring-primary-700/20 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
-                                <x-ts-icon icon="clipboard-document" class="size-5" x-show="! copiedCode" />
-                                <x-ts-icon icon="check" class="size-5" x-show="copiedCode" x-cloak />
-                                <span x-text="copiedCode ? 'کپی شد' : 'کپی کد'">کپی کد</span>
-                            </button>
-                        @endif
                     </div>
+
+                    {{-- The parcel's progress from the carrier while on its way (S37, owner 2026-11-19): shown from the last answer;
+                         «استعلام از سرویس ارسال» asks again, an hour after the last successful answer at the soonest. --}}
+                    @if ($status === OrderStatus::OnTheWay && $order->getTrackingCode())
+                        <div class="mt-3 border-t border-primary-700/15 pt-3 text-sm" data-test="parcel-status">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="text-primary-800">وضعیت مرسوله: <span class="font-bold text-ink-900">{{ $parcel?->status ?? 'هنوز استعلام نشده' }}</span></p>
+                                <button type="button" wire:click="inquireParcel" wire:loading.attr="disabled" wire:target="inquireParcel" class="inline-flex min-h-11 items-center gap-1 rounded-card bg-card px-3 text-sm font-medium text-primary-700 ring-1 ring-primary-700/20 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 disabled:opacity-60">
+                                    <x-ts-icon icon="arrow-path" class="size-5" wire:loading.class="animate-spin" wire:target="inquireParcel" />
+                                    استعلام از سرویس ارسال
+                                </button>
+                            </div>
+                            @if ($parcelNotice)
+                                <p class="mt-2 text-xs text-ink-500" role="status">{{ $parcelNotice }}</p>
+                            @endif
+                            @if ($parcel)
+                                <dl class="mt-2 grid gap-2 sm:grid-cols-2">
+                                    @if ($parcel->destinationCity)
+                                        <div class="flex justify-between gap-3"><dt class="text-ink-500">مقصد</dt><dd class="text-ink-900">{{ $parcel->destinationCity }}</dd></div>
+                                    @endif
+                                    @if ($parcel->branch)
+                                        <div class="flex justify-between gap-3"><dt class="text-ink-500">نمایندگی</dt><dd class="text-ink-900">{{ $parcel->branch }}</dd></div>
+                                    @endif
+                                    @if ($parcel->deliveredAt)
+                                        <div class="flex justify-between gap-3"><dt class="text-ink-500">زمان تحویل</dt><dd class="text-ink-900" dir="ltr">{{ PersianDigits::toPersian($parcel->deliveredAt) }}</dd></div>
+                                    @endif
+                                    @if ($parcel->syncedAt)
+                                        <p class="text-xs text-ink-500 sm:col-span-2">آخرین به‌روزرسانی: {{ JalaliDate::display($parcel->syncedAt, 'j F Y، H:i') }}</p>
+                                    @endif
+                                </dl>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             @endif
         </section>

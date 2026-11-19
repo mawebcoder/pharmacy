@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Notifications;
 
 use App\Modules\Notifications\Drivers\KavenegarSmsSender;
+use App\Modules\Notifications\Listeners\SendOrderSms;
 use App\Modules\Notifications\Support\SmsManager;
+use App\Modules\Orders\Events\OrderOnItsWay;
+use App\Modules\Orders\Events\OrderPaid;
 use App\Modules\Shared\ModuleServiceProvider;
+use Illuminate\Support\Facades\Event;
 use Kavenegar\KavenegarApi;
 
 final class NotificationsServiceProvider extends ModuleServiceProvider
@@ -21,5 +25,13 @@ final class NotificationsServiceProvider extends ModuleServiceProvider
             (string) config('sms.providers.kavenegar.api_key'),
             (string) config('sms.providers.kavenegar.base_url'),
         ));
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        // Order news by SMS (S37).
+        Event::listen([OrderPaid::class, OrderOnItsWay::class], SendOrderSms::class);
     }
 }

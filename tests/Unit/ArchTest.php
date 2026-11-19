@@ -19,6 +19,7 @@ use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Search\Models\SearchLog;
 use App\Modules\Shared\Contracts\HasLabel;
 use App\Modules\Shipping\Models\OrderParcel;
+use App\Modules\Shipping\Models\ParcelTracking;
 use App\Modules\Shipping\Models\TipaxReference;
 use App\Modules\System\Models\IntegrationLog;
 use Filament\Actions\DeleteBulkAction;
@@ -74,8 +75,8 @@ foreach ($modules as $module) {
         ->toUseTrait(LogsActivity::class)
         // Log tables are records themselves; auditing them would log every log row (the price history tables of S15
         // and S16 and the import rows of S18 are such records). Media rows change on every processing step; changes to what an image belongs to
-        // are logged on the owner. Order parcels are written by packing, never by hand, and Tipax's reference lists by their sync. Addresses, wishlists and carts are customers' own rows, written by them, not admin changes.
-        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class, Cart::class, CartItem::class, CouponUsage::class, OrderItem::class, OrderStatusLog::class, Payment::class, OrderParcel::class, TipaxReference::class]);
+        // are logged on the owner. Order parcels are written by packing, never by hand, and Tipax's reference lists and parcel statuses by their syncs. Addresses, wishlists and carts are customers' own rows, written by them, not admin changes.
+        ->ignoring([IntegrationLog::class, Media::class, SearchLog::class, ProviderPriceChange::class, VariantPrice::class, PriceImportRow::class, SmsLog::class, OtpCode::class, Address::class, Wishlist::class, Cart::class, CartItem::class, CouponUsage::class, OrderItem::class, OrderStatusLog::class, Payment::class, OrderParcel::class, TipaxReference::class, ParcelTracking::class]);
 
     arch("{$module} enums have Persian labels")
         ->expect("App\\Modules\\{$module}\\Enums")

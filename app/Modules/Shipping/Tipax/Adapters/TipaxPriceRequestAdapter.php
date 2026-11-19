@@ -44,6 +44,19 @@ final readonly class TipaxPriceRequestAdapter
     }
 
     /**
+     * The parcel's Tipax content (owner, 2026-11-19): liquid or fragile wins, else the content its products share, else
+     * the store's general content.
+     */
+    private function contentId(PackedParcel $parcel): int
+    {
+        if ($parcel->content === ParcelContent::LiquidFragile) {
+            return $this->contentLiquidId;
+        }
+
+        return $parcel->tipaxContentId ?? $this->contentGeneralId;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function package(ShippingPriceRequest $request, PackedParcel $parcel, int $serviceId): array
@@ -59,7 +72,7 @@ final readonly class TipaxPriceRequestAdapter
             'height' => $box instanceof BoxSpec ? $box->heightCm : $this->unboxedSizeCm,
             'packageValue' => $parcel->declaredValue,
             'packingId' => $this->packingId,
-            'packageContentId' => $parcel->content === ParcelContent::LiquidFragile ? $this->contentLiquidId : $this->contentGeneralId,
+            'packageContentId' => $this->contentId($parcel),
             'packType' => $this->packType,
             'serviceId' => $serviceId,
             'paymentType' => $this->paymentType->value,

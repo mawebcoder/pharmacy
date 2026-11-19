@@ -40,8 +40,6 @@ final class StoreProductVariantRequest extends FormRequest
             ProductVariant::COLUMN_HEIGHT_MM => $size,
             ProductVariant::COLUMN_DIMENSIONS_VERIFIED => ['boolean'],
             ProductVariant::COLUMN_SHIP_SEPARATELY => ['boolean'],
-            ProductVariant::COLUMN_IS_FRAGILE => ['boolean'],
-            ProductVariant::COLUMN_IS_LIQUID => ['boolean'],
             ProductVariant::COLUMN_REQUIRES_COLD_CHAIN => ['boolean'],
             ProductVariant::COLUMN_MAX_PER_ORDER => ['nullable', 'integer', 'min:1', 'max:999'],
             ProductVariant::COLUMN_IS_ACTIVE => ['boolean'],

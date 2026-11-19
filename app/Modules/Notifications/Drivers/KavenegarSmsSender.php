@@ -34,7 +34,9 @@ final readonly class KavenegarSmsSender implements SmsSender
 
     public function send(SmsMessageData $message, string $patternId): SmsResultData
     {
-        [$token, $token2, $token3] = array_pad($message->args, 3, null);
+        // Kavenegar refuses spaces inside a token; a zero-width non-joiner keeps a name like «محمد علی» readable.
+        $tokens = array_map(fn (?string $token): ?string => $token === null ? null : str_replace(' ', "\u{200C}", trim($token)), $message->args);
+        [$token, $token2, $token3] = array_pad($tokens, 3, null);
 
         try {
             $result = ($this->api)()->verifyLookup($message->mobile, (string) $token, $token2, $token3, $patternId);

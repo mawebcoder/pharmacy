@@ -23,7 +23,7 @@ final readonly class TipaxClient
     private const string TOKEN_CACHE_KEY = 'shipping:tipax:access_token';
 
     /**
-     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string}  $paths
+     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string}  $paths
      */
     public function __construct(
         private string $baseUrl,
@@ -223,6 +223,39 @@ final readonly class TipaxClient
     public function packagingContents(): array
     {
         return $this->rows('packaging_contents', $this->get('packaging_contents', $this->paths['packaging_contents'])->json('result'));
+    }
+
+    /**
+     * A parcel's status (`GET Tracking/BriefTracking/{trackingCode}`, JetTrackingBriefListDto): contractStatusName,
+     * receiverCityName, terminateTime, terminateBranch, distanceDay … The status page waits on it, so the short timeout
+     * and no retry.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function briefTracking(string $trackingCode): array
+    {
+        $response = $this->send(
+            'brief_tracking',
+            fn (PendingRequest $request): Response => $request->withToken($this->token())->get($this->url(rtrim($this->paths['brief_tracking'], '/').'/'.rawurlencode($trackingCode))),
+            timeoutSeconds: $this->pricingTimeoutSeconds,
+            retries: 0,
+        );
+        $body = $response->json();
+
+        if (is_array($body) && ($body['isSuccess'] ?? true) === false) {
+            throw TipaxRequestFailed::refused('brief_tracking', (string) ($body['message'] ?? $body['statusCode'] ?? ''));
+        }
+
+        $tracking = is_array($body) && is_array($body['data'] ?? null) ? $body['data'] : $body;
+        $tracking = is_array($tracking) && array_is_list($tracking) ? ($tracking[0] ?? null) : $tracking;
+
+        if (! is_array($tracking)) {
+            throw TipaxRequestFailed::unexpected('brief_tracking');
+        }
+
+        return $tracking;
     }
 
     /**

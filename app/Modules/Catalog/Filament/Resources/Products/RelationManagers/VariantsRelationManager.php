@@ -155,8 +155,6 @@ final class VariantsRelationManager extends RelationManager
                         $millimetres(ProductVariant::COLUMN_HEIGHT_MM, 'ارتفاع'),
                         Toggle::make(ProductVariant::COLUMN_DIMENSIONS_VERIFIED)->label('ابعاد اندازه‌گیری شده'),
                         Toggle::make(ProductVariant::COLUMN_SHIP_SEPARATELY)->label('ارسال جداگانه'),
-                        Toggle::make(ProductVariant::COLUMN_IS_FRAGILE)->label('شکستنی'),
-                        Toggle::make(ProductVariant::COLUMN_IS_LIQUID)->label('مایع'),
                         Toggle::make(ProductVariant::COLUMN_REQUIRES_COLD_CHAIN)
                             ->label('نیاز به زنجیره سرد')
                             ->helperText('ارسال آن در فاز اول ممکن نیست.'),

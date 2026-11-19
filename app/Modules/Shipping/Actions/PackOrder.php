@@ -39,6 +39,7 @@ final readonly class PackOrder
             unitValue: $item['unit_value'],
             shipSeparately: $item['ship_separately'],
             liquidOrFragile: $item['liquid_or_fragile'],
+            tipaxContentId: $item['tipax_content_id'],
         ), $this->orderItems->for($orderId));
 
         $packed = $this->packer->pack($items, $this->boxes->specs());

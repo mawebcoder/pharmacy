@@ -21,10 +21,14 @@ use App\Modules\Catalog\Queries\AdminOptions;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Livewire\ProductProvidersTable;
+use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shared\Support\PersianDigits;
+use App\Modules\Shipping\Enums\TipaxReferenceType;
+use App\Modules\Shipping\Queries\TipaxReferences;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -147,6 +151,22 @@ final class ProductForm
                                     ->helperText('برای «فعال»: برند، دسته اصلی، دست‌کم یک تنوع فعال با قیمت و یک تصویر لازم است.'),
                                 self::firstVariantSection(),
                             ]),
+                        // What the product is for Tipax (owner, 2026-11-19): per product, for every one of its SKUs.
+                        Tab::make('ارسال')
+                            ->columns(2)
+                            ->schema([
+                                Select::make(Product::COLUMN_TIPAX_CONTENT_ID)
+                                    ->label('محتوای بسته در تیپاکس')
+                                    ->options(fn (): array => self::tipaxContentOptions())
+                                    ->placeholder('پیش‌فرض فروشگاه')
+                                    ->helperText('برای استعلام قیمت به تیپاکس فرستاده می‌شود. بسته‌ای که همه کالاهایش یک محتوا دارند همان را می‌گیرد؛ وگرنه محتوای پیش‌فرض فروشگاه.')
+                                    ->rules(fn (?Product $record): array => $rules($record, Product::COLUMN_TIPAX_CONTENT_ID))
+                                    ->columnSpanFull(),
+                                Toggle::make(Product::COLUMN_IS_LIQUID)
+                                    ->label('مایع')
+                                    ->helperText('بسته‌ای که کالای مایع یا شکستنی دارد، «مایعات-شکستنی» فرستاده می‌شود.'),
+                                Toggle::make(Product::COLUMN_IS_FRAGILE)->label('شکستنی'),
+                            ]),
                         Tab::make('ویژگی‌ها و برچسب‌ها')
                             ->columns(2)
                             ->schema([...self::attributeFields(), self::tagField()]),
@@ -184,6 +204,18 @@ final class ProductForm
                             ]),
                     ]),
             ]);
+    }
+
+    /**
+     * Tipax's package contents of the store's pack type (synced by `tipax:sync-reference`; S33), id => title.
+     *
+     * @return array<int, string>
+     */
+    private static function tipaxContentOptions(): array
+    {
+        $packType = app(StoreSettings::class)->tipaxCode(StoreSettings::TIPAX_PACK_TYPE) ?? (int) config('shipping.tipax.pricing.pack_type');
+
+        return app(TipaxReferences::class)->options(TipaxReferenceType::Content, $packType);
     }
 
     /**

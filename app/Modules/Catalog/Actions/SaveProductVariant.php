@@ -59,8 +59,6 @@ final class SaveProductVariant
                 ->setHeightMm($data->heightMm)
                 ->setDimensionsVerified($data->dimensionsVerified)
                 ->setShipSeparately($data->shipSeparately)
-                ->setIsFragile($data->isFragile)
-                ->setIsLiquid($data->isLiquid)
                 ->setRequiresColdChain($data->requiresColdChain)
                 ->setMaxPerOrder($data->maxPerOrder)
                 ->setIsActive($data->isActive);

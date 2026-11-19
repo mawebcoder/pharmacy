@@ -120,3 +120,12 @@ it('refuses to send without a template name, and sends nothing while pretending'
 it('builds the package client with SSL checks on', function (): void {
     expect(KavenegarSmsSender::client('key', 'https://api.kavenegar.com')->getSslVerify())->toBeTrue();
 });
+
+it('joins a multi-word name with a zero-width non-joiner, since Kavenegar refuses spaces in a token', function (): void {
+    config(['sms.providers.kavenegar.patterns.order_paid' => 'hutana-order-paid']);
+    $kavenegar = fakeKavenegar(new SendResult((object) ['messageid' => 7]));
+
+    $_ = app(SendTemplatedSms::class)(new SmsMessageData('09123456789', SmsTemplate::OrderPaid, ['محمد علی رضایی', 'PH-140508-000123']));
+
+    expect($kavenegar->lookups[0])->toMatchArray(['token' => "محمد\u{200C}علی\u{200C}رضایی", 'token2' => 'PH-140508-000123', 'template' => 'hutana-order-paid']);
+});

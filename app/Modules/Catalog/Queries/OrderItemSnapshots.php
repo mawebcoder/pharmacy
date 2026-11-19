@@ -52,6 +52,10 @@ final readonly class OrderItemSnapshots
                     'product_type' => $product?->getProductType()->value,
                     'requires_prescription' => $product?->requiresPrescription(),
                     'irc_code' => $product?->getIrcCode(),
+                    // What the product is for Tipax (owner, 2026-11-19: per product, not per SKU).
+                    'tipax_content_id' => $product?->getTipaxContentId(),
+                    'is_liquid' => (bool) $product?->isLiquid(),
+                    'is_fragile' => (bool) $product?->isFragile(),
                 ],
                 'sku' => [
                     'id' => $variant->getId(),
@@ -65,8 +69,6 @@ final readonly class OrderItemSnapshots
                     'length_mm' => $variant->getLengthMm(),
                     'width_mm' => $variant->getWidthMm(),
                     'height_mm' => $variant->getHeightMm(),
-                    'is_fragile' => $variant->isFragile(),
-                    'is_liquid' => $variant->isLiquid(),
                     'requires_cold_chain' => $variant->requiresColdChain(),
                 ],
             ];
