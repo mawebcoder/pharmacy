@@ -14,6 +14,7 @@ use App\Modules\Orders\Events\OrderReturnRegistered;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Support\PrintFrame;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shipping\Enums\ParcelContent;
@@ -190,6 +191,8 @@ it('prints the invoice in place for the admin', function (): void {
     $this->seed(RolesSeeder::class);
     $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::Operator)->create(), 'admin');
 
-    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])->assertActionVisible('printInvoice');
+    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])
+        ->assertActionVisible('printInvoice')
+        ->assertSeeHtml('"'.PrintFrame::script(route('orders.invoice.print', $this->order->getId())).'"');
     $this->get(route('orders.invoice.print', $this->order->getId()))->assertOk()->assertSee('PH-140508-000200');
 });

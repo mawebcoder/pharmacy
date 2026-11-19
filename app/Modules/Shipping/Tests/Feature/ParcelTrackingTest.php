@@ -31,10 +31,12 @@ beforeEach(function (): void {
     ]);
     Cache::flush();
     $this->tipaxDown = false;
+    $this->notReceived = false;
     $this->status = 'در حال توزیع';
     Http::fake(fn (Request $request) => match (true) {
         str_ends_with($request->url(), 'Account/token') => Http::response(['accessToken' => 'token-123', 'expiresIn' => 3600]),
         $this->tipaxDown => Http::response('error', 500),
+        $this->notReceived => Http::response('null'),
         default => Http::response([
             'contractCode' => '940512345678901234', 'contractStatusName' => $this->status, 'receiverCityName' => 'اصفهان',
             'terminateBranch' => null, 'assignedAgencyName' => 'نمایندگی اصفهان مرکزی', 'terminateTime' => null,
@@ -135,4 +137,14 @@ it('lets the customer try again at once when the carrier did not answer', functi
     $page->call('inquireParcel')->assertSee('در حال توزیع');
 
     expect(trackingCalls())->toBe(3); // the page's own ask, the failed one, the retry
+});
+
+it('shows the parcel as awaiting pickup while Tipax has no events for it yet', function (): void {
+    $this->notReceived = true;
+    $this->actingAs($this->customer, 'customer');
+
+    livewire(OrderDetail::class, ['order' => $this->order->getId()])
+        ->call('inquireParcel')
+        ->assertDontSee('سرویس ارسال پاسخ نداد')
+        ->assertSee('در انتظار دریافت مرسوله در شعبه');
 });

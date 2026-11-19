@@ -287,6 +287,11 @@ final readonly class TipaxClient
         );
         $body = $response->json();
 
+        // A parcel registered online but not yet received at a branch has no events: Tipax answers 200 with `null`.
+        if ($body === null || $body === []) {
+            return [];
+        }
+
         if (is_array($body) && ($body['isSuccess'] ?? true) === false) {
             throw TipaxRequestFailed::refused('brief_tracking', (string) ($body['message'] ?? $body['statusCode'] ?? ''));
         }
