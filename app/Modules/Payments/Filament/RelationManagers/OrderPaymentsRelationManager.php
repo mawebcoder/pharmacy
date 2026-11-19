@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Payments\Filament\RelationManagers;
 
+use App\Modules\Payments\Actions\RecheckPayment;
 use App\Modules\Payments\Enums\PaymentAttemptStatus;
 use App\Modules\Payments\Gateways\FakePaymentGateway;
 use App\Modules\Payments\Models\Payment;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -73,14 +77,24 @@ final class OrderPaymentsRelationManager extends RelationManager
                     ->formatStateUsing(fn (PaymentAttemptStatus $state): string => $state->label())
                     ->color(fn (PaymentAttemptStatus $state): string => $state->color()),
                 TextColumn::make(Payment::COLUMN_REF_ID)
-                    ->label('شماره پیگیری بانک')
+                    ->label('کد پیگیری پرداخت')
                     ->copyable()
                     ->extraAttributes(['dir' => 'ltr'])
                     ->placeholder('—'),
+                TextColumn::make(Payment::COLUMN_AUTHORITY)
+                    ->label('شناسه تراکنش درگاه')
+                    ->copyable()
+                    ->limit(14)
+                    ->tooltip(fn (Payment $record): string => $record->getAuthority())
+                    ->extraAttributes(['dir' => 'ltr']),
                 TextColumn::make(Payment::COLUMN_CARD_PAN)
                     ->label('کارت')
                     ->formatStateUsing(fn (string $state): string => PersianDigits::toPersian($state))
                     ->extraAttributes(['dir' => 'ltr'])
+                    ->placeholder('—'),
+                TextColumn::make(Payment::COLUMN_FEE)
+                    ->label('کارمزد درگاه')
+                    ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : Toman::format($state))
                     ->placeholder('—'),
                 TextColumn::make(Payment::COLUMN_FAILURE_REASON)
                     ->label('دلیل ناموفق بودن')
@@ -90,6 +104,24 @@ final class OrderPaymentsRelationManager extends RelationManager
                     ->label('تأیید')
                     ->jalaliDateTime() // @phpstan-ignore method.notFound (macro from ariaieboy/filament-jalali)
                     ->placeholder('—'),
+            ])
+            ->recordActions([
+                // A customer who paid but never came back (owner, 2026-11-18): verify it now, as the callback would.
+                Action::make('recheck')
+                    ->label('استعلام از زرین‌پال')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->visible(fn (Payment $record): bool => RecheckPayment::applies($record) && (auth('admin')->user()?->can('update', $this->getOwnerRecord()) ?? false))
+                    ->requiresConfirmation()
+                    ->modalDescription('پرداخت با مبلغ همین تراکنش از زرین‌پال تأیید می‌شود؛ اگر پرداخت شده باشد، سفارش پرداخت‌شده ثبت می‌شود.')
+                    ->action(function (Payment $record, RecheckPayment $recheck): void {
+                        $status = $recheck($record);
+
+                        match ($status) {
+                            PaymentAttemptStatus::Paid => Notification::make()->success()->title('پرداخت تأیید شد.')->body('کد پیگیری: '.$record->getRefId())->send(),
+                            PaymentAttemptStatus::Pending => Notification::make()->warning()->title('زرین‌پال پاسخ نداد؛ بعداً دوباره تلاش کنید.')->send(),
+                            default => Notification::make()->danger()->title('پرداخت تأیید نشد.')->body($record->getFailureReason())->send(),
+                        };
+                    }),
             ]);
     }
 }

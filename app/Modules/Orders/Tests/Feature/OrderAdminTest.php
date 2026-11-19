@@ -26,6 +26,8 @@ use App\Modules\Payments\Models\Payment;
 use App\Modules\Shared\Support\Toman;
 use Filament\Facades\Filament;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Livewire\livewire;
 
@@ -221,6 +223,40 @@ describe('as an operator', function (): void {
         livewire(OrderPaymentsRelationManager::class, ['ownerRecord' => $order, 'pageClass' => ViewOrder::class])
             ->assertCanSeeTableRecords([$failed, $paid])
             ->assertCanNotSeeTableRecords([$elsewhere]);
+    });
+
+    it('confirms a pending Zarinpal payment with «استعلام از زرین‌پال», as the callback would', function (): void {
+        config([
+            'payments.gateway' => 'zarinpal',
+            'payments.zarinpal.merchant_id' => '00000000-1111-2222-3333-444444444444',
+            'payments.zarinpal.sandbox_base_url' => 'https://sandbox.zarinpal.test',
+        ]);
+        Http::fake(['sandbox.zarinpal.test/pg/v4/payment/verify.json' => Http::response(['data' => ['code' => 100, 'message' => 'Paid', 'ref_id' => 8246301, 'card_pan' => '502229******5995', 'card_hash' => 'AB', 'fee_type' => 'Merchant', 'fee' => 2300], 'errors' => []])]);
+        $order = Order::factory()->create();
+        $pending = payment($order, PaymentAttemptStatus::Pending, 'S00000000000000000000000000000000rck');
+        $pending->setGateway('zarinpal')->save();
+
+        livewire(OrderPaymentsRelationManager::class, ['ownerRecord' => $order, 'pageClass' => ViewOrder::class])
+            ->assertSee('S00000000000000')
+            ->callTableAction('recheck', $pending)
+            ->assertNotified('پرداخت تأیید شد.');
+
+        expect($pending->refresh())
+            ->getStatus()->toBe(PaymentAttemptStatus::Paid)
+            ->getRefId()->toBe('8246301')
+            ->and($order->refresh()->getPaymentStatus())->toBe(PaymentStatus::Paid);
+        Http::assertSent(fn (Request $request): bool => $request['amount'] === $order->getTotal());
+    });
+
+    it('offers «استعلام از زرین‌پال» only on pending Zarinpal payments', function (): void {
+        $order = Order::factory()->paid()->create();
+        $paid = payment($order, PaymentAttemptStatus::Paid, 'S00000000000000000000000000000000pd1');
+        $paid->setGateway('zarinpal')->save();
+        $fake = payment($order, PaymentAttemptStatus::Pending, 'FAKE-PENDING');
+
+        livewire(OrderPaymentsRelationManager::class, ['ownerRecord' => $order, 'pageClass' => ViewOrder::class])
+            ->assertTableActionHidden('recheck', $paid)
+            ->assertTableActionHidden('recheck', $fake);
     });
 
     it('lists a customer\'s orders on their page, each opening its order in a new tab', function (): void {
