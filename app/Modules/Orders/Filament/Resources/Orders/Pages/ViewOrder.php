@@ -25,6 +25,7 @@ use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
 use App\Modules\Shipping\Queries\ParcelTrackingStatus;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -47,60 +48,9 @@ final class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('purchase')
-                ->label('سند خرید')
-                ->icon(Heroicon::OutlinedClipboardDocumentList)
-                ->color('gray')
-                ->visible(fn (): bool => $this->order()->getPurchase() instanceof OrderPurchase
-                    && (auth('admin')->user()?->can('view', $this->order()->getPurchase()) ?? false))
-                ->url(fn (): string => OrderPurchaseResource::getUrl('view', ['record' => $this->order()->getPurchase()?->getId()])),
-            Action::make('openPurchase')
-                ->label('ثبت سند خرید')
-                ->icon(Heroicon::OutlinedClipboardDocumentList)
-                ->color('primary')
-                ->visible(fn (): bool => ! $this->order()->getPurchase() instanceof OrderPurchase
-                    && $this->order()->getStatus()->isPurchase()
-                    && (auth('admin')->user()?->can('create', OrderPurchase::class) ?? false))
-                ->action(function (OpenOrderPurchase $open): void {
-                    try {
-                        $purchase = $open($this->order(), $this->adminId());
-                    } catch (PurchaseRefused $refused) {
-                        Notification::make()->danger()->title($refused->getMessage())->send();
-
-                        return;
-                    }
-
-                    $this->redirect(OrderPurchaseResource::getUrl('view', ['record' => $purchase]));
-                }),
+            // Status changes stay separate buttons, each confirmed (owner, 2026-11-19).
             $this->move('startProcessing', 'شروع آماده‌سازی', OrderStatus::Processing, Heroicon::OutlinedArchiveBox)
                 ->color('primary'),
-            // Tipax's parcel status, asked when the admin clicks (owner, 2026-11-19); the answer also reaches the customer's page.
-            Action::make('trackParcel')
-                ->label('استعلام از تیپاکس')
-                ->icon(Heroicon::OutlinedMapPin)
-                ->color('gray')
-                ->visible(fn (): bool => filled($this->order()->getTrackingCode())
-                    && (auth('admin')->user()?->can('view', $this->order()) ?? false))
-                ->action(function (ParcelTrackingStatus $parcels): void {
-                    try {
-                        $parcel = $parcels->checkNow($this->order()->getId(), (string) $this->order()->getTrackingCode());
-                    } catch (TipaxRequestFailed $failed) {
-                        Notification::make()->danger()->title('تیپاکس پاسخ نداد.')->body($failed->getMessage())->send();
-
-                        return;
-                    }
-
-                    Notification::make()
-                        ->success()
-                        ->title('وضعیت مرسوله: '.($parcel->status ?? 'نامشخص'))
-                        ->body(implode(' · ', array_filter([
-                            $parcel->destinationCity === null ? null : 'مقصد: '.$parcel->destinationCity,
-                            $parcel->branch === null ? null : 'نمایندگی: '.$parcel->branch,
-                            $parcel->deliveredAt === null ? null : 'تحویل: '.$parcel->deliveredAt,
-                        ])) ?: null)
-                        ->persistent()
-                        ->send();
-                }),
             Action::make('sendOnItsWay')
                 ->label('تحویل به حمل')
                 ->icon(Heroicon::OutlinedTruck)
@@ -132,52 +82,116 @@ final class ViewOrder extends ViewRecord
                     Textarea::make('reason')->label('دلیل لغو')->required()->maxLength(500)->rows(3),
                 ])
                 ->action(fn (array $data, CancelOrderByAdmin $cancel) => $this->attempt(fn () => $cancel($this->order(), $this->adminId(), (string) $data['reason']))),
-            Action::make('markRefunded')
-                ->label('ثبت بازگشت وجه')
-                ->icon(Heroicon::OutlinedBanknotes)
-                ->color('warning')
-                ->visible(fn (): bool => $this->order()->getPaymentStatus() === PaymentStatus::RefundPending
-                    && (auth('admin')->user()?->can('refund', $this->order()) ?? false))
-                ->modalHeading('ثبت بازگشت وجه')
-                ->modalDescription('وقتی مبلغ را از بانک یا پنل درگاه به مشتری برگرداندید، مبلغ کالاها و هزینه ارسالِ برگشتی و شماره پیگیری آن را وارد کنید.')
-                ->fillForm(fn (): array => [
-                    'items_amount' => $this->defaultItemsRefund(),
-                    'shipping_amount' => $this->order()->getShippingTotal(),
-                ])
-                ->schema([
-                    TextInput::make('items_amount')
-                        ->label('مبلغ بازگشتی کالاها')
-                        ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                        ->required()
-                        ->maxValue(fn (): int => Toman::fromRial($this->order()->getItemsPaidTotal()))
-                        ->helperText(fn (): string => 'پرداختی مشتری برای کالاها (پس از تخفیف کوپن): '.Toman::format($this->order()->getItemsPaidTotal())
-                            .($this->order()->getDeliveredFreeShipping() > 0
-                                ? '؛ ارسال رایگانِ این سفارش ('.Toman::format($this->order()->getDeliveredFreeShipping()).') چون تحویل شده بود کسر شده است.'
-                                : '')),
-                    TextInput::make('shipping_amount')
-                        ->label('مبلغ بازگشتی هزینه ارسال')
-                        ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                        ->required()
-                        ->maxValue(fn (): int => Toman::fromRial($this->order()->getShippingTotal()))
-                        ->helperText(fn (): string => 'هزینه ارسال پرداختی: '.Toman::format($this->order()->getShippingTotal())),
-                    TextInput::make('reference')->label('شماره پیگیری بازگشت وجه')->required()->maxLength(64)->extraInputAttributes(['dir' => 'ltr']),
-                ])
-                ->action(fn (array $data, MarkOrderRefunded $refund) => $this->attempt(fn () => $refund(
-                    $this->order(),
-                    (string) $data['reference'],
-                    self::refundRial($data['items_amount'] ?? null, [$this->order()->getItemsPaidTotal(), $this->defaultItemsRefund()]),
-                    self::refundRial($data['shipping_amount'] ?? null, [$this->order()->getShippingTotal()]),
-                ))),
-            Action::make('adminNote')
-                ->label('یادداشت مدیر')
-                ->icon(Heroicon::OutlinedPencilSquare)
-                ->color('gray')
-                ->visible(fn (): bool => $this->mayUpdate())
-                ->fillForm(fn (): array => ['note' => $this->order()->getAdminNote()])
-                ->schema([
-                    Textarea::make('note')->label('یادداشت (فقط برای مدیران)')->maxLength(2000)->rows(4),
-                ])
-                ->action(fn (array $data, SaveAdminNote $save) => $this->attempt(fn () => $save($this->order(), $data['note'] ?? null), 'یادداشت ذخیره شد.')),
+            // Everything else in one menu behind three dots (owner, 2026-11-19), in sections: shipping, purchase, other.
+            ActionGroup::make([
+                ActionGroup::make([
+                    // Tipax's parcel status, asked when the admin clicks (owner, 2026-11-19); the answer also reaches the customer's page.
+                    Action::make('trackParcel')
+                        ->label('استعلام از تیپاکس')
+                        ->icon(Heroicon::OutlinedMapPin)
+                        ->color('gray')
+                        ->visible(fn (): bool => filled($this->order()->getTrackingCode())
+                            && (auth('admin')->user()?->can('view', $this->order()) ?? false))
+                        ->action(function (ParcelTrackingStatus $parcels): void {
+                            try {
+                                $parcel = $parcels->checkNow($this->order()->getId(), (string) $this->order()->getTrackingCode());
+                            } catch (TipaxRequestFailed $failed) {
+                                Notification::make()->danger()->title('تیپاکس پاسخ نداد.')->body($failed->getMessage())->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->success()
+                                ->title('وضعیت مرسوله: '.($parcel->status ?? 'نامشخص'))
+                                ->body(implode(' · ', array_filter([
+                                    $parcel->destinationCity === null ? null : 'مقصد: '.$parcel->destinationCity,
+                                    $parcel->branch === null ? null : 'نمایندگی: '.$parcel->branch,
+                                    $parcel->deliveredAt === null ? null : 'تحویل: '.$parcel->deliveredAt,
+                                ])) ?: null)
+                                ->persistent()
+                                ->send();
+                        }),
+                ])->dropdown(false),
+                ActionGroup::make([
+                    Action::make('purchase')
+                        ->label('سند خرید')
+                        ->icon(Heroicon::OutlinedClipboardDocumentList)
+                        ->color('gray')
+                        ->visible(fn (): bool => $this->order()->getPurchase() instanceof OrderPurchase
+                            && (auth('admin')->user()?->can('view', $this->order()->getPurchase()) ?? false))
+                        ->url(fn (): string => OrderPurchaseResource::getUrl('view', ['record' => $this->order()->getPurchase()?->getId()])),
+                    Action::make('openPurchase')
+                        ->label('ثبت سند خرید')
+                        ->icon(Heroicon::OutlinedClipboardDocumentList)
+                        ->color('primary')
+                        ->visible(fn (): bool => ! $this->order()->getPurchase() instanceof OrderPurchase
+                            && $this->order()->getStatus()->isPurchase()
+                            && (auth('admin')->user()?->can('create', OrderPurchase::class) ?? false))
+                        ->action(function (OpenOrderPurchase $open): void {
+                            try {
+                                $purchase = $open($this->order(), $this->adminId());
+                            } catch (PurchaseRefused $refused) {
+                                Notification::make()->danger()->title($refused->getMessage())->send();
+
+                                return;
+                            }
+
+                            $this->redirect(OrderPurchaseResource::getUrl('view', ['record' => $purchase]));
+                        }),
+                ])->dropdown(false),
+                ActionGroup::make([
+                    Action::make('adminNote')
+                        ->label('یادداشت مدیر')
+                        ->icon(Heroicon::OutlinedPencilSquare)
+                        ->color('gray')
+                        ->visible(fn (): bool => $this->mayUpdate())
+                        ->fillForm(fn (): array => ['note' => $this->order()->getAdminNote()])
+                        ->schema([
+                            Textarea::make('note')->label('یادداشت (فقط برای مدیران)')->maxLength(2000)->rows(4),
+                        ])
+                        ->action(fn (array $data, SaveAdminNote $save) => $this->attempt(fn () => $save($this->order(), $data['note'] ?? null), 'یادداشت ذخیره شد.')),
+                    Action::make('markRefunded')
+                        ->label('ثبت بازگشت وجه')
+                        ->icon(Heroicon::OutlinedBanknotes)
+                        ->color('warning')
+                        ->visible(fn (): bool => $this->order()->getPaymentStatus() === PaymentStatus::RefundPending
+                            && (auth('admin')->user()?->can('refund', $this->order()) ?? false))
+                        ->modalHeading('ثبت بازگشت وجه')
+                        ->modalDescription('وقتی مبلغ را از بانک یا پنل درگاه به مشتری برگرداندید، مبلغ کالاها و هزینه ارسالِ برگشتی و شماره پیگیری آن را وارد کنید.')
+                        ->fillForm(fn (): array => [
+                            'items_amount' => $this->defaultItemsRefund(),
+                            'shipping_amount' => $this->order()->getShippingTotal(),
+                        ])
+                        ->schema([
+                            TextInput::make('items_amount')
+                                ->label('مبلغ بازگشتی کالاها')
+                                ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                                ->required()
+                                ->maxValue(fn (): int => Toman::fromRial($this->order()->getItemsPaidTotal()))
+                                ->helperText(fn (): string => 'پرداختی مشتری برای کالاها (پس از تخفیف کوپن): '.Toman::format($this->order()->getItemsPaidTotal())
+                                    .($this->order()->getDeliveredFreeShipping() > 0
+                                        ? '؛ ارسال رایگانِ این سفارش ('.Toman::format($this->order()->getDeliveredFreeShipping()).') چون تحویل شده بود کسر شده است.'
+                                        : '')),
+                            TextInput::make('shipping_amount')
+                                ->label('مبلغ بازگشتی هزینه ارسال')
+                                ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
+                                ->required()
+                                ->maxValue(fn (): int => Toman::fromRial($this->order()->getShippingTotal()))
+                                ->helperText(fn (): string => 'هزینه ارسال پرداختی: '.Toman::format($this->order()->getShippingTotal())),
+                            TextInput::make('reference')->label('شماره پیگیری بازگشت وجه')->required()->maxLength(64)->extraInputAttributes(['dir' => 'ltr']),
+                        ])
+                        ->action(fn (array $data, MarkOrderRefunded $refund) => $this->attempt(fn () => $refund(
+                            $this->order(),
+                            (string) $data['reference'],
+                            self::refundRial($data['items_amount'] ?? null, [$this->order()->getItemsPaidTotal(), $this->defaultItemsRefund()]),
+                            self::refundRial($data['shipping_amount'] ?? null, [$this->order()->getShippingTotal()]),
+                        ))),
+                ])->dropdown(false),
+            ])
+                ->label('عملیات')
+                ->icon(Heroicon::EllipsisVertical)
+                ->color('gray'),
         ];
     }
 
@@ -218,6 +232,8 @@ final class ViewOrder extends ViewRecord
             ->label($label)
             ->icon($icon)
             ->visible(fn (): bool => $this->mayMoveTo($to))
+            ->requiresConfirmation()
+            ->modalDescription('وضعیت سفارش به «'.$to->label().'» تغییر می‌کند.')
             ->action(fn (ChangeOrderStatus $change) => $this->attempt(fn () => $change($this->order(), $to, OrderActor::Admin, $this->adminId())));
     }
 
