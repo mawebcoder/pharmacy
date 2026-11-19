@@ -40,6 +40,12 @@ return [
             'branch_cities' => env('TIPAX_PATH_BRANCH_CITIES', '/api/OM/v4/Cities/BranchCities'),
             'pricing' => env('TIPAX_PATH_PRICING', '/api/OM/v4/Pricing'),
             'services_between_cities' => env('TIPAX_PATH_SERVICES_BETWEEN_CITIES', '/api/OM/v4/Pricing/GetServicesBetweenCities'),
+            'customer' => env('TIPAX_PATH_CUSTOMER', '/api/OM/v4/Customers'),
+            'wallet' => env('TIPAX_PATH_WALLET', '/api/OM/v4/Customers/Wallet'),
+            'services' => env('TIPAX_PATH_SERVICES', '/api/OM/v4/Pricing/GetServicesList'),
+            'pack_types' => env('TIPAX_PATH_PACK_TYPES', '/api/OM/v4/PackingType/GetPackTypes'),
+            'packing_types' => env('TIPAX_PATH_PACKING_TYPES', '/api/OM/v4/PackingType/GetPackingTypes'),
+            'packaging_contents' => env('TIPAX_PATH_PACKAGING_CONTENTS', '/api/OM/v4/PackingType/GetPackagingContents'),
         ],
         'pricing' => [
             // A TipaxPaymentType value: 10 prepaid by the sender (D6.6).

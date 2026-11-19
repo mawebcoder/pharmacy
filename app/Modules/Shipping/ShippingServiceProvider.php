@@ -46,18 +46,23 @@ final class ShippingServiceProvider extends ModuleServiceProvider
             pricingTimeoutSeconds: (int) config('shipping.tipax.pricing_timeout_seconds'),
         ));
 
-        // Tipax's pricing adapters (roadmap S34): the codes sent with every package, and the unit of its prices.
-        $this->app->singleton(TipaxPriceRequestAdapter::class, fn (): TipaxPriceRequestAdapter => new TipaxPriceRequestAdapter(
-            paymentType: TipaxPaymentType::from((int) config('shipping.tipax.pricing.payment_type')),
-            pickupType: TipaxPickupType::from((int) config('shipping.tipax.pricing.pickup_type')),
-            distributionType: TipaxDistributionType::from((int) config('shipping.tipax.pricing.distribution_type')),
-            packingId: (int) config('shipping.tipax.pricing.packing_id'),
-            packType: (int) config('shipping.tipax.pricing.pack_type'),
-            contentGeneralId: (int) config('shipping.tipax.pricing.content_general_id'),
-            contentLiquidId: (int) config('shipping.tipax.pricing.content_liquid_id'),
-            unboxedSizeCm: (int) config('shipping.tipax.pricing.unboxed_size_cm'),
-            minWeightKg: (float) config('shipping.tipax.pricing.min_weight_kg'),
-        ));
+        // Tipax's pricing adapters (roadmap S34): the codes sent with every package (picked in the store settings, S33,
+        // else .env), and the unit of its prices. Built per use, so a changed setting applies at once, in workers too.
+        $this->app->bind(TipaxPriceRequestAdapter::class, function (Application $app): TipaxPriceRequestAdapter {
+            $settings = $app->make(StoreSettings::class);
+
+            return new TipaxPriceRequestAdapter(
+                paymentType: TipaxPaymentType::from((int) config('shipping.tipax.pricing.payment_type')),
+                pickupType: TipaxPickupType::from((int) config('shipping.tipax.pricing.pickup_type')),
+                distributionType: TipaxDistributionType::from((int) config('shipping.tipax.pricing.distribution_type')),
+                packingId: $settings->tipaxCode(StoreSettings::TIPAX_PACKING_ID) ?? (int) config('shipping.tipax.pricing.packing_id'),
+                packType: $settings->tipaxCode(StoreSettings::TIPAX_PACK_TYPE) ?? (int) config('shipping.tipax.pricing.pack_type'),
+                contentGeneralId: $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_GENERAL_ID) ?? (int) config('shipping.tipax.pricing.content_general_id'),
+                contentLiquidId: $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_LIQUID_ID) ?? (int) config('shipping.tipax.pricing.content_liquid_id'),
+                unboxedSizeCm: (int) config('shipping.tipax.pricing.unboxed_size_cm'),
+                minWeightKg: (float) config('shipping.tipax.pricing.min_weight_kg'),
+            );
+        });
         $this->app->singleton(TipaxPriceResponseAdapter::class, fn (): TipaxPriceResponseAdapter => new TipaxPriceResponseAdapter(
             priceUnit: TipaxPriceUnit::from((string) config('shipping.tipax.pricing.price_unit')),
         ));
@@ -90,6 +95,8 @@ final class ShippingServiceProvider extends ModuleServiceProvider
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             // Provinces and cities from Tipax (roadmap D4.3): every night at 00:00 Tehran time (owner, 2026-11-18), besides every deploy.
             $schedule->command('tipax:sync-cities')->dailyAt('00:00')->timezone((string) config('app.display_timezone'))->onOneServer();
+            // Tipax's services, pack types, packings and contents (S33), right after the cities.
+            $schedule->command('tipax:sync-reference')->dailyAt('00:10')->timezone((string) config('app.display_timezone'))->onOneServer();
         });
     }
 }

@@ -12,6 +12,8 @@ use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shared\Rules\IranianMobile;
 use App\Modules\Shared\Support\IranMobile;
+use App\Modules\Shipping\Enums\TipaxReferenceType;
+use App\Modules\Shipping\Queries\TipaxReferences;
 use BackedEnum;
 use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
@@ -25,6 +27,8 @@ use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
@@ -63,6 +67,10 @@ final class StoreSettingsPage extends Page
             'shipping_flat_rate' => $settings->shippingFlatRate(),
             'shipping_origin_city_id' => $settings->shippingOriginCityId(),
             'shipping_markup_percent' => $settings->shippingMarkupPercent(),
+            'tipax_pack_type' => $settings->tipaxCode(StoreSettings::TIPAX_PACK_TYPE) ?? (int) config('shipping.tipax.pricing.pack_type'),
+            'tipax_packing_id' => $settings->tipaxCode(StoreSettings::TIPAX_PACKING_ID) ?? (int) config('shipping.tipax.pricing.packing_id'),
+            'tipax_content_general_id' => $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_GENERAL_ID) ?? (int) config('shipping.tipax.pricing.content_general_id'),
+            'tipax_content_liquid_id' => $settings->tipaxCode(StoreSettings::TIPAX_CONTENT_LIQUID_ID) ?? (int) config('shipping.tipax.pricing.content_liquid_id'),
             'whatsapp_number' => $settings->whatsAppNumber(),
             'telegram_username' => $settings->telegramUsername(),
             'chat_message_product' => $settings->get(StoreSettings::CHAT_MESSAGE_PRODUCT),
@@ -129,6 +137,34 @@ final class StoreSettingsPage extends Page
                             ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
                             ->required()
                             ->helperText('وقتی تیپاکس پاسخ ندهد یا شهر مبدأ انتخاب نشده باشد، همین مبلغ حساب می‌شود؛ بالای حد ارسال رایگان یا با کوپن ارسال رایگان، رایگان است.'),
+                    ]),
+                Section::make('کدهای تیپاکس')
+                    ->description('با هر بسته برای استعلام قیمت به تیپاکس فرستاده می‌شوند. فهرست‌ها هر شب از تیپاکس به‌روز می‌شوند (php artisan tipax:sync-reference)؛ بسته‌بندی و محتوا باید از همان نوع بسته باشند.')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('tipax_pack_type')
+                            ->label('نوع بسته')
+                            ->options(fn (): array => self::tipaxOptions(TipaxReferenceType::PackType, null, 'pack_type'))
+                            ->live()
+                            ->afterStateUpdated(function (Set $set): void {
+                                $set('tipax_packing_id', null);
+                                $set('tipax_content_general_id', null);
+                                $set('tipax_content_liquid_id', null);
+                            })
+                            ->required(),
+                        Select::make('tipax_packing_id')
+                            ->label('بسته‌بندی')
+                            ->options(fn (Get $get): array => self::tipaxOptions(TipaxReferenceType::Packing, (int) $get('tipax_pack_type'), 'packing_id'))
+                            ->helperText('ما خودمان بسته‌بندی می‌کنیم: «نیاز به بسته بندی ندارد».')
+                            ->required(),
+                        Select::make('tipax_content_general_id')
+                            ->label('محتوای بسته')
+                            ->options(fn (Get $get): array => self::tipaxOptions(TipaxReferenceType::Content, (int) $get('tipax_pack_type'), 'content_general_id'))
+                            ->required(),
+                        Select::make('tipax_content_liquid_id')
+                            ->label('محتوای بسته با کالای مایع یا شکستنی')
+                            ->options(fn (Get $get): array => self::tipaxOptions(TipaxReferenceType::Content, (int) $get('tipax_pack_type'), 'content_liquid_id'))
+                            ->required(),
                     ]),
                 Section::make('اطلاعات تماس')
                     ->description('در پانویس همه صفحه‌ها و صفحه «تماس با ما» نمایش داده می‌شوند؛ خالی یعنی نمایش داده نمی‌شود.')
@@ -235,6 +271,10 @@ final class StoreSettingsPage extends Page
             StoreSettings::SHIPPING_FLAT_RATE => (int) $data['shipping_flat_rate'],
             StoreSettings::SHIPPING_ORIGIN_CITY_ID => (int) ($data['shipping_origin_city_id'] ?? 0),
             StoreSettings::SHIPPING_MARKUP_PERCENT => (int) $data['shipping_markup_percent'],
+            StoreSettings::TIPAX_PACK_TYPE => (int) $data['tipax_pack_type'],
+            StoreSettings::TIPAX_PACKING_ID => (int) $data['tipax_packing_id'],
+            StoreSettings::TIPAX_CONTENT_GENERAL_ID => (int) $data['tipax_content_general_id'],
+            StoreSettings::TIPAX_CONTENT_LIQUID_ID => (int) $data['tipax_content_liquid_id'],
             StoreSettings::WHATSAPP_NUMBER => IranMobile::normalize((string) ($data['whatsapp_number'] ?? '')) ?? '',
             StoreSettings::TELEGRAM_USERNAME => (string) ($data['telegram_username'] ?? ''),
             StoreSettings::CHAT_MESSAGE_PRODUCT => trim((string) $data['chat_message_product']),
@@ -252,6 +292,20 @@ final class StoreSettingsPage extends Page
         ]);
 
         Notification::make()->success()->title('تنظیمات ذخیره شد.')->send();
+    }
+
+    /**
+     * A Tipax list for a dropdown (S33); before the first `tipax:sync-reference` only the .env default
+     * (shipping.tipax.pricing.{$defaultKey}), so the page can always be saved.
+     *
+     * @return array<int, string>
+     */
+    private static function tipaxOptions(TipaxReferenceType $type, ?int $packType, string $defaultKey): array
+    {
+        $options = app(TipaxReferences::class)->options($type, $packType);
+        $default = (int) config('shipping.tipax.pricing.'.$defaultKey);
+
+        return $options !== [] ? $options : [$default => 'پیش‌فرض ('.$default.')'];
     }
 
     /**

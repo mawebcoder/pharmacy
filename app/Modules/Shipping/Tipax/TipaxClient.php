@@ -23,7 +23,7 @@ final readonly class TipaxClient
     private const string TOKEN_CACHE_KEY = 'shipping:tipax:access_token';
 
     /**
-     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string}  $paths
+     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string}  $paths
      */
     public function __construct(
         private string $baseUrl,
@@ -136,6 +136,115 @@ final readonly class TipaxClient
     public function branchCities(): array
     {
         return $this->list('branch_cities', $this->paths['branch_cities']);
+    }
+
+    /**
+     * The signed-in account (`GET Customers`): customerId, fullName … (its apiKey is never passed on).
+     *
+     * @return array{customer_id: int|null, full_name: string|null}
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function account(): array
+    {
+        $body = $this->get('customer', $this->paths['customer'])->json();
+
+        if (! is_array($body)) {
+            throw TipaxRequestFailed::unexpected('customer');
+        }
+
+        return [
+            'customer_id' => is_numeric($body['customerId'] ?? null) ? (int) $body['customerId'] : null,
+            'full_name' => is_string($body['fullName'] ?? null) ? $body['fullName'] : null,
+        ];
+    }
+
+    /**
+     * The account's wallet balance as Tipax reports it (`GET Customers/Wallet`, a bare number).
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function walletBalance(): float
+    {
+        $balance = $this->get('wallet', $this->paths['wallet'])->json();
+
+        if (! is_numeric($balance)) {
+            throw TipaxRequestFailed::unexpected('wallet');
+        }
+
+        return (float) $balance;
+    }
+
+    /**
+     * Every Tipax service (`POST Pricing/GetServicesList`): { id, title, isActive … }.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function services(): array
+    {
+        $response = $this->send('services', fn (PendingRequest $request): Response => $request->withToken($this->token())->post($this->url($this->paths['services']), []));
+
+        return $this->rows('services', $response->json('data'));
+    }
+
+    /**
+     * Pack types (`GET PackingType/GetPackTypes`): { id, title, latinTitle }.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function packTypes(): array
+    {
+        return $this->rows('pack_types', $this->get('pack_types', $this->paths['pack_types'])->json('data'));
+    }
+
+    /**
+     * Packings (`GET PackingType/GetPackingTypes`): { id, title, packType, sizes, min/max weight … }.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function packingTypes(): array
+    {
+        return $this->rows('packing_types', $this->get('packing_types', $this->paths['packing_types'])->json('result'));
+    }
+
+    /**
+     * Package contents (`GET PackingType/GetPackagingContents`): { id, title, packType }.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    public function packagingContents(): array
+    {
+        return $this->rows('packaging_contents', $this->get('packaging_contents', $this->paths['packaging_contents'])->json('result'));
+    }
+
+    /**
+     * @throws TipaxRequestFailed
+     */
+    private function get(string $operation, string $path): Response
+    {
+        return $this->send($operation, fn (PendingRequest $request): Response => $request->withToken($this->token())->get($this->url($path)));
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     *
+     * @throws TipaxRequestFailed
+     */
+    private function rows(string $operation, mixed $rows): array
+    {
+        if (! is_array($rows) || ! array_is_list($rows)) {
+            throw TipaxRequestFailed::unexpected($operation);
+        }
+
+        return array_values(array_filter($rows, is_array(...)));
     }
 
     /**

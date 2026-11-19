@@ -3088,6 +3088,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Refs:** D6.1–D6.3, D6.6, D11.3 (A–C)
 - **Already done in S20:** `TipaxClient` (sign-in through v3 `Account/token` with a cached token, retries, timeouts, logged calls) and `tipax:sync-cities` (v4 city endpoints); no mapping table or screen (cities are Tipax's, D4).
 - **Tipax direct again (owner, 2026-11-18):** the S20 `TipaxClient` stays and gains the pricing calls in S34; the Tapin plan below is dropped. Still open here: `tipax:ping`, `tipax:sync-reference` (packings, contents, services) and origin registration.
+- **Built (owner, 2026-11-19):** `tipax:ping` (account and wallet, never the API key); `tipax:sync-reference` into `tipax_references` (services, pack types, packings, contents with their pack type; nightly at 00:10 Tehran, after the cities); the store settings «کدهای تیپاکس» pick the pack type, packing and the two contents from those lists (packings and contents limited to the pack type; .env values until saved), and pricing sends them. **Origin registration moves to S35**, the only step that needs Tipax's address id.
 - **Changed for Tapin (owner, 2026-11-17; D6.0; superseded 2026-11-18):** the S20 `TipaxClient` is replaced by a `TapinClient`; there is no sign-in, origin registration or webhook registration.
 - **Build:**
   - `TapinClient` (Bearer token, `shop_id`, retries, timeouts, every call logged with secrets hidden, `returns.status` checked);

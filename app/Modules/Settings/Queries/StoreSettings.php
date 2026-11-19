@@ -35,6 +35,17 @@ final readonly class StoreSettings
     public const string SHIPPING_MARKUP_PERCENT = 'shipping.markup_percent';
 
     /**
+     * Tipax's codes sent with every package (S33): picked from Tipax's own lists; empty means the .env default.
+     */
+    public const string TIPAX_PACK_TYPE = 'tipax.pack_type';
+
+    public const string TIPAX_PACKING_ID = 'tipax.packing_id';
+
+    public const string TIPAX_CONTENT_GENERAL_ID = 'tipax.content_general_id';
+
+    public const string TIPAX_CONTENT_LIQUID_ID = 'tipax.content_liquid_id';
+
+    /**
      * Highest markup the admin can add to the shipping services' prices.
      */
     public const int MAX_SHIPPING_MARKUP_PERCENT = 100;
@@ -79,6 +90,10 @@ final readonly class StoreSettings
         self::SHIPPING_FLAT_RATE => 500_000,
         self::SHIPPING_ORIGIN_CITY_ID => null,
         self::SHIPPING_MARKUP_PERCENT => 0,
+        self::TIPAX_PACK_TYPE => null,
+        self::TIPAX_PACKING_ID => null,
+        self::TIPAX_CONTENT_GENERAL_ID => null,
+        self::TIPAX_CONTENT_LIQUID_ID => null,
         self::WHATSAPP_NUMBER => '',
         self::TELEGRAM_USERNAME => '',
         self::CHAT_MESSAGE_PRODUCT => 'سلام، درباره «{product}» {variant} سؤال دارم: {link}',
@@ -143,6 +158,16 @@ final readonly class StoreSettings
     public function shippingMarkupPercent(): int
     {
         return min(self::MAX_SHIPPING_MARKUP_PERCENT, max(0, (int) $this->get(self::SHIPPING_MARKUP_PERCENT)));
+    }
+
+    /**
+     * A Tipax code the admin picked (TIPAX_* keys above), or null to use the .env default.
+     */
+    public function tipaxCode(string $key): ?int
+    {
+        $code = (int) $this->get($key);
+
+        return $code > 0 ? $code : null;
     }
 
     /**
