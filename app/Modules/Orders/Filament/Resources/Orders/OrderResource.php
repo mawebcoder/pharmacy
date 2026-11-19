@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Filament\Resources\Orders;
 
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ListOrders;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ViewOrder;
+use App\Modules\Orders\Filament\Resources\Orders\RelationManagers\OrderReturnsRelationManager;
 use App\Modules\Orders\Filament\Resources\Orders\Schemas\OrderInfolist;
 use App\Modules\Orders\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Modules\Orders\Models\Order;
@@ -51,7 +52,7 @@ final class OrderResource extends Resource
 
     public static function getRelations(): array
     {
-        return [OrderPaymentsRelationManager::class];
+        return [OrderPaymentsRelationManager::class, OrderReturnsRelationManager::class];
     }
 
     public static function canCreate(): bool

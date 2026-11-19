@@ -23,7 +23,7 @@ final readonly class TipaxClient
     private const string TOKEN_CACHE_KEY = 'shipping:tipax:access_token';
 
     /**
-     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string, register_order: string}  $paths
+     * @param  array{token: string, cities: string, branch_cities: string, pricing: string, services_between_cities: string, customer: string, wallet: string, services: string, pack_types: string, packing_types: string, packaging_contents: string, brief_tracking: string, register_order: string, cancel_parcel: string}  $paths
      */
     public function __construct(
         private string $baseUrl,
@@ -266,6 +266,26 @@ final readonly class TipaxClient
             'tracking_codes' => $codes,
             'raw' => $data,
         ];
+    }
+
+    /**
+     * Cancels a registered parcel (`PUT Parcels/Cancel/{trackingCode}`, roadmap S27): Tipax refuses once the parcel
+     * has been picked up.
+     *
+     * @throws TipaxRequestFailed with Tipax's reason
+     */
+    public function cancelParcel(string $trackingCode): void
+    {
+        $response = $this->send(
+            'cancel_parcel',
+            fn (PendingRequest $request): Response => $request->withToken($this->token())->put($this->url(rtrim($this->paths['cancel_parcel'], '/').'/'.rawurlencode($trackingCode))),
+            retries: 0,
+        );
+        $answer = $response->json();
+
+        if (is_array($answer) && ($answer['isSuccess'] ?? true) === false) {
+            throw TipaxRequestFailed::refused('cancel_parcel', (string) ($answer['message'] ?? $answer['statusCode'] ?? ''));
+        }
     }
 
     /**

@@ -29,18 +29,7 @@ final readonly class PackOrder
      */
     public function __invoke(int $orderId): array
     {
-        $items = array_map(fn (array $item): PackItem => new PackItem(
-            key: $item['order_item_id'],
-            variantId: $item['variant_id'],
-            title: $item['title'],
-            quantity: $item['quantity'],
-            unitWeightG: $item['weight_g'],
-            boxCapacities: $item['box_capacities'],
-            unitValue: $item['unit_value'],
-            shipSeparately: $item['ship_separately'],
-            liquidOrFragile: $item['liquid_or_fragile'],
-            tipaxContentId: $item['tipax_content_id'],
-        ), $this->orderItems->for($orderId));
+        $items = array_map(fn (array $item): PackItem => PackItem::fromOrderItem($item), $this->orderItems->for($orderId));
 
         $packed = $this->packer->pack($items, $this->boxes->specs());
 

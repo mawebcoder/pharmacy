@@ -13,8 +13,8 @@ use App\Modules\Shipping\Tipax\TipaxClient;
 
 /**
  * Registers an order's parcels with Tipax, going out or coming back (roadmap S35, owner 2026-11-19), and keeps the
- * answer in tipax_shipments. Once registered, asking again returns the same tracking codes instead of registering
- * twice; a failed registration may be tried again. Tipax's callbacks later confirm or fail it.
+ * answer in tipax_shipments, one row per trace code (S27). Once registered, asking again returns the same tracking codes
+ * instead of registering twice; a failed or cancelled registration may be tried again. Tipax's callbacks later confirm or fail it.
  */
 final readonly class RegisterTipaxShipment
 {
@@ -30,12 +30,9 @@ final readonly class RegisterTipaxShipment
      */
     public function __invoke(TipaxRegistrationData $registration): array
     {
-        $shipment = TipaxShipment::query()
-            ->where(TipaxShipment::COLUMN_ORDER_ID, $registration->orderId)
-            ->where(TipaxShipment::COLUMN_KIND, $registration->kind)
-            ->first();
+        $shipment = TipaxShipment::query()->where(TipaxShipment::COLUMN_TRACE_CODE, $registration->traceCode())->first();
 
-        if ($shipment instanceof TipaxShipment && $shipment->getStatus() !== TipaxShipmentStatus::Failed) {
+        if ($shipment instanceof TipaxShipment && ! in_array($shipment->getStatus(), [TipaxShipmentStatus::Failed, TipaxShipmentStatus::Cancelled], true)) {
             return $shipment->getTrackingCodes();
         }
 
@@ -45,7 +42,7 @@ final readonly class RegisterTipaxShipment
             route('shipping.tipax.callback', ['result' => 'success', 'secret' => $secret]),
             route('shipping.tipax.callback', ['result' => 'failure', 'secret' => $secret]),
         );
-        $shipment ??= (new TipaxShipment)->setOrderId($registration->orderId)->setKind($registration->kind);
+        $shipment ??= (new TipaxShipment)->setOrderId($registration->orderId)->setKind($registration->kind)->setTraceCode($registration->traceCode());
         $shipment->setRequest($body);
 
         try {

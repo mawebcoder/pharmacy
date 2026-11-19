@@ -36,6 +36,8 @@ final class RolesSeeder extends Seeder
             'ViewAny:Order', 'View:Order', 'Update:Order',
             // S25 Orders: open an order's purchase document, type its rows and record what arrived.
             'ViewAny:OrderPurchase', 'View:OrderPurchase', 'Create:OrderPurchase', 'Update:OrderPurchase',
+            // S27 Orders: open order returns, approve them (Tipax pickup) and cancel them.
+            'ViewAny:OrderReturn', 'View:OrderReturn', 'Create:OrderReturn', 'Update:OrderReturn',
             // S29 Content: read the contact messages and mark them answered.
             'ViewAny:ContactMessage', 'View:ContactMessage', 'Update:ContactMessage',
         ],

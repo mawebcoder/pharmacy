@@ -8,7 +8,6 @@ use App\Modules\Orders\Actions\CancelOrderByAdmin;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
 use App\Modules\Orders\Actions\MarkOrderRefunded;
 use App\Modules\Orders\Actions\OpenOrderPurchase;
-use App\Modules\Orders\Actions\RegisterOrderReturn;
 use App\Modules\Orders\Actions\SaveAdminNote;
 use App\Modules\Orders\Actions\SendOrderOnItsWay;
 use App\Modules\Orders\Actions\ShipOrderWithTipax;
@@ -20,9 +19,12 @@ use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Exceptions\PurchaseRefused;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Filament\Resources\Purchases\OrderPurchaseResource;
+use App\Modules\Orders\Filament\Resources\Returns\OrderReturnResource;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderPurchase;
+use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Queries\OrderInvoice;
+use App\Modules\Orders\Queries\OrderReturns;
 use App\Modules\Orders\Support\PrintFrame;
 use App\Modules\Shared\Support\Toman;
 use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
@@ -111,44 +113,13 @@ final class ViewOrder extends ViewRecord
                                 ->helperText('مشتری این کد را در صفحه سفارش و «پیگیری سفارش» می‌بیند.'),
                         ])
                         ->action(fn (array $data, SendOrderOnItsWay $send) => $this->attempt(fn () => $send($this->order(), (string) $data['tracking_code'], $this->adminId()))),
-                    // A cancelled order that went out with Tipax: register its way back (owner, 2026-11-19).
-                    Action::make('registerReturn')
-                        ->label('ثبت مرجوعی در تیپاکس')
+                    // «مرجوعی‌ها» (S27, owner 2026-11-19): opens a new return for this order; the items and units are picked there.
+                    Action::make('createReturn')
+                        ->label('ثبت مرجوعی')
                         ->icon(Heroicon::OutlinedArrowUturnLeft)
                         ->color('warning')
-                        ->visible(fn (RegisterOrderReturn $return): bool => $this->mayUpdate() && $this->order()->getStatus() === OrderStatus::Cancelled && $return->applies($this->order()))
-                        ->requiresConfirmation()
-                        ->modalDescription('بسته‌ها از آدرس مشتری جمع‌آوری و به انبار برگردانده می‌شوند؛ کد رهگیری مرجوعی برای مشتری پیامک می‌شود.')
-                        ->action(function (RegisterOrderReturn $return): void {
-                            try {
-                                $codes = $return($this->order());
-                            } catch (OrderRefused $refused) {
-                                Notification::make()->danger()->title($refused->getMessage())->send();
-
-                                return;
-                            }
-
-                            Notification::make()->success()->title('مرجوعی در تیپاکس ثبت شد.')->body('کد رهگیری: '.implode('، ', $codes))->persistent()->send();
-                        }),
-                    // A delivered order the customer sends back: Tipax collects it from them (owner, 2026-11-19).
-                    Action::make('registerCustomerReturn')
-                        ->label('ثبت مرجوعی از مشتری')
-                        ->icon(Heroicon::OutlinedArrowUturnLeft)
-                        ->color('warning')
-                        ->visible(fn (RegisterOrderReturn $return): bool => $this->mayUpdate() && $this->order()->getStatus() === OrderStatus::Delivered && $return->applies($this->order()))
-                        ->requiresConfirmation()
-                        ->modalDescription('بسته‌ها از آدرس مشتری جمع‌آوری و به انبار برگردانده می‌شوند؛ کد رهگیری مرجوعی برای مشتری پیامک می‌شود.')
-                        ->action(function (RegisterOrderReturn $return): void {
-                            try {
-                                $codes = $return($this->order());
-                            } catch (OrderRefused $refused) {
-                                Notification::make()->danger()->title($refused->getMessage())->send();
-
-                                return;
-                            }
-
-                            Notification::make()->success()->title('مرجوعی در تیپاکس ثبت شد.')->body('کد رهگیری: '.implode('، ', $codes))->persistent()->send();
-                        }),
+                        ->visible(fn (OrderReturns $returns): bool => (auth('admin')->user()?->can('create', OrderReturn::class) ?? false) && $returns->canReturn($this->order()))
+                        ->url(fn (): string => OrderReturnResource::getUrl('create', ['order' => $this->order()->getId()])),
                     // «فاکتور فروش» with the tracking code (owner, 2026-11-19): opens the print dialog, no new tab.
                     Action::make('printInvoice')
                         ->label('چاپ فاکتور')

@@ -29,6 +29,27 @@ final readonly class PackItem
     ) {}
 
     /**
+     * An order item as OrderPackingItems gives it, with another quantity when only some units are packed (a return).
+     *
+     * @param  array{order_item_id: int, variant_id: int|null, title: string, quantity: int, weight_g: int|null, box_capacities: array<int, int>, unit_value: int, ship_separately: bool, liquid_or_fragile: bool, tipax_content_id: int|null}  $item
+     */
+    public static function fromOrderItem(array $item, ?int $quantity = null): self
+    {
+        return new self(
+            key: $item['order_item_id'],
+            variantId: $item['variant_id'],
+            title: $item['title'],
+            quantity: $quantity ?? $item['quantity'],
+            unitWeightG: $item['weight_g'],
+            boxCapacities: $item['box_capacities'],
+            unitValue: $item['unit_value'],
+            shipSeparately: $item['ship_separately'],
+            liquidOrFragile: $item['liquid_or_fragile'],
+            tipaxContentId: $item['tipax_content_id'],
+        );
+    }
+
+    /**
      * The share of a box one piece takes (1 / pieces that fit), or null when the box does not take it.
      */
     public function share(BoxSpec $box): ?float

@@ -13,6 +13,7 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderPurchaseItem;
 use App\Modules\Orders\Models\OrderStatusLog;
+use App\Modules\Orders\Queries\OrderReturns;
 use App\Modules\Orders\Support\PurchaseMargin;
 use App\Modules\Payments\Queries\OrderPayments;
 use App\Modules\Shared\Support\JalaliDate;
@@ -69,6 +70,23 @@ final class OrderInfolist
                         ->weight('bold')
                         ->placeholder('هنوز ثبت نشده')
                         ->extraAttributes(['dir' => 'ltr']),
+                    // Returns (S27, owner 2026-11-19): full or partial, the refund and Tipax's price for the way back, over the open ones.
+                    TextEntry::make('return_scope')
+                        ->label('مرجوعی')
+                        ->badge()
+                        ->state(fn (Order $record): ?string => app(OrderReturns::class)->scope($record)?->label())
+                        ->color(fn (Order $record): string => app(OrderReturns::class)->scope($record)?->color() ?? 'gray')
+                        ->visible(fn (Order $record): bool => app(OrderReturns::class)->scope($record) !== null),
+                    TextEntry::make('return_refund')
+                        ->label('مبلغ بازگشتی مرجوعی')
+                        ->state(fn (Order $record): string => Toman::format(app(OrderReturns::class)->totals($record)['refund']))
+                        ->weight('bold')
+                        ->visible(fn (Order $record): bool => app(OrderReturns::class)->scope($record) !== null),
+                    TextEntry::make('return_shipping')
+                        ->label('هزینه ارسال مرجوعی (تیپاکس)')
+                        ->state(fn (Order $record): ?string => ($price = app(OrderReturns::class)->totals($record)['return_shipping']) === null ? null : Toman::format($price))
+                        ->placeholder('قیمت گرفته نشد')
+                        ->visible(fn (Order $record): bool => app(OrderReturns::class)->scope($record) !== null),
                     TextEntry::make('payment_reference')
                         ->label('کد پیگیری پرداخت')
                         ->state(fn (Order $record): ?string => app(OrderPayments::class)->paidReference($record->getId()))

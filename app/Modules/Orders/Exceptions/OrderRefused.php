@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Exceptions;
 
 use App\Modules\Shared\Exceptions\BaseException;
+use App\Modules\Shared\Support\PersianDigits;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -64,7 +65,32 @@ final class OrderRefused extends BaseException
 
     public static function notReturnable(): self
     {
-        return new self('مرجوعی فقط برای سفارش لغوشده یا تحویل‌شده‌ای ثبت می‌شود که با تیپاکس ارسال شده و مرجوعی‌اش هنوز ثبت نشده است.', 'order_not_returnable');
+        return new self('مرجوعی فقط برای سفارش تحویل‌شده، یا لغوشده‌ای که ارسال شده بود، و فقط برای کالاهایی که هنوز مرجوع نشده‌اند ثبت می‌شود.', 'order_not_returnable');
+    }
+
+    public static function returnEmpty(): self
+    {
+        return new self('دست‌کم یک کالا را برای مرجوعی انتخاب کنید.', 'order_return_empty');
+    }
+
+    public static function returnTooMany(string $title, int $remaining): self
+    {
+        return new self('از «'.$title.'» فقط '.PersianDigits::toPersian((string) $remaining).' عدد قابل مرجوع است.', 'order_return_too_many');
+    }
+
+    public static function returnNotDraft(): self
+    {
+        return new self('فقط مرجوعیِ پیش‌نویس تأیید می‌شود.', 'order_return_not_draft');
+    }
+
+    public static function returnAlreadyCancelled(): self
+    {
+        return new self('این مرجوعی قبلاً لغو شده است.', 'order_return_cancelled');
+    }
+
+    public static function carrierCancelRefused(string $reason): self
+    {
+        return new self('لغو در تیپاکس انجام نشد: '.$reason, 'order_carrier_cancel_refused', Response::HTTP_BAD_GATEWAY);
     }
 
     public static function notSourced(): self

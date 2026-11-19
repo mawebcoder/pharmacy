@@ -23,13 +23,15 @@ final readonly class TipaxRegistrationData
         public TipaxPartyData $receiver,
         public array $parcels,
         public ?int $serviceId,
+        public ?int $returnSequence = null,
     ) {}
 
     /**
-     * Our reference on Tipax's side: the order number, with «-R» for a return.
+     * Our reference on Tipax's side: the order number, with «-R» and the return's place for a return (S27: an order
+     * may come back more than once).
      */
     public function traceCode(): string
     {
-        return $this->kind === TipaxShipmentKind::Return ? $this->orderNumber.'-R' : $this->orderNumber;
+        return $this->kind === TipaxShipmentKind::Return ? $this->orderNumber.'-R'.($this->returnSequence ?? 1) : $this->orderNumber;
     }
 }

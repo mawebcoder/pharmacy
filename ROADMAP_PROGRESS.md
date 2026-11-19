@@ -31,7 +31,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S24 | Order admin and state machine | done | 2026-11-15 | 3db79f7 |
 | S25 | Provider purchases (sourcing) | done | 2026-11-16 | 27e16b1 |
 | S26 | Packing | todo | | |
-| S27 | Returns | todo | | |
+| S27 | Returns (admin returns, Tipax pickup, refunds; customer requests and paying refunds left) | in progress | 2026-11-19 | |
 | S28 | Home, banners, deals (flash deals, /deals; bundles in S28b) | done | 2026-11-17 | 5be9dc0 |
 | S29 | Static pages, FAQ, contact, menus | done | 2026-11-17 | 1f1463c |
 | S30 | Settings and trust | done | 2026-11-17 | 19e2024 |

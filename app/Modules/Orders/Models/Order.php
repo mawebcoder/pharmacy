@@ -525,6 +525,16 @@ final class Order extends Model implements HasActivityLogLabel
     }
 
     /**
+     * Its returns («مرجوعی‌ها», S27), oldest first.
+     *
+     * @return HasMany<OrderReturn, $this>
+     */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class)->orderBy(OrderReturn::COLUMN_SEQUENCE);
+    }
+
+    /**
      * Its purchase document (S25), once an admin opened one.
      *
      * @return HasOne<OrderPurchase, $this>

@@ -19,16 +19,7 @@ final readonly class TipaxShipments
         return TipaxShipment::query()
             ->where(TipaxShipment::COLUMN_ORDER_ID, $orderId)
             ->where(TipaxShipment::COLUMN_KIND, TipaxShipmentKind::Outbound)
-            ->where(TipaxShipment::COLUMN_STATUS, '!=', TipaxShipmentStatus::Failed)
-            ->exists();
-    }
-
-    public function hasReturn(int $orderId): bool
-    {
-        return TipaxShipment::query()
-            ->where(TipaxShipment::COLUMN_ORDER_ID, $orderId)
-            ->where(TipaxShipment::COLUMN_KIND, TipaxShipmentKind::Return)
-            ->where(TipaxShipment::COLUMN_STATUS, '!=', TipaxShipmentStatus::Failed)
+            ->whereNotIn(TipaxShipment::COLUMN_STATUS, [TipaxShipmentStatus::Failed, TipaxShipmentStatus::Cancelled])
             ->exists();
     }
 

@@ -5,12 +5,10 @@ declare(strict_types=1);
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
-use App\Modules\Orders\Actions\RegisterOrderReturn;
 use App\Modules\Orders\Actions\ShipOrderWithTipax;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\SourcingStatus;
 use App\Modules\Orders\Events\OrderOnItsWay;
-use App\Modules\Orders\Events\OrderReturnRegistered;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Modules\Orders\Models\Order;
@@ -18,7 +16,6 @@ use App\Modules\Orders\Support\PrintFrame;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shipping\Enums\ParcelContent;
-use App\Modules\Shipping\Enums\TipaxShipmentKind;
 use App\Modules\Shipping\Enums\TipaxShipmentStatus;
 use App\Modules\Shipping\Models\OrderParcel;
 use App\Modules\Shipping\Models\TipaxShipment;
@@ -31,8 +28,8 @@ use Illuminate\Support\Facades\Http;
 use function Pest\Livewire\livewire;
 
 /*
-| Registering orders with Tipax at «تحویل به حمل», their callbacks, and returns of cancelled orders (roadmap S35,
-| owner 2026-11-19). Answers shaped as Tipax's OmV4OrderListDto.
+| Registering orders with Tipax at «تحویل به حمل» and their callbacks (roadmap S35, owner 2026-11-19); returns are in
+| OrderReturnTest. Answers shaped as Tipax's OmV4OrderListDto.
 */
 
 beforeEach(function (): void {
@@ -119,71 +116,6 @@ it('keeps Tipax\'s callback on the shipment, only with our secret', function ():
     $this->postJson('/webhooks/tipax/order/failure?secret=hook-secret', ['correlationId' => 'corr-123', 'message' => 'آدرس نامعتبر'])->assertOk();
 
     expect(registered())->getStatus()->toBe(TipaxShipmentStatus::Failed)->getFailureReason()->toBe('آدرس نامعتبر');
-});
-
-it('registers a cancelled order\'s return from the customer to the warehouse, and texts its code', function (): void {
-    Event::fake([OrderReturnRegistered::class]);
-    expect(app(RegisterOrderReturn::class)->applies($this->order))->toBeFalse();
-
-    app(ShipOrderWithTipax::class)($this->order, 1);
-    $this->order->refresh()->setStatus(OrderStatus::Cancelled)->save();
-    $this->nextCode = 'TIPAX-RET-9';
-
-    expect(app(RegisterOrderReturn::class)($this->order))->toBe(['TIPAX-RET-9'])
-        ->and(registered(TipaxShipmentKind::Return->value)?->getTrackingCodes())->toBe(['TIPAX-RET-9']);
-    Event::assertDispatched(OrderReturnRegistered::class, fn (OrderReturnRegistered $event): bool => $event->trackingCode === 'TIPAX-RET-9');
-    Http::assertSent(fn (Request $request): bool => ($request['traceCode'] ?? null) === $this->order->getNumber().'-R'
-        && $request['packages'][0]['pickupType'] === 10
-        && $request['packages'][0]['origin']['cityId'] === 1101
-        && $request['packages'][0]['destination']['cityId'] === 1199);
-});
-
-it('offers «ثبت مرجوعی در تیپاکس» on the admin page only for a cancelled order that went out with Tipax', function (): void {
-    Filament::setCurrentPanel('admin');
-    $this->seed(RolesSeeder::class);
-    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::Operator)->create(), 'admin');
-
-    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])->assertActionHidden('registerReturn');
-
-    app(ShipOrderWithTipax::class)($this->order, 1);
-    $this->order->refresh()->setStatus(OrderStatus::Cancelled)->save();
-
-    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])
-        ->assertActionVisible('registerReturn')
-        ->callAction('registerReturn')
-        ->assertNotified('مرجوعی در تیپاکس ثبت شد.');
-});
-
-it('registers a delivered order\'s return once, with «ثبت مرجوعی از مشتری»', function (): void {
-    Filament::setCurrentPanel('admin');
-    $this->seed(RolesSeeder::class);
-    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::Operator)->create(), 'admin');
-    app(ShipOrderWithTipax::class)($this->order, 1);
-    $this->order->refresh()->setStatus(OrderStatus::Delivered)->save();
-    $this->nextCode = 'TIPAX-RET-10';
-
-    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])
-        ->assertActionHidden('registerReturn')
-        ->callAction('registerCustomerReturn')
-        ->assertNotified('مرجوعی در تیپاکس ثبت شد.');
-    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])->assertActionHidden('registerCustomerReturn');
-
-    expect(registered(TipaxShipmentKind::Return->value)?->getTrackingCodes())->toBe(['TIPAX-RET-10']);
-});
-
-it('registers the return of a cancelled order sent with a hand-written code, packing it first', function (): void {
-    Filament::setCurrentPanel('admin');
-    $this->seed(RolesSeeder::class);
-    $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::Operator)->create(), 'admin');
-    OrderParcel::query()->delete();
-    $this->order->setStatus(OrderStatus::Cancelled)->setTrackingCode('HAND-123')->save();
-    $this->nextCode = 'TIPAX-RET-11';
-
-    livewire(ViewOrder::class, ['record' => $this->order->getRouteKey()])
-        ->callAction('registerReturn')
-        ->assertNotified('مرجوعی در تیپاکس ثبت شد.');
-
-    expect(registered(TipaxShipmentKind::Return->value)?->getTrackingCodes())->toBe(['TIPAX-RET-11']);
 });
 
 it('prints the invoice in place for the admin', function (): void {

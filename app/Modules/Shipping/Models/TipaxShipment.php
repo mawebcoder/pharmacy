@@ -21,6 +21,8 @@ final class TipaxShipment extends Model
 
     public const string COLUMN_KIND = 'kind';
 
+    public const string COLUMN_TRACE_CODE = 'trace_code';
+
     public const string COLUMN_STATUS = 'status';
 
     public const string COLUMN_CORRELATION_ID = 'correlation_id';
@@ -55,6 +57,21 @@ final class TipaxShipment extends Model
     public function setKind(TipaxShipmentKind $kind): static
     {
         return $this->setAttribute(self::COLUMN_KIND, $kind);
+    }
+
+    /**
+     * Our reference at Tipax: the order number, with «-R1», «-R2» … for returns (S27).
+     */
+    public function getTraceCode(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_TRACE_CODE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setTraceCode(string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_TRACE_CODE, $value);
     }
 
     public function getStatus(): TipaxShipmentStatus

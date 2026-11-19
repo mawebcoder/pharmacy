@@ -18,6 +18,7 @@ enum TipaxShipmentStatus: string implements HasLabel
     case Registered = 'registered';
     case Confirmed = 'confirmed';
     case Failed = 'failed';
+    case Cancelled = 'cancelled';
 
     public function label(): string
     {
@@ -25,6 +26,7 @@ enum TipaxShipmentStatus: string implements HasLabel
             self::Registered => 'ثبت شد',
             self::Confirmed => 'تأیید تیپاکس',
             self::Failed => 'ناموفق',
+            self::Cancelled => 'لغو شد',
         };
     }
 }

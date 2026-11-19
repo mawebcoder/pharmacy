@@ -6,7 +6,8 @@ namespace App\Modules\Shipping\Data;
 
 /**
  * What every shipping price strategy prices (roadmap S34): the origin city (our warehouse; null while the admin has not
- * set it), the destination city (Tipax ids, D4) and the parcels the packer made. Strategies turn it into their
+ * set it), the destination city (Tipax ids, D4) and the parcels the packer made; a return (S27) is collected from the
+ * customer and delivered to our address. Strategies turn it into their
  * service's request through an adapter.
  */
 final readonly class ShippingPriceRequest
@@ -18,6 +19,7 @@ final readonly class ShippingPriceRequest
         public ?int $originCityId,
         public int $destinationCityId,
         public array $parcels,
+        public bool $isReturn = false,
     ) {}
 
     /**
@@ -50,6 +52,6 @@ final readonly class ShippingPriceRequest
             $parcel->tipaxContentId,
         ], $this->parcels);
 
-        return hash('xxh128', (string) json_encode([$this->originCityId, $this->destinationCityId, $parcels]));
+        return hash('xxh128', (string) json_encode([$this->originCityId, $this->destinationCityId, $parcels, $this->isReturn]));
     }
 }

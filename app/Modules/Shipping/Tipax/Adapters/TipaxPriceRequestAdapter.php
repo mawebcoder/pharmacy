@@ -76,8 +76,8 @@ final readonly class TipaxPriceRequestAdapter
             'packType' => $this->packType,
             'serviceId' => $serviceId,
             'paymentType' => $this->paymentType->value,
-            'pickupType' => $this->pickupType->value,
-            'distributionType' => $this->distributionType->value,
+            'pickupType' => ($request->isReturn ? TipaxPickupType::CollectedFromSender : $this->pickupType)->value,
+            'distributionType' => ($request->isReturn ? TipaxDistributionType::ToReceiverAddress : $this->distributionType)->value,
         ];
     }
 }
