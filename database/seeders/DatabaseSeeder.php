@@ -11,6 +11,7 @@ use App\Modules\Catalog\Database\Seeders\StandardAttributesSeeder;
 use App\Modules\Content\Database\Seeders\DraftPagesSeeder;
 use App\Modules\Content\Database\Seeders\MenusSeeder;
 use App\Modules\Identity\Database\Seeders\SuperAdminSeeder;
+use App\Modules\Shipping\Database\Seeders\ShippingFallbackRatesSeeder;
 use App\Modules\Shipping\Database\Seeders\TipaxCartonsSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -34,6 +35,7 @@ class DatabaseSeeder extends Seeder
             DraftPagesSeeder::class,
             MenusSeeder::class,
             TipaxCartonsSeeder::class,
+            ShippingFallbackRatesSeeder::class,
         ]);
     }
 }

@@ -3067,7 +3067,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Then (rest of S31):**
   - `carriers` (Tipax via Tapin, own courier) and `carrier_services` (Tapin service 7 same-city, 2 between-city);
   - the `ShippingCarrier` contract and DTOs (`Parcel`, `Quote`, `ShipmentResult`, `TrackingStatus`);
-  - a fallback `RateTable` by weight band × same city / same province / other province, used when Tapin does not answer (the quote is marked an estimate);
+  - a fallback `RateTable` by weight band × same city / same province / other province, used when Tapin does not answer (the quote is marked an estimate); **built 2026-11-19 (owner)** as «نرخ ارسال جایگزین» under «ارسال» (`shipping_fallback_rates`, `RateTableShippingPrice`): each parcel pays its band's price for its distance from the warehouse, a parcel heavier than every band pays the heaviest band, and an empty table falls back to the flat rate; `carriers` / `carrier_services` wait for a second carrier (S32);
   - rounding of shown prices.
 - **Tests:**
   - packing: one box; smallest box chosen; a SKU with no box numbers; mixed fractions; one bigger box rather than two; a box's own weight limit; the 6 kg split; space before weight; the fewest boxes where largest-first would need one more; «ارسال جداگانه»; no box fits; defaults for missing data; liquid or fragile type;

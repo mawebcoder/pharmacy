@@ -14,6 +14,7 @@ use App\Modules\Shipping\Enums\TipaxPriceUnit;
 use App\Modules\Shipping\Listeners\PackPaidOrder;
 use App\Modules\Shipping\Pricing\ShippingPriceCalculator;
 use App\Modules\Shipping\Pricing\Strategies\FlatRateShippingPrice;
+use App\Modules\Shipping\Pricing\Strategies\RateTableShippingPrice;
 use App\Modules\Shipping\Pricing\Strategies\TipaxShippingPrice;
 use App\Modules\Shipping\Tipax\Adapters\TipaxPriceRequestAdapter;
 use App\Modules\Shipping\Tipax\Adapters\TipaxPriceResponseAdapter;
@@ -72,7 +73,7 @@ final class ShippingServiceProvider extends ModuleServiceProvider
         $this->app->tag([TipaxShippingPrice::class], self::PRICE_STRATEGIES);
         $this->app->bind(ShippingPriceCalculator::class, fn (Application $app): ShippingPriceCalculator => new ShippingPriceCalculator(
             strategies: $app->tagged(self::PRICE_STRATEGIES),
-            fallback: $app->make(FlatRateShippingPrice::class),
+            fallbacks: [$app->make(RateTableShippingPrice::class), $app->make(FlatRateShippingPrice::class)],
             settings: $app->make(StoreSettings::class),
             cacheMinutes: (int) config('shipping.pricing.cache_minutes'),
             roundUpToRial: (int) config('shipping.pricing.round_up_to_rial'),

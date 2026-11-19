@@ -16,17 +16,18 @@ use Illuminate\Support\Facades\Log;
 /**
  * The context of the shipping price strategies (roadmap S34, strategy pattern; owner 2026-11-18): asks every strategy
  * that supports the request, keeps each one's answer for a while per route and packing, adds the store's markup to
- * the services' prices and rounds them up, and offers all options cheapest first. When no strategy answers, the flat
- * rate stands in, marked an estimate.
+ * the services' prices and rounds them up, and offers all options cheapest first. When no strategy answers, the
+ * fallbacks are tried in order (the rate table «نرخ ارسال جایگزین», then the flat rate; S31, owner 2026-11-19).
  */
 final readonly class ShippingPriceCalculator
 {
     /**
      * @param  iterable<ShippingPriceStrategy>  $strategies
+     * @param  list<ShippingPriceStrategy>  $fallbacks  tried in order; the last always answers
      */
     public function __construct(
         private iterable $strategies,
-        private FlatRateShippingPrice $fallback,
+        private array $fallbacks,
         private StoreSettings $settings,
         private int $cacheMinutes,
         private int $roundUpToRial,
@@ -52,7 +53,13 @@ final readonly class ShippingPriceCalculator
         }
 
         if ($options === []) {
-            return $this->fallback->options($request);
+            foreach ($this->fallbacks as $fallback) {
+                if ($fallback->supports($request) && ($fallbackOptions = $fallback->options($request)) !== []) {
+                    return $fallbackOptions;
+                }
+            }
+
+            return [FlatRateShippingPrice::option($this->settings->shippingFlatRate())];
         }
 
         $markup = $this->settings->shippingMarkupPercent();
