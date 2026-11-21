@@ -46,6 +46,11 @@ final class OrderReturnsTable
                     ->url(fn (OrderReturn $record): string => OrderResource::getUrl('view', ['record' => $record->getOrderId()]))
                     ->searchable()
                     ->extraAttributes(['dir' => 'ltr']) : null,
+                TextColumn::make(OrderReturn::COLUMN_REQUESTED_BY_CUSTOMER)
+                    ->label('ثبت توسط')
+                    ->badge()
+                    ->formatStateUsing(fn (bool $state): string => $state ? 'درخواست مشتری' : 'کارکنان')
+                    ->color(fn (bool $state): string => $state ? 'info' : 'gray'),
                 TextColumn::make('scope')
                     ->label('نوع')
                     ->badge()
@@ -83,6 +88,9 @@ final class OrderReturnsTable
                     ->sortable(),
             ])))
             ->filters([
+                SelectFilter::make(OrderReturn::COLUMN_REQUESTED_BY_CUSTOMER)
+                    ->label('ثبت توسط')
+                    ->options([1 => 'درخواست مشتری', 0 => 'کارکنان']),
                 SelectFilter::make(OrderReturn::COLUMN_STATUS)->label('وضعیت')->options(OrderReturnStatus::options()),
                 SelectFilter::make(OrderReturn::COLUMN_IS_FULL)
                     ->label('نوع')

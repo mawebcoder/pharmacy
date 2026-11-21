@@ -185,7 +185,8 @@ return [
     |
     */
 
-    'memory_limit' => 64,
+    // The master process boots the whole app (~66 MB by 2026-11-19); at 64 it exited at once and nothing was processed.
+    'memory_limit' => (int) env('HORIZON_MEMORY_LIMIT', 256),
 
     /*
     |--------------------------------------------------------------------------

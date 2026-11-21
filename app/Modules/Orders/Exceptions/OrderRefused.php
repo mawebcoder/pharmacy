@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Exceptions;
 
 use App\Modules\Shared\Exceptions\BaseException;
 use App\Modules\Shared\Support\PersianDigits;
+use App\Modules\Shared\Support\Toman;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -65,7 +66,7 @@ final class OrderRefused extends BaseException
 
     public static function notReturnable(): self
     {
-        return new self('مرجوعی فقط برای سفارش پرداخت‌شده‌ای که هنوز ارسال نشده، سفارش تحویل‌شده، یا لغوشده‌ای که ارسال شده بود، و فقط برای کالاهایی که هنوز مرجوع نشده‌اند ثبت می‌شود.', 'order_not_returnable');
+        return new self('مرجوعی فقط برای سفارش پرداخت‌شده‌ای که هنوز ارسال نشده یا سفارش تحویل‌شده، و فقط برای کالاهایی که هنوز مرجوع نشده‌اند ثبت می‌شود.', 'order_not_returnable');
     }
 
     public static function returnEmpty(): self
@@ -88,14 +89,34 @@ final class OrderRefused extends BaseException
         return new self('تیپاکس مرسوله مرجوعی را جمع‌آوری کرده است؛ این مرجوعی لغو نمی‌شود.', 'order_return_picked_up');
     }
 
-    public static function returnNotRefundable(): self
+    public static function differenceOwed(int $amount): self
     {
-        return new self('بازگشت وجه پس از جمع‌آوری مرجوعی توسط تیپاکس ثبت می‌شود (برای کالای ارسال‌نشده، پس از تأیید).', 'order_return_not_refundable');
+        return new self('مشتری هنوز '.Toman::format($amount).' تفاوت مبلغ ویرایش سفارش را پرداخت نکرده است؛ سفارش پس از پرداخت ارسال می‌شود.', 'order_difference_owed');
     }
 
-    public static function refundThroughReturn(): self
+    public static function returnWindowClosed(): self
     {
-        return new self('این سفارش ارسال شده بود؛ بازگشت وجه از «ثبت مرجوعی» و پس از جمع‌آوری توسط تیپاکس ثبت می‌شود.', 'order_refund_through_return');
+        return new self('درخواست مرجوعی فقط تا ۲۴ ساعت پس از تحویل سفارش ثبت می‌شود.', 'order_return_window_closed');
+    }
+
+    public static function returnReasonNotAllowed(): self
+    {
+        return new self('دلیل انتخاب‌شده برای مرجوعی معتبر نیست.', 'order_return_reason_not_allowed');
+    }
+
+    public static function returnNotReceivable(): self
+    {
+        return new self('دریافت در انبار پس از اعلام تحویل مرجوعی به انبار توسط تیپاکس ثبت می‌شود؛ ابتدا «استعلام از تیپاکس» را بزنید.', 'order_return_not_receivable');
+    }
+
+    public static function returnReceivedTooMany(string $title, int $listed): self
+    {
+        return new self('از «'.$title.'» در این ردیف فقط '.PersianDigits::toPersian((string) $listed).' عدد مرجوع شده است.', 'order_return_received_too_many');
+    }
+
+    public static function returnNotRefundable(): self
+    {
+        return new self('بازگشت وجه پس از ثبت دریافت مرجوعی در انبار ثبت می‌شود (برای کالای ارسال‌نشده، پس از تأیید).', 'order_return_not_refundable');
     }
 
     public static function returnAlreadyCancelled(): self

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Filament\Resources\Orders\Schemas;
 
+use App\Modules\Identity\Queries\AdminNames;
 use App\Modules\Identity\Support\AddressText;
+use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Enums\SourcingStatus;
@@ -13,8 +15,10 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderPurchaseItem;
 use App\Modules\Orders\Models\OrderStatusLog;
+use App\Modules\Orders\Queries\OrderPaymentLink;
 use App\Modules\Orders\Queries\OrderReturns;
 use App\Modules\Orders\Support\PurchaseMargin;
+use App\Modules\Payments\Filament\Resources\Refunds\RefundResource;
 use App\Modules\Payments\Queries\OrderPayments;
 use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
@@ -70,6 +74,50 @@ final class OrderInfolist
                         ->weight('bold')
                         ->placeholder('هنوز ثبت نشده')
                         ->extraAttributes(['dir' => 'ltr']),
+                    // Where it was placed and by whom, and a panel order's discount and payment link (owner, 2026-11-19).
+                    TextEntry::make(Order::COLUMN_SOURCE)
+                        ->label('ثبت در')
+                        ->badge()
+                        ->formatStateUsing(fn (OrderSource $state): string => $state->label())
+                        ->color(fn (OrderSource $state): string => $state->color())
+                        ->helperText(fn (Order $record): ?string => $record->getCreatedByAdminId() === null ? null : 'توسط '.(app(AdminNames::class)->for([$record->getCreatedByAdminId()])[$record->getCreatedByAdminId()] ?? 'مدیر')),
+                    TextEntry::make(Order::COLUMN_MANUAL_DISCOUNT)
+                        ->label('تخفیف دستی')
+                        ->formatStateUsing(fn (int $state): string => Toman::format($state))
+                        ->helperText(fn (Order $record): ?string => $record->getManualDiscountReason())
+                        ->visible(fn (Order $record): bool => $record->getManualDiscount() > 0),
+                    TextEntry::make('payment_link')
+                        ->label('لینک پرداخت')
+                        ->state(fn (Order $record): ?string => app(OrderPaymentLink::class)->for($record))
+                        ->copyable()
+                        ->copyMessage('لینک پرداخت کپی شد.')
+                        ->limit(48)
+                        ->extraAttributes(['dir' => 'ltr'])
+                        ->helperText(fn (Order $record): ?string => $record->getExpiresAt() === null ? null : 'معتبر تا '.JalaliDate::display($record->getExpiresAt(), 'j F، H:i'))
+                        ->visible(fn (Order $record): bool => $record->canBePaid())
+                        ->columnSpan(['md' => 2]),
+                    // The order's money and refunds (owner, 2026-11-19), each refund opening its page in «بازگشت وجه‌ها».
+                    TextEntry::make('money')
+                        ->label('حساب سفارش')
+                        ->state(function (Order $record): string {
+                            $balance = app(OrderPayments::class)->balance($record->getId());
+
+                            return 'پرداخت: '.Toman::format($balance['paid']).' · بازگشت داده‌شده: '.Toman::format($balance['refunded']).' · در انتظار تأیید: '.Toman::format($balance['refund_waiting'])
+                                .($record->getDifferenceDue() > 0 ? ' · بدهی مشتری: '.Toman::format($record->getDifferenceDue()) : '');
+                        })
+                        ->visible(fn (Order $record): bool => $record->getPaidAt() !== null)
+                        ->columnSpan(['md' => 2]),
+                    TextEntry::make('refunds')
+                        ->label('بازگشت وجه‌ها')
+                        ->state(fn (Order $record): array => array_map(
+                            fn (array $refund): string => '<a href="'.e(RefundResource::getUrl('view', ['record' => $refund['id']])).'" class="text-primary-600 underline">'
+                                .e(Toman::format($refund['amount']).' · '.$refund['status'].($refund['source'] === null ? '' : ' · '.$refund['source'])).'</a>',
+                            app(OrderPayments::class)->refunds($record->getId()),
+                        ))
+                        ->html()
+                        ->listWithLineBreaks()
+                        ->visible(fn (Order $record): bool => app(OrderPayments::class)->refunds($record->getId()) !== [])
+                        ->columnSpan(['md' => 2]),
                     // Returns (S27, owner 2026-11-19): full or partial, the refund and Tipax's price for the way back, over the open ones.
                     TextEntry::make('return_scope')
                         ->label('مرجوعی')

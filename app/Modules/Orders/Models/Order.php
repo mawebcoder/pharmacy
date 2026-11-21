@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Models;
 
 use App\Modules\Orders\Database\Factories\OrderFactory;
+use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Enums\SourcingStatus;
@@ -79,6 +80,18 @@ final class Order extends Model implements HasActivityLogLabel
     public const string COLUMN_PLACED_AT = 'placed_at';
 
     public const string COLUMN_EXPIRES_AT = 'expires_at';
+
+    public const string COLUMN_DIFFERENCE_DUE = 'difference_due';
+
+    public const string COLUMN_DIFFERENCE_DUE_UNTIL = 'difference_due_until';
+
+    public const string COLUMN_SOURCE = 'source';
+
+    public const string COLUMN_CREATED_BY_ADMIN_ID = 'created_by_admin_id';
+
+    public const string COLUMN_MANUAL_DISCOUNT = 'manual_discount';
+
+    public const string COLUMN_MANUAL_DISCOUNT_REASON = 'manual_discount_reason';
 
     public const string COLUMN_PAID_AT = 'paid_at';
 
@@ -410,6 +423,95 @@ final class Order extends Model implements HasActivityLogLabel
         return $this->getAttribute(self::COLUMN_EXPIRES_AT);
     }
 
+    /**
+     * What the customer still owes after staff raised a paid order's total (owner, 2026-11-19), in rial; 0 when nothing.
+     */
+    public function getDifferenceDue(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_DIFFERENCE_DUE);
+    }
+
+    public function setDifferenceDue(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_DIFFERENCE_DUE, $value);
+    }
+
+    /**
+     * Until when the difference's payment link is open (one hour; staff open it again).
+     */
+    public function getDifferenceDueUntil(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_DIFFERENCE_DUE_UNTIL);
+    }
+
+    public function setDifferenceDueUntil(?Carbon $value): static
+    {
+        return $this->setAttribute(self::COLUMN_DIFFERENCE_DUE_UNTIL, $value);
+    }
+
+    /**
+     * The customer can pay the difference now: owed, its link still open, and the order not gone out.
+     */
+    public function canPayDifference(): bool
+    {
+        return $this->getDifferenceDue() > 0
+            && $this->getDifferenceDueUntil()?->isFuture() === true
+            && in_array($this->getStatus(), [OrderStatus::Paid, OrderStatus::Processing], true);
+    }
+
+    /**
+     * Placed by the customer on the site, or by staff in the panel (owner, 2026-11-19).
+     */
+    public function getSource(): OrderSource
+    {
+        return $this->getAttribute(self::COLUMN_SOURCE) ?? OrderSource::Site;
+    }
+
+    public function setSource(OrderSource $value): static
+    {
+        return $this->setAttribute(self::COLUMN_SOURCE, $value);
+    }
+
+    /**
+     * The admin who placed it in the panel; null for site orders.
+     */
+    public function getCreatedByAdminId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_CREATED_BY_ADMIN_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setCreatedByAdminId(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_CREATED_BY_ADMIN_ID, $value);
+    }
+
+    /**
+     * The discount staff typed in for a panel order (rial), part of discount_total and shared over its items.
+     */
+    public function getManualDiscount(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_MANUAL_DISCOUNT);
+    }
+
+    public function setManualDiscount(int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_MANUAL_DISCOUNT, $value);
+    }
+
+    public function getManualDiscountReason(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_MANUAL_DISCOUNT_REASON);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setManualDiscountReason(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_MANUAL_DISCOUNT_REASON, $value);
+    }
+
     public function setExpiresAt(?Carbon $value): static
     {
         return $this->setAttribute(self::COLUMN_EXPIRES_AT, $value);
@@ -599,6 +701,10 @@ final class Order extends Model implements HasActivityLogLabel
         return [
             self::COLUMN_STATUS => OrderStatus::class,
             self::COLUMN_PAYMENT_STATUS => PaymentStatus::class,
+            self::COLUMN_SOURCE => OrderSource::class,
+            self::COLUMN_MANUAL_DISCOUNT => 'integer',
+            self::COLUMN_DIFFERENCE_DUE => 'integer',
+            self::COLUMN_DIFFERENCE_DUE_UNTIL => 'datetime',
             self::COLUMN_SOURCING_STATUS => SourcingStatus::class,
             self::COLUMN_ADDRESS_SNAPSHOT => 'array',
             self::COLUMN_CUSTOMER_SNAPSHOT => 'array',

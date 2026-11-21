@@ -31,6 +31,11 @@ final readonly class SendOrderOnItsWay
             throw OrderRefused::notSourced();
         }
 
+        // Nothing goes out while the customer owes the difference of an edit (owner, 2026-11-19).
+        if ($order->getDifferenceDue() > 0) {
+            throw OrderRefused::differenceOwed($order->getDifferenceDue());
+        }
+
         DB::transaction(function () use ($order, $trackingCode, $adminId): void {
             $order->setTrackingCode(trim($trackingCode));
             ($this->changeStatus)($order, OrderStatus::OnTheWay, OrderActor::Admin, $adminId);

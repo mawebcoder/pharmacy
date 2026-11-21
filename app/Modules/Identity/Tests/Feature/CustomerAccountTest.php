@@ -64,17 +64,14 @@ it('sends guests from the account pages to sign in', function (string $path): vo
 it('shows the account pages to a signed-in customer, with empty states', function (string $path, string $text): void {
     $this->actingAs($this->customer, 'customer')->get($path)->assertOk()->assertSee($text);
 })->with([
-    'dashboard' => ['/account', 'آدرس پیش‌فرض'],
     'addresses' => ['/account/addresses', 'هنوز آدرسی ثبت نکرده‌اید.'],
     'orders' => ['/account/orders', 'هنوز سفارشی ثبت نکرده‌اید.'],
     'reviews' => ['/account/reviews', 'نظرات من'],
     'wishlist' => ['/account/wishlist', 'هنوز محصولی را ذخیره نکرده‌اید.'],
 ]);
 
-it('shows the default address on the dashboard when it has no extra directions', function (): void {
-    Address::factory()->for($this->customer)->default()->create([Address::COLUMN_MAIN_STREET => 'ولیعصر', Address::COLUMN_FULL_ADDRESS => null]);
-
-    $this->actingAs($this->customer, 'customer')->get('/account')->assertOk()->assertSee('خیابان ولیعصر');
+it('opens the orders for «حساب من», with no dashboard', function (): void {
+    $this->actingAs($this->customer, 'customer')->get('/account')->assertRedirect('/account/orders');
 });
 
 describe('addresses', function (): void {

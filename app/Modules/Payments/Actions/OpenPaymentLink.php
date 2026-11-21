@@ -29,9 +29,10 @@ final readonly class OpenPaymentLink
         return DB::transaction(function () use ($request): string {
             $open = Payment::query()
                 ->where(Payment::COLUMN_ORDER_ID, $request->orderId)
+                ->where(Payment::COLUMN_KIND, $request->kind)
                 ->lockForUpdate()
                 ->get()
-                ->first(fn (Payment $payment): bool => $payment->isOpen());
+                ->first(fn (Payment $payment): bool => $payment->isOpen() && $payment->getAmount() === $request->amount);
 
             if ($open instanceof Payment) {
                 return $open->getUrl();
@@ -41,6 +42,7 @@ final readonly class OpenPaymentLink
 
             $payment = (new Payment)
                 ->setOrderId($request->orderId)
+                ->setKind($request->kind)
                 ->setGateway($this->gateway->name())
                 ->setAmount($request->amount)
                 ->setAuthority($link->authority)

@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Actions;
 
 use App\Modules\Cart\Data\CartLineData;
 use App\Modules\Catalog\Queries\OrderItemSnapshots;
+use App\Modules\Identity\Data\AddressSnapshotData;
 use App\Modules\Orders\Data\CreatedOrderData;
 use App\Modules\Orders\Data\NewOrderData;
 use App\Modules\Orders\Enums\OrderActor;
@@ -18,6 +19,7 @@ use App\Modules\Pricing\Data\PriceRecordData;
 use App\Modules\Pricing\Enums\ProviderChoice;
 use App\Modules\Pricing\Queries\CurrentPriceRecords;
 use App\Modules\Pricing\Queries\SupplierOptions;
+use Illuminate\Support\Carbon;
 
 /**
  * Saves an order the Checkout module has checked (roadmap D13.4; split from PlaceOrder 2026-11-18): the order, pending,
@@ -60,12 +62,18 @@ final readonly class CreateOrder
             ->setShippingMethod($data->shippingMethod)
             ->setShippingQuoteSnapshot($data->shippingQuoteSnapshot)
             ->setCustomerNote($data->customerNote)
+            ->setSource($data->source)
+            ->setCreatedByAdminId($data->createdByAdminId)
+            ->setManualDiscount($data->manualDiscount)
+            ->setManualDiscountReason($data->manualDiscountReason)
             ->setPlacedAt($now)
             ->setExpiresAt($now->copy()->addMinutes((int) config('payments.pending_expiry_minutes')));
         $order->save();
         $order->setNumber(OrderNumber::for($order->getId(), $now))->save();
 
-        ChangeOrderStatus::log($order->getId(), null, OrderStatus::Pending, OrderActor::Customer, $data->customerId);
+        $data->createdByAdminId === null
+            ? ChangeOrderStatus::log($order->getId(), null, OrderStatus::Pending, OrderActor::Customer, $data->customerId)
+            : ChangeOrderStatus::log($order->getId(), null, OrderStatus::Pending, OrderActor::Admin, $data->createdByAdminId);
 
         foreach ($data->lines as $line) {
             $variantId = $line->variant->variantId;
@@ -73,6 +81,106 @@ final readonly class CreateOrder
         }
 
         return new CreatedOrderData($order->getId(), (string) $order->getNumber(), $order->getTotal(), $order->getExpiresAt() ?? $now);
+    }
+
+    /**
+     * An unpaid order edited by staff or the customer (owner, 2026-11-19): its items, address, shipping, coupon and
+     * totals are replaced from the new quote; its number, customer, source and payment deadline stay.
+     */
+    public function replaceContents(int $orderId, NewOrderData $data): void
+    {
+        $order = Order::query()->findOrFail($orderId);
+        $variantIds = array_map(fn (CartLineData $line): int => $line->variant->variantId, $data->lines);
+        $prices = $this->priceRecords->for($variantIds);
+        $snapshots = $this->itemSnapshots->for($variantIds);
+
+        $order->setAddressId($data->address->addressId)
+            ->setAddressSnapshot($data->address->toArray())
+            ->setSubtotal($data->subtotal)
+            ->setDiscountTotal($data->discountTotal())
+            ->setShippingPrice($data->shippingPrice)
+            ->setShippingDiscount($data->shippingDiscount)
+            ->setShippingDiscountReason($data->shippingDiscountReason)
+            ->setShippingTotal($data->shippingTotal)
+            ->setTotal($data->total())
+            ->setCouponId($data->couponId)
+            ->setCouponCode($data->couponCode)
+            ->setCouponSnapshot($data->couponSnapshot)
+            ->setShippingMethod($data->shippingMethod)
+            ->setShippingQuoteSnapshot($data->shippingQuoteSnapshot)
+            ->setManualDiscount($data->manualDiscount)
+            ->setManualDiscountReason($data->manualDiscountReason)
+            ->save();
+
+        OrderItem::query()->where(OrderItem::COLUMN_ORDER_ID, $order->getId())->delete();
+
+        foreach ($data->lines as $line) {
+            $variantId = $line->variant->variantId;
+            $this->addItem($order, $line, $prices[$variantId] ?? null, $snapshots[$variantId] ?? [], $data->discounts[$variantId] ?? 0);
+        }
+    }
+
+    /**
+     * A paid order edited by staff before it goes out (owner, 2026-11-19): kept items get their new quantity at what was
+     * paid per unit (a kept quantity keeps its paid total), removed ones go, new SKUs are added at the site's price; the
+     * totals, shipping and address follow, and what the customer owes or is owed after the edit.
+     *
+     * @param  array<int, int>  $keptQuantities  order item id => new quantity (0 removes it)
+     * @param  list<CartLineData>  $newLines  SKUs not on the order yet
+     * @param  array<string, mixed>  $shippingQuoteSnapshot
+     */
+    public function editPaid(int $orderId, array $keptQuantities, array $newLines, AddressSnapshotData $address, int $shippingTotal, array $shippingQuoteSnapshot, int $differenceDue, ?Carbon $differenceDueUntil): Order
+    {
+        $order = Order::query()->findOrFail($orderId);
+
+        foreach ($order->items()->get() as $item) {
+            $quantity = $keptQuantities[$item->getId()] ?? 0;
+
+            if ($quantity <= 0) {
+                $item->delete();
+
+                continue;
+            }
+
+            if ($quantity !== $item->getQuantity()) {
+                $paidTotal = $item->getPaidUnit() * $quantity;
+                $item->setQuantity($quantity)
+                    ->setPaidTotal($paidTotal)
+                    ->setHarajDiscountTotal($item->getHarajDiscountUnit() * $quantity)
+                    ->setCouponDiscountTotal($item->getUnitPrice() * $quantity - $paidTotal)
+                    ->save();
+            }
+        }
+
+        if ($newLines !== []) {
+            $variantIds = array_map(fn (CartLineData $line): int => $line->variant->variantId, $newLines);
+            $prices = $this->priceRecords->for($variantIds);
+            $snapshots = $this->itemSnapshots->for($variantIds);
+
+            foreach ($newLines as $line) {
+                $this->addItem($order, $line, $prices[$line->variant->variantId] ?? null, $snapshots[$line->variant->variantId] ?? [], 0);
+            }
+        }
+
+        $items = $order->items()->get();
+        $subtotal = (int) $items->sum(fn (OrderItem $item): int => $item->getUnitPrice() * $item->getQuantity());
+        $paid = (int) $items->sum(fn (OrderItem $item): int => $item->getPaidTotal());
+
+        $order->setAddressId($address->addressId)
+            ->setAddressSnapshot($address->toArray())
+            ->setSubtotal($subtotal)
+            ->setDiscountTotal($subtotal - $paid)
+            ->setShippingPrice($shippingTotal)
+            ->setShippingDiscount(0)
+            ->setShippingDiscountReason(null)
+            ->setShippingTotal($shippingTotal)
+            ->setShippingQuoteSnapshot($shippingQuoteSnapshot)
+            ->setTotal($paid + $shippingTotal)
+            ->setDifferenceDue($differenceDue)
+            ->setDifferenceDueUntil($differenceDueUntil)
+            ->save();
+
+        return $order;
     }
 
     /**

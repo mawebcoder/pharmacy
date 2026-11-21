@@ -24,6 +24,12 @@ enum SmsTemplate: string implements HasLabel
     case OrderCancelled = 'order_cancelled';
     // Its return registered with Tipax: [customer name, order number, return tracking code] (owner, 2026-11-19).
     case OrderReturn = 'order_return';
+    // To staff: a customer asked for a return from their account: [customer name, order number, return number] (owner, 2026-11-19).
+    case ReturnRequested = 'return_requested';
+    // An order staff placed in the panel, or its link sent again: [customer name, order number, payment link] (owner, 2026-11-19).
+    case OrderPaymentLink = 'order_payment_link';
+    // A refund approved: [customer name, order number, amount in toman] (owner, 2026-11-19).
+    case RefundPaid = 'refund_paid';
 
     public function label(): string
     {
@@ -33,6 +39,9 @@ enum SmsTemplate: string implements HasLabel
             self::OrderOnTheWay => 'ارسال سفارش',
             self::OrderCancelled => 'لغو سفارش',
             self::OrderReturn => 'مرجوعی سفارش',
+            self::ReturnRequested => 'درخواست مرجوعی (به کارکنان)',
+            self::OrderPaymentLink => 'لینک پرداخت سفارش',
+            self::RefundPaid => 'بازگشت وجه',
         };
     }
 
@@ -43,7 +52,7 @@ enum SmsTemplate: string implements HasLabel
     {
         return match ($this) {
             self::Otp => true,
-            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled, self::OrderReturn => false,
+            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled, self::OrderReturn, self::ReturnRequested, self::OrderPaymentLink, self::RefundPaid => false,
         };
     }
 
@@ -54,7 +63,7 @@ enum SmsTemplate: string implements HasLabel
     {
         return match ($this) {
             self::Otp => 60,
-            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled, self::OrderReturn => 3600,
+            self::OrderPaid, self::OrderOnTheWay, self::OrderCancelled, self::OrderReturn, self::ReturnRequested, self::OrderPaymentLink, self::RefundPaid => 3600,
         };
     }
 }

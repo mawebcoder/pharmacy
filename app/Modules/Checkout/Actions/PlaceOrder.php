@@ -16,6 +16,7 @@ use App\Modules\Checkout\Data\PlacedOrderData;
 use App\Modules\Checkout\Data\PlaceOrderData;
 use App\Modules\Checkout\Exceptions\CheckoutRefused;
 use App\Modules\Checkout\Queries\CheckoutQuote;
+use App\Modules\Checkout\Support\DiscountShares;
 use App\Modules\Identity\Data\AddressSnapshotData;
 use App\Modules\Identity\Queries\CustomerContact;
 use App\Modules\Orders\Actions\CreateOrder;
@@ -185,31 +186,17 @@ final readonly class PlaceOrder
     }
 
     /**
-     * The coupon discount shared over the lines it covers in proportion to their totals (whole rial; the remainder goes
-     * to the last covered line), so each item knows what it really sold for and the shares add up to the discount.
+     * The coupon discount shared over the lines it covers (DiscountShares).
      *
      * @param  list<CartLineData>  $lines
      * @return array<int, int> variant id => discount
      */
     private function shareDiscount(?AppliedCouponData $coupon, array $lines): array
     {
-        if (! $coupon instanceof AppliedCouponData || $coupon->discount === 0) {
+        if (! $coupon instanceof AppliedCouponData) {
             return [];
         }
 
-        $covered = array_values(array_filter($lines, fn (CartLineData $line): bool => in_array($line->variant->variantId, $coupon->coveredVariantIds, true)));
-        $coveredTotal = array_sum(array_map(fn (CartLineData $line): int => $line->lineTotal, $covered));
-        $shares = [];
-        $given = 0;
-
-        foreach ($covered as $index => $line) {
-            $share = $index === count($covered) - 1
-                ? $coupon->discount - $given
-                : intdiv($coupon->discount * $line->lineTotal, max(1, $coveredTotal));
-            $shares[$line->variant->variantId] = $share;
-            $given += $share;
-        }
-
-        return $shares;
+        return DiscountShares::over($coupon->discount, array_values(array_filter($lines, fn (CartLineData $line): bool => in_array($line->variant->variantId, $coupon->coveredVariantIds, true))));
     }
 }

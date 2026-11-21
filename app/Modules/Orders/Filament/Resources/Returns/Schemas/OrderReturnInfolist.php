@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Filament\Resources\Returns\Schemas;
 
 use App\Modules\Orders\Enums\OrderReturnStatus;
+use App\Modules\Orders\Enums\ReturnReason;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnItem;
+use App\Modules\Payments\Filament\Resources\Refunds\RefundResource;
+use App\Modules\Payments\Queries\OrderPayments;
 use App\Modules\Shared\Support\JalaliDate;
 use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shared\Support\Toman;
@@ -48,14 +51,27 @@ final class OrderReturnInfolist
                         ->badge()
                         ->formatStateUsing(fn (OrderReturnStatus $state): string => $state->label())
                         ->color(fn (OrderReturnStatus $state): string => $state->color()),
+                    TextEntry::make(OrderReturn::COLUMN_REQUESTED_BY_CUSTOMER)
+                        ->label('ثبت توسط')
+                        ->badge()
+                        ->formatStateUsing(fn (bool $state): string => $state ? 'درخواست مشتری از حساب کاربری' : 'کارکنان')
+                        ->color(fn (bool $state): string => $state ? 'info' : 'gray'),
                     TextEntry::make('pickup')
                         ->label('بازگشت کالا')
                         ->state(fn (OrderReturn $record): string => $record->needsPickup() ? 'جمع‌آوری توسط تیپاکس' : 'ارسال نشده بود؛ بدون جمع‌آوری'),
-                    TextEntry::make(OrderReturn::COLUMN_REASON)->label('دلیل')->placeholder('—')->columnSpanFull(),
+                    TextEntry::make(OrderReturn::COLUMN_REASON)->label('توضیح کلی')->placeholder('—')->columnSpanFull(),
                     self::date(OrderReturn::COLUMN_CREATED_AT, 'ثبت'),
                     self::date(OrderReturn::COLUMN_APPROVED_AT, 'تأیید'),
                     self::date(OrderReturn::COLUMN_CANCELLED_AT, 'لغو'),
                     self::date(OrderReturn::COLUMN_REFUNDED_AT, 'بازگشت وجه'),
+                    TextEntry::make('refund_record')
+                        ->label('رکورد بازگشت وجه')
+                        ->state(fn (OrderReturn $record): ?string => ($refund = app(OrderPayments::class)->refundOfReturn($record->getId())) === null ? null
+                            : Toman::format($refund['amount']).' · '.$refund['status'])
+                        ->url(fn (OrderReturn $record): ?string => ($refund = app(OrderPayments::class)->refundOfReturn($record->getId())) === null ? null
+                            : RefundResource::getUrl('view', ['record' => $refund['id']]))
+                        ->color('primary')
+                        ->placeholder('پس از دریافت در انبار'),
                     TextEntry::make(OrderReturn::COLUMN_REFUND_REFERENCE)
                         ->label('شماره پیگیری بازگشت وجه')
                         ->copyable()
@@ -72,16 +88,28 @@ final class OrderReturnInfolist
                         ->hiddenLabel()
                         ->table([
                             TableColumn::make('کالا'),
-                            TableColumn::make('تعداد'),
+                            TableColumn::make('دلیل'),
+                            TableColumn::make('مرجوع‌شده'),
+                            TableColumn::make('دریافت در انبار'),
                             TableColumn::make('پرداختی هر واحد'),
                             TableColumn::make('مبلغ بازگشتی'),
                         ])
                         ->schema([
                             TextEntry::make('title')->state(fn (OrderReturnItem $record): string => trim($record->getOrderItem()->getProductName().' '.($record->getOrderItem()->getVariantTitle() ?? ''))),
+                            TextEntry::make(OrderReturnItem::COLUMN_REASON)
+                                ->formatStateUsing(fn (ReturnReason $state): string => $state->label())
+                                ->helperText(fn (OrderReturnItem $record): ?string => $record->getReasonNote()),
                             TextEntry::make(OrderReturnItem::COLUMN_QUANTITY)
                                 ->formatStateUsing(fn (int $state, OrderReturnItem $record): string => PersianDigits::toPersian($state).' از '.PersianDigits::toPersian($record->getOrderItem()->getQuantity())),
+                            TextEntry::make('received')
+                                ->badge()
+                                ->state(fn (OrderReturnItem $record): string => self::receipt($record)['label'])
+                                ->color(fn (OrderReturnItem $record): string => self::receipt($record)['color']),
                             TextEntry::make(OrderReturnItem::COLUMN_PAID_UNIT)->formatStateUsing(fn (int $state): string => Toman::format($state)),
-                            TextEntry::make(OrderReturnItem::COLUMN_REFUND_AMOUNT)->formatStateUsing(fn (int $state): string => Toman::format($state))->weight('bold'),
+                            TextEntry::make(OrderReturnItem::COLUMN_REFUND_AMOUNT)
+                                ->formatStateUsing(fn (int $state): string => Toman::format($state))
+                                ->helperText(fn (OrderReturnItem $record): string => self::refundDetail($record))
+                                ->weight('bold'),
                         ]),
                     Grid::make(['default' => 1, 'md' => 3])->schema([
                         TextEntry::make(OrderReturn::COLUMN_ITEMS_REFUND)->label('مبلغ کالاها')->formatStateUsing(fn (int $state): string => Toman::format($state)),
@@ -124,7 +152,7 @@ final class OrderReturnInfolist
                         ->placeholder('پس از تأیید'),
                     self::date(OrderReturn::COLUMN_TIPAX_CHECKED_AT, 'آخرین استعلام'),
                     self::date(OrderReturn::COLUMN_PICKED_UP_AT, 'جمع‌آوری'),
-                    self::date(OrderReturn::COLUMN_RECEIVED_AT, 'تحویل انبار'),
+                    self::date(OrderReturn::COLUMN_RECEIVED_AT, 'دریافت در انبار'),
                     TextEntry::make(OrderReturn::COLUMN_TRACKING_CODES)
                         ->label('کد رهگیری مرجوعی')
                         ->state(fn (OrderReturn $record): array => $record->getTrackingCodes())
@@ -134,6 +162,39 @@ final class OrderReturnInfolist
                         ->extraAttributes(['dir' => 'ltr']),
                 ]),
         ]);
+    }
+
+    /**
+     * A row's receipt at the warehouse: all, some or none of its units; waiting while not counted.
+     *
+     * @return array{label: string, color: string}
+     */
+    private static function receipt(OrderReturnItem $row): array
+    {
+        $received = $row->getReceivedQuantity();
+
+        return match (true) {
+            $received === null => ['label' => 'در انتظار دریافت', 'color' => 'gray'],
+            $received >= $row->getQuantity() => ['label' => 'کامل · '.PersianDigits::toPersian((string) $received), 'color' => 'success'],
+            $received === 0 => ['label' => 'دریافت نشد', 'color' => 'danger'],
+            default => ['label' => 'ناقص · '.PersianDigits::toPersian((string) $received).' از '.PersianDigits::toPersian((string) $row->getQuantity()), 'color' => 'warning'],
+        };
+    }
+
+    /**
+     * How a row's refund is made up: units × paid per unit, plus the item's rounding remainder when it is on this row.
+     */
+    private static function refundDetail(OrderReturnItem $row): string
+    {
+        $units = $row->getRefundableQuantity();
+        $base = $units * $row->getPaidUnit();
+        $detail = PersianDigits::toPersian((string) $units).' × '.Toman::format($row->getPaidUnit());
+
+        if ($row->getRefundAmount() > $base) {
+            $detail .= ' + '.Toman::format($row->getRefundAmount() - $base).' باقی‌مانده گرد کردن';
+        }
+
+        return $row->getReceivedQuantity() === null && $row->orderReturn?->needsPickup() ? $detail.' (پیش از دریافت)' : $detail;
     }
 
     private static function date(string $column, string $label): TextEntry

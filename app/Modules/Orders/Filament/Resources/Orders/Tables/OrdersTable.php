@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Filament\Resources\Orders\Tables;
 
+use App\Modules\Identity\Queries\AdminNames;
+use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Enums\SourcingStatus;
@@ -54,6 +56,13 @@ final class OrdersTable
                 ->badge()
                 ->formatStateUsing(fn (OrderStatus $state): string => $state->label())
                 ->color(fn (OrderStatus $state): string => $state->color()),
+            TextColumn::make(Order::COLUMN_SOURCE)
+                ->label('ثبت در')
+                ->badge()
+                ->formatStateUsing(fn (OrderSource $state): string => $state->label())
+                ->color(fn (OrderSource $state): string => $state->color())
+                ->description(fn (Order $record): ?string => $record->getCreatedByAdminId() === null ? null : (app(AdminNames::class)->for([$record->getCreatedByAdminId()])[$record->getCreatedByAdminId()] ?? null))
+                ->toggleable(),
             TextColumn::make('items_count')
                 ->label('اقلام')
                 ->counts('items')
@@ -82,6 +91,7 @@ final class OrdersTable
             ->columns(self::columns())
             ->defaultSort(Order::COLUMN_PLACED_AT, 'desc')
             ->filters([
+                SelectFilter::make(Order::COLUMN_SOURCE)->label('ثبت در')->options(OrderSource::options()),
                 SelectFilter::make(Order::COLUMN_STATUS)
                     ->label('وضعیت')
                     ->multiple()

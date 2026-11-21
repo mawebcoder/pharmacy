@@ -34,6 +34,10 @@ final class RolesSeeder extends Seeder
             'ViewAny:Customer', 'View:Customer', 'Update:Customer',
             // S24 Orders: look up orders and move their status, cancelling included (refunds are left to super admins).
             'ViewAny:Order', 'View:Order', 'Update:Order',
+            // Orders (owner, 2026-11-19): place an order for a customer, paid by the texted link.
+            'Create:Order',
+            // «پرداخت‌ها» (owner, 2026-11-19): see payments and refunds; approving refunds is left to super admins.
+            'ViewAny:Payment', 'View:Payment',
             // S25 Orders: open an order's purchase document, type its rows and record what arrived.
             'ViewAny:OrderPurchase', 'View:OrderPurchase', 'Create:OrderPurchase', 'Update:OrderPurchase',
             // S27 Orders: open order returns, approve them (Tipax pickup) and cancel them.

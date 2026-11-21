@@ -10,10 +10,11 @@ use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Queries\OrderReturns;
 
 /**
- * Works out the refunds of an order's returns (roadmap S27, owner 2026-11-19), oldest first over the open ones:
- * each unit refunds what the customer paid for it (`paid_unit`, D3.5); an item's last unit back also takes its
- * rounding remainder (`paid_total − paid_unit × quantity`); the return that brings every unit back also refunds the
- * order's shipping fee. Only drafts are rewritten: an approved return keeps the amounts it was approved with.
+ * Works out the refunds of an order's returns (roadmap S27, owner 2026-11-19), oldest first over the open ones and row
+ * by row: each unit refunds what the customer paid for it (`paid_unit`, D3.5), counting only units received once a
+ * return is received; the unit that brings an item's last unit back also takes its rounding remainder
+ * (`paid_total − paid_unit × quantity`); the return that brings every unit of the order back also refunds the order's
+ * shipping fee. A refunded return keeps the amounts it was paid with.
  */
 final readonly class RecalculateReturnRefunds
 {
@@ -30,28 +31,30 @@ final readonly class RecalculateReturnRefunds
             ->get();
 
         foreach ($returns as $return) {
+            $rewrite = $return->getStatus() !== OrderReturnStatus::Refunded;
             $itemsRefund = 0;
 
             foreach ($return->items as $returnItem) {
                 $orderItem = $items->get($returnItem->getOrderItemId());
+                $units = $returnItem->getRefundableQuantity();
                 $before = $returnedSoFar[$returnItem->getOrderItemId()] ?? 0;
-                $returnedSoFar[$returnItem->getOrderItemId()] = $before + $returnItem->getQuantity();
-                $refund = $returnItem->getQuantity() * $returnItem->getPaidUnit();
+                $returnedSoFar[$returnItem->getOrderItemId()] = $before + $units;
+                $refund = $units * $returnItem->getPaidUnit();
 
-                if ($orderItem !== null && $before + $returnItem->getQuantity() >= $orderItem->getQuantity()) {
+                if ($orderItem !== null && $units > 0 && $before < $orderItem->getQuantity() && $before + $units >= $orderItem->getQuantity()) {
                     $refund += max(0, $orderItem->getPaidTotal() - $orderItem->getPaidUnit() * $orderItem->getQuantity());
                 }
 
-                if ($return->getStatus() === OrderReturnStatus::Draft) {
+                if ($rewrite) {
                     $returnItem->setRefundAmount($refund)->save();
                 }
 
-                $itemsRefund += $return->getStatus() === OrderReturnStatus::Draft ? $refund : $returnItem->getRefundAmount();
+                $itemsRefund += $rewrite ? $refund : $returnItem->getRefundAmount();
             }
 
             $completes = ! $feeRefunded && OrderReturns::coversAll($order, $returnedSoFar);
 
-            if ($return->getStatus() === OrderReturnStatus::Draft) {
+            if ($rewrite) {
                 $return->setItemsRefund($itemsRefund)
                     ->setShippingFeeRefund($completes ? $order->getShippingTotal() : 0)
                     ->save();

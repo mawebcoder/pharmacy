@@ -22,6 +22,22 @@ final readonly class CustomerAddresses
         return Address::query()->ownedBy($customerId)->exists();
     }
 
+    /**
+     * The customer's saved addresses for a dropdown (owner, 2026-11-19: «ثبت سفارش» in the panel): title and receiver.
+     *
+     * @return array<int, string> address id => label
+     */
+    public function options(int $customerId): array
+    {
+        $options = [];
+
+        foreach (Address::query()->ownedBy($customerId)->orderByDesc(Address::COLUMN_IS_DEFAULT)->orderBy(Address::COLUMN_ID)->get() as $address) {
+            $options[$address->getId()] = trim($address->getTitle().' · '.$address->getReceiverName().' · '.$address->getMainStreet(), ' ·');
+        }
+
+        return $options;
+    }
+
     public function count(int $customerId): int
     {
         return Address::query()->ownedBy($customerId)->count();

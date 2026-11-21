@@ -94,25 +94,57 @@ final readonly class CurrentCart
     public function summaryOf(Cart $cart): CartSummaryData
     {
         $items = $cart->items()->get();
-        $variants = $this->variants->find(array_values($items->map(fn (CartItem $item): int => $item->getVariantId())->all()));
+
+        return $this->summarize(array_values($items->map(fn (CartItem $item): array => [
+            'variant_id' => $item->getVariantId(),
+            'quantity' => $item->getQuantity(),
+            'seen_price' => $item->getUnitPriceSnapshot(),
+        ])->all()));
+    }
+
+    /**
+     * SKUs and quantities priced as a cart would be now, without a cart (owner, 2026-11-19: orders staff place in the
+     * panel and unpaid orders being edited).
+     *
+     * @param  array<int, int>  $quantities  variant id => quantity
+     */
+    public function summaryForQuantities(array $quantities): CartSummaryData
+    {
+        $items = [];
+
+        foreach ($quantities as $variantId => $quantity) {
+            if ($quantity > 0) {
+                $items[] = ['variant_id' => (int) $variantId, 'quantity' => (int) $quantity, 'seen_price' => null];
+            }
+        }
+
+        return $this->summarize($items);
+    }
+
+    /**
+     * @param  list<array{variant_id: int, quantity: int, seen_price: int|null}>  $items
+     */
+    private function summarize(array $items): CartSummaryData
+    {
+        $variants = $this->variants->find(array_map(fn (array $item): int => $item['variant_id'], $items));
         $lines = [];
         $count = 0;
         $subtotal = 0;
         $compareAt = 0;
 
         foreach ($items as $item) {
-            $variant = $variants[$item->getVariantId()] ?? null;
+            $variant = $variants[$item['variant_id']] ?? null;
 
             if ($variant === null) {
                 continue;
             }
 
-            $quantity = $item->getQuantity();
+            $quantity = $item['quantity'];
             $line = new CartLineData(
                 variant: $variant,
                 quantity: $quantity,
                 lineTotal: $variant->price * $quantity,
-                previousPrice: $item->getUnitPriceSnapshot() !== $variant->price ? $item->getUnitPriceSnapshot() : null,
+                previousPrice: $item['seen_price'] !== null && $item['seen_price'] !== $variant->price ? $item['seen_price'] : null,
             );
             $lines[] = $line;
 

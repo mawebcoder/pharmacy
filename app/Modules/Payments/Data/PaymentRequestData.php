@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payments\Data;
 
+use App\Modules\Payments\Enums\PaymentKind;
 use Illuminate\Support\Carbon;
 
 /**
@@ -18,5 +19,6 @@ final readonly class PaymentRequestData
         public string $description,
         public string $mobile,
         public Carbon $expiresAt,
+        public PaymentKind $kind = PaymentKind::Order,
     ) {}
 }

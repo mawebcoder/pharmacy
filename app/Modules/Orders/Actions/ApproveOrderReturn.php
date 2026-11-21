@@ -28,6 +28,7 @@ final readonly class ApproveOrderReturn
         private TipaxParties $parties,
         private ReturnShipping $shipping,
         private RegisterTipaxShipment $register,
+        private OpenReturnRefund $openRefund,
     ) {}
 
     /**
@@ -44,6 +45,7 @@ final readonly class ApproveOrderReturn
         if (! $return->needsPickup()) {
             // Items never sent: nothing to collect; the refund may be recorded at once.
             $return->setStatus(OrderReturnStatus::Approved)->setApprovedBy($adminId)->setApprovedAt(now())->save();
+            ($this->openRefund)($return, $adminId);
 
             return [];
         }

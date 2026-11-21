@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Actions;
 
+use App\Modules\Orders\Data\ReturnRowData;
 use App\Modules\Orders\Enums\OrderReturnStatus;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Models\Order;
@@ -16,8 +17,8 @@ use App\Modules\Shipping\Queries\ReturnShipping;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Opens an order return as a draft (roadmap S27, owner 2026-11-19): the units coming back (at most what no open return
- * holds), what the customer paid per unit, the refund, and, when the items had gone out, Tipax's price for collecting
+ * Opens an order return as a draft (roadmap S27, owner 2026-11-19): rows of units coming back, each with its reason (an
+ * item may be on several rows; together at most what no open return holds), what the customer paid per unit, the refund, and, when the items had gone out, Tipax's price for collecting
  * only those units from the customer (boxed again). Nothing is sent to Tipax until the return is approved. Items never
  * sent need no pickup.
  */
@@ -31,14 +32,15 @@ final readonly class CreateOrderReturn
     ) {}
 
     /**
-     * @param  array<int, int>  $quantities  units per order item id
+     * @param  list<ReturnRowData>  $rows  units and reason per row; an item may be on several rows
      *
      * @throws OrderRefused
      */
-    public function __invoke(Order $order, array $quantities, ?string $reason, ?int $adminId): OrderReturn
+    public function __invoke(Order $order, array $rows, ?string $reason, ?int $adminId, bool $byCustomer = false): OrderReturn
     {
         $order->loadMissing('items');
-        $quantities = array_filter(array_map(intval(...), $quantities), fn (int $quantity): bool => $quantity > 0);
+        $rows = array_values(array_filter($rows, fn (ReturnRowData $row): bool => $row->quantity > 0));
+        $quantities = ReturnRowData::quantities($rows);
 
         if (! $this->returns->canReturn($order)) {
             throw OrderRefused::notReturnable();
@@ -69,7 +71,7 @@ final readonly class CreateOrderReturn
             is_numeric($serviceId) ? (int) $serviceId : null,
         ) : null;
 
-        $return = DB::transaction(function () use ($order, $quantities, $reason, $adminId, $parcels, $price, $needsPickup): OrderReturn {
+        $return = DB::transaction(function () use ($order, $rows, $quantities, $reason, $adminId, $parcels, $price, $needsPickup, $byCustomer): OrderReturn {
             $sequence = (int) OrderReturn::query()->where(OrderReturn::COLUMN_ORDER_ID, $order->getId())->lockForUpdate()->max(OrderReturn::COLUMN_SEQUENCE) + 1;
             $reason = trim((string) $reason);
 
@@ -79,6 +81,7 @@ final readonly class CreateOrderReturn
                 ->setStatus(OrderReturnStatus::Draft)
                 ->setIsFull(OrderReturns::coversAll($order, $quantities))
                 ->setNeedsPickup($needsPickup)
+                ->setRequestedByCustomer($byCustomer)
                 ->setReason($reason === '' ? null : $reason)
                 ->setReturnShippingPrice($price?->price)
                 ->setReturnServiceId(is_numeric($price?->details['service_id'] ?? null) ? (int) $price->details['service_id'] : null)
@@ -91,15 +94,17 @@ final readonly class CreateOrderReturn
                 ->setCreatedBy($adminId);
             $return->save();
 
-            foreach ($order->items as $item) {
-                if (isset($quantities[$item->getId()])) {
-                    (new OrderReturnItem)
-                        ->setOrderReturnId($return->getId())
-                        ->setOrderItemId($item->getId())
-                        ->setQuantity($quantities[$item->getId()])
-                        ->setPaidUnit($item->getPaidUnit())
-                        ->save();
-                }
+            $items = $order->items->keyBy(fn ($item): int => $item->getId());
+
+            foreach ($rows as $row) {
+                (new OrderReturnItem)
+                    ->setOrderReturnId($return->getId())
+                    ->setOrderItemId($row->orderItemId)
+                    ->setQuantity($row->quantity)
+                    ->setReason($row->reason)
+                    ->setReasonNote($row->note)
+                    ->setPaidUnit((int) $items->get($row->orderItemId)?->getPaidUnit())
+                    ->save();
             }
 
             ($this->recalculate)($order);

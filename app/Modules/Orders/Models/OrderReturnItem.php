@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Models;
 
+use App\Modules\Orders\Enums\ReturnReason;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,8 +12,9 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * Units of one order item in a return (roadmap S27, owner 2026-11-19): how many, what the customer paid per unit
- * (copied from the order item) and the refund for them (OrderReturnRefunds).
+ * Units of one order item in a return (roadmap S27, owner 2026-11-19): how many and why (an item may be on several rows
+ * with different reasons), how many were received at the warehouse, what the customer paid per unit (copied from the
+ * order item) and the refund for the received units (RecalculateReturnRefunds).
  */
 final class OrderReturnItem extends Model implements HasActivityLogLabel
 {
@@ -25,6 +27,12 @@ final class OrderReturnItem extends Model implements HasActivityLogLabel
     public const string COLUMN_ORDER_ITEM_ID = 'order_item_id';
 
     public const string COLUMN_QUANTITY = 'quantity';
+
+    public const string COLUMN_REASON = 'reason';
+
+    public const string COLUMN_REASON_NOTE = 'reason_note';
+
+    public const string COLUMN_RECEIVED_QUANTITY = 'received_quantity';
 
     public const string COLUMN_PAID_UNIT = 'paid_unit';
 
@@ -63,6 +71,52 @@ final class OrderReturnItem extends Model implements HasActivityLogLabel
     public function setQuantity(int $value): static
     {
         return $this->setAttribute(self::COLUMN_QUANTITY, $value);
+    }
+
+    public function getReason(): ReturnReason
+    {
+        return $this->getAttribute(self::COLUMN_REASON) ?? ReturnReason::Other;
+    }
+
+    public function setReason(ReturnReason $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REASON, $value);
+    }
+
+    public function getReasonNote(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_REASON_NOTE);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setReasonNote(?string $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REASON_NOTE, $value);
+    }
+
+    /**
+     * Units confirmed received at the warehouse; null until the return is received.
+     */
+    public function getReceivedQuantity(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_RECEIVED_QUANTITY);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setReceivedQuantity(?int $value): static
+    {
+        return $this->setAttribute(self::COLUMN_RECEIVED_QUANTITY, $value);
+    }
+
+    /**
+     * The units the refund is for: those received once the return is received, else those listed (owner, 2026-11-19:
+     * only received units are refunded).
+     */
+    public function getRefundableQuantity(): int
+    {
+        return $this->getReceivedQuantity() ?? $this->getQuantity();
     }
 
     public function getPaidUnit(): int
@@ -116,7 +170,7 @@ final class OrderReturnItem extends Model implements HasActivityLogLabel
     {
         return LogOptions::defaults()
             ->useLogName('orders')
-            ->logOnly([self::COLUMN_QUANTITY])
+            ->logOnly([self::COLUMN_QUANTITY, self::COLUMN_RECEIVED_QUANTITY])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
@@ -128,6 +182,8 @@ final class OrderReturnItem extends Model implements HasActivityLogLabel
     {
         return [
             self::COLUMN_QUANTITY => 'integer',
+            self::COLUMN_REASON => ReturnReason::class,
+            self::COLUMN_RECEIVED_QUANTITY => 'integer',
             self::COLUMN_PAID_UNIT => 'integer',
             self::COLUMN_REFUND_AMOUNT => 'integer',
         ];

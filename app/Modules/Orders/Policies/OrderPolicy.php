@@ -25,6 +25,14 @@ final class OrderPolicy
     }
 
     /**
+     * «ثبت سفارش» for a customer in the panel (owner, 2026-11-19).
+     */
+    public function create(Authorizable $admin): bool
+    {
+        return $admin->can('Create:Order');
+    }
+
+    /**
      * Status changes, the tracking code and the admin note.
      */
     public function update(Authorizable $admin, Order $order): bool

@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Modules\Payments\Models;
 
 use App\Modules\Payments\Enums\PaymentAttemptStatus;
+use App\Modules\Payments\Enums\PaymentKind;
+use App\Modules\Payments\Enums\RefundSource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * One payment attempt for an order (roadmap D7.4, S23). An order has at most one pending, unexpired attempt; its link
- * is reused until it ends. A record of the gateway exchange, so it is not in the admin audit log.
+ * One payment attempt for an order (roadmap D7.4, S23), the difference after staff edit a paid order, or a refund owed
+ * to the customer (owner, 2026-11-19: kind). An order has at most one pending, unexpired attempt of each kind; its link
+ * is reused until it ends. Refund approvals are written to the activity log by the actions. A record of the gateway exchange, so it is not in the admin audit log.
  */
 final class Payment extends Model
 {
@@ -55,6 +58,27 @@ final class Payment extends Model
 
     public const string COLUMN_CREATED_AT = 'created_at';
 
+    public const string COLUMN_KIND = 'kind';
+
+    public const string COLUMN_REFUND_SOURCE = 'refund_source';
+
+    public const string COLUMN_ORDER_RETURN_ID = 'order_return_id';
+
+    public const string COLUMN_REASON = 'reason';
+
+    public const string COLUMN_DETAILS = 'details';
+
+    public const string COLUMN_CREATED_BY = 'created_by';
+
+    public const string COLUMN_DECIDED_BY = 'decided_by';
+
+    public const string COLUMN_DECIDED_AT = 'decided_at';
+
+    /**
+     * The gateway name of refund records, which never touch a gateway.
+     */
+    public const string MANUAL_GATEWAY = 'manual';
+
     public function getId(): int
     {
         return (int) $this->getAttribute(self::COLUMN_ID);
@@ -68,6 +92,121 @@ final class Payment extends Model
     public function setOrderId(int $orderId): static
     {
         return $this->setAttribute(self::COLUMN_ORDER_ID, $orderId);
+    }
+
+    /**
+     * The order's own payment, the difference after an edit, or a refund owed (owner, 2026-11-19).
+     */
+    public function getKind(): PaymentKind
+    {
+        return $this->getAttribute(self::COLUMN_KIND) ?? PaymentKind::Order;
+    }
+
+    public function setKind(PaymentKind $kind): static
+    {
+        return $this->setAttribute(self::COLUMN_KIND, $kind);
+    }
+
+    public function getRefundSource(): ?RefundSource
+    {
+        return $this->getAttribute(self::COLUMN_REFUND_SOURCE);
+    }
+
+    public function setRefundSource(?RefundSource $source): static
+    {
+        return $this->setAttribute(self::COLUMN_REFUND_SOURCE, $source);
+    }
+
+    public function getOrderReturnId(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_ORDER_RETURN_ID);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setOrderReturnId(?int $orderReturnId): static
+    {
+        return $this->setAttribute(self::COLUMN_ORDER_RETURN_ID, $orderReturnId);
+    }
+
+    public function getReason(): ?string
+    {
+        $value = $this->getAttribute(self::COLUMN_REASON);
+
+        return $value === null ? null : (string) $value;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        return $this->setAttribute(self::COLUMN_REASON, $reason);
+    }
+
+    /**
+     * A cancelled order's refund split: items and shipping (rial).
+     *
+     * @return array{items?: int, shipping?: int}
+     */
+    public function getDetails(): array
+    {
+        return $this->getAttribute(self::COLUMN_DETAILS) ?? [];
+    }
+
+    /**
+     * @param  array{items?: int, shipping?: int}  $details
+     */
+    public function setDetails(array $details): static
+    {
+        return $this->setAttribute(self::COLUMN_DETAILS, $details === [] ? null : $details);
+    }
+
+    public function getCreatedBy(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_CREATED_BY);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setCreatedBy(?int $adminId): static
+    {
+        return $this->setAttribute(self::COLUMN_CREATED_BY, $adminId);
+    }
+
+    public function getDecidedBy(): ?int
+    {
+        $value = $this->getAttribute(self::COLUMN_DECIDED_BY);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function setDecidedBy(?int $adminId): static
+    {
+        return $this->setAttribute(self::COLUMN_DECIDED_BY, $adminId);
+    }
+
+    public function getDecidedAt(): ?Carbon
+    {
+        return $this->getAttribute(self::COLUMN_DECIDED_AT);
+    }
+
+    public function setDecidedAt(?Carbon $decidedAt): static
+    {
+        return $this->setAttribute(self::COLUMN_DECIDED_AT, $decidedAt);
+    }
+
+    /**
+     * The status as staff read it: a refund is waiting for approval, paid back or rejected.
+     */
+    public function statusLabel(): string
+    {
+        if ($this->getKind() !== PaymentKind::Refund) {
+            return $this->getStatus()->label();
+        }
+
+        return match ($this->getStatus()) {
+            PaymentAttemptStatus::Pending => 'در انتظار تأیید',
+            PaymentAttemptStatus::Paid => 'بازگردانده شد',
+            default => 'رد شد',
+        };
     }
 
     public function getGateway(): string
@@ -233,6 +372,10 @@ final class Payment extends Model
     {
         return [
             self::COLUMN_STATUS => PaymentAttemptStatus::class,
+            self::COLUMN_KIND => PaymentKind::class,
+            self::COLUMN_REFUND_SOURCE => RefundSource::class,
+            self::COLUMN_DECIDED_AT => 'datetime',
+            self::COLUMN_DETAILS => 'array',
             self::COLUMN_AMOUNT => 'integer',
             self::COLUMN_EXPIRES_AT => 'datetime',
             self::COLUMN_VERIFIED_AT => 'datetime',

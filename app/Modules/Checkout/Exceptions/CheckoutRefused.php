@@ -13,6 +13,36 @@ use App\Modules\Shared\Support\Toman;
  */
 final class CheckoutRefused extends BaseException
 {
+    public static function notEditable(): self
+    {
+        return new self('این سفارش دیگر قابل ویرایش نیست؛ فقط سفارش پرداخت‌نشده‌ای که مهلت پرداختش تمام نشده ویرایش می‌شود.', 'checkout_order_not_editable');
+    }
+
+    public static function paidNotEditable(): self
+    {
+        return new self('این سفارش دیگر قابل ویرایش نیست؛ فقط سفارش پرداخت‌شده‌ای که ارسال نشده و سند خریدش ثبت نشده ویرایش می‌شود.', 'checkout_paid_order_not_editable');
+    }
+
+    public static function refundRefused(string $reason): self
+    {
+        return new self('بازگشت وجه ثبت نشد: '.$reason, 'checkout_refund_refused');
+    }
+
+    public static function noItems(): self
+    {
+        return new self('دست‌کم یک کالا با تعداد برای سفارش انتخاب کنید.', 'checkout_no_items');
+    }
+
+    public static function discountTooLarge(int $subtotal): self
+    {
+        return new self('تخفیف از جمع کالاها ('.Toman::format($subtotal).') بیشتر است.', 'checkout_discount_too_large');
+    }
+
+    public static function customerUnknown(): self
+    {
+        return new self('مشتری پیدا نشد.', 'checkout_customer_unknown');
+    }
+
     public static function cartEmpty(): self
     {
         return new self('سبد خرید شما خالی است.', 'checkout_cart_empty');

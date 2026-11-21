@@ -20,6 +20,7 @@ use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -81,6 +82,7 @@ final class StoreSettingsPage extends Page
             'email' => $settings->email(),
             'address' => $settings->address(),
             'working_hours' => $settings->workingHours(),
+            'return_notify_mobiles' => $settings->returnNotifyMobiles(),
             'social_links' => array_map(fn (array $link): array => ['platform' => $link['platform']->value, 'url' => $link['url']], $settings->socialLinks()),
             'search_category_ids' => $settings->searchCategoryIds(),
             'search_brand_ids' => $settings->searchBrandIds(),
@@ -150,6 +152,15 @@ final class StoreSettingsPage extends Page
                         TextInput::make('sender_postal_code')->label('کد پستی')->rules([new IranianPostalCode])->extraInputAttributes(['dir' => 'ltr']),
                         TextInput::make('sender_latitude')->label('عرض جغرافیایی')->numeric()->extraInputAttributes(['dir' => 'ltr']),
                         TextInput::make('sender_longitude')->label('طول جغرافیایی')->numeric()->extraInputAttributes(['dir' => 'ltr']),
+                    ]),
+                Section::make('اعلان مرجوعی')
+                    ->description('وقتی مشتری از حساب کاربری‌اش درخواست مرجوعی ثبت می‌کند، به این شماره‌ها پیامک می‌رود (الگوی «return_requested» در .env).')
+                    ->schema([
+                        TagsInput::make('return_notify_mobiles')
+                            ->label('موبایل‌های دریافت پیامک')
+                            ->placeholder('09121234567')
+                            ->nestedRecursiveRules([new IranianMobile])
+                            ->helperText('هر شماره را بنویسید و Enter بزنید.'),
                     ]),
                 Section::make('کدهای تیپاکس')
                     ->description('با هر بسته برای استعلام قیمت به تیپاکس فرستاده می‌شوند. فهرست‌ها هر شب از تیپاکس به‌روز می‌شوند (php artisan tipax:sync-reference)؛ بسته‌بندی و محتوا باید از همان نوع بسته باشند.')
@@ -308,6 +319,10 @@ final class StoreSettingsPage extends Page
             )),
             StoreSettings::SEARCH_CATEGORY_IDS => array_values(array_map(intval(...), (array) ($data['search_category_ids'] ?? []))),
             StoreSettings::SEARCH_BRAND_IDS => array_values(array_map(intval(...), (array) ($data['search_brand_ids'] ?? []))),
+            StoreSettings::RETURN_NOTIFY_MOBILES => array_values(array_filter(array_map(
+                fn (mixed $mobile): ?string => IranMobile::normalize((string) $mobile),
+                (array) ($data['return_notify_mobiles'] ?? []),
+            ))),
         ]);
 
         Notification::make()->success()->title('تنظیمات ذخیره شد.')->send();

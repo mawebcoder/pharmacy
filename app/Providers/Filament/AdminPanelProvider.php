@@ -145,7 +145,7 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
             ])
             // Sidebar groups in roadmap B6 order; a group appears once it has a page.
-            ->navigationGroups(['کاتالوگ', 'قیمت‌گذاری', 'فروش', 'ارسال', 'محتوا', 'مشتریان', 'تنظیمات', 'سیستم'])
+            ->navigationGroups(['کاتالوگ', 'قیمت‌گذاری', 'فروش', 'پرداخت‌ها', 'ارسال', 'محتوا', 'مشتریان', 'تنظیمات', 'سیستم'])
             ->navigationItems([
                 NavigationItem::make('صف‌ها (Horizon)')
                     ->url('/horizon', shouldOpenInNewTab: true)

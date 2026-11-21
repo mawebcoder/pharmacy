@@ -9,7 +9,7 @@ use App\Modules\Shared\Enums\LabelledEnum;
 
 /**
  * An order return (roadmap S27, owner 2026-11-19): a draft until approved (registered with Tipax when it is collected
- * from the customer), then picked up and received at the warehouse as Tipax reports, then refunded; or cancelled before
+ * from the customer), then picked up (Tipax), then received at the warehouse (counted by staff), then refunded; or cancelled before
  * pickup. Items never sent need no pickup: approved, then refunded at once.
  */
 enum OrderReturnStatus: string implements HasLabel
@@ -29,9 +29,24 @@ enum OrderReturnStatus: string implements HasLabel
             self::Draft => 'پیش‌نویس',
             self::Approved => 'تأیید شده',
             self::PickedUp => 'جمع‌آوری شد',
-            self::Received => 'تحویل انبار',
+            self::Received => 'دریافت در انبار',
             self::Refunded => 'بازگشت وجه شد',
             self::Cancelled => 'لغو شده',
+        };
+    }
+
+    /**
+     * What the customer reads on their order page.
+     */
+    public function customerLabel(): string
+    {
+        return match ($this) {
+            self::Draft => 'در انتظار بررسی',
+            self::Approved => 'تأیید شد',
+            self::PickedUp => 'از شما تحویل گرفته شد',
+            self::Received => 'به انبار رسید',
+            self::Refunded => 'وجه بازگردانده شد',
+            self::Cancelled => 'لغو شد',
         };
     }
 

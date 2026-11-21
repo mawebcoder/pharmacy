@@ -6,6 +6,8 @@ namespace App\Modules\Payments\Actions;
 
 use App\Modules\Payments\Contracts\PaymentGateway;
 use App\Modules\Payments\Enums\PaymentAttemptStatus;
+use App\Modules\Payments\Enums\PaymentKind;
+use App\Modules\Payments\Events\DifferencePaymentSucceeded;
 use App\Modules\Payments\Events\PaymentSucceeded;
 use App\Modules\Payments\Exceptions\GatewayUnavailable;
 use App\Modules\Payments\Models\Payment;
@@ -52,7 +54,9 @@ final readonly class HandlePaymentCallback
                 return $payment->getOrderId();
             }
 
-            if ($attempts->contains(fn (Payment $attempt): bool => $attempt->getStatus() === PaymentAttemptStatus::Paid)) {
+            // One paid order payment per order; a difference after an edit is paid on its own (owner, 2026-11-19).
+            if ($payment->getKind() === PaymentKind::Order
+                && $attempts->contains(fn (Payment $attempt): bool => $attempt->getKind() === PaymentKind::Order && $attempt->getStatus() === PaymentAttemptStatus::Paid)) {
                 $payment->setStatus(PaymentAttemptStatus::Failed)
                     ->setFailureReason(self::ALREADY_PAID)
                     ->setFailedAt(now())
@@ -78,7 +82,9 @@ final readonly class HandlePaymentCallback
                     ->setVerifiedAt(now())
                     ->save();
 
-                event(new PaymentSucceeded($payment->getOrderId(), $payment->getId()));
+                $payment->getKind() === PaymentKind::Difference
+                    ? event(new DifferencePaymentSucceeded($payment->getOrderId(), $payment->getId(), $payment->getAmount()))
+                    : event(new PaymentSucceeded($payment->getOrderId(), $payment->getId()));
             } else {
                 $payment->setStatus(PaymentAttemptStatus::Failed)
                     ->setFailureReason($verification->failureReason)

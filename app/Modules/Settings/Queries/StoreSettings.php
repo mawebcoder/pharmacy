@@ -6,6 +6,7 @@ namespace App\Modules\Settings\Queries;
 
 use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Models\Setting;
+use App\Modules\Shared\Support\IranMobile;
 use App\Modules\Shared\Support\PersianDigits;
 use Illuminate\Support\Facades\Cache;
 
@@ -88,6 +89,11 @@ final readonly class StoreSettings
 
     public const string SEARCH_CATEGORY_IDS = 'search.category_ids';
 
+    /**
+     * Staff mobiles texted when a customer asks for a return (S27, owner 2026-11-19): a list of «09…» numbers.
+     */
+    public const string RETURN_NOTIFY_MOBILES = 'returns.notify_mobiles';
+
     public const string SEARCH_BRAND_IDS = 'search.brand_ids';
 
     /**
@@ -126,6 +132,7 @@ final readonly class StoreSettings
         self::SOCIAL_LINKS => [],
         self::SEARCH_CATEGORY_IDS => [],
         self::SEARCH_BRAND_IDS => [],
+        self::RETURN_NOTIFY_MOBILES => [],
     ];
 
     /**
@@ -390,5 +397,25 @@ final readonly class StoreSettings
         $value = $this->get($key);
 
         return is_array($value) ? array_values(array_unique(array_map(intval(...), $value))) : [];
+    }
+
+    /**
+     * Staff mobiles texted when a customer asks for a return (S27), as «09…»; empty while none is set.
+     *
+     * @return list<string>
+     */
+    public function returnNotifyMobiles(): array
+    {
+        $mobiles = [];
+
+        foreach ((array) $this->get(self::RETURN_NOTIFY_MOBILES) as $mobile) {
+            $mobile = IranMobile::normalize((string) $mobile);
+
+            if ($mobile !== null && ! in_array($mobile, $mobiles, true)) {
+                $mobiles[] = $mobile;
+            }
+        }
+
+        return $mobiles;
     }
 }

@@ -7,12 +7,11 @@ use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Filament\Resources\Customers\Pages\ViewCustomer;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Identity\Models\Customer;
-use App\Modules\Orders\Actions\MarkOrderRefunded;
+use App\Modules\Orders\Actions\CancelOrderByAdmin;
 use App\Modules\Orders\Enums\OrderActor;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Enums\SourcingStatus;
-use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Filament\RelationManagers\CustomerOrdersRelationManager;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ListOrders;
@@ -20,8 +19,13 @@ use App\Modules\Orders\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderStatusLog;
+use App\Modules\Payments\Actions\ApproveRefund;
 use App\Modules\Payments\Enums\PaymentAttemptStatus;
+use App\Modules\Payments\Enums\PaymentKind;
+use App\Modules\Payments\Enums\RefundSource;
+use App\Modules\Payments\Exceptions\RefundRefused;
 use App\Modules\Payments\Filament\RelationManagers\OrderPaymentsRelationManager;
+use App\Modules\Payments\Filament\Resources\Refunds\Pages\ViewRefund;
 use App\Modules\Payments\Models\Payment;
 use App\Modules\Shared\Support\Toman;
 use Filament\Facades\Filament;
@@ -63,18 +67,28 @@ function orderItem(Order $order, string $name = 'کرم اوره'): OrderItem
 }
 
 /**
- * A cancelled order owed back: 12,500,000 rial of products less a 154,325 rial coupon, plus 500,000 rial shipping.
+ * A paid order cancelled by staff, owed back (owner, 2026-11-19: its refund record opens for approval): 12,500,000 rial
+ * of products less a 154,325 rial coupon, plus 500,000 rial shipping, paid at the gateway.
  */
-function refundableOrder(): Order
+function refundableOrder(array $overrides = []): Order
 {
-    return Order::factory()->paid()->create([
-        Order::COLUMN_STATUS => OrderStatus::Cancelled,
-        Order::COLUMN_PAYMENT_STATUS => PaymentStatus::RefundPending,
+    $order = Order::factory()->paid()->create([
+        Order::COLUMN_STATUS => OrderStatus::Paid,
         Order::COLUMN_SUBTOTAL => 12_500_000,
         Order::COLUMN_DISCOUNT_TOTAL => 154_325,
         Order::COLUMN_SHIPPING_TOTAL => 500_000,
         Order::COLUMN_TOTAL => 12_845_675,
+        ...$overrides,
     ]);
+    payment($order, PaymentAttemptStatus::Paid, 'A-'.$order->getId());
+    app(CancelOrderByAdmin::class)($order, 1, 'ناموجود');
+
+    return $order->refresh();
+}
+
+function refundOf(Order $order): Payment
+{
+    return Payment::query()->where(Payment::COLUMN_ORDER_ID, $order->getId())->where(Payment::COLUMN_KIND, PaymentKind::Refund)->sole();
 }
 
 function payment(Order $order, PaymentAttemptStatus $status, string $authority): Payment
@@ -203,15 +217,16 @@ describe('as an operator', function (): void {
             ->and(OrderStatusLog::query()->latest('id')->first()?->getNote())->toBe('موجودی تأمین‌کننده تمام شد');
     })->with([OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Delivered]);
 
-    it('cannot move an order the system owns, or record a refund', function (): void {
+    it('cannot move an order the system owns, or approve a refund', function (): void {
         $pending = Order::factory()->create();
-        $refundPending = Order::factory()->paid()->create([Order::COLUMN_STATUS => OrderStatus::Cancelled, Order::COLUMN_PAYMENT_STATUS => PaymentStatus::RefundPending]);
+        $refundPending = refundableOrder();
 
         livewire(ViewOrder::class, ['record' => $pending->getRouteKey()])
             ->assertActionHidden('startProcessing')
             ->assertActionHidden('cancel');
-        livewire(ViewOrder::class, ['record' => $refundPending->getRouteKey()])
-            ->assertActionHidden('markRefunded');
+        livewire(ViewRefund::class, ['record' => refundOf($refundPending)->getRouteKey()])
+            ->assertActionHidden('approve')
+            ->assertActionHidden('reject');
     });
 
     it('lists only the order\'s payment attempts', function (): void {
@@ -277,12 +292,16 @@ describe('as a super admin', function (): void {
         $this->actingAs(adminWith(AdminRole::SuperAdmin), 'admin');
     });
 
-    it('records a full refund of a cancelled order by default, with its reference', function (): void {
+    it('opens the refund of a cancelled paid order for approval, and settles the order when approved in full', function (): void {
         $order = refundableOrder();
+        $refund = refundOf($order);
 
-        livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->mountAction('markRefunded')
-            ->assertActionDataSet(['items_amount' => 1_234_568, 'shipping_amount' => 50_000])
+        expect($refund)->getStatus()->toBe(PaymentAttemptStatus::Pending)->getAmount()->toBe(12_845_675)->getRefundSource()->toBe(RefundSource::OrderCancel)
+            ->getDetails()->toBe(['items' => 12_345_675, 'shipping' => 500_000]);
+
+        livewire(ViewRefund::class, ['record' => $refund->getRouteKey()])
+            ->mountAction('approve')
+            ->assertActionDataSet(['items' => 1_234_568, 'shipping' => 50_000])
             ->fillForm(['reference' => 'REF-88231'])
             ->callMountedAction()
             ->assertHasNoActionErrors();
@@ -292,41 +311,37 @@ describe('as a super admin', function (): void {
             ->getRefundReference()->toBe('REF-88231')
             ->getRefundItemsAmount()->toBe(12_345_675)
             ->getRefundShippingAmount()->toBe(500_000)
-            ->getRefundedAt()->not->toBeNull();
+            ->getRefundedAt()->not->toBeNull()
+            ->and($refund->refresh()->getStatus())->toBe(PaymentAttemptStatus::Paid);
     });
 
-    it('holds back the free shipping from the product refund when the order had been delivered', function (bool $delivered, int $itemsToman, int $itemsRial): void {
-        $order = refundableOrder();
-        $order->setShippingPrice(500_000)->setShippingDiscount(500_000)->setShippingDiscountReason('coupon')->setShippingTotal(0)
-            ->setTotal(12_345_675)->setDeliveredAt($delivered ? now() : null)->save();
+    it('holds back the free shipping from the product refund when the order had been delivered', function (bool $delivered, int $itemsRial): void {
+        $order = refundableOrder([
+            Order::COLUMN_SHIPPING_PRICE => 500_000, Order::COLUMN_SHIPPING_DISCOUNT => 500_000, Order::COLUMN_SHIPPING_DISCOUNT_REASON => 'coupon',
+            Order::COLUMN_SHIPPING_TOTAL => 0, Order::COLUMN_TOTAL => 12_345_675, Order::COLUMN_DELIVERED_AT => $delivered ? now() : null,
+        ]);
 
-        livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->mountAction('markRefunded')
-            ->assertActionDataSet(['items_amount' => $itemsToman, 'shipping_amount' => 0])
-            ->fillForm(['reference' => 'REF-7'])
-            ->callMountedAction()
-            ->assertHasNoActionErrors();
-
-        expect($order->refresh())->getRefundItemsAmount()->toBe($itemsRial)->getRefundShippingAmount()->toBe(0);
+        expect(refundOf($order)->getDetails())->toBe(['items' => $itemsRial, 'shipping' => 0]);
     })->with([
-        'delivered, then cancelled' => [true, 1_184_568, 11_845_675],
-        'cancelled before delivery' => [false, 1_234_568, 12_345_675],
+        'delivered, then cancelled' => [true, 11_845_675],
+        'cancelled before delivery' => [false, 12_345_675],
     ]);
 
-    it('records a partial refund for the products and for shipping', function (): void {
+    it('approves a lower refund for the products and for shipping', function (): void {
         $order = refundableOrder();
 
-        livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->callAction('markRefunded', ['items_amount' => '600,000', 'shipping_amount' => '0', 'reference' => 'REF-1'])
+        livewire(ViewRefund::class, ['record' => refundOf($order)->getRouteKey()])
+            ->callAction('approve', ['items' => '600,000', 'shipping' => '0', 'reference' => 'REF-1'])
             ->assertHasNoActionErrors();
 
-        expect($order->refresh())->getRefundItemsAmount()->toBe(6_000_000)->getRefundShippingAmount()->toBe(0);
+        expect($order->refresh())->getRefundItemsAmount()->toBe(6_000_000)->getRefundShippingAmount()->toBe(0)
+            ->and(refundOf($order)->getAmount())->toBe(6_000_000);
     });
 
-    it('refuses refunds above what was paid, or of nothing', function (int $items, int $shipping): void {
+    it('refuses approving more than was owed, or nothing', function (int $items, int $shipping): void {
         $order = refundableOrder();
 
-        expect(fn () => app(MarkOrderRefunded::class)($order, 'REF-1', $items, $shipping))->toThrow(OrderRefused::class)
+        expect(fn () => app(ApproveRefund::class)(refundOf($order), 'REF-1', 1, $items, $shipping))->toThrow(RefundRefused::class)
             ->and($order->refresh()->getPaymentStatus())->toBe(PaymentStatus::RefundPending);
     })->with([
         'products' => [12_345_676, 0],
@@ -334,17 +349,21 @@ describe('as a super admin', function (): void {
         'nothing' => [0, 0],
     ]);
 
-    it('refuses a refund for an order that owes nothing back', function (): void {
-        $order = Order::factory()->paid()->create();
+    it('rejects a refund with a reason, and never decides it twice', function (): void {
+        $order = refundableOrder();
 
-        expect(fn () => app(MarkOrderRefunded::class)($order, 'REF-1', 1, 0))->toThrow(OrderRefused::class);
+        livewire(ViewRefund::class, ['record' => refundOf($order)->getRouteKey()])
+            ->callAction('reject', ['reason' => 'ثبت اشتباه'])
+            ->assertNotified('بازگشت وجه رد شد.')
+            ->assertActionHidden('approve');
 
-        expect($order->refresh()->getPaymentStatus())->toBe(PaymentStatus::Paid);
+        expect(refundOf($order))->getStatus()->toBe(PaymentAttemptStatus::Failed)->getFailureReason()->toBe('ثبت اشتباه')
+            ->and(fn () => app(ApproveRefund::class)(refundOf($order), 'REF-1', 1))->toThrow(RefundRefused::class);
     });
-});
 
-it('keeps content editors out of orders', function (): void {
-    $this->actingAs(adminWith(AdminRole::ContentEditor), 'admin');
+    it('opens no refund for an order that owes nothing back', function (): void {
+        Order::factory()->paid()->create();
 
-    $this->get(OrderResource::getUrl('index'))->assertForbidden();
+        expect(Payment::query()->where(Payment::COLUMN_KIND, PaymentKind::Refund)->count())->toBe(0);
+    });
 });

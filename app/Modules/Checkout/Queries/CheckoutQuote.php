@@ -6,10 +6,12 @@ namespace App\Modules\Checkout\Queries;
 
 use App\Modules\Cart\Data\AppliedCouponData;
 use App\Modules\Cart\Data\CartLineData;
+use App\Modules\Cart\Data\CartSummaryData;
 use App\Modules\Cart\Exceptions\CouponRefused;
 use App\Modules\Cart\Queries\CheckoutCart;
 use App\Modules\Catalog\Queries\OrderItemSnapshots;
 use App\Modules\Checkout\Data\CheckoutQuoteData;
+use App\Modules\Identity\Data\AddressSnapshotData;
 use App\Modules\Identity\Queries\CustomerAddresses;
 use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shipping\Data\PackItem;
@@ -55,19 +57,50 @@ final readonly class CheckoutQuote
             }
         }
 
+        $addressId = $this->addresses->chosenId($customerId, $cart->pickedAddressId);
+        $address = $addressId === null ? null : $this->addresses->snapshot($customerId, $addressId);
+
+        return $this->quote($cart->cartId, $summary, $coupon, $problem, $address);
+    }
+
+    /**
+     * SKUs and quantities for one of the customer's addresses, priced and shipped as checkout would now, without a cart
+     * or coupon (owner, 2026-11-19: orders staff place in the panel, and unpaid orders being edited).
+     *
+     * @param  array<int, int>  $quantities  variant id => quantity
+     * @param  string|null  $couponCode  an unpaid order's coupon when it is edited; dropped (with the reason) when it no
+     *                                   longer applies
+     */
+    public function forItems(int $customerId, int $addressId, array $quantities, ?string $couponCode = null): CheckoutQuoteData
+    {
+        $summary = $this->carts->summaryFor($quantities);
+        $coupon = null;
+        $problem = null;
+
+        if ($couponCode !== null && $couponCode !== '') {
+            try {
+                $coupon = $this->carts->coupon($couponCode, $summary->lines, $customerId);
+            } catch (CouponRefused $refused) {
+                $problem = $refused->getMessage();
+            }
+        }
+
+        return $this->quote(0, $summary, $coupon, $problem, $this->addresses->snapshot($customerId, $addressId));
+    }
+
+    private function quote(int $cartId, CartSummaryData $summary, ?AppliedCouponData $coupon, ?string $problem, ?AddressSnapshotData $address): CheckoutQuoteData
+    {
         $threshold = $this->settings->freeShippingThreshold();
         $freeByThreshold = $threshold > 0 && $summary->subtotal >= $threshold;
         $freeByCoupon = $coupon instanceof AppliedCouponData && $coupon->freeShipping;
         $free = $freeByThreshold || $freeByCoupon;
-        $addressId = $this->addresses->chosenId($customerId, $cart->pickedAddressId);
-        $address = $addressId === null ? null : $this->addresses->snapshot($customerId, $addressId);
         // One price (owner, 2026-11-18): the cheapest option for the packed cart.
         $shipping = $this->shippingOptions->for($address?->cityId, $this->packItems($summary->lines));
         $estimate = $shipping->cheapest();
         $discount = $free ? $estimate->price : 0;
 
         return new CheckoutQuoteData(
-            cartId: $cart->cartId,
+            cartId: $cartId,
             cart: $summary->withCoupon($coupon),
             coupon: $coupon,
             couponProblem: $problem,

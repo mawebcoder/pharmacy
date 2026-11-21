@@ -1,4 +1,4 @@
-{{-- The account menu list (roadmap B9.9), shared by the desktop sidebar and the mobile dashboard. --}}
+{{-- The account menu list (roadmap B9.9) in the desktop sidebar; phones get tabs in the account frame. --}}
 @props(['items', 'active'])
 
 <nav aria-label="منوی حساب">

@@ -4,20 +4,27 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Filament\Resources\Orders\Pages;
 
+use App\Modules\Checkout\Actions\EditPaidOrder;
+use App\Modules\Checkout\Actions\ReviseUnpaidOrder;
+use App\Modules\Checkout\Data\PaidOrderEditData;
+use App\Modules\Checkout\Data\ReviseOrderData;
+use App\Modules\Checkout\Exceptions\CheckoutRefused;
 use App\Modules\Orders\Actions\CancelOrderByAdmin;
 use App\Modules\Orders\Actions\ChangeOrderStatus;
-use App\Modules\Orders\Actions\MarkOrderRefunded;
 use App\Modules\Orders\Actions\OpenOrderPurchase;
 use App\Modules\Orders\Actions\SaveAdminNote;
 use App\Modules\Orders\Actions\SendOrderOnItsWay;
 use App\Modules\Orders\Actions\ShipOrderWithTipax;
 use App\Modules\Orders\Enums\OrderActor;
+use App\Modules\Orders\Enums\OrderSource;
 use App\Modules\Orders\Enums\OrderStatus;
 use App\Modules\Orders\Enums\PaymentStatus;
 use App\Modules\Orders\Enums\SourcingStatus;
+use App\Modules\Orders\Events\OrderPaymentLinkRequested;
 use App\Modules\Orders\Exceptions\OrderRefused;
 use App\Modules\Orders\Exceptions\PurchaseRefused;
 use App\Modules\Orders\Filament\Resources\Orders\OrderResource;
+use App\Modules\Orders\Filament\Resources\Orders\Schemas\PanelOrderForm;
 use App\Modules\Orders\Filament\Resources\Purchases\OrderPurchaseResource;
 use App\Modules\Orders\Filament\Resources\Returns\OrderReturnResource;
 use App\Modules\Orders\Models\Order;
@@ -25,6 +32,7 @@ use App\Modules\Orders\Models\OrderPurchase;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Queries\OrderInvoice;
 use App\Modules\Orders\Queries\OrderReturns;
+use App\Modules\Orders\Queries\PaidEditableOrders;
 use App\Modules\Orders\Support\PrintFrame;
 use App\Modules\Shared\Support\Toman;
 use App\Modules\Shipping\Exceptions\TipaxRequestFailed;
@@ -120,6 +128,108 @@ final class ViewOrder extends ViewRecord
                         ->color('warning')
                         ->visible(fn (OrderReturns $returns): bool => (auth('admin')->user()?->can('create', OrderReturn::class) ?? false) && $returns->canReturn($this->order()))
                         ->url(fn (): string => OrderReturnResource::getUrl('create', ['order' => $this->order()->getId()])),
+                    // An unpaid panel order edited by staff (owner, 2026-11-19): priced again, the new link texted.
+                    Action::make('editUnpaid')
+                        ->label('ویرایش سفارش')
+                        ->icon(Heroicon::OutlinedPencilSquare)
+                        ->color('gray')
+                        ->visible(fn (): bool => $this->mayUpdate() && $this->order()->canBePaid() && $this->order()->getSource() === OrderSource::Panel)
+                        ->modalHeading('ویرایش سفارش پرداخت‌نشده')
+                        ->modalDescription('قیمت‌ها و هزینه ارسال دوباره حساب می‌شوند، لینک پرداخت قبلی بسته می‌شود و لینک تازه برای مشتری پیامک می‌شود. مهلت پرداخت تغییر نمی‌کند.')
+                        ->fillForm(fn (): array => [
+                            'address_id' => $this->order()->getAddressId(),
+                            'items' => $this->order()->items->map(fn ($item): array => ['variant_id' => $item->getVariantId(), 'quantity' => $item->getQuantity()])->values()->all(),
+                            'manual_discount' => $this->order()->getManualDiscount(),
+                            'manual_discount_reason' => $this->order()->getManualDiscountReason(),
+                        ])
+                        ->schema(fn (): array => PanelOrderForm::editFields($this->order()->getCustomerId()))
+                        ->action(function (array $data, ReviseUnpaidOrder $revise): void {
+                            $quantities = [];
+
+                            foreach ((array) ($data['items'] ?? []) as $row) {
+                                $variantId = (int) ($row['variant_id'] ?? 0);
+                                $quantities[$variantId] = ($quantities[$variantId] ?? 0) + (int) ($row['quantity'] ?? 0);
+                            }
+
+                            try {
+                                $revised = $revise(new ReviseOrderData(
+                                    orderId: $this->order()->getId(),
+                                    addressId: (int) $data['address_id'],
+                                    quantities: $quantities,
+                                    adminId: $this->adminId(),
+                                    manualDiscount: (int) ($data['manual_discount'] ?? 0),
+                                    manualDiscountReason: isset($data['manual_discount_reason']) ? (string) $data['manual_discount_reason'] : null,
+                                ));
+                            } catch (CheckoutRefused $refused) {
+                                Notification::make()->danger()->title($refused->getMessage())->persistent()->send();
+
+                                return;
+                            }
+
+                            $this->record = $this->order()->refresh();
+                            Notification::make()->success()
+                                ->title('سفارش ویرایش شد؛ مبلغ تازه '.Toman::format($revised->total).' و لینک پرداخت پیامک شد.')
+                                ->body($revised->couponDropped === null ? null : 'کد تخفیف حذف شد: '.$revised->couponDropped)
+                                ->send();
+                        }),
+                    // A paid order edited before it goes out (owner, 2026-11-19): items, units and address; the difference
+                    // is texted as a one-hour link, or opens a refund record.
+                    Action::make('editPaid')
+                        ->label('ویرایش سفارش')
+                        ->icon(Heroicon::OutlinedPencilSquare)
+                        ->color('gray')
+                        ->visible(fn (): bool => $this->mayUpdate() && PaidEditableOrders::editable($this->order()))
+                        ->modalHeading('ویرایش سفارش پرداخت‌شده')
+                        ->modalDescription('کالاهای مانده با همان مبلغی که مشتری پرداخته حساب می‌شوند، کالای تازه با قیمت امروز، و هزینه ارسال دوباره حساب می‌شود. اگر مبلغ بیشتر شود، لینک پرداخت تفاوت (یک ساعته) پیامک می‌شود و سفارش تا پرداخت ارسال نمی‌شود؛ اگر کمتر شود، بازگشت وجه در انتظار تأیید ثبت می‌شود.')
+                        ->fillForm(fn (): array => [
+                            'address_id' => $this->order()->getAddressId(),
+                            'items' => $this->order()->items->map(fn ($item): array => ['variant_id' => $item->getVariantId(), 'quantity' => $item->getQuantity()])->values()->all(),
+                        ])
+                        ->schema(fn (): array => PanelOrderForm::editFields($this->order()->getCustomerId(), withDiscount: false))
+                        ->action(function (array $data, EditPaidOrder $editPaid): void {
+                            $quantities = [];
+
+                            foreach ((array) ($data['items'] ?? []) as $row) {
+                                $variantId = (int) ($row['variant_id'] ?? 0);
+                                $quantities[$variantId] = ($quantities[$variantId] ?? 0) + (int) ($row['quantity'] ?? 0);
+                            }
+
+                            try {
+                                $edited = $editPaid(new PaidOrderEditData($this->order()->getId(), (int) $data['address_id'], $quantities, $this->adminId()));
+                            } catch (CheckoutRefused $refused) {
+                                Notification::make()->danger()->title($refused->getMessage())->persistent()->send();
+
+                                return;
+                            }
+
+                            $this->record = $this->order()->refresh();
+                            Notification::make()->success()
+                                ->title('سفارش ویرایش شد؛ مبلغ تازه '.Toman::format($edited->total).'.')
+                                ->body(match (true) {
+                                    $edited->customerOwes > 0 => 'مشتری باید '.Toman::format($edited->customerOwes).' پرداخت کند؛ لینک یک‌ساعته پیامک شد.',
+                                    $edited->refundOpened > 0 => 'بازگشت وجه '.Toman::format($edited->refundOpened).' در انتظار تأیید ثبت شد.',
+                                    default => null,
+                                })
+                                ->persistent()
+                                ->send();
+                        }),
+                    // An unpaid order's payment link texted to the customer again (owner, 2026-11-19); the difference owed
+                    // after an edit gets another hour.
+                    Action::make('resendPaymentLink')
+                        ->label('ارسال دوباره لینک پرداخت')
+                        ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
+                        ->color('gray')
+                        ->visible(fn (): bool => $this->mayUpdate() && ($this->order()->canBePaid() || $this->order()->getDifferenceDue() > 0))
+                        ->requiresConfirmation()
+                        ->modalDescription('لینک پرداخت این سفارش برای مشتری پیامک می‌شود.')
+                        ->action(function (): void {
+                            if ($this->order()->getDifferenceDue() > 0 && ! $this->order()->canPayDifference()) {
+                                $this->order()->setDifferenceDueUntil(now()->addMinutes(EditPaidOrder::DIFFERENCE_LINK_MINUTES))->save();
+                            }
+
+                            OrderPaymentLinkRequested::dispatch($this->order()->getId());
+                            Notification::make()->success()->title('لینک پرداخت برای مشتری پیامک شد.')->send();
+                        }),
                     // «فاکتور فروش» with the tracking code (owner, 2026-11-19): opens the print dialog, no new tab.
                     Action::make('printInvoice')
                         ->label('چاپ فاکتور')
@@ -193,78 +303,12 @@ final class ViewOrder extends ViewRecord
                             Textarea::make('note')->label('یادداشت (فقط برای مدیران)')->maxLength(2000)->rows(4),
                         ])
                         ->action(fn (array $data, SaveAdminNote $save) => $this->attempt(fn () => $save($this->order(), $data['note'] ?? null), 'یادداشت ذخیره شد.')),
-                    Action::make('markRefunded')
-                        ->label('ثبت بازگشت وجه')
-                        ->icon(Heroicon::OutlinedBanknotes)
-                        ->color('warning')
-                        // An order that went out is refunded on its return, after Tipax picks it up (S27, owner 2026-11-19).
-                        ->visible(fn (OrderReturns $returns): bool => $this->order()->getPaymentStatus() === PaymentStatus::RefundPending
-                            && ! $returns->wentOut($this->order())
-                            && (auth('admin')->user()?->can('refund', $this->order()) ?? false))
-                        ->modalHeading('ثبت بازگشت وجه')
-                        ->modalDescription('وقتی مبلغ را از بانک یا پنل درگاه به مشتری برگرداندید، مبلغ کالاها و هزینه ارسالِ برگشتی و شماره پیگیری آن را وارد کنید.')
-                        ->fillForm(fn (): array => [
-                            'items_amount' => $this->defaultItemsRefund(),
-                            'shipping_amount' => $this->order()->getShippingTotal(),
-                        ])
-                        ->schema([
-                            TextInput::make('items_amount')
-                                ->label('مبلغ بازگشتی کالاها')
-                                ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                                ->required()
-                                ->maxValue(fn (): int => Toman::fromRial($this->order()->getItemsPaidTotal()))
-                                ->helperText(fn (): string => 'پرداختی مشتری برای کالاها (پس از تخفیف کوپن): '.Toman::format($this->order()->getItemsPaidTotal())
-                                    .($this->order()->getDeliveredFreeShipping() > 0
-                                        ? '؛ ارسال رایگانِ این سفارش ('.Toman::format($this->order()->getDeliveredFreeShipping()).') چون تحویل شده بود کسر شده است.'
-                                        : '')),
-                            TextInput::make('shipping_amount')
-                                ->label('مبلغ بازگشتی هزینه ارسال')
-                                ->toman() // @phpstan-ignore method.notFound (macro, AdminPanelProvider)
-                                ->required()
-                                ->maxValue(fn (): int => Toman::fromRial($this->order()->getShippingTotal()))
-                                ->helperText(fn (): string => 'هزینه ارسال پرداختی: '.Toman::format($this->order()->getShippingTotal())),
-                            TextInput::make('reference')->label('شماره پیگیری بازگشت وجه')->required()->maxLength(64)->extraInputAttributes(['dir' => 'ltr']),
-                        ])
-                        ->action(fn (array $data, MarkOrderRefunded $refund) => $this->attempt(fn () => $refund(
-                            $this->order(),
-                            (string) $data['reference'],
-                            self::refundRial($data['items_amount'] ?? null, [$this->order()->getItemsPaidTotal(), $this->defaultItemsRefund()]),
-                            self::refundRial($data['shipping_amount'] ?? null, [$this->order()->getShippingTotal()]),
-                        ))),
                 ])->dropdown(false),
             ])
                 ->label('عملیات')
                 ->icon(Heroicon::EllipsisVertical)
                 ->color('gray'),
         ];
-    }
-
-    /**
-     * The product refund the form starts with: what was paid for the products, less the free shipping the store paid
-     * for when the order had been delivered (owner, 2026-11-16).
-     */
-    private function defaultItemsRefund(): int
-    {
-        return max(0, $this->order()->getItemsPaidTotal() - $this->order()->getDeliveredFreeShipping());
-    }
-
-    /**
-     * Refund amounts are typed in whole toman while what was paid is in rial: typing a suggested amount's toman means
-     * that exact rial amount (12,345,675 rial shows as 1,234,568 toman, which would otherwise read 5 rial too much).
-     *
-     * @param  list<int>  $suggested  rial amounts the form offers
-     */
-    private static function refundRial(int|string|null $typed, array $suggested): int
-    {
-        $rial = (int) $typed;
-
-        foreach ($suggested as $amount) {
-            if (Toman::fromRial($rial) === Toman::fromRial($amount)) {
-                return $amount;
-            }
-        }
-
-        return $rial;
     }
 
     /**

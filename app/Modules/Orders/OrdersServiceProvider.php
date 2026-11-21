@@ -5,12 +5,19 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Modules\Cart\Contracts\CustomerOrderHistory;
+use App\Modules\Orders\Events\OrderCancelled;
 use App\Modules\Orders\Jobs\CheckOrderReturns;
 use App\Modules\Orders\Jobs\ExpirePendingOrders;
 use App\Modules\Orders\Jobs\MarkDeliveredOrders;
 use App\Modules\Orders\Listeners\MarkOrderPaid;
+use App\Modules\Orders\Listeners\OpenCancelledOrderRefund;
+use App\Modules\Orders\Listeners\SettleCancelledOrderRefund;
+use App\Modules\Orders\Listeners\SettleOrderDifference;
+use App\Modules\Orders\Listeners\SettleReturnRefund;
 use App\Modules\Orders\Queries\PlacedOrderHistory;
+use App\Modules\Payments\Events\DifferencePaymentSucceeded;
 use App\Modules\Payments\Events\PaymentSucceeded;
+use App\Modules\Payments\Events\RefundApproved;
 use App\Modules\Shared\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
@@ -28,6 +35,12 @@ final class OrdersServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         Event::listen(PaymentSucceeded::class, MarkOrderPaid::class);
+        // Edits and refunds (owner, 2026-11-19): a paid difference lowers what is owed; an approved return refund settles it.
+        Event::listen(DifferencePaymentSucceeded::class, SettleOrderDifference::class);
+        Event::listen(RefundApproved::class, SettleReturnRefund::class);
+        // A paid order cancelled: its refund opens for approval, and settles the order when approved (owner, 2026-11-19).
+        Event::listen(OrderCancelled::class, OpenCancelledOrderRefund::class);
+        Event::listen(RefundApproved::class, SettleCancelledOrderRefund::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             // Unpaid orders past their payment window (S23).

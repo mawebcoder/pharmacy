@@ -1,14 +1,13 @@
 {{--
     Account area frame (roadmap B9.9). Desktop: sidebar 3/12 with the customer and menu + content 9/12.
-    Mobile and tablet: the dashboard shows the menu as a list; other pages show a back link to «حساب من».
-    A page inside a section (an order) passes :back and back-label: that link then goes to the section, on every size.
+    Mobile and tablet: the sections as a row of tabs on top, swiped sideways (owner, 2026-11-19: no «پیشخوان»).
+    A page inside a section (an order) passes :back and back-label: a link back to the section, on every size.
 --}}
 @props(['active', 'title', 'back' => null, 'backLabel' => null])
 
 @php
     $customer = auth('customer')->user();
     $items = [
-        ['key' => 'dashboard', 'label' => 'پیشخوان', 'icon' => 'squares-2x2', 'href' => route('account')],
         ['key' => 'orders', 'label' => 'سفارش‌ها', 'icon' => 'shopping-bag', 'href' => route('account.orders')],
         ['key' => 'addresses', 'label' => 'آدرس‌ها', 'icon' => 'map-pin', 'href' => route('account.addresses')],
         ['key' => 'wishlist', 'label' => 'علاقه‌مندی‌ها', 'icon' => 'heart', 'href' => route('account.wishlist')],
@@ -34,18 +33,40 @@
     </aside>
 
     <section class="space-y-4 xl:col-span-9">
-        @if ($active === 'dashboard')
-            <div class="rounded-card border border-line-200 bg-card xl:hidden">
-                <x-profile::account-menu :items="array_slice($items, 1)" :active="$active" />
-            </div>
-        @else
-            <a href="{{ $back ?? route('account') }}" wire:navigate @class(['inline-flex min-h-11 items-center gap-1 text-sm text-primary-700 hover:underline', 'xl:hidden' => $back === null])>
+        <nav aria-label="منوی حساب" class="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] xl:hidden">
+            <ul class="flex w-max gap-2">
+                @foreach ($items as $item)
+                    <li>
+                        <a href="{{ $item['href'] }}" wire:navigate @if ($item['key'] === $active) aria-current="page" @endif @class([
+                            'inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 text-sm focus-visible:outline-2 focus-visible:outline-primary-700',
+                            'border-primary-700 bg-primary-700 font-bold text-white' => $item['key'] === $active,
+                            'border-line-200 bg-card text-ink-900 hover:border-primary-700' => $item['key'] !== $active,
+                        ])>
+                            <x-ts-icon :icon="$item['icon']" class="size-4" />
+                            {{ $item['label'] }}
+                        </a>
+                    </li>
+                @endforeach
+                <li>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border border-line-200 bg-card px-4 text-sm text-danger-600 hover:border-danger-600 focus-visible:outline-2 focus-visible:outline-primary-700">
+                            <x-ts-icon icon="arrow-right-start-on-rectangle" class="size-4" />
+                            خروج
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+
+        @if ($back)
+            <a href="{{ $back }}" wire:navigate class="inline-flex min-h-11 items-center gap-1 text-sm text-primary-700 hover:underline">
                 <x-ts-icon icon="chevron-right" class="size-4" />
-                {{ $backLabel ?? 'حساب من' }}
+                {{ $backLabel ?? 'بازگشت' }}
             </a>
         @endif
 
-        <h1 @class(['text-xl font-bold text-ink-900 xl:text-2xl', 'sr-only xl:not-sr-only' => $active === 'dashboard'])>{{ $title }}</h1>
+        <h1 class="text-xl font-bold text-ink-900 xl:text-2xl">{{ $title }}</h1>
 
         {{ $slot }}
     </section>

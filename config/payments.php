@@ -22,7 +22,8 @@ return [
 
     'fake_enabled' => (bool) env('PAYMENT_FAKE_ENABLED', false),
 
-    'pending_expiry_minutes' => (int) env('PAYMENT_PENDING_EXPIRY_MINUTES', 30),
+    // Between 15 and 30 minutes (owner, 2026-11-19), for site orders and orders staff place in the panel alike.
+    'pending_expiry_minutes' => min(30, max(15, (int) env('PAYMENT_PENDING_EXPIRY_MINUTES', 30))),
 
     'zarinpal' => [
         'merchant_id' => env('ZARINPAL_MERCHANT_ID'),

@@ -36,6 +36,8 @@ final class OrderReturn extends Model implements HasActivityLogLabel
 
     public const string COLUMN_NEEDS_PICKUP = 'needs_pickup';
 
+    public const string COLUMN_REQUESTED_BY_CUSTOMER = 'requested_by_customer';
+
     public const string COLUMN_REASON = 'reason';
 
     public const string COLUMN_ITEMS_REFUND = 'items_refund';
@@ -140,6 +142,19 @@ final class OrderReturn extends Model implements HasActivityLogLabel
         return $this->setAttribute(self::COLUMN_NEEDS_PICKUP, $value);
     }
 
+    /**
+     * Asked for by the customer from their account (owner, 2026-11-19), not opened by staff.
+     */
+    public function isRequestedByCustomer(): bool
+    {
+        return (bool) $this->getAttribute(self::COLUMN_REQUESTED_BY_CUSTOMER);
+    }
+
+    public function setRequestedByCustomer(bool $value): static
+    {
+        return $this->setAttribute(self::COLUMN_REQUESTED_BY_CUSTOMER, $value);
+    }
+
     public function getTipaxStatus(): ?string
     {
         $value = $this->getAttribute(self::COLUMN_TIPAX_STATUS);
@@ -221,16 +236,21 @@ final class OrderReturn extends Model implements HasActivityLogLabel
 
     /**
      * The money may go back (owner, 2026-11-19): items never sent at once after approval; items coming back only once
-     * Tipax picked them up (and not when Tipax sent them back to the customer).
+     * the return is marked received at the warehouse, for the units received.
      */
     public function isRefundable(): bool
     {
-        if (! $this->needsPickup()) {
-            return $this->getStatus() === OrderReturnStatus::Approved;
-        }
+        return $this->getStatus() === ($this->needsPickup() ? OrderReturnStatus::Received : OrderReturnStatus::Approved);
+    }
 
-        return in_array($this->getStatus(), [OrderReturnStatus::PickedUp, OrderReturnStatus::Received], true)
-            && $this->getTipaxStage() !== TipaxParcelStage::SentBack;
+    /**
+     * Staff may count what arrived (owner, 2026-11-19): picked up and Tipax reports it delivered to us.
+     */
+    public function isReceivable(): bool
+    {
+        return $this->needsPickup()
+            && $this->getStatus() === OrderReturnStatus::PickedUp
+            && $this->getTipaxStage() === TipaxParcelStage::Delivered;
     }
 
     /**
@@ -467,6 +487,7 @@ final class OrderReturn extends Model implements HasActivityLogLabel
             self::COLUMN_STATUS => OrderReturnStatus::class,
             self::COLUMN_IS_FULL => 'boolean',
             self::COLUMN_NEEDS_PICKUP => 'boolean',
+            self::COLUMN_REQUESTED_BY_CUSTOMER => 'boolean',
             self::COLUMN_TIPAX_STAGE => TipaxParcelStage::class,
             self::COLUMN_TIPAX_CHECKED_AT => 'datetime',
             self::COLUMN_PICKED_UP_AT => 'datetime',

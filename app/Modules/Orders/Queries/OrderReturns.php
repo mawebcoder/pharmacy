@@ -12,6 +12,7 @@ use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnItem;
 use App\Modules\Shipping\Queries\TipaxShipments;
+use Illuminate\Support\Carbon;
 
 /**
  * What an order's returns hold (roadmap S27, owner 2026-11-19): which units may still come back, whether the order is
@@ -22,18 +23,88 @@ final readonly class OrderReturns
     public function __construct(private TipaxShipments $shipments) {}
 
     /**
-     * A paid order not sent yet (its items need no pickup, owner 2026-11-19), a delivered one, or a cancelled one that
-     * had gone out, with units no open return holds. A cancelled order that never went out is refunded on the order.
+     * A paid order not sent yet (its items need no pickup) or a delivered one, with units no open return holds. A
+     * cancelled order has no returns: it is refunded on the order (owner, 2026-11-19).
      */
     public function canReturn(Order $order): bool
     {
-        $returnable = match ($order->getStatus()) {
-            OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Delivered => true,
-            OrderStatus::Cancelled => $this->wentOut($order),
-            default => false,
-        };
+        return in_array($order->getStatus(), [OrderStatus::Paid, OrderStatus::Processing, OrderStatus::Delivered], true)
+            && array_sum($this->remaining($order)) > 0;
+    }
 
-        return $returnable && array_sum($this->remaining($order)) > 0;
+    /**
+     * The order's returns for the customer's order page (owner, 2026-11-19): number, status, the rows with their reasons,
+     * the return tracking code and, once refunded, the amount.
+     *
+     * @return list<array{number: string, status: string, rows: list<array{title: string, quantity: int, reason: string}>, tracking_code: string|null, refund: int|null}>
+     */
+    public function forCustomer(Order $order): array
+    {
+        $order->loadMissing('items');
+        $items = $order->items->keyBy(fn (OrderItem $item): int => $item->getId());
+
+        return array_values($order->returns()->with('items')->get()->map(fn (OrderReturn $return): array => [
+            'number' => $return->getNumber(),
+            'status' => $return->getStatus()->customerLabel(),
+            'rows' => array_values($return->items->map(fn (OrderReturnItem $row): array => [
+                'title' => trim(($items->get($row->getOrderItemId())?->getProductName() ?? '').' '.($items->get($row->getOrderItemId())?->getVariantTitle() ?? '')),
+                'quantity' => $row->getQuantity(),
+                'reason' => $row->getReason()->label(),
+            ])->all()),
+            'tracking_code' => $return->getTrackingCodes()[0] ?? null,
+            'refund' => $return->getStatus() === OrderReturnStatus::Refunded ? $return->getRefundTotal() : null,
+        ])->all());
+    }
+
+    /**
+     * The order's items with units left to return, and how many (the customer's request form).
+     *
+     * @return array<int, array{title: string, left: int}>
+     */
+    public function itemsLeftFor(Order $order): array
+    {
+        $remaining = $this->remaining($order);
+        $options = [];
+
+        foreach ($order->items as $item) {
+            if (($remaining[$item->getId()] ?? 0) > 0) {
+                $options[$item->getId()] = ['title' => trim($item->getProductName().' '.($item->getVariantTitle() ?? '')), 'left' => $remaining[$item->getId()]];
+            }
+        }
+
+        return $options;
+    }
+
+    /**
+     * A return's number (PH-…-R2) for links from other modules, or null when it is gone.
+     */
+    public function numberOf(int $orderReturnId): ?string
+    {
+        return OrderReturn::query()->with('order')->find($orderReturnId)?->getNumber();
+    }
+
+    /**
+     * How long after delivery the customer may ask for a return from their account (owner, 2026-11-19).
+     */
+    public const int CUSTOMER_REQUEST_HOURS = 24;
+
+    /**
+     * The customer may ask for a return: delivered less than 24 hours ago, with units no open return holds.
+     */
+    public function customerMayRequest(Order $order): bool
+    {
+        return $order->getStatus() === OrderStatus::Delivered
+            && $order->getDeliveredAt() !== null
+            && now()->lessThan($this->customerRequestUntil($order))
+            && array_sum($this->remaining($order)) > 0;
+    }
+
+    /**
+     * When the customer can no longer ask for a return: 24 hours after delivery.
+     */
+    public function customerRequestUntil(Order $order): ?Carbon
+    {
+        return $order->getDeliveredAt()?->copy()->addHours(self::CUSTOMER_REQUEST_HOURS);
     }
 
     /**

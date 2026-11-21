@@ -10,7 +10,7 @@
     $bar = 'rounded-full bg-line-200';
     $box = 'rounded-card border border-line-200 bg-card';
     $listKinds = "['category', 'tag', 'collection', 'brand', 'search']";
-    $accountKinds = "['dashboard', 'orders', 'order', 'addresses', 'profile', 'wishlist', 'reviews']";
+    $accountKinds = "['orders', 'order', 'addresses', 'profile', 'wishlist', 'reviews']";
 @endphp
 
 <div
@@ -23,7 +23,7 @@
             const exact = {
                 '/': 'home', '/logout': 'home', '/cart': 'cart', '/checkout': 'review', '/checkout/address': 'address',
                 '/login': 'login', '/brands': 'brands', '/categories': 'categories', '/collections': 'collections',
-                '/search': 'search', '/faq': 'text', '/contact': 'text', '/track': 'result', '/account': 'dashboard',
+                '/search': 'search', '/faq': 'text', '/contact': 'text', '/track': 'result', '/account': 'orders',
                 '/account/orders': 'orders', '/account/addresses': 'addresses', '/account/profile': 'profile',
                 '/account/wishlist': 'wishlist', '/account/reviews': 'reviews',
             };
@@ -403,29 +403,8 @@
                     </div>
 
                     <div class="space-y-4 xl:col-span-9">
-                        <template x-if="kind === 'dashboard'">
-                            <div class="divide-y divide-line-200 xl:hidden {{ $box }}">
-                                @foreach ([16, 16, 24, 20, 24, 16] as $width)
-                                    <div class="flex min-h-12 items-center gap-3 px-4"><div class="size-5 rounded bg-line-200"></div><div class="h-3.5 {{ $bar }}" style="width: {{ $width * 4 }}px"></div></div>
-                                @endforeach
-                            </div>
-                        </template>
-                        <template x-if="kind !== 'dashboard'">
-                            <div class="flex h-11 items-center xl:hidden"><div class="h-4 w-20 {{ $bar }}"></div></div>
-                        </template>
-                        <div x-bind:class="kind === 'dashboard' && 'hidden xl:block'" class="h-7 w-40 {{ $bar }}"></div>
-
-                        <template x-if="kind === 'dashboard'">
-                            <div class="space-y-4">
-                                <div class="space-y-2 p-4 md:p-6 {{ $box }}"><div class="h-5 w-48 {{ $bar }}"></div><div class="h-3.5 w-72 max-w-full {{ $bar }}"></div><div class="mt-3 h-4 w-28 {{ $bar }}"></div></div>
-                                <div class="grid gap-4 md:grid-cols-3">
-                                    @foreach (range(1, 3) as $counter)
-                                        <div class="space-y-2 p-4 {{ $box }}"><div class="size-6 rounded bg-line-200"></div><div class="h-3.5 w-20 {{ $bar }}"></div><div class="h-6 w-10 {{ $bar }}"></div></div>
-                                    @endforeach
-                                </div>
-                                <div class="space-y-3 p-4 md:p-6 {{ $box }}"><div class="flex justify-between"><div class="h-5 w-32 {{ $bar }}"></div><div class="h-4 w-16 {{ $bar }}"></div></div><div class="h-3.5 w-3/4 {{ $bar }}"></div><div class="h-3.5 w-1/3 {{ $bar }}"></div></div>
-                            </div>
-                        </template>
+                        <div class="flex gap-2 overflow-hidden xl:hidden">@foreach ([24, 20, 24, 20] as $width)<div class="h-11 shrink-0 rounded-full bg-line-200" style="width: {{ $width * 4 }}px"></div>@endforeach</div>
+                        <div class="h-7 w-40 {{ $bar }}"></div>
 
                         <template x-if="kind === 'orders'">
                             <div class="space-y-3">

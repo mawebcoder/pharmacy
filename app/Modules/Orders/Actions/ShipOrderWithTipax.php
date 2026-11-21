@@ -34,6 +34,10 @@ final readonly class ShipOrderWithTipax
      */
     public function __invoke(Order $order, int $adminId): array
     {
+        if ($order->getDifferenceDue() > 0) {
+            throw OrderRefused::differenceOwed($order->getDifferenceDue());
+        }
+
         $parcels = $this->parcels->packed($order->getId());
 
         if ($parcels === []) {

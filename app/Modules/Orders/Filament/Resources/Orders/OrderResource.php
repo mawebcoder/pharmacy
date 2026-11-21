@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Filament\Resources\Orders;
 
+use App\Modules\Orders\Filament\Resources\Orders\Pages\CreatePanelOrder;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ListOrders;
 use App\Modules\Orders\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Modules\Orders\Filament\Resources\Orders\RelationManagers\OrderReturnsRelationManager;
 use App\Modules\Orders\Filament\Resources\Orders\Schemas\OrderInfolist;
+use App\Modules\Orders\Filament\Resources\Orders\Schemas\PanelOrderForm;
 use App\Modules\Orders\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Payments\Filament\RelationManagers\OrderPaymentsRelationManager;
@@ -22,7 +24,7 @@ use UnitEnum;
 /**
  * Orders (roadmap S24, D3.5): a list whose rows open the order's page, built only from the order's snapshots. Status
  * changes, cancelling and the refund record are header actions on that page (ViewOrder). Orders are placed by
- * customers at checkout, never created or deleted here.
+ * customers at checkout, or by staff with «ثبت سفارش» (owner, 2026-11-19); never deleted.
  */
 final class OrderResource extends Resource
 {
@@ -40,6 +42,14 @@ final class OrderResource extends Resource
 
     protected static ?string $recordTitleAttribute = Order::COLUMN_NUMBER;
 
+    /**
+     * «ثبت سفارش» (owner, 2026-11-19): orders staff place for a customer.
+     */
+    public static function form(Schema $schema): Schema
+    {
+        return PanelOrderForm::configure($schema);
+    }
+
     public static function infolist(Schema $schema): Schema
     {
         return OrderInfolist::configure($schema);
@@ -55,11 +65,6 @@ final class OrderResource extends Resource
         return [OrderPaymentsRelationManager::class, OrderReturnsRelationManager::class];
     }
 
-    public static function canCreate(): bool
-    {
-        return false;
-    }
-
     public static function canDelete(Model $record): bool
     {
         return false;
@@ -69,6 +74,7 @@ final class OrderResource extends Resource
     {
         return [
             'index' => ListOrders::route('/'),
+            'create' => CreatePanelOrder::route('/create'),
             'view' => ViewOrder::route('/{record}'),
         ];
     }

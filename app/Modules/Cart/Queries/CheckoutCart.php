@@ -8,6 +8,7 @@ use App\Modules\Cart\Actions\ValidateCoupon;
 use App\Modules\Cart\Data\AppliedCouponData;
 use App\Modules\Cart\Data\CartLineData;
 use App\Modules\Cart\Data\CartOwnerData;
+use App\Modules\Cart\Data\CartSummaryData;
 use App\Modules\Cart\Data\CheckoutCartData;
 use App\Modules\Cart\Exceptions\CouponRefused;
 use App\Modules\Cart\Models\Cart;
@@ -31,6 +32,16 @@ final readonly class CheckoutCart
         return $cart instanceof Cart
             ? new CheckoutCartData($cart->getId(), $cart->getAddressId(), $this->carts->summaryOf($cart))
             : null;
+    }
+
+    /**
+     * SKUs and quantities priced now, without a cart (owner, 2026-11-19: panel orders and unpaid orders being edited).
+     *
+     * @param  array<int, int>  $quantities  variant id => quantity
+     */
+    public function summaryFor(array $quantities): CartSummaryData
+    {
+        return $this->carts->summaryForQuantities($quantities);
     }
 
     /**
