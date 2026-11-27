@@ -17,21 +17,18 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 /**
  * The product list of the category, brand, tag and search pages (roadmap B9.3): filters with counts, applied
- * filter chips, sort, a 24-product grid, numbered pages on desktop and «نمایش بیشتر» on phones and tablets
- * (decided 2026-11-07 in S12). Filters live in the URL so lists can be shared.
+ * filter chips, sort, and a grid that loads 20 more products as the shopper scrolls near its end, on every screen
+ * (owner, 2026-11-27; replaces the numbered pages and «نمایش بیشتر» of S12). Filters live in the URL so lists can be shared.
  * <livewire:catalog::product-listing :category-id="$category->getId()" />
  *
  * @property-read ListingResult $result
  */
 final class ProductListing extends Component
 {
-    use WithPagination;
-
-    public const int PER_PAGE = 24;
+    public const int PER_PAGE = 20;
 
     public const array DISCOUNT_STEPS = [10, 20, 30, 50];
 
@@ -99,13 +96,12 @@ final class ProductListing extends Component
     #[Url(except: '')]
     public string $sort = '';
 
-    /** How many products phones and tablets show after «نمایش بیشتر». */
+    /** How many products are shown: PER_PAGE more each time the shopper scrolls near the end. */
     public int $shown = self::PER_PAGE;
 
     public function updated(string $property): void
     {
-        if (! in_array($property, ['shown', 'paginators'], true) && ! str_starts_with($property, 'paginators')) {
-            $this->resetPage();
+        if ($property !== 'shown') {
             $this->shown = self::PER_PAGE;
             unset($this->result);
         }
@@ -113,6 +109,10 @@ final class ProductListing extends Component
 
     public function loadMore(): void
     {
+        if (! $this->hasMore()) {
+            return;
+        }
+
         $this->shown += self::PER_PAGE;
         unset($this->result);
     }
@@ -155,6 +155,17 @@ final class ProductListing extends Component
     {
         $this->reset('brands', 'filters', 'minPrice', 'maxPrice', 'inStock', 'discount', 'flashDeal');
         $this->updated('filters');
+    }
+
+    /**
+     * Whether another PER_PAGE can load: the last load came back full and the total says there is more. A search index
+     * that counts products it can no longer return (stale) must not keep the shopper loading nothing.
+     */
+    public function hasMore(): bool
+    {
+        $products = $this->result->products;
+
+        return $products->count() >= $this->shown && $products->count() < $products->total();
     }
 
     #[Computed]
@@ -277,8 +288,6 @@ final class ProductListing extends Component
 
     private function criteria(): ListingCriteria
     {
-        $isDesktopPage = $this->shown === self::PER_PAGE;
-
         return new ListingCriteria(
             query: $this->query,
             categoryId: $this->categoryId,
@@ -294,7 +303,7 @@ final class ProductListing extends Component
             minDiscount: in_array($this->discount, self::DISCOUNT_STEPS, true) ? $this->discount : null,
             flashDeal: $this->flashDeal,
             sort: $this->sortOrder(),
-            page: $isDesktopPage ? $this->getPage() : 1,
+            page: 1,
             perPage: $this->shown,
         );
     }

@@ -243,6 +243,23 @@ it('pages through results, 24 at a time', function (): void {
         ->and(app(ProductListing::class)->get(new ListingCriteria(perPage: 48))->products->count())->toBe(26);
 });
 
+it('shows 20 products, loads 20 more as the shopper scrolls, and starts again at 20 after a filter change', function (): void {
+    foreach (range(1, 25) as $number) {
+        sellable([Product::COLUMN_NAME_FA => "محصول {$number}"]);
+    }
+    indexProductsForSearch();
+
+    $listing = livewire(ProductListingComponent::class)
+        ->assertViewHas('result', fn ($result): bool => $result->products->count() === 20)
+        ->assertSeeHtml('$wire.loadMore()')
+        ->assertDontSee('نمایش بیشتر')
+        ->call('loadMore')
+        ->assertViewHas('result', fn ($result): bool => $result->products->count() === 25)
+        ->assertDontSeeHtml('$wire.loadMore()');
+
+    $listing->set('inStock', true)->assertSet('shown', 20);
+});
+
 it('updates the index when a supplier price changes the selling price', function (): void {
     $product = sellable([Product::COLUMN_NAME_FA => 'کرم'], [ProductVariant::COLUMN_PRICE => 5_000_000]);
     indexProductsForSearch();
