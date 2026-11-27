@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
@@ -25,5 +26,6 @@ final class SetDefaultVariant
         }
 
         $product->setDefaultVariantId($variant->getId())->save();
+        ProductsSearchFieldsChanged::dispatch([$product->getId()]);
     }
 }

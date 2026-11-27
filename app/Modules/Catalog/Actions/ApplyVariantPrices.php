@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\VariantPriceUpdate;
-use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Models\ProductVariant;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -57,6 +56,6 @@ final class ApplyVariantPrices
             return array_keys($productIds);
         });
 
-        ProductSearchIndex::refreshWhere(Product::query()->whereKey($productIds));
+        ProductsSearchFieldsChanged::dispatch($productIds);
     }
 }

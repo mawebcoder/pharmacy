@@ -8,6 +8,7 @@ use App\Modules\Catalog\Data\ProductData;
 use App\Modules\Catalog\Enums\PricingInputChange;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Events\PricingInputsChanged;
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
@@ -44,6 +45,8 @@ final class UpdateProduct
 
             $product->save();
             self::syncLinks($product, $data);
+            // After the commit, so the rebuilt document has the links saved above.
+            ProductsSearchFieldsChanged::dispatch([$product->getId()]);
 
             if ($commissionMayChange) {
                 event(new PricingInputsChanged(app(VariantPricingInputs::class)->variantIdsOfProduct($product->getId()), PricingInputChange::Commission, self::adminId()));

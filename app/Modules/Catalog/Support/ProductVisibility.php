@@ -10,7 +10,7 @@ use App\Modules\Catalog\Models\ProductVariant;
 
 /**
  * Why a product is not on the storefront, in the admin's words (owner, 2026-11-27): the same rules as
- * Product::scopeActive(), scopeSellable() and shouldBeSearchable(). Shown at the top of the product form.
+ * Product::scopeActive(), scopeSellable() and isShownOnStorefront(). Shown at the top of the product form.
  */
 final class ProductVisibility
 {

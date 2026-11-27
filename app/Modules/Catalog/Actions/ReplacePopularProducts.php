@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -45,7 +45,7 @@ final class ReplacePopularProducts
         $changed = array_values(array_merge(array_diff($ranked, $before), array_diff($before, $ranked)));
 
         if ($changed !== []) {
-            ProductSearchIndex::refreshWhere(Product::query()->whereKey($changed));
+            ProductsSearchFieldsChanged::dispatch($changed);
         }
     }
 }

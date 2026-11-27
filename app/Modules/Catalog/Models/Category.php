@@ -331,9 +331,12 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
     /**
      * Only active categories are in the search panel's index (owner, 2026-11-15).
      */
+    /**
+     * Every one that is not deleted, shown or not (owner, 2026-11-27): the storefront filters on is_active.
+     */
     public function shouldBeSearchable(): bool
     {
-        return $this->isActive() && ! $this->trashed();
+        return ! $this->trashed();
     }
 
     /**
@@ -341,7 +344,7 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
      */
     public function toSearchableArray(): array
     {
-        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn());
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), $this->isActive());
     }
 
     public function activityLogLabel(): string

@@ -751,11 +751,28 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     }
 
     /**
-     * Only products for sale are searchable: active, a sellable type, with an active variant.
+     * Every product that is not deleted is in the index, shown or not (owner, 2026-11-27); the storefront filters on
+     * is_visible (isShownOnStorefront).
      */
     public function shouldBeSearchable(): bool
     {
-        return $this->isActive() && ! $this->trashed() && $this->isSellableType() && $this->variants()->active()->exists();
+        return ! $this->trashed();
+    }
+
+    /**
+     * Whether shoppers see the product in lists and search: active, a sellable type, with an active variant (the
+     * document's is_visible; scopeSellable in SQL). Uses the loaded variants when present, so a bulk reindex asks no
+     * query per product.
+     */
+    public function isShownOnStorefront(): bool
+    {
+        if (! $this->isActive() || $this->trashed() || ! $this->isSellableType()) {
+            return false;
+        }
+
+        return $this->relationLoaded('variants')
+            ? $this->getVariants()->contains(fn (ProductVariant $variant): bool => $variant->isActive() && ! $variant->trashed())
+            : $this->variants()->active()->exists();
     }
 
     /**
@@ -772,7 +789,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
      */
     public function makeSearchableUsing(BaseCollection $models): BaseCollection
     {
-        return $models instanceof Collection ? $models->load(ProductDocument::RELATIONS) : $models;
+        return $models instanceof Collection ? $models->loadMissing(ProductDocument::RELATIONS) : $models;
     }
 
     public function getRouteKeyName(): string

@@ -139,6 +139,11 @@ deploy() {
     setsid nohup php "${CURRENT}/artisan" tipax:sync-cities --no-interaction \
         >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null 9>&- &
 
+    # Search documents rebuilt by the new code at once (a release may add document fields the storefront filters on),
+    # instead of waiting for the hourly run; it only queues bulk jobs for Horizon.
+    log "Search indexes reconciled"
+    artisan "${CURRENT}" search:reconcile || true
+
     log "Keeping the last ${KEEP_RELEASES} releases"
     local keep_live
     keep_live="$(previous_live_release)"

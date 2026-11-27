@@ -333,9 +333,12 @@ final class Subcategory extends Model implements HasActivityLogLabel, HasImagePr
      * Only active subcategories are in the search panel's index; whether their category is shown is checked on
      * reading, against the cached CategoryTree.
      */
+    /**
+     * Every one that is not deleted, shown or not (owner, 2026-11-27): the storefront filters on is_active.
+     */
     public function shouldBeSearchable(): bool
     {
-        return $this->isActive() && ! $this->trashed();
+        return ! $this->trashed();
     }
 
     /**
@@ -343,7 +346,7 @@ final class Subcategory extends Model implements HasActivityLogLabel, HasImagePr
      */
     public function toSearchableArray(): array
     {
-        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn());
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), $this->isActive());
     }
 
     public function activityLogLabel(): string

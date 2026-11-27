@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
-use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Models\ProductCollection;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 
 /**
  * Adds products to the end of a collection, in the given order; products already in it keep their place.
@@ -26,6 +25,6 @@ final class AddProductsToCollection
             $collection->products()->attach($productId, [ProductCollection::PIVOT_SORT => $next + $offset]);
         }
 
-        ProductSearchIndex::refreshWhere(Product::query()->whereKey($new));
+        ProductsSearchFieldsChanged::dispatch($new);
     }
 }

@@ -170,6 +170,8 @@ final readonly class ProductListing
     {
         /** @var list<non-empty-string> $filters */
         $filters = array_values(array_filter([
+            // Hidden products are in the index too (owner, 2026-11-27); shoppers see only these.
+            'is_visible = true',
             $criteria->categoryId === null ? null : 'category_ids = '.$criteria->categoryId,
             $criteria->subcategoryId === null ? null : 'subcategory_ids = '.$criteria->subcategoryId,
             $criteria->brandId === null ? null : 'brand_id = '.$criteria->brandId,

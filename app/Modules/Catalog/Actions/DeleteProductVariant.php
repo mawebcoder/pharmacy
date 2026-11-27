@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 
 /**
  * Moves a variant to the trash, unless it is the product's last variant (every product keeps one, S14) or the last
@@ -37,7 +37,7 @@ final class DeleteProductVariant
         }
 
         if ($product instanceof Product) {
-            ProductSearchIndex::refresh($product->unsetRelation('variants'));
+            ProductsSearchFieldsChanged::dispatch([$product->getId()]);
         }
     }
 
