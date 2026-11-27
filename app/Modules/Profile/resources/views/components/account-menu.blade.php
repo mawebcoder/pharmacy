@@ -17,6 +17,9 @@
                 >
                     <x-ts-icon :icon="$item['icon']" class="size-5 shrink-0" />
                     <span class="flex-1">{{ $item['label'] }}</span>
+                    @if (($item['badge'] ?? 0) > 0)
+                        <span class="rounded-full bg-danger-600 px-1.5 text-xs font-bold text-white" aria-label="{{ $item['badge'] }} خوانده نشده">{{ \App\Modules\Shared\Support\PersianDigits::toPersian($item['badge']) }}</span>
+                    @endif
                     <x-ts-icon icon="chevron-left" class="size-4 text-ink-500" />
                 </a>
             </li>

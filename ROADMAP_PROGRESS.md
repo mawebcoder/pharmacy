@@ -41,7 +41,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S34 | Tipax quotes in checkout | done | 2026-11-19 | c71c2f1 |
 | S35 | Tipax shipment registration and tracking (on hold: branch drop-off by hand) | todo | | |
 | S36 | Zarinpal payments (refunds and reverse later) | done | 2026-11-18 | d3283f1 |
-| S37 | Notifications (SMS) | in progress (paid, on the way; delivered, cancelled, payment failed left) | 2026-11-19 | b92bbbd |
+| S37 | Notifications (SMS; «اعلان‌ها», «تنظیمات پیامک», credit on the dashboard and low-credit alert; back-in-stock moved to S13) | done | 2026-11-27 | |
 | S38 | SEO | todo | | |
 | S39 | Site search tuning | todo | | |
 | S40 | Security hardening | todo | | |

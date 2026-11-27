@@ -13,11 +13,14 @@ use App\Modules\Notifications\Support\SmsManager;
 /**
  * Sends one template SMS now (roadmap D11.6) through the configured provider, or the one passed in, and writes
  * sms_logs (masked mobile, no secret variables). A template without a pattern id fails without calling the
- * provider, except in pretend mode.
+ * provider, except in pretend mode. A send refused for lack of credit alerts super admins (S37).
  */
 final readonly class SendTemplatedSms
 {
-    public function __construct(private SmsManager $sms) {}
+    public function __construct(
+        private SmsManager $sms,
+        private AlertLowSmsCredit $alertLowCredit,
+    ) {}
 
     #[\NoDiscard]
     public function __invoke(SmsMessageData $message, ?SmsProvider $provider = null): SmsResultData
@@ -43,6 +46,10 @@ final readonly class SendTemplatedSms
             ->setError($result->error)
             ->setDurationMs((int) round((hrtime(true) - $started) / 1_000_000))
             ->save();
+
+        if ($result->outOfCredit) {
+            ($this->alertLowCredit)($provider, null);
+        }
 
         return $result;
     }

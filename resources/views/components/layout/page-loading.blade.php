@@ -10,7 +10,7 @@
     $bar = 'rounded-full bg-line-200';
     $box = 'rounded-card border border-line-200 bg-card';
     $listKinds = "['category', 'tag', 'collection', 'brand', 'search']";
-    $accountKinds = "['orders', 'order', 'addresses', 'profile', 'wishlist', 'reviews']";
+    $accountKinds = "['notifications', 'orders', 'order', 'addresses', 'profile', 'wishlist', 'reviews']";
 @endphp
 
 <div

@@ -14,4 +14,9 @@ use App\Modules\Notifications\Data\SmsResultData;
 interface SmsSender
 {
     public function send(SmsMessageData $message, string $patternId): SmsResultData;
+
+    /**
+     * The panel's remaining credit in rial (S37, daily low-credit check), or null when the provider does not answer.
+     */
+    public function credit(): ?int;
 }

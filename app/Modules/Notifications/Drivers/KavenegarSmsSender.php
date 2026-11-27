@@ -11,6 +11,7 @@ use App\Modules\Notifications\Enums\KavenegarError;
 use Closure;
 use Kavenegar\Exceptions\ApiException;
 use Kavenegar\KavenegarApi;
+use Kavenegar\Models\AccountInfoResult;
 use Kavenegar\Models\SendResult;
 use Throwable;
 
@@ -49,6 +50,7 @@ final readonly class KavenegarSmsSender implements SmsSender
                 code: (string) $refused->getCode(),
                 error: $error?->label() ?? 'خطای سامانه پیامک کاوه‌نگار',
                 retryable: $error?->isRetryable() ?? false,
+                outOfCredit: $error === KavenegarError::NoCredit,
             );
         } catch (Throwable) {
             // HttpException (no connection) and anything else the package throws: try again later.
@@ -62,5 +64,19 @@ final readonly class KavenegarSmsSender implements SmsSender
         }
 
         return new SmsResultData(success: true, providerMessageId: (string) $sent->messageid, code: 'ok');
+    }
+
+    /**
+     * «remaincredit» of account/info, in rial.
+     */
+    public function credit(): ?int
+    {
+        try {
+            $info = ($this->api)()->accountInfo();
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $info instanceof AccountInfoResult && is_numeric($info->remaincredit) ? (int) $info->remaincredit : null;
     }
 }

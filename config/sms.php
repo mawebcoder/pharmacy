@@ -18,6 +18,11 @@ return [
 
     'pretend' => (bool) env('SMS_PRETEND', true),
 
+    // Super admins are alerted in the admin panel when the provider's credit falls below this (rial; checked daily at
+    // 09:00 Tehran time) or a send is refused for lack of credit, at most once an hour (S37). The provider, credentials,
+    // patterns and this threshold can be set in the admin («تنظیمات پیامک»), which wins over .env.
+    'low_credit_below' => (int) env('SMS_LOW_CREDIT_BELOW', 1_000_000),
+
     'providers' => [
         'melipayamak' => [
             'username' => env('MELIPAYAMAK_USERNAME'),
@@ -26,6 +31,8 @@ return [
             'base_url' => env('MELIPAYAMAK_BASE_URL', 'https://rest.payamak-panel.com'),
             // SendByBaseNumber (pattern SMS on the shared service line).
             'send_pattern_path' => env('MELIPAYAMAK_SEND_PATTERN_PATH', '/api/SendSMS/BaseServiceNumber'),
+            // GetCredit (the panel's remaining credit, for the daily check).
+            'credit_path' => env('MELIPAYAMAK_CREDIT_PATH', '/api/SendSMS/GetCredit'),
             // Seconds to open the connection, then for the whole request. A failed connection or a 5xx answer is
             // tried again «retries» times in all, «retry_sleep_ms» apart; SendSmsJob then retries with its backoff.
             'connect_timeout_seconds' => (int) env('MELIPAYAMAK_CONNECT_TIMEOUT_SECONDS', 3),

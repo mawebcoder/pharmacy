@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Listeners;
 
+use App\Modules\Notifications\Actions\TextCustomer;
 use App\Modules\Notifications\Data\SmsMessageData;
 use App\Modules\Notifications\Enums\SmsTemplate;
-use App\Modules\Notifications\Jobs\SendSmsJob;
 use App\Modules\Orders\Events\OrderPaymentLinkRequested;
 use App\Modules\Orders\Queries\OrderNotice;
 use App\Modules\Orders\Queries\OrderPaymentLink;
@@ -21,6 +21,7 @@ final readonly class SendPaymentLinkSms
     public function __construct(
         private OrderNotice $orders,
         private OrderPaymentLink $links,
+        private TextCustomer $text,
     ) {}
 
     public function handle(OrderPaymentLinkRequested $event): void
@@ -32,6 +33,6 @@ final readonly class SendPaymentLinkSms
             return;
         }
 
-        SendSmsJob::dispatch(new SmsMessageData($order['mobile'], SmsTemplate::OrderPaymentLink, [$order['name'], $order['number'], $link]));
+        ($this->text)($order['customer_id'], $order['order_id'], new SmsMessageData($order['mobile'], SmsTemplate::OrderPaymentLink, [$order['name'], $order['number'], $link]));
     }
 }

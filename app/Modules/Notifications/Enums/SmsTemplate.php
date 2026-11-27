@@ -46,6 +46,28 @@ enum SmsTemplate: string implements HasLabel
     }
 
     /**
+     * What the customer reads in «اعلان‌ها» for this SMS (owner, 2026-11-21), from the same variables; null for messages
+     * not kept for customers (sign-in codes, messages to staff).
+     *
+     * @param  list<string>  $args
+     * @return array{title: string, body: string}|null
+     */
+    public function customerMessage(array $args): ?array
+    {
+        [$name, $number, $third] = array_pad($args, 3, '');
+
+        return match ($this) {
+            self::Otp, self::ReturnRequested => null,
+            self::OrderPaid => ['title' => 'سفارش پرداخت شد', 'body' => "{$name} عزیز، سفارش {$number} پرداخت و ثبت شد. آخرین وضعیت آن را در «سفارش‌ها» ببینید."],
+            self::OrderOnTheWay => ['title' => 'سفارش ارسال شد', 'body' => "سفارش {$number} به سرویس ارسال تحویل شد. کد رهگیری: {$third}"],
+            self::OrderCancelled => ['title' => 'سفارش لغو شد', 'body' => "سفارش {$number} لغو شد. اگر پرداخت کرده بودید، مبلغ پس از تأیید بازگردانده می‌شود."],
+            self::OrderReturn => ['title' => 'مرجوعی ثبت شد', 'body' => "مرجوعی سفارش {$number} ثبت شد و کالاها از آدرس شما جمع‌آوری می‌شوند. کد رهگیری: {$third}"],
+            self::OrderPaymentLink => ['title' => 'پرداخت سفارش', 'body' => "سفارش {$number} در انتظار پرداخت است؛ از صفحه سفارش، «پرداخت» را بزنید."],
+            self::RefundPaid => ['title' => 'بازگشت وجه', 'body' => "{$third} بابت سفارش {$number} به حساب شما بازگردانده شد."],
+        };
+    }
+
+    /**
      * Whether its variables are secret (never written to logs).
      */
     public function isSecret(): bool

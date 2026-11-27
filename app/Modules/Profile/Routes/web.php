@@ -16,5 +16,6 @@ Route::middleware('auth:customer')->prefix('account')->group(function (): void {
     Route::livewire('/addresses', 'profile::addresses')->name('account.addresses');
     Route::livewire('/wishlist', 'profile::wishlist')->name('account.wishlist');
     Route::livewire('/reviews', 'profile::reviews')->name('account.reviews');
+    Route::livewire('/notifications', 'profile::notifications')->name('account.notifications');
     Route::livewire('/profile', 'profile::account-details')->name('account.profile');
 });

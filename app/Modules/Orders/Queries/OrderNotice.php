@@ -13,7 +13,7 @@ use App\Modules\Orders\Models\Order;
 final readonly class OrderNotice
 {
     /**
-     * @return array{number: string, name: string, mobile: string, tracking_code: string|null}|null null when the order or its mobile is missing
+     * @return array{order_id: int, customer_id: int, number: string, name: string, mobile: string, tracking_code: string|null}|null null when the order or its mobile is missing
      */
     public function for(int $orderId): ?array
     {
@@ -27,6 +27,8 @@ final readonly class OrderNotice
         $name = trim((string) ($order->getCustomerSnapshot()['name'] ?? ''));
 
         return [
+            'order_id' => $order->getId(),
+            'customer_id' => $order->getCustomerId(),
             'number' => $order->getNumber(),
             'name' => $name !== '' ? $name : 'مشتری',
             'mobile' => $mobile,

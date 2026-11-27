@@ -18,7 +18,7 @@ use Throwable;
  * POST {base_url}{send_pattern_path} (config/sms.php, .env) with username, the API key as «password», the variables joined by «;»
  * as «text», the recipient and the pattern's bodyId. A return value longer than 15 digits is the message id;
  * anything else is a MelipayamakError. Connection failures and 5xx answers are tried again (config «retries»). The call is written to the integration log with the API key (and, for
- * secret templates such as the sign-in code, the text) hidden.
+ * secret templates such as the sign-in code, the text) hidden. GetCredit gives the panel's credit for the daily check.
  */
 final readonly class MelipayamakSmsSender implements SmsSender
 {
@@ -27,6 +27,7 @@ final readonly class MelipayamakSmsSender implements SmsSender
         private string $apiKey,
         private string $baseUrl,
         private string $sendPatternPath,
+        private string $creditPath,
         private int $connectTimeoutSeconds,
         private int $timeoutSeconds,
         private int $retries,
@@ -77,6 +78,33 @@ final readonly class MelipayamakSmsSender implements SmsSender
             code: $value === '' ? 'empty' : $value,
             error: $error?->label() ?? 'پاسخ ناشناخته از سامانه پیامک',
             retryable: $error?->isRetryable() ?? false,
+            outOfCredit: $error === MelipayamakError::NoCredit,
         );
+    }
+
+    /**
+     * GetCredit (POST {base_url}{credit_path} with username and the API key as «password»): its «Value» is the panel's
+     * credit. **[CONFIRM]** that it is in rial with a live account.
+     */
+    public function credit(): ?int
+    {
+        try {
+            $response = IntegrationHttp::for('melipayamak', 'get_credit')
+                ->asForm()
+                ->acceptJson()
+                ->connectTimeout($this->connectTimeoutSeconds)
+                ->timeout($this->timeoutSeconds)
+                ->post(rtrim($this->baseUrl, '/').'/'.ltrim($this->creditPath, '/'), [
+                    'username' => $this->username,
+                    'password' => $this->apiKey,
+                ])
+                ->throw();
+        } catch (ConnectionException|RequestException) {
+            return null;
+        }
+
+        $value = $response->json('Value') ?? $response->json('value');
+
+        return is_numeric($value) && (int) $response->json('RetStatus', 1) === 1 ? (int) floor((float) $value) : null;
     }
 }

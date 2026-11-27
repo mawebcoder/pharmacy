@@ -127,6 +127,8 @@ class AdminPanelProvider extends PanelProvider
                 AppAuthentication::make()->recoverable(),
             ], isRequired: true)
             ->spa()
+            // Staff alerts under the bell, e.g. low SMS credit (S37).
+            ->databaseNotifications()
             ->brandName((string) config('app.display_name'))
             ->font('Vazirmatn')
             ->colors([

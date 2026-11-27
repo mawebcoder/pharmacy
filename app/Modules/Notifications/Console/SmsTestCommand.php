@@ -31,7 +31,7 @@ final class SmsTestCommand extends Command
             return self::FAILURE;
         }
 
-        $provider = $this->option('provider') === null ? SmsProvider::configured() : SmsProvider::tryFrom((string) $this->option('provider'));
+        $provider = $this->option('provider') === null ? $sms->provider() : SmsProvider::tryFrom((string) $this->option('provider'));
 
         if ($provider === null) {
             $this->components->error('سامانه پیامک ناشناخته است؛ گزینه‌ها: '.implode('، ', array_column(SmsProvider::cases(), 'value')));

@@ -26,4 +26,9 @@ final class LogSmsSender implements SmsSender
 
         return new SmsResultData(success: true, providerMessageId: 'pretend-'.bin2hex(random_bytes(6)), code: 'pretend');
     }
+
+    public function credit(): ?int
+    {
+        return null;
+    }
 }

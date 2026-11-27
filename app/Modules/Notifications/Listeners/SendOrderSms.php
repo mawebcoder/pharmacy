@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Notifications\Listeners;
 
+use App\Modules\Notifications\Actions\TextCustomer;
 use App\Modules\Notifications\Data\SmsMessageData;
 use App\Modules\Notifications\Enums\SmsTemplate;
-use App\Modules\Notifications\Jobs\SendSmsJob;
 use App\Modules\Orders\Events\OrderCancelled;
 use App\Modules\Orders\Events\OrderOnItsWay;
 use App\Modules\Orders\Events\OrderPaid;
@@ -22,7 +22,10 @@ use App\Modules\Orders\Queries\OrderNotice;
  */
 final readonly class SendOrderSms
 {
-    public function __construct(private OrderNotice $orders) {}
+    public function __construct(
+        private OrderNotice $orders,
+        private TextCustomer $text,
+    ) {}
 
     public function handle(OrderPaid|OrderOnItsWay|OrderCancelled|OrderReturnRegistered $event): void
     {
@@ -39,6 +42,6 @@ final readonly class SendOrderSms
             $event instanceof OrderReturnRegistered => new SmsMessageData($order['mobile'], SmsTemplate::OrderReturn, [$order['name'], $order['number'], $event->trackingCode]),
         };
 
-        SendSmsJob::dispatch($message);
+        ($this->text)($order['customer_id'], $order['order_id'], $message);
     }
 }

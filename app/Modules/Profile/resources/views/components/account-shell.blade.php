@@ -7,8 +7,11 @@
 
 @php
     $customer = auth('customer')->user();
+    // Unread «اعلان‌ها» show as a badge on the menu (owner, 2026-11-21).
+    $unread = app(\App\Modules\Identity\Queries\CustomerInbox::class)->unreadCount((int) $customer->getAuthIdentifier());
     $items = [
         ['key' => 'orders', 'label' => 'سفارش‌ها', 'icon' => 'shopping-bag', 'href' => route('account.orders')],
+        ['key' => 'notifications', 'label' => 'اعلان‌ها', 'icon' => 'bell', 'href' => route('account.notifications'), 'badge' => $unread],
         ['key' => 'addresses', 'label' => 'آدرس‌ها', 'icon' => 'map-pin', 'href' => route('account.addresses')],
         ['key' => 'wishlist', 'label' => 'علاقه‌مندی‌ها', 'icon' => 'heart', 'href' => route('account.wishlist')],
         ['key' => 'reviews', 'label' => 'نظرات من', 'icon' => 'chat-bubble-bottom-center-text', 'href' => route('account.reviews')],
@@ -44,6 +47,9 @@
                         ])>
                             <x-ts-icon :icon="$item['icon']" class="size-4" />
                             {{ $item['label'] }}
+                            @if (($item['badge'] ?? 0) > 0)
+                                <span class="rounded-full bg-danger-600 px-1.5 text-xs font-bold text-white" aria-label="{{ $item['badge'] }} خوانده نشده">{{ \App\Modules\Shared\Support\PersianDigits::toPersian($item['badge']) }}</span>
+                            @endif
                         </a>
                     </li>
                 @endforeach

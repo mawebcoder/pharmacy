@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -30,6 +31,9 @@ final class Customer extends Authenticatable implements HasActivityLogLabel
     use HasFactory;
 
     use LogsActivity;
+
+    // «اعلان‌ها» in the account (owner, 2026-11-21): database notifications, one per SMS sent to the customer.
+    use Notifiable;
 
     public const string COLUMN_ID = 'id';
 

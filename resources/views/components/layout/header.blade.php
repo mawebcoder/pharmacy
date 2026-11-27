@@ -38,6 +38,9 @@
             @auth('customer')
                 {{-- Signed-in customer (S19): their name, the account area (S20) and sign-out; the page dims behind the menu
                      (owner, 2026-11-15). --}}
+                @php
+                    $unreadNotifications = app(\App\Modules\Identity\Queries\CustomerInbox::class)->unreadCount((int) auth('customer')->id());
+                @endphp
                 <div class="relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false" x-on:click.outside="open = false">
                     <x-layout.header-backdrop show="open" close="open = false" />
                     <button
@@ -48,7 +51,14 @@
                         x-bind:aria-expanded="open"
                         x-on:click="open = ! open"
                     >
-                        <x-ts-icon icon="user-circle" class="size-6 text-primary-700" />
+                        <span class="relative">
+                            <x-ts-icon icon="user-circle" class="size-6 text-primary-700" />
+                            {{-- Unread «اعلان‌ها» (owner, 2026-11-21). --}}
+                            @if ($unreadNotifications > 0)
+                                <span class="absolute -end-1.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-danger-600 px-1 text-[10px] font-bold leading-4 text-white">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(min($unreadNotifications, 99)) }}</span>
+                                <span class="sr-only">{{ $unreadNotifications }} اعلان خوانده نشده</span>
+                            @endif
+                        </span>
                         <span class="hidden max-w-32 truncate text-sm xl:inline">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</span>
                         <x-ts-icon icon="chevron-down" class="hidden size-4 xl:block" />
                     </button>
@@ -63,15 +73,18 @@
                     >
                         <p class="truncate px-4 pb-2 text-sm font-bold text-ink-900">{{ \App\Modules\Shared\Support\PersianDigits::toPersian(auth('customer')->user()->displayName()) }}</p>
                         @foreach ([
-                            ['حساب من', 'squares-2x2', route('account')],
                             ['سفارش‌ها', 'shopping-bag', route('account.orders')],
+                            ['اعلان‌ها', 'bell', route('account.notifications')],
                             ['آدرس‌ها', 'map-pin', route('account.addresses')],
                             ['علاقه‌مندی‌ها', 'heart', route('account.wishlist')],
                             ['اطلاعات حساب', 'user', route('account.profile')],
                         ] as [$label, $icon, $href])
                             <a href="{{ $href }}" wire:navigate role="menuitem" class="flex min-h-11 items-center gap-2 px-4 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-700">
                                 <x-ts-icon :icon="$icon" class="size-5 text-ink-500" />
-                                {{ $label }}
+                                <span class="flex-1">{{ $label }}</span>
+                                @if ($label === 'اعلان‌ها' && $unreadNotifications > 0)
+                                    <span class="rounded-full bg-danger-600 px-1.5 text-xs font-bold text-white">{{ \App\Modules\Shared\Support\PersianDigits::toPersian($unreadNotifications) }}</span>
+                                @endif
                             </a>
                         @endforeach
                         <form method="POST" action="{{ route('logout') }}" class="border-t border-line-200 pt-1">
