@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\CollectionChangeRefused;
-use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -31,6 +30,6 @@ final class DeleteCollection
             $collection->delete();
         });
 
-        ProductSearchIndex::refreshWhere(Product::query()->whereKey($productIds));
+        ProductsSearchFieldsChanged::dispatch(array_values(array_map(intval(...), $productIds)));
     }
 }

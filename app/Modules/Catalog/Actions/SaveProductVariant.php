@@ -8,10 +8,10 @@ use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Enums\PricingInputChange;
 use App\Modules\Catalog\Enums\StockStatus;
 use App\Modules\Catalog\Events\PricingInputsChanged;
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\VariantPricing;
 use App\Modules\Catalog\Support\VariantSku;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +79,7 @@ final class SaveProductVariant
             return $variant;
         });
 
-        ProductSearchIndex::refresh($product->unsetRelation('variants'));
+        ProductsSearchFieldsChanged::dispatch([$product->getId()]);
 
         return $saved;
     }

@@ -6,10 +6,10 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\BrandData;
 use App\Modules\Catalog\Enums\PricingInputChange;
+use App\Modules\Catalog\Events\BrandSearchFieldsChanged;
 use App\Modules\Catalog\Events\PricingInputsChanged;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Queries\VariantPricingInputs;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -36,12 +36,16 @@ final class UpdateBrand
             ->setSeoDescription($data->seoDescription);
         $commissionChanged = $brand->isDirty(Brand::COLUMN_COMMISSION_PERCENT);
         $brand->save();
+        $nameChanged = $brand->wasChanged([Brand::COLUMN_NAME_FA, Brand::COLUMN_NAME_EN]);
 
         if ($commissionChanged) {
             event(new PricingInputsChanged(app(VariantPricingInputs::class)->variantIdsFollowingBrand($brand), PricingInputChange::Commission, UpdateProduct::adminId()));
         }
 
-        ProductSearchIndex::refreshWhere($brand->products()->getQuery());
+        // Only the name is in its products' documents; other fields change no product document.
+        if ($nameChanged) {
+            BrandSearchFieldsChanged::dispatch($brand->getId());
+        }
 
         return $brand;
     }

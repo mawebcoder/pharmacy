@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\TagData;
+use App\Modules\Catalog\Events\TagSearchFieldsChanged;
 use App\Modules\Catalog\Models\Tag;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -22,6 +22,7 @@ final class SaveTag
             ? $tag->getSlug()
             : CatalogSlug::for(Tag::class, $data->slug, $data->nameFa, $data->nameEn, $tag?->getId());
 
+        $isNew = ! $tag instanceof Tag;
         $tag ??= new Tag;
         $tag->setNameFa($data->nameFa)
             ->setNameEn($data->nameEn)
@@ -31,7 +32,10 @@ final class SaveTag
             ->setSort($data->sort)
             ->save();
 
-        ProductSearchIndex::refreshWhere($tag->products()->getQuery());
+        // Only the name is in its products' documents.
+        if (! $isNew && $tag->wasChanged([Tag::COLUMN_NAME_FA, Tag::COLUMN_NAME_EN])) {
+            TagSearchFieldsChanged::dispatch($tag->getId());
+        }
 
         return $tag;
     }

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Events\AttributeValueSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Models\Attribute;
 use App\Modules\Catalog\Models\AttributeValue;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Shared\Support\PersianNormalizer;
 
 /**
@@ -33,13 +33,16 @@ final class SaveAttributeValue
             throw AttributeChangeRefused::duplicateValue($valueFa);
         }
 
+        $isNew = ! $value instanceof AttributeValue;
         $value ??= (new AttributeValue)
             ->setAttributeId($attribute->getId())
             ->setSort((int) $attribute->values()->max(AttributeValue::COLUMN_SORT) + 1);
 
         $value->setValueFa($valueFa)->save();
 
-        ProductSearchIndex::refreshWhere($value->products()->getQuery());
+        if (! $isNew && $value->wasChanged(AttributeValue::COLUMN_VALUE_FA)) {
+            AttributeValueSearchFieldsChanged::dispatch($value->getId());
+        }
 
         return $value;
     }

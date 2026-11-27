@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Data\ProductData;
 use App\Modules\Catalog\Data\ProductVariantData;
 use App\Modules\Catalog\Enums\ProductStatus;
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Exceptions\AttributeChangeRefused;
 use App\Modules\Catalog\Exceptions\ProductChangeRefused;
 use App\Modules\Catalog\Models\Product;
@@ -34,6 +35,7 @@ final class CreateProduct
             UpdateProduct::syncLinks($product, $data);
             $variant = app(SaveProductVariant::class)($product, $firstVariant);
             $product->setDefaultVariantId($variant->getId())->save();
+            ProductsSearchFieldsChanged::dispatch([$product->getId()]);
 
             if ($data->status !== ProductStatus::Draft) {
                 return app(UpdateProduct::class)($product, $data);

@@ -14,7 +14,8 @@ use App\Modules\Catalog\Models\Tag;
 use App\Modules\Shared\Support\SearchText;
 
 /**
- * The Meilisearch document of a product (roadmap D21.5.4, decided 2026-11-07 in S12). Text fields are normalised
+ * The Meilisearch document of a product (roadmap D21.5.4, decided 2026-11-07 in S12). Every product that is not
+ * deleted has one; is_visible says whether shoppers may see it, and every storefront query filters on it. Text fields are normalised
  * with SearchText, the same way queries are. price, discount_pct and in_stock come from the default SKU
  * (Product::getDefaultVariant()), so filters and sorting match the card; variants lists every active SKU.
  * category_ids holds the categories of its subcategories too, so a category lists its subcategories' products;
@@ -55,6 +56,9 @@ final class ProductDocument
 
         return [
             'id' => $product->getId(),
+            // Every product is indexed; the storefront asks for is_visible = true (owner, 2026-11-27).
+            'is_visible' => $product->isShownOnStorefront(),
+            'status' => $product->getStatus()->value,
             'name_fa' => SearchText::forIndex($product->getNameFa()),
             'name_en' => SearchText::normalize((string) $product->getNameEn()),
             'brand_id' => $product->getBrandId(),
@@ -121,7 +125,7 @@ final class ProductDocument
     {
         return [
             'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'category_names', 'attribute_values', 'ingredients', 'codes'],
-            'filterableAttributes' => ['category_ids', 'subcategory_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'has_flash_deal', 'product_type'],
+            'filterableAttributes' => ['is_visible', 'status', 'category_ids', 'subcategory_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'has_flash_deal', 'product_type'],
             'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
             'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [

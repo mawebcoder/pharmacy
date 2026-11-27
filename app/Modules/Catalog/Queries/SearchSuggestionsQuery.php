@@ -103,6 +103,8 @@ final readonly class SearchSuggestionsQuery
             $query = fn (Product|Brand|Category|Subcategory $model, int $limit): SearchQuery => (new SearchQuery)
                 ->setIndexUid($model->indexableAs())
                 ->setQuery($normalized)
+                // Hidden items are in the indexes too (owner, 2026-11-27); shoppers see only these.
+                ->setFilter([$model instanceof Product ? 'is_visible = true' : 'is_active = true'])
                 ->setLimit(max(1, $limit))
                 ->setAttributesToRetrieve(['id']);
 

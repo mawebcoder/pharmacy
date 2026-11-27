@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\SubcategoryData;
+use App\Modules\Catalog\Events\SubcategorySearchFieldsChanged;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Subcategory;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -39,8 +39,9 @@ final class SaveSubcategory
             ->setSeoDescription($data->seoDescription)
             ->save();
 
-        if (! $isNew) {
-            ProductSearchIndex::refreshSubcategory($subcategory);
+        // Only the name is in its products' documents.
+        if (! $isNew && $subcategory->wasChanged([Subcategory::COLUMN_NAME_FA, Subcategory::COLUMN_NAME_EN])) {
+            SubcategorySearchFieldsChanged::dispatch($subcategory->getId());
         }
 
         return $subcategory;

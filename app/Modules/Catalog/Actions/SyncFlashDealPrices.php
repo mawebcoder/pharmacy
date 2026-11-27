@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Actions;
 
+use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Models\FlashDeal;
 use App\Modules\Catalog\Models\ProductVariant;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Pricing\Data\PriceRecordData;
 use App\Modules\Pricing\Queries\CurrentPriceRecords;
 use App\Modules\Pricing\Queries\SupplierOptions;
@@ -77,7 +77,7 @@ final readonly class SyncFlashDealPrices
 
         foreach ($changed as $product) {
             if ($product !== null) {
-                ProductSearchIndex::refresh($product->unsetRelation('variants'));
+                ProductsSearchFieldsChanged::dispatch([$product->getId()]);
             }
         }
     }

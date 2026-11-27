@@ -4,52 +4,67 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Search;
 
-use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Jobs\ReindexProducts;
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\Subcategory;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 /**
- * Keeps the Meilisearch product index in step with changes Scout does not see on its own: a variant, brand, tag,
- * category or attribute value changed, so the documents of the products using it are rebuilt (or removed when the
- * product is no longer for sale). Product saves themselves are handled by Scout.
+ * The only way product documents reach Meilisearch (owner, 2026-11-27: event-driven, bulk). Scout does not index
+ * products on save (CatalogServiceProvider turns that off), because a product's document also depends on its SKUs,
+ * links, brand and categories, which change elsewhere. Search events (Catalog\Events\*SearchFieldsChanged) name the
+ * affected products; QueueProductReindex queues them here in chunks; `search:reconcile` re-pushes everything hourly.
+ *
+ * A chunk is loaded with its relations in one query set, then sent with one call to add every product that is not
+ * deleted (hidden ones too, flagged is_visible = false; owner, 2026-11-27) and one to remove the deleted or gone.
  */
 final class ProductSearchIndex
 {
+    public const int CHUNK = 500;
+
+    /**
+     * Rebuilds these products' documents now.
+     *
+     * @param  array<int|string>  $productIds
+     */
+    public static function reindex(array $productIds): void
+    {
+        foreach (array_chunk(self::ids($productIds), self::CHUNK) as $chunk) {
+            $products = Product::withTrashed()->with(ProductDocument::RELATIONS)->whereKey($chunk)->get();
+            $indexed = $products->filter(fn (Product $product): bool => $product->shouldBeSearchable())->values();
+            $removed = $products->reject(fn (Product $product): bool => $product->shouldBeSearchable())->values();
+
+            // Products deleted for good are removed by id.
+            foreach (array_diff($chunk, $products->modelKeys()) as $missingId) {
+                $removed->push((new Product)->forceFill([Product::COLUMN_ID => $missingId]));
+            }
+
+            (new Product)->syncMakeSearchable($indexed);
+            (new Product)->syncRemoveFromSearch($removed);
+        }
+    }
+
+    /**
+     * Rebuilds these products' documents in queued chunks (on the "search" queue when Scout queues), or at once.
+     *
+     * @param  array<int|string>  $productIds
+     */
+    public static function queue(array $productIds): void
+    {
+        foreach (array_chunk(self::ids($productIds), self::CHUNK) as $chunk) {
+            config('scout.queue') ? ReindexProducts::dispatch($chunk) : ReindexProducts::dispatchSync($chunk);
+        }
+    }
+
     public static function refresh(Product $product): void
     {
-        $product->shouldBeSearchable() ? $product->searchable() : $product->unsearchable();
+        self::reindex([$product->getId()]);
     }
 
     /**
-     * @param  Builder<Product>  $products
+     * @param  array<int|string>  $productIds
+     * @return list<int>
      */
-    public static function refreshWhere(Builder $products): void
+    private static function ids(array $productIds): array
     {
-        $products->chunkById(100, function (Collection $chunk): void {
-            $chunk->each(fn (Product $product) => self::refresh($product));
-        });
-    }
-
-    /**
-     * Products of a category: main or extra category, or placed in one of its subcategories.
-     */
-    public static function refreshCategory(Category $category): void
-    {
-        self::refreshWhere(Product::query()->where(fn (Builder $query) => $query
-            ->where(Product::COLUMN_PRIMARY_CATEGORY_ID, $category->getId())
-            ->orWhereHas('categories', fn (Builder $categories) => $categories->whereKey($category->getId()))
-            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->where(Subcategory::COLUMN_CATEGORY_ID, $category->getId()))));
-    }
-
-    /**
-     * Products of a subcategory: main or extra subcategory.
-     */
-    public static function refreshSubcategory(Subcategory $subcategory): void
-    {
-        self::refreshWhere(Product::query()->where(fn (Builder $query) => $query
-            ->where(Product::COLUMN_PRIMARY_SUBCATEGORY_ID, $subcategory->getId())
-            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->whereKey($subcategory->getId()))));
+        return array_values(array_unique(array_filter(array_map(intval(...), $productIds), fn (int $id): bool => $id > 0)));
     }
 }

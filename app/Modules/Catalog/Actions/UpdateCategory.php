@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Actions;
 
 use App\Modules\Catalog\Data\CategoryData;
+use App\Modules\Catalog\Events\CategorySearchFieldsChanged;
 use App\Modules\Catalog\Models\Category;
-use App\Modules\Catalog\Search\ProductSearchIndex;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -31,7 +31,10 @@ final class UpdateCategory
             ->setSeoDescription($data->seoDescription)
             ->save();
 
-        ProductSearchIndex::refreshCategory($category);
+        // Only the name is in its products' documents.
+        if ($category->wasChanged([Category::COLUMN_NAME_FA, Category::COLUMN_NAME_EN])) {
+            CategorySearchFieldsChanged::dispatch($category->getId());
+        }
 
         return $category;
     }
