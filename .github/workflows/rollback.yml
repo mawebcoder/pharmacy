@@ -44,6 +44,10 @@ jobs:
             Port ${{ vars.DEPLOY_PORT || '22' }}
             IdentityFile ~/.ssh/deploy_key
             IdentitiesOnly yes
+            # Give up quickly when the server does not answer, instead of waiting for the job timeout.
+            ConnectTimeout 20
+            ServerAliveInterval 15
+            ServerAliveCountMax 4
           EOF
 
       - name: Switch back
