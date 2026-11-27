@@ -69,21 +69,22 @@ activate() {
     ln -sfn "${release}" "${APP_ROOT}/current.next"
     mv -Tf "${APP_ROOT}/current.next" "${CURRENT}"
     touch "${release}/.went-live"
-    log "Switched; reloading PHP-FPM and the scheduler (Horizon stays off)"
+    log "Switched; reloading PHP-FPM, Horizon and the scheduler"
 
     # OPcache never re-checks files (deploy/php/production.ini): a reload loads the new release.
     sudo systemctl reload "${PHP_FPM_SERVICE}"
-    # Horizon is not started by a deploy or a rollback: on the 1 GB server it alone took about 430 MB. Start it by
-    # hand when wanted: sudo supervisorctl start hutana:hutana-horizon (it then runs "current").
+    # Horizon finishes its running jobs and Supervisor starts it again from the new release; "start" also brings it
+    # up when a deploy stopped it, or on the first release (until then Supervisor has nothing to run).
+    artisan "${CURRENT}" horizon:terminate || true
+    sudo supervisorctl start hutana:hutana-horizon > /dev/null || true
     sudo supervisorctl restart hutana:hutana-scheduler
 
     log "Live: $(basename "${release}")"
 }
 
-# On a 1 GB, single-core server Horizon and the scheduler do not fit in memory next to the migrations: the server
-# swaps and every statement crawls. Horizon is stopped and stays off (see activate); the scheduler is stopped for the
-# whole deploy (activate starts it from the new release). Meilisearch keeps running: the live site's listing and search
-# pages read it, so stopping it took them down for the whole migration. If a step fails, start_services brings the
+# Horizon and the scheduler are stopped for the whole deploy, so no job or scheduled task runs against a half-migrated
+# database and their memory is free for the migrations; activate starts them from the new release. Meilisearch keeps
+# running: the live site's listing and search pages read it. If a step fails, start_services brings Horizon and the
 # scheduler back on the release still live.
 stop_services() {
     log "Stopping Horizon and the scheduler for the deploy"
@@ -92,6 +93,7 @@ stop_services() {
 }
 
 start_services() {
+    sudo -n supervisorctl start hutana:hutana-horizon > /dev/null 2>&1 || true
     sudo -n supervisorctl restart hutana:hutana-scheduler > /dev/null 2>&1 || true
 }
 
