@@ -176,21 +176,15 @@
                 </div>
             </template>
 
-            {{-- «برندها»: title, the sticky letter bar, a letter heading, a grid of logo tiles. --}}
+            {{-- «برندها»: title, then one grid of logo tiles (no letters since 2026-11-27). --}}
             <template x-if="kind === 'brands'">
                 <div class="space-y-6">
                     <div class="space-y-2"><div class="h-8 w-32 {{ $bar }}"></div><div class="h-3.5 w-48 {{ $bar }}"></div></div>
-                    <div class="-mx-4 flex gap-1 overflow-hidden border-y border-line-200 px-4 py-2 md:mx-0 md:rounded-card md:border md:bg-card">
-                        @foreach (range(1, 16) as $letter)
-                            <div class="size-9 shrink-0 rounded-md bg-line-200"></div>
-                        @endforeach
-                    </div>
-                    <div class="space-y-3">
-                        <div class="h-6 w-8 {{ $bar }}"></div>
+                    <div>
                         <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
                             @foreach (range(1, 10) as $tile)
                                 <div @class(['flex-col items-center gap-2 p-4 shadow-card', $box, 'flex' => $tile <= 4, 'hidden md:flex' => $tile > 4 && $tile <= 6, 'hidden xl:flex' => $tile > 6])>
-                                    <div class="size-20 rounded-card bg-line-200 md:size-24"></div>
+                                    <div class="size-28 rounded-card bg-line-200 md:size-32"></div>
                                     <div class="h-4 w-2/3 {{ $bar }}"></div>
                                     <div class="h-3 w-1/2 {{ $bar }}"></div>
                                 </div>
