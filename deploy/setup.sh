@@ -70,7 +70,9 @@ printf 'Package: *\nPin: origin nginx.org\nPin-Priority: 900\n' > /etc/apt/prefe
 curl -fsSL https://packages.redis.io/gpg | gpg --dearmor --yes -o /etc/apt/keyrings/redis.gpg
 echo "deb [signed-by=/etc/apt/keyrings/redis.gpg] https://packages.redis.io/deb noble main" > /etc/apt/sources.list.d/redis.list
 
-curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 | gpg --dearmor --yes -o /etc/apt/keyrings/mysql.gpg
+# Oracle's MySQL signing key, from the Ubuntu keyserver: Oracle extends its expiry there, while the copy on
+# repo.mysql.com (RPM-GPG-KEY-mysql-2023) has expired.
+curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB7B3B788A8D3785C" | gpg --dearmor --yes -o /etc/apt/keyrings/mysql.gpg
 echo "deb [signed-by=/etc/apt/keyrings/mysql.gpg] http://repo.mysql.com/apt/ubuntu noble mysql-8.4-lts" > /etc/apt/sources.list.d/mysql.list
 
 apt-get update -q
@@ -114,7 +116,8 @@ if [[ "$(/usr/local/bin/meilisearch --version 2>/dev/null || true)" != *"${MEILI
     chmod 755 /usr/local/bin/meilisearch
 fi
 id meilisearch > /dev/null 2>&1 || useradd --system --home /var/lib/meilisearch --shell /usr/sbin/nologin meilisearch
-install -d -o meilisearch -g meilisearch /var/lib/meilisearch /var/lib/meilisearch/data /var/lib/meilisearch/dumps
+# Not the data folder: Meilisearch creates it itself and refuses to start on an empty one it did not create.
+install -d -o meilisearch -g meilisearch /var/lib/meilisearch /var/lib/meilisearch/dumps
 install -m 0644 "${REPO}/deploy/meilisearch/meilisearch.service" /etc/systemd/system/meilisearch.service
 
 log "Deploy user and folders"
