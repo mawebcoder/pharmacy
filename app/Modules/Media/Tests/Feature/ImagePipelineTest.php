@@ -23,7 +23,7 @@ it('queues processing on the media queue with only the preset sizes', function (
     Queue::fake();
     $brand = Brand::factory()->create();
 
-    $media = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 400), 'لوگوی اوسرین');
+    $media = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 800), 'لوگوی اوسرین');
 
     Queue::assertPushedOn('media', ProcessImage::class);
     expect($media->getStatus())->toBe(MediaStatus::Processing)
@@ -42,12 +42,12 @@ it('refuses an image that does not match the preset', function (): void {
 it('processes an image into public sizes with its placeholder data, keeping the original private', function (): void {
     $brand = Brand::factory()->create();
 
-    $media = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 400))->fresh();
+    $media = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
 
     expect($media)
         ->getStatus()->toBe(MediaStatus::Ready)
         ->getWidth()->toBe(800)
-        ->getHeight()->toBe(400)
+        ->getHeight()->toBe(800)
         ->getThumbhash()->not->toBeNull()
         ->getDominantColor()->toMatch('/^#[0-9a-f]{6}$/');
 
@@ -61,9 +61,9 @@ it('processes an image into public sizes with its placeholder data, keeping the 
 
 it('replaces the previous image of a single-image collection', function (): void {
     $brand = Brand::factory()->create();
-    $first = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 400));
+    $first = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 800));
 
-    $second = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(600, 300));
+    $second = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(600, 600));
 
     expect(Media::query()->whereKey($first->getKey())->exists())->toBeFalse()
         ->and($brand->fresh()->getLogo()?->url(160, 'webp'))->toBe($second->fresh()->url(160, 'webp'));

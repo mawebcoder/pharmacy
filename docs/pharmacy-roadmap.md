@@ -2017,7 +2017,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 | banner_mobile | 800×400 | 2:1 (was 4:5; owner, 2026-11-15: too tall on phones; older artwork is shown cropped to its middle) | 5 MB | JPEG, PNG, WebP |
 | category_icon | SVG preferred, else 256×256 | 1:1 | 500 KB | SVG, PNG |
 | category_menu_icon | SVG preferred, else 48×48 (shown at 24 px in the mega menu) | 1:1 | 50 KB | SVG, PNG |
-| brand_logo | 400×200 (transparent) | 2:1 | 1 MB | SVG, PNG, WebP |
+| brand_logo | 400×400 (transparent; owner, 2026-11-27) | 1:1 | 1 MB | SVG, PNG, WebP |
 | category_banner_desktop | 1920×480 (also used on tablet) | 4:1 | 5 MB | JPEG, PNG, WebP |
 | category_banner_mobile | 800×600 | 4:3 | 5 MB | JPEG, PNG, WebP |
 | article_cover | 1200×675 | 16:9 | 5 MB | JPEG, PNG, WebP |

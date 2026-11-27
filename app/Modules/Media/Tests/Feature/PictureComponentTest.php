@@ -19,22 +19,22 @@ beforeEach(function (): void {
 
 it('renders a lazy responsive picture with srcset, sizes and intrinsic size, without a placeholder behind transparent logos', function (): void {
     $brand = Brand::factory()->create();
-    $logo = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 400))->fresh();
+    $logo = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
 
     $html = Blade::render('<x-media::picture :media="$logo" slot-name="brand-logo" alt="اوسرین" />', ['logo' => $logo]);
 
     expect($html)
         ->toContain('srcset="'.$logo->url(160, 'webp').' 160w, '.$logo->url(320, 'webp').' 320w"')
-        ->toContain('sizes="(min-width: 1280px) 160px, (min-width: 768px) 120px, 96px"')
+        ->toContain('sizes="(min-width: 768px) 96px, 80px"')
         ->toContain('width="320"')
-        ->toContain('height="160"')
+        ->toContain('height="320"')
         ->toContain('alt="اوسرین"')
         ->toContain('loading="lazy"')
         ->not->toContain('background-color');
 });
 
 it('loads a priority image eagerly with high fetch priority', function (): void {
-    $logo = app(AttachImage::class)(Brand::factory()->create(), Brand::IMAGE_LOGO, testImage(800, 400))->fresh();
+    $logo = app(AttachImage::class)(Brand::factory()->create(), Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
 
     $html = Blade::render('<x-media::picture :media="$logo" slot-name="brand-logo" :priority="true" />', ['logo' => $logo]);
 
@@ -42,7 +42,7 @@ it('loads a priority image eagerly with high fetch priority', function (): void 
 });
 
 it('shows only the placeholder while an image is still processing', function (): void {
-    $logo = app(AttachImage::class)(Brand::factory()->create(), Brand::IMAGE_LOGO, testImage(800, 400))->fresh();
+    $logo = app(AttachImage::class)(Brand::factory()->create(), Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
     $logo->setStatus(MediaStatus::Processing)->save();
 
     $html = Blade::render('<x-media::picture :media="$logo" slot-name="brand-logo" alt="اوسرین" />', ['logo' => $logo]);

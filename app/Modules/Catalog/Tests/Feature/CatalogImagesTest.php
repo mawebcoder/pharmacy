@@ -29,7 +29,7 @@ describe('admin forms', function (): void {
 
     it('uploads a brand logo with the brand', function (): void {
         livewire(CreateBrand::class)
-            ->fillForm([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::COLUMN_NAME_EN => 'Eucerin', Brand::IMAGE_LOGO => testImage(800, 400)])
+            ->fillForm([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::COLUMN_NAME_EN => 'Eucerin', Brand::IMAGE_LOGO => testImage(800, 800)])
             ->call('create')
             ->assertHasNoFormErrors();
 
@@ -38,7 +38,7 @@ describe('admin forms', function (): void {
 
     it('rejects a logo that does not match the preset', function (): void {
         livewire(CreateBrand::class)
-            ->fillForm([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::IMAGE_LOGO => testImage(800, 800)])
+            ->fillForm([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::IMAGE_LOGO => testImage(800, 400)])
             ->call('create')
             ->assertHasFormErrors([Brand::IMAGE_LOGO]);
 
@@ -67,7 +67,7 @@ describe('admin forms', function (): void {
 describe('storefront', function (): void {
     it('shows brand logos on the brand list and the brand page', function (): void {
         $brand = Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin']);
-        $logo = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 400))->fresh();
+        $logo = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
 
         $this->get(route('brands.index'))->assertOk()->assertSee($logo->url(320, 'webp'), escape: false);
         $this->get('/brands/eucerin')->assertOk()->assertSee($logo->url(320, 'webp'), escape: false)->assertSee('fetchpriority="high"', escape: false);
