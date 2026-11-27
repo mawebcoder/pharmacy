@@ -14,6 +14,7 @@ use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -54,6 +55,10 @@ class AdminPanelProvider extends PanelProvider
         // jalali() is a macro registered by ariaieboy/filament-jalali, which PHPStan cannot see.
         DatePicker::configureUsing(fn (DatePicker $picker) => $picker->jalali()); // @phpstan-ignore method.notFound
         DateTimePicker::configureUsing(fn (DateTimePicker $picker) => $picker->jalali()); // @phpstan-ignore method.notFound
+
+        // Every image upload offers crop, rotate and flip before saving (owner, 2026-11-27), including images added in
+        // the rich editors. Spreadsheet uploads switch it off.
+        FileUpload::configureUsing(fn (FileUpload $upload): FileUpload => $upload->imageEditor());
 
         $this->registerTomanMacros();
     }

@@ -40,6 +40,7 @@ final class ManageSearchSynonyms extends ManageRecords
                         ->label('فایل اکسل یا CSV')
                         ->disk('local')
                         ->directory('imports/synonyms')
+                        ->imageEditor(false)
                         ->acceptedFileTypes([
                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                             'text/csv',
