@@ -171,6 +171,11 @@ CREATE DATABASE IF NOT EXISTS \`${db_name}\` CHARACTER SET utf8mb4 COLLATE utf8m
 CREATE USER IF NOT EXISTS '${db_user}'@'localhost' IDENTIFIED BY '$(env_value DB_PASSWORD)';
 ALTER USER '${db_user}'@'localhost' IDENTIFIED BY '$(env_value DB_PASSWORD)';
 GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'localhost';
+-- The app connects over TCP to 127.0.0.1 (DB_HOST), which MySQL does not count as "localhost" (and skip-name-resolve
+-- in my.cnf stops it resolving one to the other).
+CREATE USER IF NOT EXISTS '${db_user}'@'127.0.0.1' IDENTIFIED BY '$(env_value DB_PASSWORD)';
+ALTER USER '${db_user}'@'127.0.0.1' IDENTIFIED BY '$(env_value DB_PASSWORD)';
+GRANT ALL PRIVILEGES ON \`${db_name}\`.* TO '${db_user}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
 
