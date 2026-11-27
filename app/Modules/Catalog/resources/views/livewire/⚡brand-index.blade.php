@@ -59,18 +59,17 @@ new #[Title('برندها')] class extends Component
                 <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
                     @foreach ($brands as $brand)
                         <li wire:key="brand-{{ $brand->getId() }}">
-                            <a href="{{ route('brands.show', $brand) }}" wire:navigate class="flex h-full min-h-24 flex-col justify-center gap-1 rounded-card border border-line-200 bg-card p-4 shadow-card transition hover:border-primary-300 focus-visible:outline-2 focus-visible:outline-primary-700">
-                                {{-- The logo on a white well in both themes (owner, 2026-11-14); the initial without a logo. --}}
-                                <span class="mb-2 grid h-16 w-full place-items-center overflow-hidden rounded-md border border-line-200 bg-media p-2 md:h-20">
-                                    @if ($brand->getLogo())
-                                        <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="h-full w-auto max-w-full object-contain" />
-                                    @else
-                                        <span class="text-2xl font-bold text-ink-500" aria-hidden="true">{{ mb_substr($brand->getNameFa(), 0, 1) }}</span>
-                                    @endif
-                                </span>
+                            <a href="{{ route('brands.show', $brand) }}" wire:navigate class="flex h-full flex-col items-center gap-1 rounded-card border border-line-200 bg-card p-4 text-center shadow-card transition hover:border-primary-300 focus-visible:outline-2 focus-visible:outline-primary-700">
+                                {{-- The square logo alone, no box around it (owner, 2026-11-27); the first two letters without a
+                                     logo, as on the home page brands row. --}}
+                                @if ($brand->getLogo())
+                                    <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="mb-2 size-20 rounded-card object-contain md:size-24" />
+                                @else
+                                    <span class="mb-2 grid size-20 place-items-center rounded-card bg-surface-50 text-xl font-bold text-ink-500 md:size-24" aria-hidden="true">{{ mb_substr($brand->getNameFa(), 0, 2) }}</span>
+                                @endif
                                 <span class="line-clamp-2 font-bold text-ink-900">{{ $brand->getNameFa() }}</span>
                                 @if ($brand->getNameEn())
-                                    <span dir="ltr" class="truncate text-end text-sm text-ink-500">{{ $brand->getNameEn() }}</span>
+                                    <span dir="ltr" class="w-full truncate text-sm text-ink-500">{{ $brand->getNameEn() }}</span>
                                 @endif
                                 @if ($brand->getCountryName())
                                     <span class="text-xs text-ink-500">{{ $brand->getCountryName() }}</span>

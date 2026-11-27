@@ -10,6 +10,7 @@ use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Telescope\EntryType;
 use Laravel\Telescope\IncomingEntry;
+use Laravel\Telescope\Watchers\QueryWatcher;
 
 it('keeps Telescope closed when TELESCOPE_ENABLED is false', function (): void {
     $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin')
@@ -56,11 +57,16 @@ describe('outside local', function (): void {
         expect(array_keys(config('telescope.watchers')))->toEqualCanonicalizing(TelescopeServiceProvider::ERROR_WATCHERS);
     });
 
-    it('keeps failed requests, failed jobs and slow queries, and drops the rest', function (IncomingEntry $entry, bool $kept): void {
-        expect(TelescopeServiceProvider::isError($entry))->toBe($kept);
+    it('counts a query as slow above 100 ms', function (): void {
+        expect(config('telescope.watchers')[QueryWatcher::class]['slow'])->toBe(100);
+    });
+
+    it('keeps failed or slow requests, failed jobs and slow queries, and drops the rest', function (IncomingEntry $entry, bool $kept): void {
+        expect(TelescopeServiceProvider::isWorthKeeping($entry))->toBe($kept);
     })->with([
-        'failed request' => fn (): array => [IncomingEntry::make(['response_status' => 500])->type(EntryType::REQUEST), true],
-        'successful request' => fn (): array => [IncomingEntry::make(['response_status' => 200])->type(EntryType::REQUEST), false],
+        'failed request' => fn (): array => [IncomingEntry::make(['response_status' => 500, 'duration' => 80])->type(EntryType::REQUEST), true],
+        'request over 2 seconds' => fn (): array => [IncomingEntry::make(['response_status' => 200, 'duration' => 2100])->type(EntryType::REQUEST), true],
+        'request of 2 seconds or less' => fn (): array => [IncomingEntry::make(['response_status' => 200, 'duration' => 2000])->type(EntryType::REQUEST), false],
         'failed job' => fn (): array => [IncomingEntry::make(['status' => 'failed'])->type(EntryType::JOB), true],
         'processed job' => fn (): array => [IncomingEntry::make(['status' => 'processed'])->type(EntryType::JOB), false],
         'slow query' => fn (): array => [IncomingEntry::make(['slow' => true])->type(EntryType::QUERY), true],
