@@ -130,7 +130,7 @@
                     </template>
                     <template x-if="kind === 'brand'">
                         <div class="flex flex-col gap-4 p-4 shadow-card md:flex-row md:items-start md:p-6 {{ $box }}">
-                            <div class="h-12 w-24 shrink-0 rounded-md bg-line-200 md:h-15 md:w-30 xl:h-20 xl:w-40"></div>
+                            <div class="size-16 shrink-0 rounded-md bg-line-200 md:size-20 xl:size-24"></div>
                             <div class="flex-1 space-y-2">
                                 <div class="flex items-baseline gap-3"><div class="h-8 w-40 {{ $bar }}"></div><div class="h-4 w-20 {{ $bar }}"></div></div>
                                 <div class="h-3.5 w-28 {{ $bar }}"></div>
@@ -189,8 +189,8 @@
                         <div class="h-6 w-8 {{ $bar }}"></div>
                         <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
                             @foreach (range(1, 10) as $tile)
-                                <div @class(['flex-col gap-2 p-4 shadow-card', $box, 'flex' => $tile <= 4, 'hidden md:flex' => $tile > 4 && $tile <= 6, 'hidden xl:flex' => $tile > 6])>
-                                    <div class="h-16 w-full rounded-md bg-line-200 md:h-20"></div>
+                                <div @class(['flex-col items-center gap-2 p-4 shadow-card', $box, 'flex' => $tile <= 4, 'hidden md:flex' => $tile > 4 && $tile <= 6, 'hidden xl:flex' => $tile > 6])>
+                                    <div class="size-20 rounded-card bg-line-200 md:size-24"></div>
                                     <div class="h-4 w-2/3 {{ $bar }}"></div>
                                     <div class="h-3 w-1/2 {{ $bar }}"></div>
                                 </div>
