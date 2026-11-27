@@ -8,6 +8,7 @@
 #   shared/.env          the production environment, written by hand once
 #   shared/storage/      uploads, logs, cache: kept across releases
 #   current -> releases/<commit>   what Nginx, PHP-FPM, Horizon and the scheduler run
+#   releases/<commit>/.went-live   set when a release goes live; a rollback only goes back to these
 #
 # Migrations run before the switch and are not undone by a rollback: keep each migration compatible with the
 # release before it.
@@ -49,12 +50,25 @@ artisan() {
     php "$1/artisan" "${@:2}" --no-interaction
 }
 
+# The release that went live most recently, other than the one live now: what a rollback goes back to. A release
+# that failed before its switch never went live (it may lack migrations' code paths, caches or assets).
+previous_live_release() {
+    local live
+    live="$(readlink -f "${CURRENT}" || true)"
+    find "${RELEASES}" -mindepth 2 -maxdepth 2 -name .went-live -printf '%T@ %h\n' \
+        | sort -rn \
+        | cut -d' ' -f2- \
+        | { grep -vxF "${live}" || true; } \
+        | head -n 1
+}
+
 # Points "current" at a release in one rename, so no request ever sees a half-switched link.
 activate() {
     local release="$1"
 
     ln -sfn "${release}" "${APP_ROOT}/current.next"
     mv -Tf "${APP_ROOT}/current.next" "${CURRENT}"
+    touch "${release}/.went-live"
     log "Switched; reloading PHP-FPM, Horizon and the scheduler"
 
     # OPcache never re-checks files (deploy/php/production.ini): a reload loads the new release.
@@ -140,12 +154,15 @@ deploy() {
         >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null 9>&- &
 
     log "Keeping the last ${KEEP_RELEASES} releases"
+    local keep_live
+    keep_live="$(previous_live_release)"
     find "${RELEASES}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
         | sort -rn \
         | tail -n +"$((KEEP_RELEASES + 1))" \
         | cut -d' ' -f2- \
         | while read -r old; do
-            [[ "$(readlink -f "${CURRENT}")" == "${old}" ]] || rm -rf "${old}"
+            # Never the live release, nor the one a rollback would go back to.
+            [[ "$(readlink -f "${CURRENT}")" == "${old}" || "${keep_live}" == "${old}" ]] || rm -rf "${old}"
         done
 }
 
@@ -154,14 +171,17 @@ rollback() {
     live="$(readlink -f "${CURRENT}")"
 
     if [[ -z "${target}" ]]; then
-        target="$(find "${RELEASES}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2- | grep -vxF "${live}" | head -n 1)"
+        target="$(previous_live_release)"
     else
         target="${RELEASES}/${target}"
+        [[ -f "${target}/.went-live" ]] || { echo "$(basename "${target}") never went live: not rolling back to it." >&2; exit 1; }
     fi
 
-    [[ -n "${target}" && -d "${target}" ]] || { echo "No release to roll back to." >&2; exit 1; }
+    [[ -n "${target}" && -d "${target}" ]] || { echo "No release that went live before to roll back to." >&2; exit 1; }
 
     log "Rolling back to $(basename "${target}")"
+    # The release being left failed: it is no longer a rollback target itself.
+    [[ -z "${live}" ]] || rm -f "${live}/.went-live"
     activate "${target}"
 }
 

@@ -68,7 +68,8 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
   pass.
 - **During a deploy** Horizon and the scheduler are stopped from the start until the switch, and Meilisearch while
   the migrations run: a 1 GB server cannot hold them next to the migrations. A failed deploy starts them again.
-- **Roll back:** Actions → Rollback → Run workflow (empty = the previous release, or a kept commit). Migrations are
+- **Roll back:** Actions → Rollback → Run workflow (empty = the release that went live before the current one, or a
+  kept commit that went live). A release that failed before its switch is never a rollback target. Migrations are
   not undone, so keep each migration compatible with the release before it.
 - **Changed a server config** (Nginx, PHP, MySQL, Redis, Supervisor, Meilisearch): copy the files again (step 2) and
   re-run `setup.sh` with the same variables.
