@@ -5,6 +5,7 @@ import countdown from './components/countdown';
 import imagePlaceholders from './components/image-placeholders';
 import jalaliDate from './components/jalali-date';
 import productGallery from './components/product-gallery';
+import recentlyViewed from './components/recently-viewed';
 import searchHistory from './components/search-history';
 import slider from './components/slider';
 import swipeClose from './components/swipe-close';
@@ -16,6 +17,7 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('countdown', countdown);
     window.Alpine.data('productGallery', productGallery);
     window.Alpine.store('searchHistory', searchHistory);
+    window.Alpine.store('recentlyViewed', recentlyViewed);
     window.Alpine.directive('swipe-close', swipeClose);
     window.Alpine.store('confirm', confirmDialog);
     window.Alpine.store('cartRemoval', cartRemoval);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\Catalog\Filament\Resources\Brands\Pages\CreateBrand;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\EditCategory;
+use App\Modules\Catalog\Filament\Resources\Products\Pages\EditProduct;
+use App\Modules\Catalog\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
@@ -11,6 +13,8 @@ use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Identity\Models\AdminUser;
 use App\Modules\Media\Actions\AttachImage;
+use Filament\Actions\EditAction;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Storage;
 
@@ -61,6 +65,21 @@ describe('admin forms', function (): void {
         expect($category->getIcon())->not->toBeNull()
             ->and($category->getBannerDesktop())->not->toBeNull()
             ->and($category->getBannerMobile())->not->toBeNull();
+    });
+
+    it('uploads a SKU\'s own photo in the variant form and shows it in the variants table', function (): void {
+        $product = Product::factory()->active()->create();
+        $variant = ProductVariant::factory()->for($product)->create();
+
+        livewire(VariantsRelationManager::class, ['ownerRecord' => $product, 'pageClass' => EditProduct::class])
+            ->callAction(TestAction::make(EditAction::class)->table($variant), [ProductVariant::IMAGE_PHOTO => testImage(1200, 1200)])
+            ->assertHasNoFormErrors();
+
+        $photo = $variant->fresh()->getPhoto();
+        expect($photo?->isReady())->toBeTrue();
+
+        livewire(VariantsRelationManager::class, ['ownerRecord' => $product, 'pageClass' => EditProduct::class])
+            ->assertTableColumnExists(ProductVariant::IMAGE_PHOTO);
     });
 });
 

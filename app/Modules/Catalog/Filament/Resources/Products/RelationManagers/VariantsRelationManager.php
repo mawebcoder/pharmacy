@@ -16,6 +16,8 @@ use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Queries\FlashDealSuppliers;
+use App\Modules\Media\Filament\Forms\ImageUpload;
+use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use App\Modules\Pricing\Actions\CalculateVariantPrice;
 use App\Modules\Pricing\Filament\Pages\SkuSuppliers;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
@@ -48,7 +50,8 @@ use Filament\Tables\Table;
  * Variants of a product (roadmap D3.1): sizes in mm, weight in grams. The printed price and haraj are typed in toman
  * (saved as rial); the selling price is calculated by Pricing from the active supplier and the commission (D3.2) and
  * only shown here. Saving goes through SaveProductVariant; refusals are shown as notifications. Admins who can see
- * suppliers get each SKU's active supplier and a link to its suppliers page.
+ * suppliers get each SKU's active supplier and a link to its suppliers page. A SKU may have its own photo (S13), shown
+ * first on the product page while that SKU is picked.
  */
 final class VariantsRelationManager extends RelationManager
 {
@@ -97,6 +100,12 @@ final class VariantsRelationManager extends RelationManager
                             ->label('بارکد')
                             ->extraInputAttributes(['dir' => 'ltr'])
                             ->rules(fn (?ProductVariant $record): array => $rules($record, ProductVariant::COLUMN_BARCODE)),
+                    ]),
+                Section::make('تصویر')
+                    ->description('اختیاری. وقتی مشتری این تنوع را انتخاب کند، این تصویر اول گالری محصول نشان داده می‌شود.')
+                    ->collapsible()
+                    ->schema([
+                        ImageUpload::make(ProductVariant::IMAGE_PHOTO, 'product')->label('تصویر این تنوع'),
                     ]),
                 Section::make('قیمت')
                     ->columns(3)
@@ -184,6 +193,7 @@ final class VariantsRelationManager extends RelationManager
             ->reorderable(ProductVariant::COLUMN_SORT, fn (): bool => $this->canChange())
             ->description('ترتیب ردیف‌ها را با کشیدن تغییر دهید: اگر SKU پیش‌فرض ناموجود شود، اولین تنوع موجود به همین ترتیب جای آن را می‌گیرد.')
             ->columns([
+                ImageThumbnail::make(ProductVariant::IMAGE_PHOTO, 'product'),
                 TextColumn::make(ProductVariant::COLUMN_TITLE_FA)
                     ->label('عنوان')
                     ->badge(fn (ProductVariant $record): bool => $this->isChosenDefault($record))

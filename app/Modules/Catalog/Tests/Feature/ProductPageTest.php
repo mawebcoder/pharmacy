@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Enums\ProductRelationType;
+use App\Modules\Catalog\Livewire\RecentlyViewed;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductFaq;
 use App\Modules\Catalog\Models\ProductRelation;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Media\Actions\AttachImage;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Livewire\livewire;
 
@@ -121,4 +124,41 @@ it('shows the description with its rich-editor formatting and without scripts', 
         ->assertOk()
         ->assertSee(['<strong>آبرسان قوی</strong>', '<li>بدون عطر</li>'], false)
         ->assertDontSee('<script>alert(1)</script>', false);
+});
+
+it('puts the picked SKU\'s own photo first in the gallery, and the product photos alone for a SKU without one', function (): void {
+    Storage::fake('local');
+    Storage::fake('media');
+    $plain = ProductVariant::factory()->for($this->product)->create([ProductVariant::COLUMN_TITLE_FA => '۵۰ گرمی']);
+    $large = ProductVariant::factory()->for($this->product)->create([ProductVariant::COLUMN_TITLE_FA => '۱۰۰ گرمی']);
+    $productPhoto = app(AttachImage::class)($this->product, Product::IMAGE_GALLERY, testImage(1200, 1200))->fresh();
+    $skuPhoto = app(AttachImage::class)($large, ProductVariant::IMAGE_PHOTO, testImage(1200, 1200))->fresh();
+
+    livewire('catalog::product-page', ['slug' => 'urea-cream'])
+        ->assertSet('variantId', $plain->getId())
+        ->assertSee($productPhoto->url(400, 'webp'), false)
+        ->assertDontSee($skuPhoto->url(400, 'webp'), false)
+        ->set('variantId', $large->getId())
+        ->assertSeeHtmlInOrder([$skuPhoto->url(400, 'webp'), $productPhoto->url(400, 'webp')]);
+});
+
+describe('recently viewed', function (): void {
+    it('records the product page in the browser and shows nothing before other products were viewed', function (): void {
+        ProductVariant::factory()->for($this->product)->create();
+
+        $this->get('/products/urea-cream')->assertOk()->assertSee('$store.recentlyViewed.add('.$this->product->getId().')', false);
+
+        livewire(RecentlyViewed::class, ['productId' => $this->product->getId()])->assertDontSee('بازدیدهای اخیر');
+    });
+
+    it('lists the active products the browser sent, newest first, without the one being viewed', function (): void {
+        $older = Product::factory()->active()->withVariants()->create([Product::COLUMN_NAME_FA => 'شامپو قدیمی‌تر']);
+        $newer = Product::factory()->active()->withVariants()->create([Product::COLUMN_NAME_FA => 'ضدآفتاب تازه']);
+        $draft = Product::factory()->withVariants()->create([Product::COLUMN_NAME_FA => 'محصول پیش‌نویس']);
+
+        livewire(RecentlyViewed::class, ['productId' => $this->product->getId()])
+            ->call('show', [$this->product->getId(), $newer->getId(), 'x', $draft->getId(), $older->getId(), 999_999])
+            ->assertSeeHtmlInOrder(['بازدیدهای اخیر', 'ضدآفتاب تازه', 'شامپو قدیمی‌تر'])
+            ->assertDontSee(['کرم اوره', 'محصول پیش‌نویس']);
+    });
 });
