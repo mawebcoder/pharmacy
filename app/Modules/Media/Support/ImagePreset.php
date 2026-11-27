@@ -28,11 +28,12 @@ final readonly class ImagePreset
         public array $mimes,
         public array $widths,
         public array $formats,
+        public bool $trimBeforePadding = true,
     ) {}
 
     public static function named(string $name): self
     {
-        /** @var array{min_width: int, min_height: int, ratio?: float|int|null, pad_to_square?: bool, max_kb: int, mimes: list<string>, widths: list<int>, formats: array<string, int>}|null $preset */
+        /** @var array{min_width: int, min_height: int, ratio?: float|int|null, pad_to_square?: bool, trim?: bool, max_kb: int, mimes: list<string>, widths: list<int>, formats: array<string, int>}|null $preset */
         $preset = config("media-presets.presets.{$name}");
 
         if ($preset === null) {
@@ -49,6 +50,7 @@ final readonly class ImagePreset
             mimes: $preset['mimes'],
             widths: $preset['widths'],
             formats: $preset['formats'],
+            trimBeforePadding: $preset['trim'] ?? true,
         );
     }
 

@@ -25,7 +25,7 @@ it('renders a lazy responsive picture with srcset, sizes and intrinsic size, wit
 
     expect($html)
         ->toContain('srcset="'.$logo->url(160, 'webp').' 160w, '.$logo->url(320, 'webp').' 320w"')
-        ->toContain('sizes="(min-width: 768px) 96px, 80px"')
+        ->toContain('sizes="(min-width: 768px) 128px, 112px"')
         ->toContain('width="320"')
         ->toContain('height="320"')
         ->toContain('alt="اوسرین"')

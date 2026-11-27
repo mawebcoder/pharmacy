@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Modules\Catalog\Models\Brand;
 
-it('lists only active brands, grouped by letter in Persian alphabet order', function (): void {
+use function Pest\Livewire\livewire;
+
+it('lists only active brands in one list, in Persian alphabet order, without letter headings', function (): void {
     Brand::factory()->create([Brand::COLUMN_NAME_FA => 'سینره', Brand::COLUMN_NAME_EN => 'Cinere']);
     Brand::factory()->create([Brand::COLUMN_NAME_FA => 'آردن', Brand::COLUMN_NAME_EN => 'Arden']);
     Brand::factory()->create([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::COLUMN_NAME_EN => 'Eucerin']);
@@ -13,9 +15,21 @@ it('lists only active brands, grouped by letter in Persian alphabet order', func
 
     $this->get(route('brands.index'))
         ->assertOk()
-        ->assertSeeInOrder(['الف', 'آردن', 'اوسرین', 'س', 'سینره'])
+        ->assertSeeInOrder(['آردن', 'اوسرین', 'سینره'])
+        ->assertDontSee('فهرست حروف')
         ->assertDontSee('برند غیرفعال')
         ->assertDontSee('برند حذف‌شده');
+});
+
+it('shows 20 brands and loads the next 20 as the shopper scrolls', function (): void {
+    Brand::factory()->count(25)->create();
+
+    livewire('catalog::brand-index')
+        ->assertSet('shown', 20)
+        ->assertSeeHtml('$wire.loadMore()')
+        ->call('loadMore')
+        ->assertSet('shown', 25)
+        ->assertDontSeeHtml('$wire.loadMore()');
 });
 
 it('shows the brand page by slug', function (): void {

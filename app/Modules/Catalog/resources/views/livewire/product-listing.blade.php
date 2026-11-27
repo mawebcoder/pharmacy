@@ -72,10 +72,11 @@
         @endif
 
         <div class="min-w-0 flex-1 space-y-6">
-            {{-- Desktop: while a filter, sort or page change loads, skeleton cards stand in for the results (owner,
-                 2026-11-15); phones keep the faded list, their filters sit in the sheet with its own spinner. --}}
+            {{-- Desktop: while a filter or sort change loads, skeleton cards stand in for the results (owner, 2026-11-15);
+                 phones keep the faded list, their filters sit in the sheet with its own spinner. Loading more products
+                 on scroll keeps the list as it is. --}}
             <div class="hidden xl:contents" aria-hidden="true">
-                <ul wire:loading.grid class="hidden animate-pulse grid-cols-4 gap-4 motion-reduce:animate-none">
+                <ul wire:loading.grid wire:target.except="loadMore" class="hidden animate-pulse grid-cols-4 gap-4 motion-reduce:animate-none">
                     @foreach (range(1, 8) as $placeholder)
                         <li><x-ui.product-card-skeleton /></li>
                     @endforeach
@@ -85,7 +86,7 @@
             @if ($products->isEmpty())
                 {{-- Empty result, like the empty cart (owner, 2026-11-15): one clear way on — the same list without filters,
                      or the shop when nothing was filtered. --}}
-                <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center" wire:loading.class="xl:hidden">
+                <div class="rounded-card border border-line-200 bg-card px-6 py-12 text-center" wire:loading.class="xl:hidden" wire:target.except="loadMore">
                     <span class="mx-auto grid size-14 place-items-center rounded-full bg-primary-50 text-primary-700">
                         <x-ts-icon icon="magnifying-glass" class="size-7" />
                     </span>
@@ -104,7 +105,7 @@
                     @endif
                 </div>
             @else
-                <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4" wire:loading.class="opacity-60 xl:hidden">
+                <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4" wire:loading.class="opacity-60 xl:hidden" wire:target.except="loadMore">
                     @foreach ($products as $product)
                         <li wire:key="listing-product-{{ $product->getId() }}">
                             <x-catalog::product-card :product="$product" :href="$this->productHref($product)" />
@@ -112,17 +113,18 @@
                     @endforeach
                 </ul>
 
-                {{-- Phones and tablets: «نمایش بیشتر»; desktop: numbered pages --}}
-                @if ($products->hasMorePages() || $products->total() > $products->count())
-                    <div class="flex justify-center xl:hidden">
-                        @if ($products->count() < $products->total())
-                            <x-ts-button color="primary" outline wire:click="loadMore" loading="loadMore">نمایش بیشتر</x-ts-button>
-                        @endif
+                {{-- No pages: the next 20 load when this row of placeholder cards comes near the screen (owner, 2026-11-27).
+                     Keyed by the count, so after each load the new row is watched again. --}}
+                @if ($this->hasMore())
+                    <div wire:key="listing-more-{{ $products->count() }}" x-data x-intersect.margin.600px="$wire.loadMore()">
+                        <ul class="grid animate-pulse grid-cols-2 gap-3 motion-reduce:animate-none md:grid-cols-3 md:gap-4 xl:grid-cols-4" aria-hidden="true">
+                            @foreach (range(1, 4) as $placeholder)
+                                <li @class(['hidden md:block' => $placeholder === 3, 'hidden xl:block' => $placeholder === 4])><x-ui.product-card-skeleton /></li>
+                            @endforeach
+                        </ul>
+                        <p class="sr-only" role="status" wire:loading wire:target="loadMore">در حال نمایش کالاهای بیشتر</p>
                     </div>
                 @endif
-                <div class="hidden xl:block">
-                    {{ $products->onEachSide(1)->links(data: ['scrollTo' => '#listing-title']) }}
-                </div>
             @endif
         </div>
     </div>

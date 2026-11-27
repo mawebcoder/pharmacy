@@ -9,7 +9,8 @@ use ImagickPixel;
 
 /**
  * Prepares an uploaded original before sizes are generated (roadmap D8, D14.4): turns it upright, converts it to
- * sRGB, strips EXIF/GPS and other metadata, and for product photos trims the border and pads to a white square.
+ * sRGB, strips EXIF/GPS and other metadata, and for product photos trims the border and pads to a white square
+ * (brand logos are padded without trimming, so their own background stays).
  * The file is rewritten in place.
  */
 final class ImageNormalizer
@@ -30,7 +31,7 @@ final class ImageNormalizer
         $this->toSrgb($image);
 
         if ($preset->padToSquare) {
-            $this->trimAndPadToWhiteSquare($image);
+            $this->trimAndPadToWhiteSquare($image, $preset->trimBeforePadding);
         }
 
         $image->stripImage();
@@ -54,12 +55,15 @@ final class ImageNormalizer
         }
     }
 
-    private function trimAndPadToWhiteSquare(Imagick $image): void
+    private function trimAndPadToWhiteSquare(Imagick $image, bool $trim): void
     {
         $image->setImageBackgroundColor(new ImagickPixel('white'));
         $image->setImageAlphaChannel(Imagick::ALPHACHANNEL_REMOVE);
-        $image->trimImage(self::TRIM_FUZZ * $image->getQuantum());
-        $image->setImagePage(0, 0, 0, 0);
+
+        if ($trim) {
+            $image->trimImage(self::TRIM_FUZZ * $image->getQuantum());
+            $image->setImagePage(0, 0, 0, 0);
+        }
 
         $side = max($image->getImageWidth(), $image->getImageHeight());
         $image->extentImage(

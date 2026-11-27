@@ -42,7 +42,7 @@ describe('admin forms', function (): void {
 
     it('rejects a logo that does not match the preset', function (): void {
         livewire(CreateBrand::class)
-            ->fillForm([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::IMAGE_LOGO => testImage(800, 400)])
+            ->fillForm([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::IMAGE_LOGO => testImage(300, 150)])
             ->call('create')
             ->assertHasFormErrors([Brand::IMAGE_LOGO]);
 

@@ -51,9 +51,12 @@ final class ImageUpload
     private static function helperText(ImagePreset $preset): string
     {
         $size = PersianDigits::toPersian($preset->minWidth).'×'.PersianDigits::toPersian($preset->minHeight);
-        $text = $preset->padToSquare
-            ? "دست‌کم {$size} پیکسل؛ حاشیه حذف و تصویر روی زمینه سفید مربع می‌شود."
-            : "دست‌کم {$size} پیکسل با همین نسبت ابعاد.";
+        $longest = PersianDigits::toPersian(max($preset->minWidth, $preset->minHeight));
+        $text = match (true) {
+            $preset->padToSquare && $preset->trimBeforePadding => "ضلع بلندتر دست‌کم {$longest} پیکسل، با هر نسبتی؛ حاشیه حذف و تصویر روی زمینه سفید مربع می‌شود.",
+            $preset->padToSquare => "ضلع بلندتر دست‌کم {$longest} پیکسل، با هر نسبتی؛ تصویر بدون برش و کشیدگی روی زمینه سفید مربع می‌شود.",
+            default => "دست‌کم {$size} پیکسل با همین نسبت ابعاد.",
+        };
 
         return $text.' حداکثر '.PersianDigits::toPersian($preset->maxKilobytes).' کیلوبایت'
             .($preset->acceptsSvg() ? '؛ SVG ترجیح دارد.' : '.');

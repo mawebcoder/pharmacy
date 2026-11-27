@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Providers\AppServiceProvider;
+
 it('redirects a plain-HTTP page request to the same URL on HTTPS with 301', function (): void {
     config(['app.force_https' => true]);
 
@@ -30,4 +32,13 @@ it('does not redirect when forcing HTTPS is off', function (): void {
     config(['app.force_https' => false]);
 
     $this->get('http://localhost/up')->assertOk();
+});
+
+it('builds every link on APP_URL\'s domain, also for a request sent straight to the server\'s IP', function (): void {
+    config(['app.force_https' => true, 'app.url' => 'https://hutana.ir']);
+    $this->app->getProvider(AppServiceProvider::class)?->boot();
+
+    $this->get('https://185.221.237.81/up')->assertOk();
+
+    expect(route('brands.index'))->toBe('https://hutana.ir/brands');
 });

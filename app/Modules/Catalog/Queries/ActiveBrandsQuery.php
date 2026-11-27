@@ -10,8 +10,8 @@ use Collator;
 use Illuminate\Support\Collection;
 
 /**
- * Active brands for the /b index, grouped by the first letter of the Persian name: Persian letters in
- * alphabet order (آ sits under الف), then Latin letters A–Z, then "#" for anything else.
+ * Active brands for the /brands index, sorted by Persian name (one list since 2026-11-27, owner). grouped() still
+ * groups them by first letter: Persian letters in alphabet order (آ sits under الف), then Latin letters A–Z, then "#".
  */
 final class ActiveBrandsQuery
 {
@@ -23,14 +23,24 @@ final class ActiveBrandsQuery
     private const string OTHER = '#';
 
     /**
-     * @return Collection<string, list<Brand>> letter label => brands sorted by Persian name
+     * @return list<Brand> active brands sorted by Persian name, with their logos
      */
-    public function grouped(): Collection
+    public function sorted(): array
     {
         $collator = new Collator('fa');
 
         $brands = Brand::query()->active()->with('media')->get()->all();
         usort($brands, fn (Brand $a, Brand $b): int => (int) $collator->compare($a->getNameFa(), $b->getNameFa()));
+
+        return $brands;
+    }
+
+    /**
+     * @return Collection<string, list<Brand>> letter label => brands sorted by Persian name
+     */
+    public function grouped(): Collection
+    {
+        $brands = $this->sorted();
 
         /** @var array<string, list<Brand>> $groups */
         $groups = [];

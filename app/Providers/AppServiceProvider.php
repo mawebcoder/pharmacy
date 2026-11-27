@@ -29,9 +29,12 @@ class AppServiceProvider extends ServiceProvider
         // Filament imports belong to admins (admin_users), not App\Models\User: the catalog import (owner, 2026-11-27).
         Import::polymorphicUserRelationship();
 
-        // Behind the CDN every link, asset and redirect uses https://, also from queued jobs and the console.
+        // Behind the CDN every link, asset and redirect uses https:// and APP_URL's domain, also from queued jobs and the
+        // console. Without the domain, a request straight to the server's IP (scanners) built links on the IP, and the
+        // cached menus then sent every visitor there (2026-11-27).
         if (config('app.force_https')) {
             URL::forceScheme('https');
+            URL::useOrigin((string) config('app.url'));
         }
     }
 

@@ -124,6 +124,7 @@ final class ProviderResource extends Resource
                             ->label('فایل اکسل یا CSV')
                             ->disk('local')
                             ->directory('imports/prices')
+                            ->imageEditor(false)
                             ->storeFileNamesIn('original_name')
                             ->acceptedFileTypes([
                                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
