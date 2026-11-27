@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Filament\Resources\Brands\Schemas;
 
+use App\Modules\Catalog\Filament\Forms\DescriptionEditor;
 use App\Modules\Catalog\Http\Requests\StoreBrandRequest;
 use App\Modules\Catalog\Models\Brand;
 use App\Modules\Media\Filament\Forms\ImageUpload;
@@ -78,11 +79,7 @@ final class BrandForm
                     ]),
                 Section::make('معرفی')
                     ->schema([
-                        Textarea::make(Brand::COLUMN_DESCRIPTION)
-                            ->label('توضیحات')
-                            ->rows(5)
-                            ->maxLength(5000)
-                            ->rules(fn (?Brand $record): array => $rules($record, Brand::COLUMN_DESCRIPTION)),
+                        DescriptionEditor::make(Brand::COLUMN_DESCRIPTION, maxLength: 5000),
                     ]),
                 Section::make('تصویر')
                     ->schema([

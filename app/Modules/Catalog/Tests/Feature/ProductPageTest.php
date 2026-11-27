@@ -113,3 +113,12 @@ it('drafts the admin\'s message with the picked SKU and offers Telegram too', fu
 
     expect($small->getId())->not->toBe($large->getId());
 });
+
+it('shows the description with its rich-editor formatting and without scripts', function (): void {
+    $this->product->forceFill([Product::COLUMN_DESCRIPTION => '<p><strong>آبرسان قوی</strong></p><ul><li>بدون عطر</li></ul><script>alert(1)</script>'])->save();
+
+    $this->get('/products/urea-cream')
+        ->assertOk()
+        ->assertSee(['<strong>آبرسان قوی</strong>', '<li>بدون عطر</li>'], false)
+        ->assertDontSee('<script>alert(1)</script>', false);
+});

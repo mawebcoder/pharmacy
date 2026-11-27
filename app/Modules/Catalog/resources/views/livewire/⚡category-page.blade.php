@@ -77,7 +77,7 @@ new class extends Component
     <header class="space-y-2">
         <h1 class="text-2xl font-bold text-ink-900 xl:text-3xl">{{ $page->getNameFa() }}</h1>
         @if ($page->getDescription())
-            <p class="max-w-3xl leading-8 whitespace-pre-line text-ink-500">{{ $page->getDescription() }}</p>
+            <div class="page-content max-w-3xl text-ink-500">{!! \App\Modules\Catalog\Support\DescriptionHtml::toHtml($page->getDescription()) !!}</div>
         @endif
     </header>
 

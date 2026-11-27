@@ -64,7 +64,7 @@ describe('as a super admin', function (): void {
 
         expect($brand->fresh())
             ->getNameFa()->toBe('اوسرین آلمان')
-            ->getDescription()->toBe('مراقبت پوست')
+            ->getDescription()->toBe('<p>مراقبت پوست</p>')
             ->getSlug()->toBe('eucerin');
     });
 

@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Filament\Resources\Products\Schemas;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Enums\ProductType;
 use App\Modules\Catalog\Filament\Forms\BoxCapacityFields;
+use App\Modules\Catalog\Filament\Forms\DescriptionEditor;
 use App\Modules\Catalog\Filament\Forms\ImageSelect;
 use App\Modules\Catalog\Http\Requests\StoreProductRequest;
 use App\Modules\Catalog\Http\Requests\StoreProductVariantRequest;
@@ -173,7 +174,7 @@ final class ProductForm
                         Tab::make('محتوا')
                             ->schema([
                                 $text(Product::COLUMN_SHORT_DESCRIPTION, 'توضیح کوتاه', 2),
-                                $text(Product::COLUMN_DESCRIPTION, 'توضیحات', 6),
+                                DescriptionEditor::make(Product::COLUMN_DESCRIPTION, maxLength: 20_000),
                                 $text(Product::COLUMN_INGREDIENTS, 'ترکیبات'),
                                 $text(Product::COLUMN_USAGE, 'روش مصرف'),
                                 $text(Product::COLUMN_WARNINGS, 'هشدارها'),
