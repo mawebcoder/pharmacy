@@ -34,7 +34,7 @@ it('seeds Tipax\'s standard cartons 1–11 once, keeping the admin\'s edits', fu
 
     expect(ShippingBox::query()->orderBy(ShippingBox::COLUMN_TIPAX_SIZE)->pluck(ShippingBox::COLUMN_TIPAX_SIZE)->all())->toBe(range(1, 11))
         ->and(ShippingBox::query()->where(ShippingBox::COLUMN_TIPAX_SIZE, 2)->sole())
-        ->sizesLabel()->toBe('20 × 15 × 10')
+        ->sizesLabel()->toBe('طول ۲۰ × عرض ۱۵ × ارتفاع ۱۰ سانتی‌متر')
         ->getEmptyWeightG()->toBe(95)
         ->getMaxWeightG()->toBe(3000);
 });
@@ -63,6 +63,13 @@ describe('the SKU form', function (): void {
         $this->product = Product::factory()->create();
         $this->small = ShippingBox::query()->where(ShippingBox::COLUMN_TIPAX_SIZE, 1)->sole()->getId();
         $this->medium = ShippingBox::query()->where(ShippingBox::COLUMN_TIPAX_SIZE, 2)->sole()->getId();
+    });
+
+    it('names each side of a carton\'s sizes on the SKU form and in the box list', function (): void {
+        expect(app(VariantBoxCapacities::class)->boxOptions()[$this->small])->toEndWith('(طول ۱۵ × عرض ۱۰ × ارتفاع ۱۰ سانتی‌متر)');
+
+        $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
+        livewire(ManageShippingBoxes::class)->assertSee('طول ۱۵ × عرض ۱۰ × ارتفاع ۱۰ سانتی‌متر');
     });
 
     it('asks how many fit at least one box', function (): void {
