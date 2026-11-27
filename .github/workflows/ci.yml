@@ -5,8 +5,8 @@ name: CI/CD
 # passes here behaves the same on a developer's machine and on the production server, which runs the same
 # versions natively (deploy/).
 #
-#   checks            every push (dev, feature branches, main): Pint, Larastan, composer audit, the test suite,
-#                     the asset build
+#   checks            every push (dev, feature branches, main): Pint, Larastan, composer audit and the asset
+#                     build (the test suite runs locally, not in CI)
 #   production-build  every push: the release exactly as the server gets it (no dev packages, optimized class
 #                     map, built assets, APP_ENV=production), migrated and seeded on an empty database, cached,
 #                     served by Nginx and smoke-tested; on main it is kept as the release archive
@@ -97,9 +97,6 @@ jobs:
 
       - name: Composer audit
         run: docker compose exec -T app composer audit
-
-      - name: Tests
-        run: docker compose exec -T app php artisan test --compact --parallel
 
       - name: Build front-end assets
         run: docker compose exec -T app sh -c 'npm ci --no-audit --no-fund && npm run build'
