@@ -199,25 +199,16 @@ return [
     |
     */
 
+    // Two workers, one process each, sized for the current server (1 GB RAM, 1 core): every PHP process is about
+    // 50 MB. A worker takes its queues in the order listed. Jobs that set their own tries keep them.
     'defaults' => [
+        // Short jobs. "sms" first, so sign-in codes never wait behind other work (roadmap D11.6, S19). One process,
+        // so a SKU's price records are written in order ("pricing", D3.2, D9) and a product's updates reach
+        // Meilisearch in order ("search", S12): parallel workers let an older snapshot overwrite a newer one (S14).
         'supervisor-1' => [
             'connection' => 'redis',
-            'queue' => ['default'],
-            'balance' => 'auto',
-            'autoScalingStrategy' => 'time',
-            'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 128,
-            'tries' => 1,
-            'timeout' => 60,
-            'nice' => 0,
-        ],
-        // "pricing": price calculations (roadmap D3.2, D9). One process, so a SKU's price records are written in order.
-        'supervisor-pricing' => [
-            'connection' => 'redis',
-            'queue' => ['pricing'],
-            'balance' => 'simple',
+            'queue' => ['sms', 'default', 'pricing', 'search'],
+            'balance' => false,
             'maxProcesses' => 1,
             'maxTime' => 0,
             'maxJobs' => 0,
@@ -227,97 +218,27 @@ return [
             'nice' => 0,
         ],
 
-        // "price-import": supplier price Excel imports (roadmap D9, S18): reading and applying big files, one at a time.
-        'supervisor-price-import' => [
+        // Slow jobs, one at a time: image processing (AVIF encoding, S09), catalog imports (reading the file, then
+        // chunks of about 100 rows with their image downloads; one process, so chunks never create the same brand or
+        // category twice) and supplier price imports (D9, S18).
+        'supervisor-heavy' => [
             'connection' => 'redis',
-            'queue' => ['price-import'],
-            'balance' => 'simple',
+            'queue' => ['media', 'catalog-import', 'price-import'],
+            'balance' => false,
             'maxProcesses' => 1,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 512,
             'tries' => 1,
             'timeout' => 1800,
-            'nice' => 0,
-        ],
-
-        // "catalog-import": catalog Excel/CSV imports (owner, 2026-11-27): reading the file, then saving it in chunks of
-        // about 100 rows with their image downloads. One process, so chunks never create the same brand or category twice.
-        'supervisor-catalog-import' => [
-            'connection' => 'redis',
-            'queue' => ['catalog-import'],
-            'balance' => 'simple',
-            'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 512,
-            'tries' => 1,
-            'timeout' => 1800,
-            'nice' => 0,
-        ],
-
-        // "search": Scout's Meilisearch indexing jobs (S12). One process, so the updates of a product reach
-        // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S14).
-        'supervisor-search' => [
-            'connection' => 'redis',
-            'queue' => ['search'],
-            'balance' => 'simple',
-            'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 128,
-            'tries' => 3,
-            'timeout' => 60,
-            'nice' => 0,
-        ],
-
-        // "sms": SMS sends (roadmap D11.6, S19): short jobs, own workers so sign-in codes never wait behind other work.
-        'supervisor-sms' => [
-            'connection' => 'redis',
-            'queue' => ['sms'],
-            'balance' => 'simple',
-            'maxProcesses' => 2,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 128,
-            'tries' => 3,
-            'timeout' => 30,
-            'nice' => 0,
-        ],
-
-        // Image processing (roadmap D9, S09): slow jobs (AVIF encoding) on their own workers and timeout.
-        'supervisor-media' => [
-            'connection' => 'redis',
-            'queue' => ['media'],
-            'balance' => 'simple',
-            'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 512,
-            'tries' => 3,
-            'timeout' => 310,
             'nice' => 0,
         ],
     ],
 
     'environments' => [
-        // Sized for the current server (1 GB RAM, 1 core): every worker is a PHP process of about 50 MB.
-        'production' => [
-            'supervisor-1' => [
-                'maxProcesses' => 2,
-                'balanceMaxShift' => 1,
-                'balanceCooldown' => 3,
-            ],
-            'supervisor-sms' => [
-                'maxProcesses' => 1,
-            ],
-        ],
+        'production' => [],
 
-        'local' => [
-            'supervisor-1' => [
-                'maxProcesses' => 3,
-            ],
-        ],
+        'local' => [],
     ],
 
     /*

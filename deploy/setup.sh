@@ -123,8 +123,21 @@ apt-get install -yq mysql-server
 sed -e "s/^innodb_buffer_pool_size = .*/innodb_buffer_pool_size = ${MYSQL_BUFFER_POOL}/" \
     -e "s/^max_connections = .*/max_connections = ${MYSQL_MAX_CONNECTIONS}/" \
     "${REPO}/docker/mysql/conf.d/my.cnf" > /etc/mysql/mysql.conf.d/zz-hutana.cnf
-# Performance schema takes about 100 MB that a small server cannot spare.
-printf '\n[mysqld]\nperformance_schema = OFF\n' >> /etc/mysql/mysql.conf.d/zz-hutana.cnf
+# Sized for 1 GB: MySQL 8.4's defaults (performance schema, 4000 open tables, a 64 MB log buffer, temp tables in up
+# to 1 GB of RAM) grew mysqld past 600 MB while migrations ran. No binary log: there is no replica, and every DDL
+# statement waited on it.
+cat >> /etc/mysql/mysql.conf.d/zz-hutana.cnf <<'CNF'
+
+[mysqld]
+performance_schema = OFF
+innodb_log_buffer_size = 8M
+table_open_cache = 400
+table_definition_cache = 400
+temptable_max_ram = 32M
+tmp_table_size = 16M
+max_heap_table_size = 16M
+skip-log-bin
+CNF
 
 log "Redis ${REDIS_VERSION}"
 apt-get install -yq "redis-server=6:${REDIS_VERSION}.*" "redis-tools=6:${REDIS_VERSION}.*"
@@ -150,9 +163,10 @@ if [[ -n "${DEPLOY_PUBLIC_KEY}" ]]; then
     chown "${DEPLOY_USER}:${DEPLOY_USER}" "/home/${DEPLOY_USER}/.ssh/authorized_keys"
     chmod 600 "/home/${DEPLOY_USER}/.ssh/authorized_keys"
 fi
-# The release script may only reload PHP-FPM and start or restart the app's Supervisor programs.
+# The release script may only reload PHP-FPM, start, stop or restart the app's Supervisor programs, and stop or start
+# Meilisearch (stopped while migrations run: a 1 GB server cannot hold it next to them).
 cat > /etc/sudoers.d/hutana-deploy <<EOF
-${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl reload php${PHP_VERSION}-fpm, /usr/bin/supervisorctl start hutana\:hutana-horizon, /usr/bin/supervisorctl restart hutana\:hutana-scheduler
+${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl reload php${PHP_VERSION}-fpm, /usr/bin/supervisorctl start hutana\:hutana-horizon, /usr/bin/supervisorctl restart hutana\:hutana-scheduler, /usr/bin/supervisorctl stop hutana\:hutana-horizon hutana\:hutana-scheduler, /usr/bin/supervisorctl start hutana\:hutana-horizon hutana\:hutana-scheduler, /usr/bin/systemctl stop meilisearch, /usr/bin/systemctl start meilisearch
 EOF
 chmod 440 /etc/sudoers.d/hutana-deploy
 visudo -cf /etc/sudoers.d/hutana-deploy > /dev/null
