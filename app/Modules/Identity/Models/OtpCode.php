@@ -127,14 +127,14 @@ final class OtpCode extends Model
 
     /**
      * The fixed code of the one mobile number set in config auth.otp.fixed (any environment), or null for every other
-     * number, or when it is unset or shorter than 6 digits.
+     * number, or when it is unset or not 5 digits like the sent codes (the sign-in form takes 5).
      */
     public static function fixedCodeFor(string $mobile): ?string
     {
         $fixedMobile = PersianNormalizer::digits(trim((string) config('auth.otp.fixed.mobile')));
         $code = PersianNormalizer::digits(trim((string) config('auth.otp.fixed.code')));
 
-        return $fixedMobile !== '' && $fixedMobile === $mobile && preg_match('/^\d{6,}$/', $code) === 1 ? $code : null;
+        return $fixedMobile !== '' && $fixedMobile === $mobile && preg_match('/^\d{5}$/', $code) === 1 ? $code : null;
     }
 
     /**
