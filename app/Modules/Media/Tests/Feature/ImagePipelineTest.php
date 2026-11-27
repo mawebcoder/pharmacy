@@ -90,6 +90,14 @@ it('trims product photos and pads them to a white square', function (): void {
     expect($size['width'])->toBe($size['height']);
 });
 
+it('pads a wide brand logo to a square without stretching it', function (): void {
+    $file = testImage(800, 400);
+
+    $size = app(ImageNormalizer::class)->normalize($file->getRealPath(), ImagePreset::named('brand_logo'));
+
+    expect($size)->toMatchArray(['width' => 800, 'height' => 800]);
+});
+
 it('keeps a category banner pair as separate desktop and mobile images', function (): void {
     $category = Category::factory()->create();
 

@@ -78,7 +78,8 @@ return [
             'formats' => ['webp' => 90],
         ],
         'brand_logo' => [
-            'min_width' => 400, 'min_height' => 400, 'ratio' => 1,
+            // Any shape, padded (not trimmed: a logo's own background stays) to a white square (owner, 2026-11-27).
+            'min_width' => 400, 'min_height' => 400, 'ratio' => null, 'pad_to_square' => true, 'trim' => false,
             'max_kb' => 1024, 'mimes' => ['image/svg+xml', 'image/png', 'image/webp'],
             'widths' => [160, 320],
             'formats' => ['webp' => 90],
@@ -104,7 +105,7 @@ return [
         'cart-thumb' => ['preset' => 'product', 'widths' => [80, 160, 240], 'sizes' => '(min-width: 768px) 80px, 64px'],
         'pdp-main' => ['preset' => 'product', 'widths' => [400, 800, 1200], 'sizes' => '(min-width: 1280px) 560px, (min-width: 768px) 600px, 100vw'],
         'pdp-zoom' => ['preset' => 'product', 'widths' => [1600], 'sizes' => '1600px'],
-        'brand-logo' => ['preset' => 'brand_logo', 'widths' => [160, 320], 'sizes' => '(min-width: 768px) 96px, 80px'],
+        'brand-logo' => ['preset' => 'brand_logo', 'widths' => [160, 320], 'sizes' => '(min-width: 768px) 128px, 112px'],
         'category-chip' => ['preset' => 'category_icon', 'widths' => [96], 'sizes' => '24px'],
         'category-menu-icon' => ['preset' => 'category_menu_icon', 'widths' => [48, 96], 'sizes' => '24px'],
         'category-icon' => ['preset' => 'category_icon', 'widths' => [96, 192], 'sizes' => '(min-width: 1280px) 64px, (min-width: 768px) 56px, 48px'],
