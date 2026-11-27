@@ -116,7 +116,8 @@ if [[ "$(/usr/local/bin/meilisearch --version 2>/dev/null || true)" != *"${MEILI
     chmod 755 /usr/local/bin/meilisearch
 fi
 id meilisearch > /dev/null 2>&1 || useradd --system --home /var/lib/meilisearch --shell /usr/sbin/nologin meilisearch
-install -d -o meilisearch -g meilisearch /var/lib/meilisearch /var/lib/meilisearch/data /var/lib/meilisearch/dumps
+# Not the data folder: Meilisearch creates it itself and refuses to start on an empty one it did not create.
+install -d -o meilisearch -g meilisearch /var/lib/meilisearch /var/lib/meilisearch/dumps
 install -m 0644 "${REPO}/deploy/meilisearch/meilisearch.service" /etc/systemd/system/meilisearch.service
 
 log "Deploy user and folders"
