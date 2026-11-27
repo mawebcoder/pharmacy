@@ -11,7 +11,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Laravel\Telescope\EntryType;
 use Laravel\Telescope\IncomingEntry;
 
-it('keeps Telescope closed while TELESCOPE_ENABLED is off', function (): void {
+it('keeps Telescope closed when TELESCOPE_ENABLED is false', function (): void {
     $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin')
         ->get('/telescope/requests')
         ->assertNotFound();

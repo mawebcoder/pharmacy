@@ -14,7 +14,7 @@ use Laravel\Telescope\TelescopeApplicationServiceProvider;
 use Laravel\Telescope\Watchers;
 
 /**
- * Telescope at /telescope, off unless TELESCOPE_ENABLED=true. Locally it records everything. Elsewhere (the 2 GB
+ * Telescope at /telescope, on unless TELESCOPE_ENABLED=false. Locally it records everything. Elsewhere (the 2 GB
  * production server) only the error watchers run, it keeps only exceptions, error logs, failed requests and jobs and
  * slow queries, hides secrets, and drops entries older than 72 hours every night. Only active admins with exactly the
  * super_admin role and 2FA (the "admin" guard) may open it, in every environment.
