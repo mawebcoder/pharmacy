@@ -20,9 +20,9 @@ DOMAINS="${DOMAINS:?Set DOMAINS, e.g. DOMAINS=\"hutana.ir www.hutana.ir\"}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_PUBLIC_KEY="${DEPLOY_PUBLIC_KEY:-}"
-# Sized for the current server (1 GB RAM, 1 core); raise both when the server grows (e.g. 2G and 100 on 8 GB).
-MYSQL_BUFFER_POOL="${MYSQL_BUFFER_POOL:-128M}"
-MYSQL_MAX_CONNECTIONS="${MYSQL_MAX_CONNECTIONS:-40}"
+# Sized for the current server (2 GB RAM, 2 cores); raise both when the server grows (e.g. 2G and 100 on 8 GB).
+MYSQL_BUFFER_POOL="${MYSQL_BUFFER_POOL:-384M}"
+MYSQL_MAX_CONNECTIONS="${MYSQL_MAX_CONNECTIONS:-60}"
 # Swap file made when the server has none, so a busy moment slows the server down instead of freezing it.
 SWAP_SIZE="${SWAP_SIZE:-2G}"
 
@@ -123,19 +123,19 @@ apt-get install -yq mysql-server
 sed -e "s/^innodb_buffer_pool_size = .*/innodb_buffer_pool_size = ${MYSQL_BUFFER_POOL}/" \
     -e "s/^max_connections = .*/max_connections = ${MYSQL_MAX_CONNECTIONS}/" \
     "${REPO}/docker/mysql/conf.d/my.cnf" > /etc/mysql/mysql.conf.d/zz-hutana.cnf
-# Sized for 1 GB: MySQL 8.4's defaults (performance schema, 4000 open tables, a 64 MB log buffer, temp tables in up
-# to 1 GB of RAM) grew mysqld past 600 MB while migrations ran. No binary log: there is no replica, and every DDL
-# statement waited on it.
+# Sized for 2 GB: MySQL 8.4's defaults (performance schema, 4000 open tables, a 64 MB log buffer, temp tables in up
+# to 1 GB of RAM) grew mysqld past 600 MB on the first 1 GB server while migrations ran. No binary log: there is no
+# replica, and every DDL statement waited on it.
 cat >> /etc/mysql/mysql.conf.d/zz-hutana.cnf <<'CNF'
 
 [mysqld]
 performance_schema = OFF
-innodb_log_buffer_size = 8M
-table_open_cache = 400
-table_definition_cache = 400
-temptable_max_ram = 32M
-tmp_table_size = 16M
-max_heap_table_size = 16M
+innodb_log_buffer_size = 16M
+table_open_cache = 800
+table_definition_cache = 800
+temptable_max_ram = 64M
+tmp_table_size = 32M
+max_heap_table_size = 32M
 skip-log-bin
 CNF
 
@@ -164,7 +164,7 @@ if [[ -n "${DEPLOY_PUBLIC_KEY}" ]]; then
     chmod 600 "/home/${DEPLOY_USER}/.ssh/authorized_keys"
 fi
 # The release script may only reload PHP-FPM, start, stop or restart the app's Supervisor programs, and stop or start
-# Meilisearch (stopped while migrations run: a 1 GB server cannot hold it next to them).
+# Meilisearch (no longer stopped by release.sh; the commands stay allowed).
 cat > /etc/sudoers.d/hutana-deploy <<EOF
 ${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/systemctl reload php${PHP_VERSION}-fpm, /usr/bin/supervisorctl start hutana\:hutana-horizon, /usr/bin/supervisorctl restart hutana\:hutana-scheduler, /usr/bin/supervisorctl stop hutana\:hutana-horizon hutana\:hutana-scheduler, /usr/bin/supervisorctl start hutana\:hutana-horizon hutana\:hutana-scheduler, /usr/bin/systemctl stop meilisearch, /usr/bin/systemctl start meilisearch
 EOF
