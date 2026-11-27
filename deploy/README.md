@@ -67,10 +67,14 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
 - **Deploy:** after `dev`'s CI is green, Actions → Deploy to production → Run workflow. It ships the newest `dev`
   commit whose CI passed and merges that commit into `main`. If `main` has changes `dev` lacks, it refuses: merge `main` into `dev`, push,
   wait for green, then run it again. A release's folder and rollback name is the `dev` commit.
+- **During a deploy** Horizon and the scheduler are stopped from the start until the switch, and Meilisearch while
+  the migrations run: a 1 GB server cannot hold them next to the migrations. A failed deploy starts them again.
 - **Roll back:** Actions → Rollback → Run workflow (empty = the previous release, or a kept commit). Migrations are
   not undone, so keep each migration compatible with the release before it.
 - **Changed a server config** (Nginx, PHP, MySQL, Redis, Supervisor, Meilisearch): copy the files again (step 2) and
   re-run `setup.sh` with the same variables.
 - **Logs:** `/var/www/hutana/shared/storage/logs/` (Laravel, Horizon, scheduler), `journalctl -u php8.5-fpm`,
   `/var/log/nginx/`.
-- **Horizon:** `/horizon` in the browser (super admins with 2FA); `supervisorctl status hutana:*` on the server.
+- **Horizon:** `/horizon` in the browser (super admins with 2FA); `supervisorctl status hutana:*` on the server. Two
+  workers, one process each (`config/horizon.php`): `sms`, `default`, `pricing`, `search` in that order, and the slow
+  `media`, `catalog-import`, `price-import`.

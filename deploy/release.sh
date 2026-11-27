@@ -68,12 +68,41 @@ activate() {
     log "Live: $(basename "${release}")"
 }
 
+# On a 1 GB, single-core server Horizon, the scheduler and Meilisearch do not fit in memory next to the migrations:
+# the server swaps and every statement crawls. Horizon and the scheduler stay stopped for the
+# whole deploy (activate starts them from the new release), Meilisearch only for the migrations. If a step fails,
+# start_services brings everything back on the release still live.
+stop_services() {
+    log "Stopping Horizon, the scheduler and Meilisearch for the deploy"
+    trap start_services EXIT
+    sudo -n supervisorctl stop hutana:hutana-horizon hutana:hutana-scheduler > /dev/null
+    sudo -n systemctl stop meilisearch
+}
+
+start_services() {
+    sudo -n systemctl start meilisearch || true
+    sudo -n supervisorctl start hutana:hutana-horizon hutana:hutana-scheduler > /dev/null 2>&1 || true
+}
+
+start_meilisearch() {
+    log "Starting Meilisearch"
+    sudo -n systemctl start meilisearch
+    for _ in $(seq 30); do
+        curl --silent --fail http://127.0.0.1:7700/health > /dev/null && return 0
+        sleep 1
+    done
+    echo "Meilisearch did not answer within 30 seconds." >&2
+    return 1
+}
+
 deploy() {
     local commit="$1" archive="$2"
     local release="${RELEASES}/${commit}"
 
     [[ -f "${SHARED}/.env" ]] || { echo "Missing ${SHARED}/.env (see deploy/README.md)." >&2; exit 1; }
     [[ -f "${archive}" ]] || { echo "Missing archive ${archive}." >&2; exit 1; }
+
+    stop_services
 
     log "Unpacking ${commit}"
     rm -rf "${release}"
@@ -90,6 +119,8 @@ deploy() {
 
     log "Migrations"
     artisan "${release}" migrate --force
+    # Seeders index into Meilisearch straight away when Scout does not queue (SCOUT_QUEUE=false).
+    start_meilisearch
     log "Seeders"
     # Starting data: each seeder only adds what is missing.
     artisan "${release}" db:seed --force
@@ -100,6 +131,7 @@ deploy() {
     artisan "${release}" filament:optimize
 
     activate "${release}"
+    trap - EXIT
 
     # Provinces and cities from Tipax (D4.3) after the switch and in the background: a slow or unreachable Tipax
     # must not hold up the release. The scheduler syncs them again every night; the result is in tipax-sync.log.
