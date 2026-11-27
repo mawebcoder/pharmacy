@@ -80,31 +80,19 @@ activate() {
     log "Live: $(basename "${release}")"
 }
 
-# On a 1 GB, single-core server Horizon, the scheduler and Meilisearch do not fit in memory next to the migrations:
-# the server swaps and every statement crawls. Horizon is stopped and stays off (see activate); the scheduler is
-# stopped for the whole deploy (activate starts it from the new release), Meilisearch only for the migrations. If a
-# step fails, start_services brings the scheduler and Meilisearch back on the release still live.
+# On a 1 GB, single-core server Horizon and the scheduler do not fit in memory next to the migrations: the server
+# swaps and every statement crawls. Horizon is stopped and stays off (see activate); the scheduler is stopped for the
+# whole deploy (activate starts it from the new release). Meilisearch keeps running: the live site's listing and search
+# pages read it, so stopping it took them down for the whole migration. If a step fails, start_services brings the
+# scheduler back on the release still live.
 stop_services() {
-    log "Stopping Horizon, the scheduler and Meilisearch for the deploy"
+    log "Stopping Horizon and the scheduler for the deploy"
     trap start_services EXIT
     sudo -n supervisorctl stop hutana:hutana-horizon hutana:hutana-scheduler > /dev/null
-    sudo -n systemctl stop meilisearch
 }
 
 start_services() {
-    sudo -n systemctl start meilisearch || true
     sudo -n supervisorctl restart hutana:hutana-scheduler > /dev/null 2>&1 || true
-}
-
-start_meilisearch() {
-    log "Starting Meilisearch"
-    sudo -n systemctl start meilisearch
-    for _ in $(seq 30); do
-        curl --silent --fail http://127.0.0.1:7700/health > /dev/null && return 0
-        sleep 1
-    done
-    echo "Meilisearch did not answer within 30 seconds." >&2
-    return 1
 }
 
 deploy() {
@@ -131,8 +119,6 @@ deploy() {
 
     log "Migrations"
     artisan "${release}" migrate --force
-    # Seeders index into Meilisearch straight away when Scout does not queue (SCOUT_QUEUE=false).
-    start_meilisearch
     log "Seeders"
     # Starting data: each seeder only adds what is missing.
     artisan "${release}" db:seed --force

@@ -66,8 +66,8 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
 
 - **Deploy:** merge `dev` into `main`. `main` runs the checks and the production build and deploys only if both
   pass.
-- **During a deploy** the scheduler is stopped from the start until the switch, and Meilisearch while the migrations
-  run: a 1 GB server cannot hold them next to the migrations. A failed deploy starts them again. **Horizon is stopped
+- **During a deploy** the scheduler is stopped from the start until the switch (a failed deploy starts it again).
+  Meilisearch keeps running: the live site's listing and search pages need it. **Horizon is stopped
   and not started again** by a deploy or a rollback (it took about 430 MB): start it by hand with
   `sudo supervisorctl start hutana:hutana-horizon`. Until then queued jobs (SMS, images, imports, search indexing)
   wait in Redis.
