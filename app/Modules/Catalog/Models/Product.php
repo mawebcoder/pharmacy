@@ -12,6 +12,7 @@ use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,7 +31,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * A product (roadmap D3.1). What customers buy are its variants; photos are the "gallery" image collection.
  * Shown on the storefront at /products/{slug} while active (S13).
  */
-final class Product extends Model implements HasActivityLogLabel, HasImagePresets
+final class Product extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
@@ -837,5 +838,13 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_IS_FRAGILE => 'boolean',
             self::COLUMN_STATUS => ProductStatus::class,
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('products.show', $slug, absolute: false)];
     }
 }

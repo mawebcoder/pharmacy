@@ -10,6 +10,7 @@ use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +23,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * A nutrient or need shortcut, e.g. «آهن» or «بی‌خوابی» (roadmap D3.1, B1 Darochi). Shown as chips; featured tags
  * appear on the home page. /t/{slug} lists its products.
  */
-final class Tag extends Model implements HasActivityLogLabel, HasImagePresets
+final class Tag extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<TagFactory> */
     use HasFactory;
@@ -185,5 +186,13 @@ final class Tag extends Model implements HasActivityLogLabel, HasImagePresets
             self::COLUMN_IS_FEATURED => 'boolean',
             self::COLUMN_SORT => 'integer',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('tags.show', $slug, absolute: false)];
     }
 }

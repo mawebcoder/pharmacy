@@ -19,7 +19,7 @@ it('renders the home page right-to-left in Persian inside the storefront layout'
 
     $response->assertOk()
         ->assertSee('<html lang="fa" dir="rtl"', false)
-        ->assertSee('<title>خانه | هوتانا</title>', false)
+        ->assertSee('<title>هوتانا</title>', false)
         ->assertSee('پرش به محتوای اصلی')
         ->assertSee('role="search"', false)
         ->assertSee('ضمانت بازگشت');

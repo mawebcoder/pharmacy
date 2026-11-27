@@ -10,6 +10,7 @@ use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use App\Modules\Shared\Support\Countries;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,7 +25,7 @@ use Spatie\Activitylog\Support\LogOptions;
 /**
  * A product brand (roadmap D3.1). Shown on the storefront at /brands/{slug} while active.
  */
-final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
+final class Brand extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<BrandFactory> */
     use HasFactory;
@@ -285,7 +286,7 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
      */
     public function toSearchableArray(): array
     {
-        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), $this->isActive());
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), $this->isActive(), $this->getSlug(), $this->getUpdatedAt());
     }
 
     public function activityLogLabel(): string
@@ -302,5 +303,13 @@ final class Brand extends Model implements HasActivityLogLabel, HasImagePresets
             self::COLUMN_COMMISSION_PERCENT => 'decimal:2',
             self::COLUMN_IS_ACTIVE => 'boolean',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('brands.show', $slug, absolute: false)];
     }
 }

@@ -1,5 +1,8 @@
 <?php
 
+use App\Modules\Seo\Support\StructuredData;
+use App\Modules\Seo\Support\SeoText;
+use App\Modules\Seo\Data\SeoMeta;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Subcategory;
 use Livewire\Component;
@@ -40,7 +43,29 @@ new class extends Component
             'page' => $page,
             // Only subcategories with at least one product for sale (owner, 2026-11-15).
             'subcategories' => $this->category->subcategories()->active()->withProductsForSale()->with('media')->get(),
-        ])->title($page->getSeoTitle() ?? $page->getNameFa());
+        ])->title($page->getSeoTitle() ?? $page->getNameFa())
+            ->layoutData(['seo' => $this->seo($page)]);
+    }
+
+    /**
+     * Description, banner as share image and BreadcrumbList JSON-LD (roadmap S38).
+     */
+    private function seo(Category|Subcategory $page): SeoMeta
+    {
+        $trail = [
+            ['name' => (string) config('app.display_name'), 'url' => route('home')],
+            ['name' => $this->category->getNameFa(), 'url' => $this->category->url()],
+        ];
+
+        if ($this->subcategory instanceof Subcategory) {
+            $trail[] = ['name' => $this->subcategory->getNameFa(), 'url' => $this->subcategory->url()];
+        }
+
+        return new SeoMeta(
+            description: SeoText::description($page->getSeoDescription(), $page->getDescription(), 'خرید آنلاین '.$page->getNameFa().' در هوتانا.'),
+            image: StructuredData::absolute($page->getBannerDesktop()?->url(1280, 'jpg')),
+            structuredData: [StructuredData::breadcrumbs($trail)],
+        );
     }
 };
 ?>

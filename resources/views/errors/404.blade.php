@@ -2,7 +2,7 @@
     Page not found (owner, 2026-11-15): inside the storefront frame, a calm illustration — a large «۴۰۴» with a tilted
     capsule — a short explanation, and one button in the middle to every product, without filters (/products).
 --}}
-@component('layouts.app', ['title' => 'صفحه پیدا نشد'])
+@component('layouts.app', ['title' => 'صفحه پیدا نشد', 'seo' => new \App\Modules\Seo\Data\SeoMeta(noindex: true)])
     <section class="relative mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center overflow-hidden px-2 py-10 text-center" aria-labelledby="not-found-title">
         {{-- Soft background glow, in the theme's colours (light and dark). --}}
         <div class="pointer-events-none absolute inset-x-0 top-6 -z-10 mx-auto size-72 rounded-full bg-primary-50 blur-3xl md:size-96" aria-hidden="true"></div>

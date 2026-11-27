@@ -99,6 +99,35 @@ final class ProductListing extends Component
     /** How many products are shown: PER_PAGE more each time the shopper scrolls near the end. */
     public int $shown = self::PER_PAGE;
 
+    /** The list's address without query, for the crawlable «صفحه بعد» link (roadmap S38). */
+    #[Locked]
+    public string $listUrl = '';
+
+    /** Pages a ?page=N address may open at once (N × PER_PAGE products). */
+    public const int MAX_CRAWL_PAGES = 50;
+
+    /**
+     * ?page=N opens the list with its first N pages (search engines follow «صفحه بعد»; shoppers scroll instead).
+     */
+    public function mount(): void
+    {
+        $this->listUrl = request()->url();
+        $page = max(1, min(self::MAX_CRAWL_PAGES, (int) request()->query('page', '1')));
+        $this->shown = $page * self::PER_PAGE;
+    }
+
+    /**
+     * The next page's address for search engines, only for the unfiltered list (filtered ones are not indexed).
+     */
+    public function nextPageUrl(): ?string
+    {
+        $nextPage = intdiv($this->shown, self::PER_PAGE) + 1;
+
+        return $this->appliedFilters() === [] && $this->query === null && $this->sort === '' && $nextPage <= self::MAX_CRAWL_PAGES && $this->listUrl !== ''
+            ? $this->listUrl.'?page='.$nextPage
+            : null;
+    }
+
     public function updated(string $property): void
     {
         if ($property !== 'shown') {

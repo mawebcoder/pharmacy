@@ -20,10 +20,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
         <meta name="theme-color" content="#0f766e">
 
-        <title>{{ filled($title ?? null) ? $title.' | '.config('app.display_name') : config('app.display_name') }}</title>
-        @if (filled($description ?? null))
-            <meta name="description" content="{{ $description }}">
-        @endif
+        <x-seo::head :title="$title ?? null" :description="$description ?? null" :seo="$seo ?? null" />
 
         @fonts
         <tallstackui:script />

@@ -11,6 +11,7 @@ use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,7 +28,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * A product category (roadmap D3.1): the top level, ordered by "sort"; its subcategories are Subcategory rows in their
  * own table (owner, 2026-11-15). Shown on the storefront at /categories/{slug} while active.
  */
-final class Category extends Model implements HasActivityLogLabel, HasImagePresets
+final class Category extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<CategoryFactory> */
     use HasFactory;
@@ -344,7 +345,7 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
      */
     public function toSearchableArray(): array
     {
-        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), $this->isActive());
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), $this->isActive(), $this->getSlug(), $this->getUpdatedAt());
     }
 
     public function activityLogLabel(): string
@@ -370,6 +371,22 @@ final class Category extends Model implements HasActivityLogLabel, HasImagePrese
         return [
             self::COLUMN_SORT => 'integer',
             self::COLUMN_IS_ACTIVE => 'boolean',
+        ];
+    }
+
+    /**
+     * Its own address and its subcategories' (which start with its slug), in subcategory id order.
+     *
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [
+            route('category.show', $slug, absolute: false),
+            ...array_values(array_map(
+                fn (mixed $subcategorySlug): string => route('subcategory.show', [$slug, (string) $subcategorySlug], absolute: false),
+                $this->subcategories()->withTrashed()->orderBy(Subcategory::COLUMN_ID)->pluck(Subcategory::COLUMN_SLUG)->all(),
+            )),
         ];
     }
 }

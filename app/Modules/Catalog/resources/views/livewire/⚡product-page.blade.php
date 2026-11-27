@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Catalog\Support\ProductSeo;
 use App\Modules\Catalog\Enums\ProductRelationType;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductRelation;
@@ -89,7 +90,8 @@ new class extends Component
                 $this->product->getVariants()->count() > 1 ? $this->selectedVariant?->getTitleFa() : null,
                 route('products.show', $this->product->getSlug()),
             ),
-        ])->title($this->product->getSeoTitle() ?? $this->product->getNameFa());
+        ])->title($this->product->getSeoTitle() ?? $this->product->getNameFa())
+            ->layoutData(['seo' => ProductSeo::meta($this->product, $this->selectedVariant)]);
     }
 };
 ?>

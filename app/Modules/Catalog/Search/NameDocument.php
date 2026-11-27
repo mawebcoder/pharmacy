@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Search;
 
 use App\Modules\Shared\Support\SearchText;
+use Carbon\CarbonInterface;
 
 /**
  * The Meilisearch document of a brand or a category (owner, 2026-11-15: each in its own index, so the search panel
@@ -15,15 +16,21 @@ use App\Modules\Shared\Support\SearchText;
 final class NameDocument
 {
     /**
-     * @return array{id: int, name_fa: string, name_en: string, is_active: bool}
+     * The slugs and update time are for sitemap.xml, read from the index (owner, 2026-11-27); a subcategory's address
+     * also needs its category's slug.
+     *
+     * @return array{id: int, name_fa: string, name_en: string, is_active: bool, slug: string, category_slug: string|null, updated_at: int}
      */
-    public static function for(int $id, string $nameFa, ?string $nameEn, bool $isActive): array
+    public static function for(int $id, string $nameFa, ?string $nameEn, bool $isActive, string $slug, ?CarbonInterface $updatedAt, ?string $categorySlug = null): array
     {
         return [
             'id' => $id,
             'name_fa' => SearchText::forIndex($nameFa),
             'name_en' => SearchText::normalize((string) $nameEn),
             'is_active' => $isActive,
+            'slug' => $slug,
+            'category_slug' => $categorySlug,
+            'updated_at' => $updatedAt?->getTimestamp() ?? 0,
         ];
     }
 

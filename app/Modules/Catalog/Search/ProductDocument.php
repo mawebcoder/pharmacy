@@ -95,6 +95,9 @@ final class ProductDocument
             // Orders arrive in S22; until then best-selling sorts like newest.
             'sales_30d' => 0,
             'created_at' => $product->getCreatedAt()?->getTimestamp() ?? 0,
+            // For sitemap.xml, read from the index (owner, 2026-11-27).
+            'slug' => $product->getSlug(),
+            'updated_at' => $product->getUpdatedAt()?->getTimestamp() ?? 0,
         ];
     }
 

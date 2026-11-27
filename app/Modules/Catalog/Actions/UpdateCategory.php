@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Actions;
 use App\Modules\Catalog\Data\CategoryData;
 use App\Modules\Catalog\Events\CategorySearchFieldsChanged;
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Support\CatalogSlug;
 
 /**
@@ -32,6 +33,11 @@ final class UpdateCategory
             ->save();
 
         // Only the name is in its products' documents.
+        // Its subcategories' search documents carry its slug (their sitemap addresses).
+        if ($category->wasChanged(Category::COLUMN_SLUG)) {
+            $category->subcategories()->get()->each(fn (Subcategory $subcategory) => $subcategory->searchable());
+        }
+
         if ($category->wasChanged([Category::COLUMN_NAME_FA, Category::COLUMN_NAME_EN])) {
             CategorySearchFieldsChanged::dispatch($category->getId());
         }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Seo\Http\Middleware\RedirectOldPaths;
 use App\Modules\Shared\Exceptions\BaseException;
 use App\Modules\Shared\Http\Middleware\RedirectToHttps;
 use Illuminate\Foundation\Application;
@@ -28,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         // Appended, so it runs after the proxy headers are trusted (APP_FORCE_HTTPS).
         $middleware->append(RedirectToHttps::class);
+        // Old addresses go to their new ones (S38), for every GET, also those matching no route.
+        $middleware->append(RedirectOldPaths::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Customer-facing refusals render themselves as {message, code} (BaseException::render) and are not errors.

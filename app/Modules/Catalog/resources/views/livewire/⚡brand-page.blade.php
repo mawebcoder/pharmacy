@@ -1,5 +1,8 @@
 <?php
 
+use App\Modules\Seo\Support\StructuredData;
+use App\Modules\Seo\Support\SeoText;
+use App\Modules\Seo\Data\SeoMeta;
 use App\Modules\Catalog\Models\Brand;
 use Livewire\Component;
 
@@ -18,7 +21,18 @@ new class extends Component
 
     public function render(): \Illuminate\Contracts\View\View
     {
-        return $this->view()->title($this->brand->getSeoTitle() ?? 'برند '.$this->brand->getNameFa());
+        $brand = $this->brand;
+
+        return $this->view()->title($brand->getSeoTitle() ?? 'برند '.$brand->getNameFa())
+            ->layoutData(['seo' => new SeoMeta(
+                description: SeoText::description($brand->getSeoDescription(), $brand->getDescription(), 'خرید آنلاین محصولات '.$brand->getNameFa().' در هوتانا.'),
+                image: StructuredData::absolute($brand->getLogo()?->url(320, 'webp')),
+                structuredData: [StructuredData::breadcrumbs([
+                    ['name' => (string) config('app.display_name'), 'url' => route('home')],
+                    ['name' => 'برندها', 'url' => route('brands.index')],
+                    ['name' => $brand->getNameFa(), 'url' => route('brands.show', $brand)],
+                ])],
+            )]);
     }
 };
 ?>
