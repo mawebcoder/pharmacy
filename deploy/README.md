@@ -7,7 +7,7 @@ scheduler). CI runs every check inside `docker-compose.yml`, so local, CI and th
 | Branch | What runs |
 |---|---|
 | `dev`, feature branches | CI only: checks and the production build; on `dev` the build is kept as the release |
-| `main` (a merge of `dev`) | The deploy only: no checks or build again. It ships the release `dev` built from the same code, and refuses if that `dev` run's checks or build did not pass |
+| `main` | Nothing runs on a push: it records what is live. The **Deploy to production** button ships the newest `dev` commit whose CI passed (no checks or build again; commits still running or red stay out), then merges that commit into `main` |
 
 ## Files
 
@@ -52,20 +52,21 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
    the super admin), `SUPERADMIN_EMAIL`, SMS, Tipax, Zarinpal (`ZARINPAL_SANDBOX=false` when the merchant is live)
    and mail.
 6. **GitHub** (repository → Settings):
-   - Environments → New environment `production` (no required reviewers, so a merge into main deploys by itself).
+   - Environments → New environment `production` (no required reviewers: the Deploy to production button is the approval).
      Secrets in it:
      - `DEPLOY_HOST`: the server's address
      - `DEPLOY_USER`: `deploy`
      - `DEPLOY_SSH_KEY`: the content of the private key `hutana-deploy`
      - `DEPLOY_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 SERVER`
    - Variables: `APP_URL` = `https://hutana.ir` (health check), and `DEPLOY_PORT` only if SSH is not on 22.
-7. **Deploy:** push `dev`, wait until its CI is green, then merge `dev` into `main`. The workflow checks, builds, uploads, migrates, seeds and switches over; it rolls
-   back by itself if `/up` does not answer.
+7. **Deploy:** push `dev`, wait until its CI is green, then Actions → Deploy to production → Run workflow. It uploads
+   the release `dev`'s CI built for its newest green commit, migrates, seeds and switches over; it rolls back by itself if `/up` does not answer.
 
 ## Everyday
 
-- **Deploy:** merge `dev` into `main` after `dev`'s CI is green. If `main` has a commit `dev` lacks, the deploy
-  refuses: merge `main` into `dev`, push, wait for green, then merge again.
+- **Deploy:** after `dev`'s CI is green, Actions → Deploy to production → Run workflow. It ships the newest `dev`
+  commit whose CI passed and merges that commit into `main`. If `main` has changes `dev` lacks, it refuses: merge `main` into `dev`, push,
+  wait for green, then run it again. A release's folder and rollback name is the `dev` commit.
 - **Roll back:** Actions → Rollback → Run workflow (empty = the previous release, or a kept commit). Migrations are
   not undone, so keep each migration compatible with the release before it.
 - **Changed a server config** (Nginx, PHP, MySQL, Redis, Supervisor, Meilisearch): copy the files again (step 2) and

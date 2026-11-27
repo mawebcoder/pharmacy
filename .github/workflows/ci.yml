@@ -11,15 +11,13 @@ name: CI/CD
 #                     optimized class map, built assets, APP_ENV=production), migrated and seeded on an empty
 #                     database, cached, served by Nginx and smoke-tested; on dev it is kept as the release archive,
 #                     named after the code's git tree
-#   deploy            main only (a merge of dev): no checks or build again. It takes the archive dev built from the
-#                     same code (same git tree), only when that dev run's checks and build both passed, uploads it
-#                     over SSH and runs deploy/release.sh (zero-downtime switch, last 5 kept). Code that never passed
-#                     on dev is not deployed: merge main into dev, push, wait for green, then merge again.
 #
-# Rollback: the "Rollback" workflow (rollback.yml). Server setup and the secrets this needs: deploy/README.md.
+# Deploy: the "Deploy to production" button (deploy.yml) ships dev once it is green. Rollback: rollback.yml. Server setup and the secrets this needs: deploy/README.md.
 
 on:
   push:
+    # main only records what is live (deploy.yml merges dev into it): nothing to check there.
+    branches-ignore: [main]
   workflow_dispatch:
 
 permissions:
@@ -27,8 +25,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A newer push replaces a running check on feature branches; main always finishes (it may deploy).
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # A newer push replaces a running check.
+  cancel-in-progress: true
 
 jobs:
   checks:
@@ -99,8 +97,18 @@ jobs:
       - name: Larastan
         run: docker compose exec -T app vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
+      # Exit 100 is Composer's network error (Packagist's advisory API unreachable, e.g. HTTP 502): tried three times,
+      # then a warning, so an outage at Packagist does not block a release. Any advisory still fails the job.
       - name: Composer audit
-        run: docker compose exec -T app composer audit
+        run: |
+          for attempt in 1 2 3; do
+            status=0
+            docker compose exec -T app composer audit || status=$?
+            [ "${status}" -ne 100 ] && exit "${status}"
+            echo "Packagist's advisory API did not answer (attempt ${attempt})."
+            sleep 15
+          done
+          echo "::warning::composer audit skipped: Packagist's advisory API is unreachable."
 
       - name: Build front-end assets
         run: docker compose exec -T app sh -c 'npm ci --no-audit --no-fund && npm run build'
@@ -218,95 +226,3 @@ jobs:
         run: |
           docker compose logs --tail=200
           docker compose exec -T app sh -c 'tail -n 100 storage/logs/*.log' || true
-
-  deploy:
-    name: Deploy to production
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      actions: read
-    timeout-minutes: 20
-    # The "production" environment holds the deploy secrets; it has no required reviewers, so a merge into main
-    # deploys by itself.
-    environment:
-      name: production
-      url: ${{ vars.APP_URL }}
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/checkout@v4
-
-      # The archive dev built from exactly this code, and only if that run's checks and build both passed.
-      - name: Find the release dev built and checked
-        id: release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tree="$(git rev-parse 'HEAD^{tree}')"
-          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=release-${tree}&per_page=1" \
-            --jq '[.artifacts[] | select(.expired == false)][0].workflow_run.id // empty')"
-          if [ -z "${run_id}" ]; then
-            echo "::error::No release built on dev for this code (tree ${tree}). Main has changes dev has not checked: merge main into dev, push, wait until dev is green, then merge into main again."
-            exit 1
-          fi
-          for job in 'Checks (local Docker stack)' 'Production build and smoke test'; do
-            conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
-              --jq ".jobs[] | select(.name == \"${job}\") | .conclusion")"
-            if [ "${conclusion}" != "success" ]; then
-              echo "::error::Dev run ${run_id}: \"${job}\" is ${conclusion:-not finished}. Merge into main only after both pass."
-              exit 1
-            fi
-          done
-          echo "Deploying the release from dev run ${run_id}."
-          echo "tree=${tree}" >> "$GITHUB_OUTPUT"
-          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-${{ steps.release.outputs.tree }}
-          run-id: ${{ steps.release.outputs.run_id }}
-          github-token: ${{ github.token }}
-
-      - name: SSH access
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          cat >> ~/.ssh/config <<EOF
-          Host production
-            HostName ${{ secrets.DEPLOY_HOST }}
-            User ${{ secrets.DEPLOY_USER }}
-            Port ${{ vars.DEPLOY_PORT || '22' }}
-            IdentityFile ~/.ssh/deploy_key
-            IdentitiesOnly yes
-            # Give up quickly when the server does not answer, instead of waiting for the job timeout.
-            ConnectTimeout 20
-            ServerAliveInterval 15
-            ServerAliveCountMax 4
-          EOF
-
-      - name: Upload the release
-        run: |
-          scp release.tar.gz "production:/var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
-          scp release.sh production:/var/www/hutana/release.sh
-          ssh production chmod 755 /var/www/hutana/release.sh
-
-      - name: Switch to the release
-        run: ssh production "/var/www/hutana/release.sh deploy ${GITHUB_SHA} /var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
-
-      - name: Health check (rolls back on failure)
-        env:
-          APP_URL: ${{ vars.APP_URL }}
-        run: |
-          if ! curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "${APP_URL}/up" > /dev/null; then
-            echo "Health check failed: rolling back." >&2
-            ssh production /var/www/hutana/release.sh rollback
-            exit 1
-          fi
