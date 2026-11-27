@@ -6,6 +6,9 @@ namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\ProductVariantFactory;
 use App\Modules\Catalog\Enums\StockStatus;
+use App\Modules\Media\Concerns\InteractsWithImagePresets;
+use App\Modules\Media\Contracts\HasImagePresets;
+use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use App\Modules\Shared\Support\Toman;
 use Carbon\CarbonImmutable;
@@ -21,14 +24,18 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * The sellable unit of a product (roadmap D3.1), e.g. "۷۵ میلی‌لیتر". Money in rial, weight in grams, sizes in mm.
+ * It may have its own photo (S13), shown first on the product page while it is picked.
  */
-final class ProductVariant extends Model implements HasActivityLogLabel
+final class ProductVariant extends Model implements HasActivityLogLabel, HasImagePresets
 {
     /** @use HasFactory<ProductVariantFactory> */
     use HasFactory;
 
+    use InteractsWithImagePresets;
     use LogsActivity;
     use SoftDeletes;
+
+    public const string IMAGE_PHOTO = 'photo';
 
     public const string COLUMN_ID = 'id';
 
@@ -402,6 +409,22 @@ final class ProductVariant extends Model implements HasActivityLogLabel
     public function setStockStatus(StockStatus $status): static
     {
         return $this->setAttribute(self::COLUMN_STOCK_STATUS, $status);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function imagePresets(): array
+    {
+        return [self::IMAGE_PHOTO => 'product'];
+    }
+
+    /**
+     * The SKU's own photo, or null when it shows the product's gallery only.
+     */
+    public function getPhoto(): ?StoredImage
+    {
+        return $this->image(self::IMAGE_PHOTO);
     }
 
     /**

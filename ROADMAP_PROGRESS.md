@@ -17,7 +17,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S10 | Products and variants | done | 2026-11-07 | b46e31f |
 | S11 | Attributes and tags | done | 2026-11-07 | c1726da |
 | S12 | PLP and search | done | 2026-11-07 | 8f64af1 |
-| S13 | PDP | todo | | |
+| S13 | PDP (part 1 of 4: SKU photos and recently viewed; reviews, questions, stock alerts next) | in progress | 2026-11-27 | |
 | S14 | Collections, popular products and home page builder | done | 2026-11-09 | 670e8d9 |
 | S15 | Providers and provider prices | done | 2026-11-09 | 0dd663b |
 | S16 | Pricing engine and price records | done | 2026-11-09 | 0dd663b |

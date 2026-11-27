@@ -38,7 +38,7 @@ new class extends Component
 
     <header class="flex flex-col gap-4 rounded-card border border-line-200 bg-card p-4 shadow-card md:flex-row md:items-start md:p-6">
         @if ($brand->getLogo())
-            <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" :alt="'لوگوی '.$brand->getNameFa()" :priority="true" class="h-12 w-24 shrink-0 object-contain md:h-15 md:w-30 xl:h-20 xl:w-40" />
+            <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" :alt="'لوگوی '.$brand->getNameFa()" :priority="true" class="size-16 shrink-0 object-contain md:size-20 xl:size-24" />
         @endif
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">

@@ -93,7 +93,7 @@ final class HomePageDemoSeeder extends Seeder
                 Brand::COLUMN_NAME_EN => "Demo Brand {$number}",
                 Brand::COLUMN_SLUG => "demo-brand-{$number}",
             ]);
-            $this->attach($attachImage, $brand, Brand::IMAGE_LOGO, 800, 400, $index, 'png');
+            $this->attach($attachImage, $brand, Brand::IMAGE_LOGO, 800, 800, $index, 'png');
 
             $categories[] = $category = Category::factory()->create([
                 Category::COLUMN_NAME_FA => self::CATEGORIES[$index],

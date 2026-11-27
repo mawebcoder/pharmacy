@@ -174,6 +174,15 @@ final class AdminUser extends Authenticatable implements FilamentUser, HasActivi
         return $this->isActive() && $this->hasTwoFactorAuthentication() && $this->isSuperAdmin();
     }
 
+    /**
+     * Telescope shows request, query and job details: active admins with exactly the super_admin role and 2FA, checked
+     * directly (not through the Gate) because Shield lets super_admin pass every Gate check.
+     */
+    public function canViewTelescope(): bool
+    {
+        return $this->isActive() && $this->hasTwoFactorAuthentication() && $this->isSuperAdmin();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->isActive();

@@ -17,8 +17,8 @@ use Livewire\Component;
  * picker (only when there is more than one SKU), price, shelf-life guarantee, stock, shipping and add to cart, sticky on desktop
  * and repeated as a bottom bar on phones and tablets once scrolled past; tabs that show one section at a time
  * (description, ingredients, usage, side effects, drug interactions, warnings, questions); «سؤال خود را اینجا
- * بپرسید» in the buy box (WhatsApp or Telegram from «تنظیمات فروشگاه», after a confirmation); related products. Stock alerts, question submission
- * and reviews stay in S13. Only active products and SKUs are shown.
+ * بپرسید» in the buy box (WhatsApp or Telegram from «تنظیمات فروشگاه», after a confirmation); related products. A SKU
+ * with its own photo (S13) puts it first in the gallery while picked; «بازدیدهای اخیر» below (S13). Only active products and SKUs are shown.
  */
 new class extends Component
 {
@@ -30,7 +30,7 @@ new class extends Component
     {
         $this->product = Product::query()
             ->active()
-            ->with(['brand', 'primaryCategory', 'primarySubcategory', 'media', 'faqs', 'attributeValues.attribute', 'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true)])
+            ->with(['brand', 'primaryCategory', 'primarySubcategory', 'media', 'faqs', 'attributeValues.attribute', 'variants' => fn ($variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true), 'variants.media'])
             ->where(Product::COLUMN_SLUG, $slug)
             ->firstOrFail();
         $this->variantId = $this->product->getDefaultVariant()?->getId() ?? 0;
@@ -102,9 +102,10 @@ new class extends Component
     // Breadcrumb: the category, then the main subcategory when there is one (owner, 2026-11-15).
     $subcategory = $product->getPrimarySubcategory()?->setRelation('category', $category);
     $trail = array_values(array_filter([$category, $subcategory]));
-    $images = $product->images($product::IMAGE_GALLERY);
     $variants = $product->getVariants();
     $variant = $this->selectedVariant;
+    $skuPhoto = $variant?->getPhoto();
+    $images = array_values(array_filter([$skuPhoto, ...$product->images($product::IMAGE_GALLERY)]));
     $isRx = $product->requiresPrescription() || ! $product->isSellableType();
     $keyAttributes = $product->getAttributeValues()
         ->groupBy(fn ($value): string => $value->getAttributeModel()?->getNameFa() ?? '')
@@ -137,7 +138,8 @@ new class extends Component
 
     <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-12 xl:gap-8">
         {{-- Gallery: swipe with dots on phones, thumbnails below on tablets, beside (start side) on desktop. --}}
-        <div class="min-w-0 xl:col-span-5" wire:ignore x-data="productGallery({{ count($images) }})">
+        {{-- Keyed by the SKU photo, so picking a SKU with its own photo rebuilds the gallery with that photo first. --}}
+        <div class="min-w-0 xl:col-span-5" wire:ignore wire:key="gallery-{{ $skuPhoto ? 'sku-'.$variant->getId() : 'product' }}" x-data="productGallery({{ count($images) }})">
             @if ($images === [])
                 <div class="grid aspect-square place-items-center rounded-card border border-line-200 bg-media text-ink-500">
                     <x-ts-icon icon="photo" class="size-12" />
@@ -441,6 +443,8 @@ new class extends Component
             </div>
         </section>
     @endif
+
+    <livewire:catalog::recently-viewed :product-id="$product->getId()" wire:key="recent-{{ $product->getId() }}" />
 
     {{-- Bottom buy bar above the mobile nav: always on phones, like the cart's (owner, 2026-11-15): the price beside the
          button; on tablets once the buy box has scrolled out of view, with the name too. --}}
