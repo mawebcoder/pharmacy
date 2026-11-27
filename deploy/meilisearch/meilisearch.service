@@ -14,6 +14,9 @@ Environment=MEILI_HTTP_ADDR=127.0.0.1:7700
 Environment=MEILI_DB_PATH=/var/lib/meilisearch/data
 Environment=MEILI_DUMP_DIR=/var/lib/meilisearch/dumps
 Environment=MEILI_NO_ANALYTICS=true
+# Indexing would otherwise take two thirds of the RAM and every core.
+Environment=MEILI_MAX_INDEXING_MEMORY=256Mb
+Environment=MEILI_MAX_INDEXING_THREADS=1
 ExecStart=/usr/local/bin/meilisearch
 Restart=on-failure
 

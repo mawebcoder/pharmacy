@@ -22,8 +22,9 @@ RELEASES="${APP_ROOT}/releases"
 SHARED="${APP_ROOT}/shared"
 CURRENT="${APP_ROOT}/current"
 
+# Each line shows the seconds since the script started, so a slow command stands out in the CI log.
 log() {
-    printf '==> %s\n' "$*"
+    printf '==> [%3ss] %s\n' "${SECONDS}" "$*"
 }
 
 artisan() {
@@ -36,6 +37,7 @@ activate() {
 
     ln -sfn "${release}" "${APP_ROOT}/current.next"
     mv -Tf "${APP_ROOT}/current.next" "${CURRENT}"
+    log "Switched; reloading PHP-FPM, Horizon and the scheduler"
 
     # OPcache never re-checks files (deploy/php/production.ini): a reload loads the new release.
     sudo systemctl reload "${PHP_FPM_SERVICE}"
@@ -68,17 +70,24 @@ deploy() {
     ln -sfn ../storage/app/public "${release}/public/storage"
     mkdir -p "${release}/bootstrap/cache"
 
-    log "Release commands"
+    log "Migrations"
     artisan "${release}" migrate --force
+    log "Seeders"
     # Starting data: each seeder only adds what is missing.
     artisan "${release}" db:seed --force
+    log "Search index settings"
     artisan "${release}" scout:sync-index-settings
-    # Provinces and cities from Tipax (D4.3); a Tipax outage must not block the release.
-    artisan "${release}" tipax:sync-cities || echo "warning: tipax:sync-cities failed; run it again later" >&2
+    log "Caches"
     artisan "${release}" optimize
     artisan "${release}" filament:optimize
 
     activate "${release}"
+
+    # Provinces and cities from Tipax (D4.3) after the switch and in the background: a slow or unreachable Tipax
+    # must not hold up the release. The scheduler syncs them again every night; the result is in tipax-sync.log.
+    log "Tipax cities sync started in the background"
+    setsid nohup php "${CURRENT}/artisan" tipax:sync-cities --no-interaction \
+        >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null &
 
     log "Keeping the last ${KEEP_RELEASES} releases"
     find "${RELEASES}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \

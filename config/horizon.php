@@ -301,14 +301,15 @@ return [
     ],
 
     'environments' => [
+        // Sized for the current server (1 GB RAM, 1 core): every worker is a PHP process of about 50 MB.
         'production' => [
             'supervisor-1' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 2,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
-            'supervisor-media' => [
-                'maxProcesses' => 2,
+            'supervisor-sms' => [
+                'maxProcesses' => 1,
             ],
         ],
 
