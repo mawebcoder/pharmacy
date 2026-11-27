@@ -1,0 +1,62 @@
+name: Rollback
+
+# Switches production back to a kept release (deploy/release.sh keeps the last 5): the previous one, or the commit
+# given. Migrations are not undone. Needs the same approval and secrets as the deploy (ci.yml).
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit of a kept release (empty = the release before the current one)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Roll back production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+
+    steps:
+      - name: SSH access
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<EOF
+          Host production
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
+            Port ${{ vars.DEPLOY_PORT || '22' }}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+          EOF
+
+      - name: Switch back
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          if [ -n "${COMMIT}" ] && ! printf '%s' "${COMMIT}" | grep -Eqx '[0-9a-f]{7,40}'; then
+            echo "Not a commit hash: ${COMMIT}" >&2
+            exit 1
+          fi
+          ssh production "/var/www/hutana/release.sh rollback ${COMMIT}"
+
+      - name: Health check
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "${APP_URL}/up" > /dev/null

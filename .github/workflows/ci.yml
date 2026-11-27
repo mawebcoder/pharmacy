@@ -1,72 +1,269 @@
-name: CI
+name: CI/CD
+
+# Roadmap D19.5. Every job runs inside the local Docker stack (docker-compose.yml: PHP 8.5 with the server's
+# extensions and php.ini, MySQL 8.4 with the server's my.cnf, Redis 7.4, Meilisearch 1.55, Nginx 1.28), so what
+# passes here behaves the same on a developer's machine and on the production server, which runs the same
+# versions natively (deploy/).
+#
+#   checks            every push (dev, feature branches, main): Pint, Larastan, composer audit, the test suite,
+#                     the asset build
+#   production-build  every push: the release exactly as the server gets it (no dev packages, optimized class
+#                     map, built assets, APP_ENV=production), migrated and seeded on an empty database, cached,
+#                     served by Nginx and smoke-tested; on main it is kept as the release archive
+#   deploy            main only (a merge into main): as soon as both pass, uploads the archive over SSH and runs
+#                     deploy/release.sh (zero-downtime switch, last 5 kept); dev and other branches never deploy
+#
+# Rollback: the "Rollback" workflow (rollback.yml). Server setup and the secrets this needs: deploy/README.md.
 
 on:
   push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # A newer push replaces a running check on feature branches; main always finishes (it may deploy).
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: pharmacy_testing
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot --silent"
-          --health-interval=10s --health-timeout=5s --health-retries=10
-      redis:
-        image: redis:7.4-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s --health-timeout=5s --health-retries=10
-
-    # Real environment variables take precedence over .env.
-    env:
-      DB_HOST: 127.0.0.1
-      DB_USERNAME: root
-      DB_PASSWORD: root
-      REDIS_HOST: 127.0.0.1
+    name: Checks (local Docker stack)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          extensions: bcmath, exif, gd, intl, pcntl, pdo_mysql, redis, zip
-          coverage: none
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --no-progress --prefer-dist
-
-      - name: Prepare environment
+      - name: Prepare .env for the stack
         run: |
           cp .env.example .env
-          php artisan key:generate
+          # docker-compose.yml requires a Meilisearch key; files written in the container stay the runner's.
+          sed -i 's/^MEILISEARCH_KEY=.*/MEILISEARCH_KEY=ci-meilisearch-master-key/' .env
+          echo "DOCKER_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "DOCKER_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the local images (cached)
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          files: docker-compose.yml
+          targets: app,mysql,redis
+          load: true
+          set: |
+            app.cache-from=type=gha,scope=app
+            app.cache-to=type=gha,scope=app,mode=max
+            mysql.cache-from=type=gha,scope=mysql
+            mysql.cache-to=type=gha,scope=mysql,mode=max
+            redis.cache-from=type=gha,scope=redis
+            redis.cache-to=type=gha,scope=redis,mode=max
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-dev-${{ hashFiles('composer.lock') }}
+
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Larastan results
+        uses: actions/cache@v4
+        with:
+          path: storage/framework/cache/phpstan
+          key: phpstan-${{ github.sha }}
+          restore-keys: phpstan-
+
+      - name: Start the stack
+        run: docker compose up --detach --wait app
+
+      - name: Install PHP packages
+        run: docker compose exec -T app composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Application key
+        run: docker compose exec -T app php artisan key:generate --no-interaction
 
       - name: Pint
-        run: vendor/bin/pint --test
+        run: docker compose exec -T app vendor/bin/pint --test
 
       - name: Larastan
-        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+        run: docker compose exec -T app vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
       - name: Composer audit
-        run: composer audit
+        run: docker compose exec -T app composer audit
 
       - name: Tests
-        run: php artisan test --parallel
+        run: docker compose exec -T app php artisan test --compact --parallel
 
       - name: Build front-end assets
+        run: docker compose exec -T app sh -c 'npm ci --no-audit --no-fund && npm run build'
+
+      - name: Stack logs
+        if: failure()
+        run: docker compose logs --tail=200
+
+  production-build:
+    name: Production build and smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare a production .env for the stack
         run: |
-          npm ci
-          npm run build
+          cp .env.example .env
+          sed -i \
+            -e 's/^APP_ENV=.*/APP_ENV=production/' \
+            -e 's/^APP_DEBUG=.*/APP_DEBUG=false/' \
+            -e 's/^LOG_LEVEL=.*/LOG_LEVEL=warning/' \
+            -e 's/^MEILISEARCH_KEY=.*/MEILISEARCH_KEY=ci-meilisearch-master-key/' \
+            .env
+          # The super admin seeder refuses the default password in production (as on the server).
+          echo "SUPERADMIN_PASSWORD=ci-only-$(openssl rand -hex 12)" >> .env
+          echo "DOCKER_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "DOCKER_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the local images (cached)
+        uses: docker/bake-action@v6
+        with:
+          source: .
+          files: docker-compose.yml
+          targets: app,nginx,mysql,redis
+          load: true
+          set: |
+            app.cache-from=type=gha,scope=app
+            nginx.cache-from=type=gha,scope=nginx
+            nginx.cache-to=type=gha,scope=nginx,mode=max
+            mysql.cache-from=type=gha,scope=mysql
+            redis.cache-from=type=gha,scope=redis
+
+      - name: Cache production Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-prod-${{ hashFiles('composer.lock') }}
+
+      - name: Start the stack
+        run: docker compose up --detach --wait app
+
+      - name: Install production packages and build assets
+        run: |
+          docker compose exec -T app composer install --no-dev --classmap-authoritative --no-interaction --no-progress --prefer-dist
+          docker compose exec -T app sh -c 'npm ci --no-audit --no-fund && npm run build'
+
+      # The same release commands as deploy/release.sh, on an empty database, without dev packages.
+      - name: Release commands
+        run: |
+          docker compose exec -T app php artisan key:generate --force --no-interaction
+          docker compose exec -T app php artisan migrate --force --no-interaction
+          docker compose exec -T app php artisan db:seed --force --no-interaction
+          docker compose exec -T app php artisan scout:sync-index-settings --no-interaction
+          docker compose exec -T app php artisan optimize --no-interaction
+          docker compose exec -T app php artisan filament:optimize --no-interaction
+
+      - name: Serve through Nginx and smoke test
+        run: |
+          docker compose up --detach --wait nginx
+          for path in /up / /products /login /admin/login; do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' "http://localhost:7000${path}")
+            echo "${path} -> ${status}"
+            [ "${status}" = "200" ] || exit 1
+          done
+
+      - name: Package the release
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          docker compose exec -T app php artisan optimize:clear --no-interaction
+          docker compose exec -T app php artisan filament:optimize-clear --no-interaction
+          tar --create --gzip --file "release-${GITHUB_SHA}.tar.gz" \
+            --exclude=./.git --exclude=./.github --exclude=./.claude --exclude=./.env --exclude='./.env.*' \
+            --exclude=./node_modules --exclude=./tests --exclude='./app/Modules/*/Tests' \
+            --exclude=./docker --exclude=./docker-compose.yml --exclude=./deploy --exclude=./docs \
+            --exclude=./storage --exclude=./public/storage --exclude=./public/hot \
+            --exclude='./bootstrap/cache/*.php' --exclude=./graphify-out --exclude=./app/graphify-out \
+            --exclude='./HANDOFF*.md' \
+            .
+          cp deploy/release.sh release.sh
+
+      - name: Keep the release archive
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: |
+            release-${{ github.sha }}.tar.gz
+            release.sh
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Stack logs
+        if: failure()
+        run: |
+          docker compose logs --tail=200
+          docker compose exec -T app sh -c 'tail -n 100 storage/logs/*.log' || true
+
+  deploy:
+    name: Deploy to production
+    needs: [checks, production-build]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # The "production" environment holds the deploy secrets; it has no required reviewers, so a merge into main
+    # deploys by itself.
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: SSH access
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<EOF
+          Host production
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
+            Port ${{ vars.DEPLOY_PORT || '22' }}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+          EOF
+
+      - name: Upload the release
+        run: |
+          scp "release-${GITHUB_SHA}.tar.gz" production:/var/www/hutana/incoming/
+          scp release.sh production:/var/www/hutana/release.sh
+          ssh production chmod 755 /var/www/hutana/release.sh
+
+      - name: Switch to the release
+        run: ssh production "/var/www/hutana/release.sh deploy ${GITHUB_SHA} /var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
+
+      - name: Health check (rolls back on failure)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if ! curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "${APP_URL}/up" > /dev/null; then
+            echo "Health check failed: rolling back." >&2
+            ssh production /var/www/hutana/release.sh rollback
+            exit 1
+          fi

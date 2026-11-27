@@ -3,6 +3,8 @@ includes:
 
 parameters:
     level: 8
+    # Result cache inside the project (git-ignored), so CI can keep it between runs.
+    tmpDir: storage/framework/cache/phpstan
     paths:
         - app
         - config

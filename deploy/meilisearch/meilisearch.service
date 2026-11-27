@@ -1,0 +1,21 @@
+# Meilisearch (/etc/systemd/system/meilisearch.service), same version as local (v1.55.1), on localhost only.
+# The master key is in /etc/meilisearch.env: MEILI_MASTER_KEY=<at least 16 characters, = MEILISEARCH_KEY in .env>.
+[Unit]
+Description=Meilisearch
+After=network.target
+
+[Service]
+Type=simple
+User=meilisearch
+Group=meilisearch
+EnvironmentFile=/etc/meilisearch.env
+Environment=MEILI_ENV=production
+Environment=MEILI_HTTP_ADDR=127.0.0.1:7700
+Environment=MEILI_DB_PATH=/var/lib/meilisearch/data
+Environment=MEILI_DUMP_DIR=/var/lib/meilisearch/dumps
+Environment=MEILI_NO_ANALYTICS=true
+ExecStart=/usr/local/bin/meilisearch
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
