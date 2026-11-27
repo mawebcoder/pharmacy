@@ -44,8 +44,8 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
    cd /root/hutana-setup && DOMAINS="hutana.ir www.hutana.ir" CERTBOT_EMAIL=you@example.com \
      DEPLOY_PUBLIC_KEY="$(cat hutana-deploy.pub)" bash deploy/setup.sh
    ```
-   (copy `hutana-deploy.pub` to the server first, or paste its content). `MYSQL_BUFFER_POOL` (default `128M`) and
-   `MYSQL_MAX_CONNECTIONS` (default `40`) size MySQL for a 1 GB server; `SWAP_SIZE` (default `2G`) is the swap file
+   (copy `hutana-deploy.pub` to the server first, or paste its content). `MYSQL_BUFFER_POOL` (default `384M`) and
+   `MYSQL_MAX_CONNECTIONS` (default `60`) size MySQL for a 2 GB server; `SWAP_SIZE` (default `2G`) is the swap file
    made when the server has none. The script writes the database, Redis and Meilisearch passwords and `APP_KEY` into
    `/var/www/hutana/shared/.env` itself; it never prints them.
 5. **Fill in the rest of** `/var/www/hutana/shared/.env`: `SUPERADMIN_PASSWORD` (required: the first deploy creates
@@ -66,11 +66,9 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
 
 - **Deploy:** merge `dev` into `main`. `main` runs the checks and the production build and deploys only if both
   pass.
-- **During a deploy** the scheduler is stopped from the start until the switch (a failed deploy starts it again).
-  Meilisearch keeps running: the live site's listing and search pages need it. **Horizon is stopped
-  and not started again** by a deploy or a rollback (it took about 430 MB): start it by hand with
-  `sudo supervisorctl start hutana:hutana-horizon`. Until then queued jobs (SMS, images, imports, search indexing)
-  wait in Redis.
+- **During a deploy** Horizon and the scheduler are stopped from the start until the switch, then start again from the
+  new release (a failed deploy starts them again on the live one). Meilisearch keeps running: the live site's listing
+  and search pages need it. Queued jobs wait in Redis meanwhile.
 - **Roll back:** Actions → Rollback → Run workflow (empty = the release that went live before the current one, or a
   kept commit that went live). A release that failed before its switch is never a rollback target. Migrations are
   not undone, so keep each migration compatible with the release before it.
