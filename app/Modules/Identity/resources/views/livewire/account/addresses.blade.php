@@ -4,8 +4,15 @@
 
 @php
     $fieldClass = 'h-11 w-full rounded-card border bg-card px-3 text-sm text-ink-900 focus:outline-2 focus:outline-primary-700 disabled:bg-surface-50 disabled:text-ink-500';
-    $field = function (string $key, string $label, array $attributes = []) use ($errors, $fieldClass): array {
-        return ['key' => $key, 'label' => $label, 'attributes' => $attributes, 'class' => $fieldClass.' '.($errors->has('form.'.$key) ? 'border-danger-600' : 'border-line-300')];
+    // Required fields, as SaveAddressRequest validates them, get a red «*» on their label (owner, 2026-11-27).
+    $requiredFields = array_keys(array_filter(
+        \App\Modules\Identity\Http\Requests\SaveAddressRequest::baseRules([]),
+        fn (array $rules): bool => in_array('required', $rules, true),
+    ));
+    $field = function (string $key, string $label, array $attributes = []) use ($errors, $fieldClass, $requiredFields): array {
+        $required = in_array($key, $requiredFields, true);
+
+        return ['key' => $key, 'label' => $label, 'required' => $required, 'attributes' => $required ? [...$attributes, 'aria-required' => 'true'] : $attributes, 'class' => $fieldClass.' '.($errors->has('form.'.$key) ? 'border-danger-600' : 'border-line-300')];
     };
 @endphp
 
