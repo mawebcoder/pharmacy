@@ -8,6 +8,7 @@
 #   shared/.env          the production environment, written by hand once
 #   shared/storage/      uploads, logs, cache: kept across releases
 #   current -> releases/<commit>   what Nginx, PHP-FPM, Horizon and the scheduler run
+#   releases/<commit>/.went-live   set when a release goes live; a rollback only goes back to these
 #
 # Migrations run before the switch and are not undone by a rollback: keep each migration compatible with the
 # release before it.
@@ -49,29 +50,40 @@ artisan() {
     php "$1/artisan" "${@:2}" --no-interaction
 }
 
+# The release that went live most recently, other than the one live now: what a rollback goes back to. A release
+# that failed before its switch never went live (it may lack migrations' code paths, caches or assets).
+previous_live_release() {
+    local live
+    live="$(readlink -f "${CURRENT}" || true)"
+    find "${RELEASES}" -mindepth 2 -maxdepth 2 -name .went-live -printf '%T@ %h\n' \
+        | sort -rn \
+        | cut -d' ' -f2- \
+        | { grep -vxF "${live}" || true; } \
+        | head -n 1
+}
+
 # Points "current" at a release in one rename, so no request ever sees a half-switched link.
 activate() {
     local release="$1"
 
     ln -sfn "${release}" "${APP_ROOT}/current.next"
     mv -Tf "${APP_ROOT}/current.next" "${CURRENT}"
-    log "Switched; reloading PHP-FPM, Horizon and the scheduler"
+    touch "${release}/.went-live"
+    log "Switched; reloading PHP-FPM and the scheduler (Horizon stays off)"
 
     # OPcache never re-checks files (deploy/php/production.ini): a reload loads the new release.
     sudo systemctl reload "${PHP_FPM_SERVICE}"
-    # Horizon finishes its running jobs and Supervisor starts it again from the new release; "start" also brings it
-    # up on the first release (until then Supervisor has nothing to run).
-    artisan "${CURRENT}" horizon:terminate || true
-    sudo supervisorctl start hutana:hutana-horizon > /dev/null || true
+    # Horizon is not started by a deploy or a rollback: on the 1 GB server it alone took about 430 MB. Start it by
+    # hand when wanted: sudo supervisorctl start hutana:hutana-horizon (it then runs "current").
     sudo supervisorctl restart hutana:hutana-scheduler
 
     log "Live: $(basename "${release}")"
 }
 
 # On a 1 GB, single-core server Horizon, the scheduler and Meilisearch do not fit in memory next to the migrations:
-# the server swaps and every statement crawls. Horizon and the scheduler stay stopped for the
-# whole deploy (activate starts them from the new release), Meilisearch only for the migrations. If a step fails,
-# start_services brings everything back on the release still live.
+# the server swaps and every statement crawls. Horizon is stopped and stays off (see activate); the scheduler is
+# stopped for the whole deploy (activate starts it from the new release), Meilisearch only for the migrations. If a
+# step fails, start_services brings the scheduler and Meilisearch back on the release still live.
 stop_services() {
     log "Stopping Horizon, the scheduler and Meilisearch for the deploy"
     trap start_services EXIT
@@ -81,7 +93,7 @@ stop_services() {
 
 start_services() {
     sudo -n systemctl start meilisearch || true
-    sudo -n supervisorctl start hutana:hutana-horizon hutana:hutana-scheduler > /dev/null 2>&1 || true
+    sudo -n supervisorctl restart hutana:hutana-scheduler > /dev/null 2>&1 || true
 }
 
 start_meilisearch() {
@@ -140,12 +152,15 @@ deploy() {
         >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null 9>&- &
 
     log "Keeping the last ${KEEP_RELEASES} releases"
+    local keep_live
+    keep_live="$(previous_live_release)"
     find "${RELEASES}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
         | sort -rn \
         | tail -n +"$((KEEP_RELEASES + 1))" \
         | cut -d' ' -f2- \
         | while read -r old; do
-            [[ "$(readlink -f "${CURRENT}")" == "${old}" ]] || rm -rf "${old}"
+            # Never the live release, nor the one a rollback would go back to.
+            [[ "$(readlink -f "${CURRENT}")" == "${old}" || "${keep_live}" == "${old}" ]] || rm -rf "${old}"
         done
 }
 
@@ -154,14 +169,17 @@ rollback() {
     live="$(readlink -f "${CURRENT}")"
 
     if [[ -z "${target}" ]]; then
-        target="$(find "${RELEASES}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2- | grep -vxF "${live}" | head -n 1)"
+        target="$(previous_live_release)"
     else
         target="${RELEASES}/${target}"
+        [[ -f "${target}/.went-live" ]] || { echo "$(basename "${target}") never went live: not rolling back to it." >&2; exit 1; }
     fi
 
-    [[ -n "${target}" && -d "${target}" ]] || { echo "No release to roll back to." >&2; exit 1; }
+    [[ -n "${target}" && -d "${target}" ]] || { echo "No release that went live before to roll back to." >&2; exit 1; }
 
     log "Rolling back to $(basename "${target}")"
+    # The release being left failed: it is no longer a rollback target itself.
+    [[ -z "${live}" ]] || rm -f "${live}/.went-live"
     activate "${target}"
 }
 
