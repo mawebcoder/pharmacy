@@ -32,7 +32,20 @@ final class ImageUpload
             ->maxSize($settings->maxKilobytes)
             ->rules([new ImageMatchesPreset($settings)])
             ->imagePreviewHeight('120')
+            // Crop, rotate and flip before saving. A preset with a fixed ratio offers only that crop, so a photo can be
+            // cut to fit instead of being refused; SVGs stay vector (the editor would turn them into pixels).
+            ->imageEditor()
+            ->imageEditorAspectRatioOptions(self::aspectRatios($settings))
+            ->editableSvgs(false)
             ->helperText(self::helperText($settings));
+    }
+
+    /**
+     * @return list<string|null>
+     */
+    private static function aspectRatios(ImagePreset $preset): array
+    {
+        return $preset->ratio === null ? [null, '1:1'] : ["{$preset->minWidth}:{$preset->minHeight}"];
     }
 
     private static function helperText(ImagePreset $preset): string

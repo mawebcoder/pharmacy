@@ -394,7 +394,12 @@ new class extends Component
                 @foreach ($texts as $id => [$label, $text])
                     <div id="panel-{{ $id }}" role="tabpanel" aria-labelledby="tab-{{ $id }}" tabindex="0" x-show="tab === @js($id)" @if ($id !== $firstTab) x-cloak @endif>
                         <h2 class="mb-3 text-lg font-bold text-ink-900">{{ $label }}</h2>
-                        <p class="max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $text }}</p>
+                        @if ($id === 'description')
+                            {{-- Written in the admin's rich editor (DescriptionHtml keeps only safe tags). --}}
+                            <div class="page-content max-w-3xl">{!! \App\Modules\Catalog\Support\DescriptionHtml::toHtml($text) !!}</div>
+                        @else
+                            <p class="max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $text }}</p>
+                        @endif
                     </div>
                 @endforeach
 

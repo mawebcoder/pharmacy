@@ -51,7 +51,7 @@ new class extends Component
                 <p class="mt-2 text-sm text-ink-500">کشور: {{ $brand->getCountryName() }}</p>
             @endif
             @if ($brand->getDescription())
-                <p class="mt-4 max-w-3xl leading-8 whitespace-pre-line text-ink-900">{{ $brand->getDescription() }}</p>
+                <div class="page-content mt-4 max-w-3xl">{!! \App\Modules\Catalog\Support\DescriptionHtml::toHtml($brand->getDescription()) !!}</div>
             @endif
         </div>
     </header>

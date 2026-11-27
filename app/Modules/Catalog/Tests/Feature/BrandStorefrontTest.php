@@ -48,3 +48,15 @@ it('does not show inactive, deleted or unknown brands', function (Closure $makeB
     'deleted' => [fn () => Brand::factory()->create([Brand::COLUMN_SLUG => 'eucerin'])->delete()],
     'unknown' => [fn (): null => null],
 ]);
+
+it('shows the brand description with its rich-editor formatting and without scripts', function (): void {
+    $brand = Brand::factory()->create([
+        Brand::COLUMN_SLUG => 'eucerin',
+        Brand::COLUMN_DESCRIPTION => '<h2>درباره اوسرین</h2><p><em>از ۱۹۰۰</em></p><script>alert(1)</script>',
+    ]);
+
+    $this->get(route('brands.show', $brand))
+        ->assertOk()
+        ->assertSee(['<h2>درباره اوسرین</h2>', '<em>از ۱۹۰۰</em>'], false)
+        ->assertDontSee('<script>alert(1)</script>', false);
+});

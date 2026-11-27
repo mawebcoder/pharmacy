@@ -8,6 +8,7 @@ use App\Modules\Catalog\Actions\DeleteSubcategory;
 use App\Modules\Catalog\Actions\SaveSubcategory;
 use App\Modules\Catalog\Data\SubcategoryData;
 use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
+use App\Modules\Catalog\Filament\Forms\DescriptionEditor;
 use App\Modules\Catalog\Http\Requests\StoreSubcategoryRequest;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Subcategory;
@@ -82,10 +83,7 @@ final class SubcategoriesRelationManager extends RelationManager
                     Toggle::make(Subcategory::COLUMN_IS_ACTIVE)
                         ->label('فعال')
                         ->default(true),
-                    Textarea::make(Subcategory::COLUMN_DESCRIPTION)
-                        ->label('توضیحات')
-                        ->rows(3)
-                        ->maxLength(5000)
+                    DescriptionEditor::make(Subcategory::COLUMN_DESCRIPTION, maxLength: 5000)
                         ->columnSpanFull(),
                 ]),
             Section::make('تصویرها')

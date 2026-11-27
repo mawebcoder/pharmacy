@@ -96,3 +96,15 @@ it('puts the category menu in the header of every storefront page, with only sub
         ->not->toContain(route('subcategory.show', ['supplements', 'empty']))
         ->not->toContain(route('category.show', 'beauty'));
 });
+
+it('shows the category description with its rich-editor formatting and without scripts', function (): void {
+    Category::factory()->create([
+        Category::COLUMN_SLUG => 'supplements',
+        Category::COLUMN_DESCRIPTION => '<p><strong>مکمل‌های معتبر</strong></p><ol><li>ویتامین‌ها</li></ol><script>alert(1)</script>',
+    ]);
+
+    livewire('catalog::category-page', ['slug' => 'supplements'])
+        ->assertSeeHtml('<strong>مکمل‌های معتبر</strong>')
+        ->assertSeeHtml('<ol><li>ویتامین‌ها</li></ol>')
+        ->assertDontSeeHtml('<script>alert(1)</script>');
+});

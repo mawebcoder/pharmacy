@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog\Filament\Resources\Categories\Schemas;
 
+use App\Modules\Catalog\Filament\Forms\DescriptionEditor;
 use App\Modules\Catalog\Http\Requests\StoreCategoryRequest;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Media\Filament\Forms\ImageUpload;
@@ -54,11 +55,7 @@ final class CategoryForm
                     ]),
                 Section::make('معرفی')
                     ->schema([
-                        Textarea::make(Category::COLUMN_DESCRIPTION)
-                            ->label('توضیحات')
-                            ->rows(5)
-                            ->maxLength(5000)
-                            ->rules(fn (?Category $record): array => $rules($record, Category::COLUMN_DESCRIPTION)),
+                        DescriptionEditor::make(Category::COLUMN_DESCRIPTION, maxLength: 5000),
                     ]),
                 Section::make('تصاویر')
                     ->columns(['md' => 4])
