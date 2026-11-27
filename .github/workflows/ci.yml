@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Prepare .env for the stack
         run: |
@@ -46,10 +46,10 @@ jobs:
           echo "DOCKER_UID=$(id -u)" >> "$GITHUB_ENV"
           echo "DOCKER_GID=$(id -g)" >> "$GITHUB_ENV"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build the local images (cached)
-        uses: docker/bake-action@v6
+        uses: docker/bake-action@v7
         with:
           source: .
           files: docker-compose.yml
@@ -64,19 +64,19 @@ jobs:
             redis.cache-to=type=gha,scope=redis,mode=max
 
       - name: Cache Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: vendor
           key: vendor-dev-${{ hashFiles('composer.lock') }}
 
       - name: Cache npm packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Cache Larastan results
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: storage/framework/cache/phpstan
           key: phpstan-${{ github.sha }}
@@ -123,7 +123,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Prepare a production .env for the stack
         run: |
@@ -139,10 +139,10 @@ jobs:
           echo "DOCKER_UID=$(id -u)" >> "$GITHUB_ENV"
           echo "DOCKER_GID=$(id -g)" >> "$GITHUB_ENV"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build the local images (cached)
-        uses: docker/bake-action@v6
+        uses: docker/bake-action@v7
         with:
           source: .
           files: docker-compose.yml
@@ -156,7 +156,7 @@ jobs:
             redis.cache-from=type=gha,scope=redis
 
       - name: Cache production Composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: vendor
           key: vendor-prod-${{ hashFiles('composer.lock') }}
@@ -208,7 +208,7 @@ jobs:
 
       - name: Keep the release archive
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release
           path: |
@@ -240,7 +240,7 @@ jobs:
 
     steps:
       # The archive production-build packed from this commit in this run.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release
 
