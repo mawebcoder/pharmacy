@@ -115,6 +115,9 @@ return [
     ],
 
     'ignore_paths' => [
+        // The container health check every 10 seconds, and TallStackUI's script files.
+        'up',
+        'tallstackui*',
         'livewire*',
         'nova-api*',
         'pulse*',
