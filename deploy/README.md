@@ -6,7 +6,7 @@ scheduler). CI runs every check inside `docker-compose.yml`, so local, CI and th
 
 | Branch | What runs |
 |---|---|
-| `dev`, feature branches | CI only: checks and the production build |
+| `dev`, feature branches | Nothing: CI/CD runs only on `main` |
 | `main` (a merge of `dev`) | The whole flow: checks, the production build, then the deploy of that build. Nothing deploys unless both pass |
 
 ## Files
@@ -59,13 +59,13 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
      - `DEPLOY_SSH_KEY`: the content of the private key `hutana-deploy`
      - `DEPLOY_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 SERVER`
    - Variables: `APP_URL` = `https://hutana.ir` (health check), and `DEPLOY_PORT` only if SSH is not on 22.
-7. **Deploy:** push `dev`, wait until its CI is green, then merge `dev` into `main`. CI checks and builds again, uploads
+7. **Deploy:** push `dev`, then merge `dev` into `main`. CI checks and builds it, uploads
    the release, migrates, seeds and switches over; it rolls back by itself if `/up` does not answer.
 
 ## Everyday
 
-- **Deploy:** merge `dev` into `main` after `dev`'s CI is green. `main` runs the checks and the production build again
-  and deploys only if both pass.
+- **Deploy:** merge `dev` into `main`. `main` runs the checks and the production build and deploys only if both
+  pass.
 - **During a deploy** Horizon and the scheduler are stopped from the start until the switch, and Meilisearch while
   the migrations run: a 1 GB server cannot hold them next to the migrations. A failed deploy starts them again.
 - **Roll back:** Actions → Rollback → Run workflow (empty = the previous release, or a kept commit). Migrations are

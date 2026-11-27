@@ -5,18 +5,20 @@ name: CI/CD
 # passes here behaves the same on a developer's machine and on the production server, which runs the same
 # versions natively (deploy/).
 #
-#   checks            every push: Pint, Larastan, composer audit and the asset build (the test suite runs locally,
-#                     not in CI)
-#   production-build  every push: the release exactly as the server gets it (no dev packages, optimized class map,
-#                     built assets, APP_ENV=production), migrated and seeded on an empty database, cached, served by
-#                     Nginx and smoke-tested; on main it is packed as the release archive
-#   deploy            main only (a merge of dev), after both jobs above pass: uploads that archive over SSH and runs
+# Runs only on main (a merge of dev); pushes to dev and other branches run nothing.
+#
+#   checks            Pint, Larastan, composer audit and the asset build (the test suite runs locally, not in CI)
+#   production-build  the release exactly as the server gets it (no dev packages, optimized class map, built assets,
+#                     APP_ENV=production), migrated and seeded on an empty database, cached, served by Nginx,
+#                     smoke-tested and packed as the release archive
+#   deploy            after both jobs above pass: uploads that archive over SSH and runs
 #                     deploy/release.sh (zero-downtime switch, last 5 kept), then checks /up and rolls back on failure
 #
 # Rollback: the "Rollback" workflow (rollback.yml). Server setup and the secrets this needs: deploy/README.md.
 
 on:
   push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,8 +26,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A newer push replaces a running check; main always finishes (it deploys).
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # A run on main always finishes: it deploys.
+  cancel-in-progress: false
 
 jobs:
   checks:
