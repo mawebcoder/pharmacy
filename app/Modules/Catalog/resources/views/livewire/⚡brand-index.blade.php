@@ -53,12 +53,12 @@ new #[Title('برندها')] class extends Component
             @foreach (array_slice($this->brands, 0, $shown) as $brand)
                 <li wire:key="brand-{{ $brand->getId() }}">
                     <a href="{{ route('brands.show', $brand) }}" wire:navigate class="group flex h-full flex-col items-center gap-1 rounded-card p-4 text-center focus-visible:outline-2 focus-visible:outline-primary-700">
-                        {{-- No border or card around the tile; the logo in a white circle, inset so a square logo's corners
-                             stay inside it (owner, 2026-11-27); the first two letters without a logo. --}}
+                        {{-- No border or card around the tile; the logo (padded to a white square on upload) with rounded
+                             corners, not a circle (owner, 2026-11-27); the first two letters without a logo. --}}
                         @if ($brand->getLogo())
-                            <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="mb-2 size-28 rounded-full bg-white object-contain p-4 md:size-32 md:p-5" />
+                            <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" alt="" class="mb-2 size-28 rounded-card object-contain md:size-32" />
                         @else
-                            <span class="mb-2 grid size-28 place-items-center rounded-full bg-surface-50 text-2xl font-bold text-ink-500 md:size-32" aria-hidden="true">{{ mb_substr($brand->getNameFa(), 0, 2) }}</span>
+                            <span class="mb-2 grid size-28 place-items-center rounded-card bg-surface-50 text-2xl font-bold text-ink-500 md:size-32" aria-hidden="true">{{ mb_substr($brand->getNameFa(), 0, 2) }}</span>
                         @endif
                         <span class="line-clamp-2 font-bold text-ink-900 group-hover:text-primary-700">{{ $brand->getNameFa() }}</span>
                         @if ($brand->getNameEn())
@@ -79,7 +79,7 @@ new #[Title('برندها')] class extends Component
                 <ul class="grid animate-pulse grid-cols-2 gap-3 motion-reduce:animate-none md:grid-cols-3 xl:grid-cols-5" aria-hidden="true">
                     @foreach (range(1, 5) as $placeholder)
                         <li @class(['flex-col items-center gap-2 p-4', 'flex' => $placeholder <= 2, 'hidden md:flex' => $placeholder === 3, 'hidden xl:flex' => $placeholder > 3])>
-                            <div class="size-28 rounded-full bg-line-200 md:size-32"></div>
+                            <div class="size-28 rounded-card bg-line-200 md:size-32"></div>
                             <div class="h-4 w-2/3 rounded bg-line-200"></div>
                             <div class="h-3 w-1/2 rounded bg-line-200"></div>
                         </li>

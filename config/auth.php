@@ -147,7 +147,7 @@ return [
     | developers need no SMS. It never works outside APP_ENV=local, whatever the flag says.
     |
     | The fixed code works in every environment, but only for the one mobile number set beside it (the owner's,
-    | 2026-11-27), only after that number requested a code, within the usual 5 tries, and at least 6 digits long;
+    | 2026-11-27), only after that number requested a code, within the usual 5 tries, and 5 digits like a sent code;
     | each use is logged. It is never shown on the sign-in page. Empty: off.
     |
     */
