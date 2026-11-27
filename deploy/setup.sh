@@ -70,7 +70,9 @@ printf 'Package: *\nPin: origin nginx.org\nPin-Priority: 900\n' > /etc/apt/prefe
 curl -fsSL https://packages.redis.io/gpg | gpg --dearmor --yes -o /etc/apt/keyrings/redis.gpg
 echo "deb [signed-by=/etc/apt/keyrings/redis.gpg] https://packages.redis.io/deb noble main" > /etc/apt/sources.list.d/redis.list
 
-curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 | gpg --dearmor --yes -o /etc/apt/keyrings/mysql.gpg
+# Oracle's MySQL signing key, from the Ubuntu keyserver: Oracle extends its expiry there, while the copy on
+# repo.mysql.com (RPM-GPG-KEY-mysql-2023) has expired.
+curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xB7B3B788A8D3785C" | gpg --dearmor --yes -o /etc/apt/keyrings/mysql.gpg
 echo "deb [signed-by=/etc/apt/keyrings/mysql.gpg] http://repo.mysql.com/apt/ubuntu noble mysql-8.4-lts" > /etc/apt/sources.list.d/mysql.list
 
 apt-get update -q
