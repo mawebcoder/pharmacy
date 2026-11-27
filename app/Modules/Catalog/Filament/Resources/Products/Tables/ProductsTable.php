@@ -11,6 +11,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -25,7 +26,7 @@ final class ProductsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['brand', 'primaryCategory', 'media'])->withCount('variants')->withExists(['variants as has_near_expiry' => fn (Builder $variants): Builder => $variants->where(ProductVariant::COLUMN_IS_NEAR_EXPIRY, true)]))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['brand', 'primaryCategory', 'primarySubcategory', 'media'])->withCount('variants')->withExists(['variants as has_near_expiry' => fn (Builder $variants): Builder => $variants->where(ProductVariant::COLUMN_IS_NEAR_EXPIRY, true)]))
             ->columns([
                 ImageThumbnail::make(Product::IMAGE_GALLERY, 'product'),
                 TextColumn::make(Product::COLUMN_NAME_FA)
@@ -34,11 +35,18 @@ final class ProductsTable
                     ->searchable([Product::COLUMN_NAME_FA, Product::COLUMN_NAME_EN, Product::COLUMN_IRC_CODE])
                     ->sortable()
                     ->wrap(),
+                // An imported product may have none yet (owner, 2026-11-27); it is not shown in the shop until set.
                 TextColumn::make('brand.'.Brand::COLUMN_NAME_FA)
                     ->label('برند')
+                    ->placeholder('تعیین نشده')
                     ->searchable(),
                 TextColumn::make('primaryCategory.'.Category::COLUMN_NAME_FA)
                     ->label('دسته اصلی')
+                    ->placeholder('تعیین نشده')
+                    ->toggleable(),
+                TextColumn::make('primarySubcategory.'.Subcategory::COLUMN_NAME_FA)
+                    ->label('زیردسته اصلی')
+                    ->placeholder('تعیین نشده')
                     ->toggleable(),
                 TextColumn::make(Product::COLUMN_PRODUCT_TYPE)
                     ->label('نوع')
@@ -85,6 +93,14 @@ final class ProductsTable
                     ->toggle()
                     // A SKU whose selling supplier has near-expiry stock (owner, 2026-11-17).
                     ->query(fn (Builder $query): Builder => $query->whereHas('variants', fn (Builder $variants): Builder => $variants->where(ProductVariant::COLUMN_IS_NEAR_EXPIRY, true))),
+                // Imported products still missing what the shop needs (owner, 2026-11-27): they cannot be sold or shown.
+                Filter::make('incomplete')
+                    ->label('بدون برند، دسته یا زیردسته (غیرقابل فروش)')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->where(fn (Builder $missing): Builder => $missing
+                        ->whereNull(Product::COLUMN_BRAND_ID)
+                        ->orWhereNull(Product::COLUMN_PRIMARY_CATEGORY_ID)
+                        ->orWhereNull(Product::COLUMN_PRIMARY_SUBCATEGORY_ID))),
                 TrashedFilter::make(),
             ])
             ->recordActions([

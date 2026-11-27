@@ -368,22 +368,32 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return $this->setAttribute(self::COLUMN_HARAJ_PERCENT, $value);
     }
 
-    public function getBrandId(): int
+    /**
+     * Null for a product imported without one (owner, 2026-11-27); it cannot be active until staff set it.
+     */
+    public function getBrandId(): ?int
     {
-        return (int) $this->getAttribute(self::COLUMN_BRAND_ID);
+        $value = $this->getAttribute(self::COLUMN_BRAND_ID);
+
+        return $value === null ? null : (int) $value;
     }
 
-    public function setBrandId(int $brandId): static
+    public function setBrandId(?int $brandId): static
     {
         return $this->setAttribute(self::COLUMN_BRAND_ID, $brandId);
     }
 
-    public function getPrimaryCategoryId(): int
+    /**
+     * Null for a product imported without a subcategory (owner, 2026-11-27).
+     */
+    public function getPrimaryCategoryId(): ?int
     {
-        return (int) $this->getAttribute(self::COLUMN_PRIMARY_CATEGORY_ID);
+        $value = $this->getAttribute(self::COLUMN_PRIMARY_CATEGORY_ID);
+
+        return $value === null ? null : (int) $value;
     }
 
-    public function setPrimaryCategoryId(int $categoryId): static
+    public function setPrimaryCategoryId(?int $categoryId): static
     {
         return $this->setAttribute(self::COLUMN_PRIMARY_CATEGORY_ID, $categoryId);
     }
@@ -446,9 +456,15 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         return $this->setAttribute(self::COLUMN_STATUS, $status);
     }
 
+    /**
+     * Active, with its brand, category and subcategory (a product imported without them never reaches the shop).
+     */
     public function isActive(): bool
     {
-        return $this->getStatus() === ProductStatus::Active;
+        return $this->getStatus() === ProductStatus::Active
+            && $this->getBrandId() !== null
+            && $this->getPrimaryCategoryId() !== null
+            && $this->getPrimarySubcategoryId() !== null;
     }
 
     /**
@@ -700,7 +716,11 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where(self::COLUMN_STATUS, ProductStatus::Active);
+        // Activation requires them; kept here so a product without brand or category never reaches the shop.
+        return $query->where(self::COLUMN_STATUS, ProductStatus::Active)
+            ->whereNotNull(self::COLUMN_BRAND_ID)
+            ->whereNotNull(self::COLUMN_PRIMARY_CATEGORY_ID)
+            ->whereNotNull(self::COLUMN_PRIMARY_SUBCATEGORY_ID);
     }
 
     /**
@@ -716,7 +736,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
         $unsellable = config('catalog.unsellable_product_types', []);
 
         return $query
-            ->where(self::COLUMN_STATUS, ProductStatus::Active)
+            ->active()
             ->where(self::COLUMN_PRODUCT_TYPE, '!=', ProductType::Rx)
             ->whereNotIn(self::COLUMN_PRODUCT_TYPE, $unsellable)
             ->whereHas('variants', fn (Builder $variants) => $variants->where(ProductVariant::COLUMN_IS_ACTIVE, true));

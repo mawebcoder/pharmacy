@@ -70,9 +70,8 @@ final class UpdateProduct
 
     /**
      * Copies the data onto the product, except the status. Products belong to subcategories (owner, 2026-11-15): the
-     * main category is the main subcategory's.
-     *
-     * @throws ProductChangeRefused
+     * main category is the main subcategory's. Brand and subcategory may be empty for an imported product (owner,
+     * 2026-11-27): the admin form requires them, and the product cannot be active without them.
      */
     public static function fill(Product $product, ProductData $data): Product
     {
@@ -80,7 +79,7 @@ final class UpdateProduct
             ? null
             : Subcategory::query()->whereKey($data->primarySubcategoryId)->value(Subcategory::COLUMN_CATEGORY_ID);
 
-        if ($categoryId === null) {
+        if ($data->primarySubcategoryId !== null && $categoryId === null) {
             throw ProductChangeRefused::subcategoryRequired();
         }
 
@@ -94,7 +93,7 @@ final class UpdateProduct
             ->setSlug($slug)
             ->setBrandId($data->brandId)
             ->setCommissionPercent($data->commissionPercent)
-            ->setPrimaryCategoryId((int) $categoryId)
+            ->setPrimaryCategoryId($categoryId === null ? null : (int) $categoryId)
             ->setPrimarySubcategoryId($data->primarySubcategoryId)
             ->setProductType($data->productType)
             ->setIrcCode($data->ircCode)

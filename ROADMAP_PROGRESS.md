@@ -23,6 +23,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S16 | Pricing engine and price records | done | 2026-11-09 | 0dd663b |
 | S17 | Commission per supplier and preferred supplier | done | 2026-11-15 | 31207e0 |
 | S18 | Price import | done | 2026-11-14 | 15c24fa |
+| S18b | Catalog import from CSV (basic product data; brand and categories set in the admin) | done | 2026-11-27 | |
 | S19 | Customer OTP auth | done | 2026-11-14 | df4164e |
 | S20 | Addresses and account area | done | 2026-11-14 | 13ad476 |
 | S21 | Cart | done | 2026-11-14 | ff08e15 |

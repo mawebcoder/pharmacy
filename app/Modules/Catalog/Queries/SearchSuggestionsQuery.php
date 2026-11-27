@@ -175,8 +175,8 @@ final readonly class SearchSuggestionsQuery
         );
 
         return [
-            array_values($products->map(fn (Product $product): int => $product->getPrimaryCategoryId())->all()),
-            array_values($products->map(fn (Product $product): int => $product->getBrandId())->all()),
+            array_values(array_filter($products->map(fn (Product $product): ?int => $product->getPrimaryCategoryId())->all())),
+            array_values(array_filter($products->map(fn (Product $product): ?int => $product->getBrandId())->all())),
             array_values(array_filter($products->map(fn (Product $product): ?int => $product->getPrimarySubcategoryId())->all())),
         ];
     }

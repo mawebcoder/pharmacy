@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Filament\Actions\Imports\Models\Import;
 use Illuminate\Support\ServiceProvider;
 use TallStackUi\Facades\TallStackUi;
 
@@ -23,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->customizeTallStackUi();
+
+        // Filament imports belong to admins (admin_users), not App\Models\User: the catalog import (owner, 2026-11-27).
+        Import::polymorphicUserRelationship();
     }
 
     /**

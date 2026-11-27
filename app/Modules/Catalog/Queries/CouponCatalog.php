@@ -18,7 +18,7 @@ final readonly class CouponCatalog
      * Brand and categories of each product: main and extra categories, and the categories of its subcategories.
      *
      * @param  list<int>  $productIds
-     * @return array<int, array{brandId: int, categoryIds: list<int>}>
+     * @return array<int, array{brandId: int|null, categoryIds: list<int>}>
      */
     public function productGroups(array $productIds): array
     {

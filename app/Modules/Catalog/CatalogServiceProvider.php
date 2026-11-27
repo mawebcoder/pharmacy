@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Catalog;
 
 use App\Modules\Catalog\Jobs\SyncFlashDeals;
+use App\Modules\Catalog\Listeners\NotifyAdminOfImportChunk;
 use App\Modules\Catalog\Listeners\SavePendingWishlistProduct;
 use App\Modules\Identity\Events\CustomerLoggedIn;
 use App\Modules\Shared\ModuleServiceProvider;
+use Filament\Actions\Imports\Events\ImportChunkProcessed;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 
@@ -19,6 +21,8 @@ final class CatalogServiceProvider extends ModuleServiceProvider
 
         // A guest's heart click is saved once they sign in (roadmap S20).
         Event::listen(CustomerLoggedIn::class, SavePendingWishlistProduct::class);
+        // Catalog import (owner, 2026-11-27): the admin hears about failed rows after each chunk.
+        Event::listen(ImportChunkProcessed::class, NotifyAdminOfImportChunk::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             // Flash deals that started or ended put or take their price on the SKU (roadmap S28).

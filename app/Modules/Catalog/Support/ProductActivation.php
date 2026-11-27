@@ -34,6 +34,10 @@ final class ProductActivation
             $missing[] = 'دسته اصلی مشخص نیست یا حذف شده است';
         }
 
+        if ($product->getPrimarySubcategoryId() === null) {
+            $missing[] = 'زیردسته اصلی مشخص نیست';
+        }
+
         if (! $product->variants()->active()->where('price', '>', 0)->exists()) {
             $missing[] = 'دست‌کم یک تنوع فعال با قیمت لازم است';
         }

@@ -17,7 +17,8 @@ use App\Modules\Catalog\Queries\VariantPricingInputs;
 final class VariantPricing
 {
     /**
-     * The admin's price inputs of a SKU (roadmap D3.2): the product or its brand must have a commission, medicines
+     * The admin's price inputs of a SKU (roadmap D3.2): the product or its brand must have a commission (not yet for a
+     * product imported without a brand, owner 2026-11-27: it cannot be active or priced until staff set one), medicines
      * need a printed price, and a haraj percentage (0–90; owner, 2026-11-17) needs a selling price to apply to (a new
      * SKU has none yet).
      *
@@ -25,7 +26,7 @@ final class VariantPricing
      */
     public static function assertValid(Product $product, ProductVariantData $data, ?ProductVariant $variant = null): void
     {
-        if (app(VariantPricingInputs::class)->commissionOf($product) === null) {
+        if ($product->getBrandId() !== null && app(VariantPricingInputs::class)->commissionOf($product) === null) {
             throw ProductChangeRefused::commissionMissing();
         }
 

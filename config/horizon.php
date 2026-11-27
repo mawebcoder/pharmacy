@@ -241,6 +241,21 @@ return [
             'nice' => 0,
         ],
 
+        // "catalog-import": catalog Excel/CSV imports (owner, 2026-11-27): reading the file, then saving it in chunks of
+        // about 100 rows with their image downloads. One process, so chunks never create the same brand or category twice.
+        'supervisor-catalog-import' => [
+            'connection' => 'redis',
+            'queue' => ['catalog-import'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 512,
+            'tries' => 1,
+            'timeout' => 1800,
+            'nice' => 0,
+        ],
+
         // "search": Scout's Meilisearch indexing jobs (S12). One process, so the updates of a product reach
         // Meilisearch in order: parallel workers let an older snapshot overwrite a newer one (found in S14).
         'supervisor-search' => [

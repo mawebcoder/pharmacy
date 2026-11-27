@@ -20,6 +20,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Subcategory;
+use App\Modules\Catalog\Support\ProductActivation;
 use App\Modules\Media\Actions\AttachImage;
 use Illuminate\Support\Facades\Storage;
 
@@ -89,17 +90,20 @@ describe('creating', function (): void {
             ->and($product->subcategories()->pluck('subcategories.id')->all())->toBe([$extra->getId()]);
     });
 
-    it('refuses a product without a main subcategory', function (): void {
+    // Owner, 2026-11-27: the catalog import saves products without a subcategory as drafts; the admin form requires it.
+    it('saves a product without a main subcategory as a draft that cannot be activated', function (): void {
         $data = ProductData::fromArray([
             Product::COLUMN_NAME_FA => 'استامینوفن ۵۰۰',
-            Product::COLUMN_BRAND_ID => Brand::factory()->create()->getId(),
+            Product::COLUMN_BRAND_ID => Brand::factory()->create([Brand::COLUMN_COMMISSION_PERCENT => 10])->getId(),
             Product::COLUMN_PRODUCT_TYPE => 'otc',
         ]);
 
-        expect(fn () => app(CreateProduct::class)($data, variantData()))
-            ->toThrow(ProductChangeRefused::class, ProductChangeRefused::subcategoryRequired()->getMessage());
+        $product = app(CreateProduct::class)($data, variantData());
 
-        expect(Product::withTrashed()->count())->toBe(0);
+        expect($product->getPrimarySubcategoryId())->toBeNull()
+            ->and($product->getPrimaryCategoryId())->toBeNull()
+            ->and($product->getStatus())->toBe(ProductStatus::Draft)
+            ->and(fn () => ProductActivation::assertAllowed($product))->toThrow(ProductChangeRefused::class, 'زیردسته اصلی مشخص نیست');
     });
 
     it('moves a product to the category of its new main subcategory', function (): void {
