@@ -331,7 +331,7 @@ final class OrderInfolist
         foreach ($parcels as $parcel) {
             $box = $parcel['box'] === null
                 ? '<span class="text-danger-600">هیچ کارتنی جا نمی‌دهد؛ دستی بسته‌بندی کنید</span>'
-                : e($parcel['box']).' ('.e(PersianDigits::toPersian((string) $parcel['sizes'])).' سانتی‌متر، '.$grams($parcel['box_weight_g']).')';
+                : e($parcel['box']).' ('.e((string) $parcel['sizes']).'، '.$grams($parcel['box_weight_g']).')';
             $items = implode('، ', array_map(fn (array $item): string => e($item['title']).' × '.PersianDigits::toPersian($item['quantity']), $parcel['items']));
             $html .= '<div class="rounded-lg border border-gray-200 p-3 dark:border-white/10">'
                 .'<div class="font-bold">بسته '.PersianDigits::toPersian($parcel['sequence']).': '.$box.'</div>'

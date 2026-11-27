@@ -7,6 +7,7 @@ namespace App\Modules\Shipping\Queries;
 use App\Modules\Shipping\Data\BoxSpec;
 use App\Modules\Shipping\Data\PackedParcel;
 use App\Modules\Shipping\Models\OrderParcel;
+use App\Modules\Shipping\Models\ShippingBox;
 use App\Modules\Shipping\Packing\BoxPacker;
 
 /**
@@ -29,7 +30,7 @@ final readonly class OrderParcels
                 return [
                     'sequence' => $parcel->getSequence(),
                     'box' => $box['name'] ?? null,
-                    'sizes' => $box === null ? null : $box['length_cm'].' × '.$box['width_cm'].' × '.$box['height_cm'],
+                    'sizes' => $box === null ? null : ShippingBox::formatSizes((int) $box['length_cm'], (int) $box['width_cm'], (int) $box['height_cm']),
                     'box_weight_g' => (int) ($box['empty_weight_g'] ?? 0),
                     'items' => array_map(fn (array $item): array => ['title' => $item['title'], 'quantity' => $item['quantity']], $parcel->getItems()),
                     'items_weight_g' => $parcel->getItemsWeightG(),

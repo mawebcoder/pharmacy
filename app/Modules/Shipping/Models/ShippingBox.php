@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Shipping\Models;
 
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Support\PersianDigits;
 use App\Modules\Shipping\Database\Factories\ShippingBoxFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -149,11 +150,19 @@ final class ShippingBox extends Model implements HasActivityLogLabel
     }
 
     /**
-     * «۲۰ × ۱۵ × ۱۰» style label of the inner sizes.
+     * «طول ۲۰ × عرض ۱۵ × ارتفاع ۱۰ سانتی‌متر»: the inner sizes, each named, wherever a box is shown (owner, 2026-11-27).
      */
     public function sizesLabel(): string
     {
-        return $this->getLengthCm().' × '.$this->getWidthCm().' × '.$this->getHeightCm();
+        return self::formatSizes($this->getLengthCm(), $this->getWidthCm(), $this->getHeightCm());
+    }
+
+    /**
+     * The same label from sizes alone, e.g. a parcel's box snapshot.
+     */
+    public static function formatSizes(int $lengthCm, int $widthCm, int $heightCm): string
+    {
+        return PersianDigits::toPersian("طول {$lengthCm} × عرض {$widthCm} × ارتفاع {$heightCm} سانتی‌متر");
     }
 
     /**

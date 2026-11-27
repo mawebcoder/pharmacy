@@ -45,7 +45,7 @@ final class ShippingBoxResource extends Resource
     public static function form(Schema $schema): Schema
     {
         $rules = SaveShippingBoxRequest::baseRules();
-        $side = fn (string $column, string $label): TextInput => TextInput::make($column)->label($label)->numeric()->integer()->suffix('سانتی‌متر')->required()->rules($rules[$column]);
+        $side = fn (string $column, string $label, string $hint): TextInput => TextInput::make($column)->label($label)->helperText($hint)->numeric()->integer()->suffix('سانتی‌متر')->required()->rules($rules[$column]);
 
         return $schema
             ->columns(3)
@@ -58,9 +58,9 @@ final class ShippingBoxResource extends Resource
                     ->helperText('اگر یکی از کارتن‌های استاندارد تیپاکس است (۱ تا ۱۱).')
                     ->rules($rules[ShippingBox::COLUMN_TIPAX_SIZE]),
                 Toggle::make(ShippingBox::COLUMN_IS_ACTIVE)->label('در دسترس')->helperText('کارتنی که نداریم را خاموش کنید.')->default(true)->inline(false),
-                $side(ShippingBox::COLUMN_LENGTH_CM, 'طول داخلی'),
-                $side(ShippingBox::COLUMN_WIDTH_CM, 'عرض داخلی'),
-                $side(ShippingBox::COLUMN_HEIGHT_CM, 'ارتفاع داخلی'),
+                $side(ShippingBox::COLUMN_LENGTH_CM, 'طول داخلی', 'ضلع بلندتر کف کارتن، از داخل.'),
+                $side(ShippingBox::COLUMN_WIDTH_CM, 'عرض داخلی', 'ضلع کوتاه‌تر کف کارتن، از داخل.'),
+                $side(ShippingBox::COLUMN_HEIGHT_CM, 'ارتفاع داخلی', 'از کف تا در کارتن، از داخل.'),
                 TextInput::make(ShippingBox::COLUMN_EMPTY_WEIGHT_G)
                     ->label('وزن خود کارتن')
                     ->numeric()
@@ -92,8 +92,8 @@ final class ShippingBoxResource extends Resource
             ->columns([
                 TextColumn::make(ShippingBox::COLUMN_NAME)->label('نام'),
                 TextColumn::make('sizes')
-                    ->label('ابعاد داخلی (سانتی‌متر)')
-                    ->state(fn (ShippingBox $record): string => PersianDigits::toPersian($record->sizesLabel())),
+                    ->label('ابعاد داخلی')
+                    ->state(fn (ShippingBox $record): string => $record->sizesLabel()),
                 TextColumn::make(ShippingBox::COLUMN_EMPTY_WEIGHT_G)
                     ->label('وزن کارتن')
                     ->formatStateUsing(fn (int $state): string => PersianDigits::toPersian($state).' گرم'),
