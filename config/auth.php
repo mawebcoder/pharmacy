@@ -146,12 +146,20 @@ return [
     | On the local environment only, the bypass code signs in any number that has just requested a code, so
     | developers need no SMS. It never works outside APP_ENV=local, whatever the flag says.
     |
+    | The fixed code works in every environment, but only for the one mobile number set beside it (the owner's,
+    | 2026-11-27), only after that number requested a code, within the usual 5 tries, and at least 6 digits long;
+    | each use is logged. It is never shown on the sign-in page. Empty: off.
+    |
     */
 
     'otp' => [
         'bypass' => [
             'enabled' => (bool) env('OTP_BYPASS_ENABLED', true),
             'code' => (string) env('OTP_BYPASS_CODE', '11111'),
+        ],
+        'fixed' => [
+            'mobile' => (string) env('OTP_FIXED_MOBILE', ''),
+            'code' => (string) env('OTP_FIXED_CODE', ''),
         ],
     ],
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Models;
 
+use App\Modules\Shared\Support\PersianNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -122,6 +123,18 @@ final class OtpCode extends Model
         $code = (string) config('auth.otp.bypass.code');
 
         return app()->isLocal() && config('auth.otp.bypass.enabled') && $code !== '' ? $code : null;
+    }
+
+    /**
+     * The fixed code of the one mobile number set in config auth.otp.fixed (any environment), or null for every other
+     * number, or when it is unset or shorter than 6 digits.
+     */
+    public static function fixedCodeFor(string $mobile): ?string
+    {
+        $fixedMobile = PersianNormalizer::digits(trim((string) config('auth.otp.fixed.mobile')));
+        $code = PersianNormalizer::digits(trim((string) config('auth.otp.fixed.code')));
+
+        return $fixedMobile !== '' && $fixedMobile === $mobile && preg_match('/^\d{6,}$/', $code) === 1 ? $code : null;
     }
 
     /**

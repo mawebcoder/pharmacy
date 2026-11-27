@@ -10,11 +10,13 @@ use App\Modules\Identity\Models\Customer;
 use App\Modules\Identity\Models\OtpCode;
 use App\Modules\Shared\Support\PersianNormalizer;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Checks a sign-in code and signs the customer in on the «customer» guard (roadmap D13.1, S19), creating the
  * account on first sign-in. A code allows 5 tries and is used once. On APP_ENV=local the bypass code
- * (OTP_BYPASS_CODE) is accepted in place of the sent one. Blocked customers are refused. The caller
+ * (OTP_BYPASS_CODE) is accepted in place of the sent one; in any environment, the fixed code (OTP_FIXED_CODE) is
+ * accepted for its one number (OTP_FIXED_MOBILE), and logged. Blocked customers are refused. The caller
  * regenerates the session.
  */
 final readonly class VerifyOtp
@@ -46,7 +48,13 @@ final readonly class VerifyOtp
         }
 
         $bypassCode = OtpCode::bypassCode();
-        $isBypass = $bypassCode !== null && hash_equals($bypassCode, $code);
+        $fixedCode = OtpCode::fixedCodeFor($mobile);
+        $isFixed = $fixedCode !== null && hash_equals($fixedCode, $code);
+        $isBypass = $isFixed || ($bypassCode !== null && hash_equals($bypassCode, $code));
+
+        if ($isFixed) {
+            Log::notice('Customer signed in with the fixed sign-in code.', ['mobile' => $mobile]);
+        }
 
         if (! $isBypass && ! hash_equals($otp->getCodeHash(), OtpCode::hash($code))) {
             $attempts = $otp->getAttempts() + 1;

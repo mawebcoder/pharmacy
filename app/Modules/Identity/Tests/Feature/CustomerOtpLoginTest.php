@@ -300,6 +300,26 @@ it('accepts the bypass code on the local environment only', function (string $en
     'production' => ['production', false],
 ]);
 
+it('accepts the fixed code for its one number in production, and nowhere else', function (): void {
+    config(['auth.otp.fixed.mobile' => '09367989856', 'auth.otp.fixed.code' => '482916']);
+    $this->app['env'] = 'production';
+
+    requestOtp('09367989856');
+    expect(app(VerifyOtp::class)('09367989856', '۴۸۲۹۱۶'))->toBeInstanceOf(Customer::class);
+
+    $code = requestOtp('09121234567');
+    expect(fn (): Customer => app(VerifyOtp::class)('09121234567', $code === '482916' ? '000000' : '482916'))->toThrow(OtpRefused::class);
+});
+
+it('ignores a fixed code shorter than 6 digits, and needs a requested code first', function (): void {
+    config(['auth.otp.fixed.mobile' => '09367989856', 'auth.otp.fixed.code' => '1234']);
+    requestOtp('09367989856');
+    expect(fn (): Customer => app(VerifyOtp::class)('09367989856', '1234'))->toThrow(OtpRefused::class);
+
+    config(['auth.otp.fixed.code' => '482916']);
+    expect(fn (): Customer => app(VerifyOtp::class)('09129998877', '482916'))->toThrow(OtpRefused::class);
+});
+
 it('refuses the bypass code when the flag is off, even locally', function (): void {
     config(['auth.otp.bypass.enabled' => false]);
     $code = requestOtp();
