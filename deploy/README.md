@@ -44,8 +44,9 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
    cd /root/hutana-setup && DOMAINS="hutana.ir www.hutana.ir" CERTBOT_EMAIL=you@example.com \
      DEPLOY_PUBLIC_KEY="$(cat hutana-deploy.pub)" bash deploy/setup.sh
    ```
-   (copy `hutana-deploy.pub` to the server first, or paste its content). `MYSQL_BUFFER_POOL` (default `2G`) sets
-   MySQL's memory. The script writes the database, Redis and Meilisearch passwords and `APP_KEY` into
+   (copy `hutana-deploy.pub` to the server first, or paste its content). `MYSQL_BUFFER_POOL` (default `128M`) and
+   `MYSQL_MAX_CONNECTIONS` (default `40`) size MySQL for a 1 GB server; `SWAP_SIZE` (default `2G`) is the swap file
+   made when the server has none. The script writes the database, Redis and Meilisearch passwords and `APP_KEY` into
    `/var/www/hutana/shared/.env` itself; it never prints them.
 5. **Fill in the rest of** `/var/www/hutana/shared/.env`: `SUPERADMIN_PASSWORD` (required: the first deploy creates
    the super admin), `SUPERADMIN_EMAIL`, SMS, Tipax, Zarinpal (`ZARINPAL_SANDBOX=false` when the merchant is live)

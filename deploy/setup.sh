@@ -20,7 +20,11 @@ DOMAINS="${DOMAINS:?Set DOMAINS, e.g. DOMAINS=\"hutana.ir www.hutana.ir\"}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_PUBLIC_KEY="${DEPLOY_PUBLIC_KEY:-}"
-MYSQL_BUFFER_POOL="${MYSQL_BUFFER_POOL:-2G}"
+# Sized for the current server (1 GB RAM, 1 core); raise both when the server grows (e.g. 2G and 100 on 8 GB).
+MYSQL_BUFFER_POOL="${MYSQL_BUFFER_POOL:-128M}"
+MYSQL_MAX_CONNECTIONS="${MYSQL_MAX_CONNECTIONS:-40}"
+# Swap file made when the server has none, so a busy moment slows the server down instead of freezing it.
+SWAP_SIZE="${SWAP_SIZE:-2G}"
 
 PHP_VERSION=8.5
 NGINX_VERSION=1.28
@@ -53,6 +57,18 @@ fill_env() {
 env_value() {
     grep -E "^$1=" "${ENV_FILE}" | head -n 1 | cut -d= -f2- | tr -d '"'
 }
+
+log "Swap"
+if [[ -z "$(swapon --show=NAME --noheadings)" ]]; then
+    fallocate -l "${SWAP_SIZE}" /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile > /dev/null
+    swapon /swapfile
+    grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+# Use swap only for memory that sits idle (idle workers), not for what MySQL and PHP are using.
+printf 'vm.swappiness = 10\n' > /etc/sysctl.d/99-hutana.conf
+sysctl -q -p /etc/sysctl.d/99-hutana.conf
 
 log "Base packages"
 apt-get update -q
@@ -104,7 +120,11 @@ ln -sfn /etc/nginx/sites-available/hutana.conf /etc/nginx/sites-enabled/hutana.c
 
 log "MySQL 8.4"
 apt-get install -yq mysql-server
-sed "s/^innodb_buffer_pool_size = .*/innodb_buffer_pool_size = ${MYSQL_BUFFER_POOL}/" "${REPO}/docker/mysql/conf.d/my.cnf" > /etc/mysql/mysql.conf.d/zz-hutana.cnf
+sed -e "s/^innodb_buffer_pool_size = .*/innodb_buffer_pool_size = ${MYSQL_BUFFER_POOL}/" \
+    -e "s/^max_connections = .*/max_connections = ${MYSQL_MAX_CONNECTIONS}/" \
+    "${REPO}/docker/mysql/conf.d/my.cnf" > /etc/mysql/mysql.conf.d/zz-hutana.cnf
+# Performance schema takes about 100 MB that a small server cannot spare.
+printf '\n[mysqld]\nperformance_schema = OFF\n' >> /etc/mysql/mysql.conf.d/zz-hutana.cnf
 
 log "Redis ${REDIS_VERSION}"
 apt-get install -yq "redis-server=6:${REDIS_VERSION}.*" "redis-tools=6:${REDIS_VERSION}.*"
