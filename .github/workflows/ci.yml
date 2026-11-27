@@ -5,18 +5,19 @@ name: CI/CD
 # passes here behaves the same on a developer's machine and on the production server, which runs the same
 # versions natively (deploy/).
 #
-#   checks            every push (dev, feature branches, main): Pint, Larastan, composer audit and the asset
+#   checks            every push except main (dev, feature branches): Pint, Larastan, composer audit and the asset
 #                     build (the test suite runs locally, not in CI)
-#   production-build  every push: the release exactly as the server gets it (no dev packages, optimized class
-#                     map, built assets, APP_ENV=production), migrated and seeded on an empty database, cached,
-#                     served by Nginx and smoke-tested; on main it is kept as the release archive
-#   deploy            main only (a merge into main): as soon as both pass, uploads the archive over SSH and runs
-#                     deploy/release.sh (zero-downtime switch, last 5 kept); dev and other branches never deploy
+#   production-build  every push except main: the release exactly as the server gets it (no dev packages,
+#                     optimized class map, built assets, APP_ENV=production), migrated and seeded on an empty
+#                     database, cached, served by Nginx and smoke-tested; on dev it is kept as the release archive,
+#                     named after the code's git tree
 #
-# Rollback: the "Rollback" workflow (rollback.yml). Server setup and the secrets this needs: deploy/README.md.
+# Deploy: the "Deploy to production" button (deploy.yml) ships dev once it is green. Rollback: rollback.yml. Server setup and the secrets this needs: deploy/README.md.
 
 on:
   push:
+    # main only records what is live (deploy.yml merges dev into it): nothing to check there.
+    branches-ignore: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,12 +25,13 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A newer push replaces a running check on feature branches; main always finishes (it may deploy).
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # A newer push replaces a running check.
+  cancel-in-progress: true
 
 jobs:
   checks:
     name: Checks (local Docker stack)
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
 
@@ -95,8 +97,18 @@ jobs:
       - name: Larastan
         run: docker compose exec -T app vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
+      # Exit 100 is Composer's network error (Packagist's advisory API unreachable, e.g. HTTP 502): tried three times,
+      # then a warning, so an outage at Packagist does not block a release. Any advisory still fails the job.
       - name: Composer audit
-        run: docker compose exec -T app composer audit
+        run: |
+          for attempt in 1 2 3; do
+            status=0
+            docker compose exec -T app composer audit || status=$?
+            [ "${status}" -ne 100 ] && exit "${status}"
+            echo "Packagist's advisory API did not answer (attempt ${attempt})."
+            sleep 15
+          done
+          echo "::warning::composer audit skipped: Packagist's advisory API is unreachable."
 
       - name: Build front-end assets
         run: docker compose exec -T app sh -c 'npm ci --no-audit --no-fund && npm run build'
@@ -107,6 +119,7 @@ jobs:
 
   production-build:
     name: Production build and smoke test
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -177,14 +190,17 @@ jobs:
           done
 
       - name: Package the release
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: package
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         run: |
+          # Named after the git tree (the code itself), so main's merge commit finds the archive built from it.
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
           docker compose exec -T app php artisan optimize:clear --no-interaction
           docker compose exec -T app php artisan filament:optimize-clear --no-interaction
           # Nothing may write in the folder while it is packed: the stack is stopped, and the archive is written
           # outside it (tar fails with "file changed as we read it" otherwise).
           docker compose stop
-          tar --create --gzip --file "${RUNNER_TEMP}/release-${GITHUB_SHA}.tar.gz" \
+          tar --create --gzip --file "${RUNNER_TEMP}/release.tar.gz" \
             --exclude=./.git --exclude=./.github --exclude=./.claude --exclude=./.env --exclude='./.env.*' \
             --exclude=./node_modules --exclude=./tests --exclude='./app/Modules/*/Tests' \
             --exclude=./docker --exclude=./docker-compose.yml --exclude=./deploy --exclude=./docs \
@@ -195,12 +211,12 @@ jobs:
           cp deploy/release.sh "${RUNNER_TEMP}/release.sh"
 
       - name: Keep the release archive
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: release
+          name: release-${{ steps.package.outputs.tree }}
           path: |
-            ${{ runner.temp }}/release-${{ github.sha }}.tar.gz
+            ${{ runner.temp }}/release.tar.gz
             ${{ runner.temp }}/release.sh
           retention-days: 14
           if-no-files-found: error
@@ -210,64 +226,3 @@ jobs:
         run: |
           docker compose logs --tail=200
           docker compose exec -T app sh -c 'tail -n 100 storage/logs/*.log' || true
-
-  deploy:
-    name: Deploy to production
-    needs: [checks, production-build]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    # The "production" environment holds the deploy secrets; it has no required reviewers, so a merge into main
-    # deploys by itself.
-    environment:
-      name: production
-      url: ${{ vars.APP_URL }}
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: release
-
-      - name: SSH access
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          cat >> ~/.ssh/config <<EOF
-          Host production
-            HostName ${{ secrets.DEPLOY_HOST }}
-            User ${{ secrets.DEPLOY_USER }}
-            Port ${{ vars.DEPLOY_PORT || '22' }}
-            IdentityFile ~/.ssh/deploy_key
-            IdentitiesOnly yes
-            # Give up quickly when the server does not answer, instead of waiting for the job timeout.
-            ConnectTimeout 20
-            ServerAliveInterval 15
-            ServerAliveCountMax 4
-          EOF
-
-      - name: Upload the release
-        run: |
-          scp "release-${GITHUB_SHA}.tar.gz" production:/var/www/hutana/incoming/
-          scp release.sh production:/var/www/hutana/release.sh
-          ssh production chmod 755 /var/www/hutana/release.sh
-
-      - name: Switch to the release
-        run: ssh production "/var/www/hutana/release.sh deploy ${GITHUB_SHA} /var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
-
-      - name: Health check (rolls back on failure)
-        env:
-          APP_URL: ${{ vars.APP_URL }}
-        run: |
-          if ! curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "${APP_URL}/up" > /dev/null; then
-            echo "Health check failed: rolling back." >&2
-            ssh production /var/www/hutana/release.sh rollback
-            exit 1
-          fi
