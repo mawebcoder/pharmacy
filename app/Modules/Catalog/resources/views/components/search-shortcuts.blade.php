@@ -34,7 +34,7 @@
                                     @endif
                                 </span>
                             @else
-                                <span class="grid size-14 place-items-center overflow-hidden rounded-full border border-line-200 bg-media p-2">
+                                <span class="grid size-14 place-items-center overflow-hidden rounded-full bg-media p-2">
                                     @if ($item->getLogo())
                                         <x-media::picture :media="$item->getLogo()" slot-name="brand-logo" alt="" class="size-full object-contain" />
                                     @else

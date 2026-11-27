@@ -36,7 +36,8 @@ new class extends Component
 
     <x-content::banners place="brand" :place-id="$brand->getId()" :priority="true" />
 
-    <header class="flex flex-col gap-4 rounded-card border border-line-200 bg-card p-4 shadow-card md:flex-row md:items-start md:p-6">
+    {{-- No box around the brand header, like the brand tiles (owner, 2026-11-27). --}}
+    <header class="flex flex-col gap-4 md:flex-row md:items-start">
         @if ($brand->getLogo())
             <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" :alt="'لوگوی '.$brand->getNameFa()" :priority="true" class="size-16 shrink-0 rounded-full bg-white object-contain p-2 md:size-20 md:p-3 xl:size-24" />
         @endif

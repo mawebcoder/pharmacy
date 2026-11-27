@@ -16,7 +16,7 @@
                     @foreach ($brands as $brand)
                         <li wire:key="widget-{{ $widget->getId() }}-brand-{{ $brand->getId() }}" class="swiper-slide w-[30%] md:w-[calc((100%-64px)/5)] xl:w-[calc((100%-80px)/6)]">
                             <a href="{{ route('brands.show', $brand->getSlug()) }}" wire:navigate class="group flex flex-col items-center gap-2 rounded-card p-2 text-center select-none focus-visible:outline-2 focus-visible:outline-primary-700">
-                                <span class="grid size-20 place-items-center overflow-hidden rounded-full border border-line-200 bg-media p-3 xl:size-24">
+                                <span class="grid size-20 place-items-center overflow-hidden rounded-full bg-media p-3 xl:size-24">
                                     @if ($brand->getLogo())
                                         <x-media::picture :media="$brand->getLogo()" slot-name="brand-logo" :alt="$brand->getNameFa()" class="size-full object-contain transition xl:grayscale xl:group-hover:grayscale-0 motion-reduce:transition-none" />
                                     @else
