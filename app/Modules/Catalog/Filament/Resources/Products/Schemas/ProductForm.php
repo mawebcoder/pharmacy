@@ -19,6 +19,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\AdminOptions;
+use App\Modules\Catalog\Support\ProductVisibility;
 use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Pricing\Filament\Support\PricingGuide;
 use App\Modules\Pricing\Livewire\ProductProvidersTable;
@@ -30,12 +31,14 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 /**
  * Tabs in roadmap B12 order (General → Attributes & tags → Content → Images → SEO). Field rules come from StoreProductRequest::baseRules()
@@ -61,6 +64,7 @@ final class ProductForm
         return $schema
             ->columns(1)
             ->components([
+                self::visibilityNote(),
                 Tabs::make('product')
                     ->persistTabInQueryString()
                     ->tabs([
@@ -354,5 +358,32 @@ final class ProductForm
         $data['attribute_value_ids'] = $ids;
 
         return $data;
+    }
+
+    /**
+     * Whether the product is on the storefront (owner, 2026-11-27): the rules while creating; on edit, «shown» or
+     * what keeps this one off the lists and search, from ProductVisibility.
+     */
+    private static function visibilityNote(): Callout
+    {
+        $problems = fn (?Product $record): array => $record instanceof Product ? ProductVisibility::problems($record) : [];
+
+        return Callout::make(fn (?Product $record): string => match (true) {
+            ! $record instanceof Product => 'نمایش در سایت',
+            $problems($record) === [] => 'این محصول در سایت نمایش داده می‌شود',
+            default => 'این محصول در فهرست‌ها و جستجوی سایت نمایش داده نمی‌شود',
+        })
+            ->key('storefront_visibility')
+            ->status(fn (?Product $record): string => match (true) {
+                ! $record instanceof Product => 'info',
+                $problems($record) === [] => 'success',
+                default => 'warning',
+            })
+            ->description(function (?Product $record) use ($problems): HtmlString {
+                $reasons = $problems($record);
+                $list = $reasons === [] ? '' : '<ul class="mt-1 list-inside list-disc">'.implode('', array_map(fn (string $reason): string => '<li>'.e($reason).'</li>', $reasons)).'</ul>';
+
+                return new HtmlString($list.'<p class="mt-1">'.e(ProductVisibility::RULES).'</p>');
+            });
     }
 }
