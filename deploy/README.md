@@ -6,8 +6,8 @@ scheduler). CI runs every check inside `docker-compose.yml`, so local, CI and th
 
 | Branch | What runs |
 |---|---|
-| `dev`, feature branches | CI only: checks and the production build |
-| `main` (a merge) | CI, then the deploy, automatically when both pass |
+| `dev`, feature branches | CI only: checks and the production build; on `dev` the build is kept as the release |
+| `main` (a merge of `dev`) | The deploy only: no checks or build again. It ships the release `dev` built from the same code, and refuses if that `dev` run's checks or build did not pass |
 
 ## Files
 
@@ -59,12 +59,13 @@ Server layout: `/var/www/hutana/releases/<commit>/` (the last 5), `current` → 
      - `DEPLOY_SSH_KEY`: the content of the private key `hutana-deploy`
      - `DEPLOY_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 SERVER`
    - Variables: `APP_URL` = `https://hutana.ir` (health check), and `DEPLOY_PORT` only if SSH is not on 22.
-7. **Deploy:** merge into `main`. The workflow checks, builds, uploads, migrates, seeds and switches over; it rolls
+7. **Deploy:** push `dev`, wait until its CI is green, then merge `dev` into `main`. The workflow checks, builds, uploads, migrates, seeds and switches over; it rolls
    back by itself if `/up` does not answer.
 
 ## Everyday
 
-- **Deploy:** merge into `main`.
+- **Deploy:** merge `dev` into `main` after `dev`'s CI is green. If `main` has a commit `dev` lacks, the deploy
+  refuses: merge `main` into `dev`, push, wait for green, then merge again.
 - **Roll back:** Actions → Rollback → Run workflow (empty = the previous release, or a kept commit). Migrations are
   not undone, so keep each migration compatible with the release before it.
 - **Changed a server config** (Nginx, PHP, MySQL, Redis, Supervisor, Meilisearch): copy the files again (step 2) and

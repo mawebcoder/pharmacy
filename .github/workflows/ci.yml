@@ -5,13 +5,16 @@ name: CI/CD
 # passes here behaves the same on a developer's machine and on the production server, which runs the same
 # versions natively (deploy/).
 #
-#   checks            every push (dev, feature branches, main): Pint, Larastan, composer audit and the asset
+#   checks            every push except main (dev, feature branches): Pint, Larastan, composer audit and the asset
 #                     build (the test suite runs locally, not in CI)
-#   production-build  every push: the release exactly as the server gets it (no dev packages, optimized class
-#                     map, built assets, APP_ENV=production), migrated and seeded on an empty database, cached,
-#                     served by Nginx and smoke-tested; on main it is kept as the release archive
-#   deploy            main only (a merge into main): as soon as both pass, uploads the archive over SSH and runs
-#                     deploy/release.sh (zero-downtime switch, last 5 kept); dev and other branches never deploy
+#   production-build  every push except main: the release exactly as the server gets it (no dev packages,
+#                     optimized class map, built assets, APP_ENV=production), migrated and seeded on an empty
+#                     database, cached, served by Nginx and smoke-tested; on dev it is kept as the release archive,
+#                     named after the code's git tree
+#   deploy            main only (a merge of dev): no checks or build again. It takes the archive dev built from the
+#                     same code (same git tree), only when that dev run's checks and build both passed, uploads it
+#                     over SSH and runs deploy/release.sh (zero-downtime switch, last 5 kept). Code that never passed
+#                     on dev is not deployed: merge main into dev, push, wait for green, then merge again.
 #
 # Rollback: the "Rollback" workflow (rollback.yml). Server setup and the secrets this needs: deploy/README.md.
 
@@ -30,6 +33,7 @@ concurrency:
 jobs:
   checks:
     name: Checks (local Docker stack)
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
 
@@ -107,6 +111,7 @@ jobs:
 
   production-build:
     name: Production build and smoke test
+    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -177,14 +182,17 @@ jobs:
           done
 
       - name: Package the release
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: package
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         run: |
+          # Named after the git tree (the code itself), so main's merge commit finds the archive built from it.
+          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
           docker compose exec -T app php artisan optimize:clear --no-interaction
           docker compose exec -T app php artisan filament:optimize-clear --no-interaction
           # Nothing may write in the folder while it is packed: the stack is stopped, and the archive is written
           # outside it (tar fails with "file changed as we read it" otherwise).
           docker compose stop
-          tar --create --gzip --file "${RUNNER_TEMP}/release-${GITHUB_SHA}.tar.gz" \
+          tar --create --gzip --file "${RUNNER_TEMP}/release.tar.gz" \
             --exclude=./.git --exclude=./.github --exclude=./.claude --exclude=./.env --exclude='./.env.*' \
             --exclude=./node_modules --exclude=./tests --exclude='./app/Modules/*/Tests' \
             --exclude=./docker --exclude=./docker-compose.yml --exclude=./deploy --exclude=./docs \
@@ -195,12 +203,12 @@ jobs:
           cp deploy/release.sh "${RUNNER_TEMP}/release.sh"
 
       - name: Keep the release archive
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: release
+          name: release-${{ steps.package.outputs.tree }}
           path: |
-            ${{ runner.temp }}/release-${{ github.sha }}.tar.gz
+            ${{ runner.temp }}/release.tar.gz
             ${{ runner.temp }}/release.sh
           retention-days: 14
           if-no-files-found: error
@@ -213,9 +221,11 @@ jobs:
 
   deploy:
     name: Deploy to production
-    needs: [checks, production-build]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
     timeout-minutes: 20
     # The "production" environment holds the deploy secrets; it has no required reviewers, so a merge into main
     # deploys by itself.
@@ -227,9 +237,38 @@ jobs:
       cancel-in-progress: false
 
     steps:
+      - uses: actions/checkout@v4
+
+      # The archive dev built from exactly this code, and only if that run's checks and build both passed.
+      - name: Find the release dev built and checked
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=release-${tree}&per_page=1" \
+            --jq '[.artifacts[] | select(.expired == false)][0].workflow_run.id // empty')"
+          if [ -z "${run_id}" ]; then
+            echo "::error::No release built on dev for this code (tree ${tree}). Main has changes dev has not checked: merge main into dev, push, wait until dev is green, then merge into main again."
+            exit 1
+          fi
+          for job in 'Checks (local Docker stack)' 'Production build and smoke test'; do
+            conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
+              --jq ".jobs[] | select(.name == \"${job}\") | .conclusion")"
+            if [ "${conclusion}" != "success" ]; then
+              echo "::error::Dev run ${run_id}: \"${job}\" is ${conclusion:-not finished}. Merge into main only after both pass."
+              exit 1
+            fi
+          done
+          echo "Deploying the release from dev run ${run_id}."
+          echo "tree=${tree}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/download-artifact@v4
         with:
-          name: release
+          name: release-${{ steps.release.outputs.tree }}
+          run-id: ${{ steps.release.outputs.run_id }}
+          github-token: ${{ github.token }}
 
       - name: SSH access
         env:
@@ -255,7 +294,7 @@ jobs:
 
       - name: Upload the release
         run: |
-          scp "release-${GITHUB_SHA}.tar.gz" production:/var/www/hutana/incoming/
+          scp release.tar.gz "production:/var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
           scp release.sh production:/var/www/hutana/release.sh
           ssh production chmod 755 /var/www/hutana/release.sh
 
