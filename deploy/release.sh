@@ -22,6 +22,24 @@ RELEASES="${APP_ROOT}/releases"
 SHARED="${APP_ROOT}/shared"
 CURRENT="${APP_ROOT}/current"
 
+# Runs detached from the SSH session that started it. On a 1 GB, single-core server a slow step can outlast the
+# connection, and a dropped connection used to kill a migration halfway: MySQL cannot undo a CREATE TABLE, so the
+# table stayed without its row in "migrations" and every later deploy failed on "Table already exists". The caller
+# still sees the output and the exit status; if the connection drops, the release carries on, logged in release.log.
+if [[ -z "${HUTANA_RELEASE_DETACHED:-}" ]]; then
+    release_log="${SHARED}/storage/logs/release.log"
+    : > "${release_log}"
+    HUTANA_RELEASE_DETACHED=1 setsid "${BASH_SOURCE[0]}" "$@" >> "${release_log}" 2>&1 < /dev/null &
+    release_pid=$!
+    tail -n +1 --pid="${release_pid}" -f "${release_log}"
+    wait "${release_pid}"
+    exit $?
+fi
+
+# One release at a time: a retry must not migrate while an earlier, detached run is still going.
+exec 9> "${APP_ROOT}/release.lock"
+flock -n 9 || { echo "Another release.sh is still running: see ${SHARED}/storage/logs/release.log." >&2; exit 1; }
+
 # Each line shows the seconds since the script started, so a slow command stands out in the CI log.
 log() {
     printf '==> [%3ss] %s\n' "${SECONDS}" "$*"
@@ -87,7 +105,7 @@ deploy() {
     # must not hold up the release. The scheduler syncs them again every night; the result is in tipax-sync.log.
     log "Tipax cities sync started in the background"
     setsid nohup php "${CURRENT}/artisan" tipax:sync-cities --no-interaction \
-        >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null &
+        >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null 9>&- &
 
     log "Keeping the last ${KEEP_RELEASES} releases"
     find "${RELEASES}" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
