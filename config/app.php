@@ -76,7 +76,7 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     // Production behind the CDN: every plain-HTTP request is redirected to HTTPS and every generated URL uses
-    // https://. Off by default, so local development and CI's smoke test over http://localhost are unaffected.
+    // https:// on APP_URL's domain, whatever host the request came in on. Off by default, so local development and CI's smoke test over http://localhost are unaffected.
     'force_https' => (bool) env('APP_FORCE_HTTPS', false),
 
     /*
