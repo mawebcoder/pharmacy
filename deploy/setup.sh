@@ -117,6 +117,13 @@ if [[ ! -f /etc/nginx/sites-available/hutana.conf ]]; then
     sed "s/server_name .*;/server_name ${DOMAINS};/" "${REPO}/deploy/nginx/hutana.conf" > /etc/nginx/sites-available/hutana.conf
 fi
 ln -sfn /etc/nginx/sites-available/hutana.conf /etc/nginx/sites-enabled/hutana.conf
+# Unknown hosts (the server IP) get no answer; needs the hutana.ir certificate, so a first run without it skips this and
+# a run after certbot installs it.
+if [[ -f /etc/letsencrypt/live/hutana.ir/fullchain.pem ]]; then
+    install -m 644 "${REPO}/deploy/nginx/00-catch-all.conf" /etc/nginx/sites-available/00-catch-all.conf
+    ln -sfn /etc/nginx/sites-available/00-catch-all.conf /etc/nginx/sites-enabled/00-catch-all.conf
+    rm -f /etc/nginx/sites-enabled/default
+fi
 
 log "MySQL 8.4"
 apt-get install -yq mysql-server

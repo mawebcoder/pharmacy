@@ -16,6 +16,7 @@ scheduler). CI runs every check inside `docker-compose.yml`, so local, CI and th
 | `setup.sh` | Run by hand on the server: installs the pinned versions and copies the configs below. Safe to run again after changing a config. |
 | `release.sh` | Copied and run by CI on every deploy; also `rollback`. |
 | `nginx/hutana.conf` | → `/etc/nginx/sites-available/hutana.conf` (written once; certbot adds HTTPS to it) |
+| `nginx/00-catch-all.conf` | → `/etc/nginx/sites-available/00-catch-all.conf`: closes connections for any host but hutana.ir (the server IP); installed once the certificate exists |
 | `php/production.ini` | → `/etc/php/8.5/{fpm,cli}/conf.d/99-hutana-production.ini` |
 | `../docker/php/conf.d/app.ini` | → `/etc/php/8.5/{fpm,cli}/conf.d/98-hutana.ini` (shared with local) |
 | `php/hutana-fpm.conf` | → `/etc/php/8.5/fpm/pool.d/hutana.conf` |
