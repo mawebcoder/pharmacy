@@ -5,19 +5,20 @@ name: CI/CD
 # passes here behaves the same on a developer's machine and on the production server, which runs the same
 # versions natively (deploy/).
 #
-#   checks            every push except main (dev, feature branches): Pint, Larastan, composer audit and the asset
-#                     build (the test suite runs locally, not in CI)
-#   production-build  every push except main: the release exactly as the server gets it (no dev packages,
-#                     optimized class map, built assets, APP_ENV=production), migrated and seeded on an empty
-#                     database, cached, served by Nginx and smoke-tested; on dev it is kept as the release archive,
-#                     named after the code's git tree
+# Runs only on main (a merge of dev); pushes to dev and other branches run nothing.
 #
-# Deploy: the "Deploy to production" button (deploy.yml) ships dev once it is green. Rollback: rollback.yml. Server setup and the secrets this needs: deploy/README.md.
+#   checks            Pint, Larastan, composer audit and the asset build (the test suite runs locally, not in CI)
+#   production-build  the release exactly as the server gets it (no dev packages, optimized class map, built assets,
+#                     APP_ENV=production), migrated and seeded on an empty database, cached, served by Nginx,
+#                     smoke-tested and packed as the release archive
+#   deploy            after both jobs above pass: uploads that archive over SSH and runs
+#                     deploy/release.sh (zero-downtime switch, last 5 kept), then checks /up and rolls back on failure
+#
+# Rollback: the "Rollback" workflow (rollback.yml). Server setup and the secrets this needs: deploy/README.md.
 
 on:
   push:
-    # main only records what is live (deploy.yml merges dev into it): nothing to check there.
-    branches-ignore: [main]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -25,13 +26,12 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A newer push replaces a running check.
-  cancel-in-progress: true
+  # A run on main always finishes: it deploys.
+  cancel-in-progress: false
 
 jobs:
   checks:
     name: Checks (local Docker stack)
-    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
 
@@ -119,7 +119,6 @@ jobs:
 
   production-build:
     name: Production build and smoke test
-    if: github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -190,11 +189,8 @@ jobs:
           done
 
       - name: Package the release
-        id: package
-        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          # Named after the git tree (the code itself), so main's merge commit finds the archive built from it.
-          echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
           docker compose exec -T app php artisan optimize:clear --no-interaction
           docker compose exec -T app php artisan filament:optimize-clear --no-interaction
           # Nothing may write in the folder while it is packed: the stack is stopped, and the archive is written
@@ -211,14 +207,14 @@ jobs:
           cp deploy/release.sh "${RUNNER_TEMP}/release.sh"
 
       - name: Keep the release archive
-        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: release-${{ steps.package.outputs.tree }}
+          name: release
           path: |
             ${{ runner.temp }}/release.tar.gz
             ${{ runner.temp }}/release.sh
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: error
 
       - name: Stack logs
@@ -226,3 +222,65 @@ jobs:
         run: |
           docker compose logs --tail=200
           docker compose exec -T app sh -c 'tail -n 100 storage/logs/*.log' || true
+
+  deploy:
+    name: Deploy to production
+    needs: [checks, production-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # The "production" environment holds the deploy secrets; it has no required reviewers, so a merge into main
+    # deploys by itself.
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+
+    steps:
+      # The archive production-build packed from this commit in this run.
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: SSH access
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<EOF
+          Host production
+            HostName ${{ secrets.DEPLOY_HOST }}
+            User ${{ secrets.DEPLOY_USER }}
+            Port ${{ vars.DEPLOY_PORT || '22' }}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            # Give up quickly when the server does not answer, instead of waiting for the job timeout.
+            ConnectTimeout 20
+            ServerAliveInterval 15
+            ServerAliveCountMax 4
+          EOF
+
+      - name: Upload the release
+        run: |
+          scp release.tar.gz "production:/var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
+          scp release.sh production:/var/www/hutana/release.sh
+          ssh production chmod 755 /var/www/hutana/release.sh
+
+      - name: Switch to the release
+        run: ssh production "/var/www/hutana/release.sh deploy ${GITHUB_SHA} /var/www/hutana/incoming/release-${GITHUB_SHA}.tar.gz"
+
+      - name: Health check (rolls back on failure)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if ! curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "${APP_URL}/up" > /dev/null; then
+            echo "Health check failed: rolling back." >&2
+            ssh production /var/www/hutana/release.sh rollback
+            exit 1
+          fi

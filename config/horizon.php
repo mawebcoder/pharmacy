@@ -200,7 +200,9 @@ return [
     */
 
     // Two workers, one process each, sized for the current server (1 GB RAM, 1 core): every PHP process is about
-    // 50 MB. A worker takes its queues in the order listed. Jobs that set their own tries keep them.
+    // 50 MB. A worker takes its queues in the order listed. Jobs that set their own tries keep them. "memory" is when a
+    // worker restarts after a job (PHP's own memory_limit is 256 MB), so a big job does not leave its memory held;
+    // maxJobs and maxTime restart them now and then to clear slow growth.
     'defaults' => [
         // Short jobs. "sms" first, so sign-in codes never wait behind other work (roadmap D11.6, S19). One process,
         // so a SKU's price records are written in order ("pricing", D3.2, D9) and a product's updates reach
@@ -210,9 +212,9 @@ return [
             'queue' => ['sms', 'default', 'pricing', 'search'],
             'balance' => false,
             'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 256,
+            'maxTime' => 3600,
+            'maxJobs' => 1000,
+            'memory' => 128,
             'tries' => 3,
             'timeout' => 300,
             'nice' => 0,
@@ -226,12 +228,13 @@ return [
             'queue' => ['media', 'catalog-import', 'price-import'],
             'balance' => false,
             'maxProcesses' => 1,
-            'maxTime' => 0,
-            'maxJobs' => 0,
-            'memory' => 512,
+            'maxTime' => 3600,
+            'maxJobs' => 1000,
+            'memory' => 192,
             'tries' => 1,
             'timeout' => 1800,
-            'nice' => 0,
+            // Lower CPU priority: on one core, page loads and the short jobs come first.
+            'nice' => 10,
         ],
     ],
 
