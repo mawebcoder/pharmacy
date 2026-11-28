@@ -12,6 +12,7 @@ use App\Modules\Media\Jobs\ProcessImage;
 use App\Modules\Media\Models\Media;
 use App\Modules\Media\Support\ImageNormalizer;
 use App\Modules\Media\Support\ImagePreset;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -109,6 +110,16 @@ it('keeps a category banner pair as separate desktop and mobile images', functio
     expect($desktop->fresh()->url(1920, 'avif'))->toContain('category_banner_desktop-1920-avif.avif')
         ->and($mobile->fresh()->url(800, 'webp'))->toContain('category_banner_mobile-800-webp.webp');
 });
+
+it('previews the uploaded original on create and edit, and a small size on a view page', function (string $operation, ?string $conversion): void {
+    $schema = Schema::make()->operation($operation)->components([$field = ImageUpload::make(Brand::IMAGE_LOGO, 'brand_logo')]);
+
+    expect($field->container($schema)->getConversion())->toBe($conversion);
+})->with([
+    'create' => ['create', null],
+    'edit' => ['edit', null],
+    'view' => ['view', 'brand_logo-160-webp'],
+]);
 
 it('previews admin images at their plain address on a public disk, and signs them only on a private one', function (): void {
     config(['filesystems.disks.'.originalsDisk().'.visibility' => 'public']);
