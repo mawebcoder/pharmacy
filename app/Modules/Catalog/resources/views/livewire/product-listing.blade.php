@@ -123,6 +123,10 @@
                             @endforeach
                         </ul>
                         <p class="sr-only" role="status" wire:loading wire:target="loadMore">در حال نمایش کالاهای بیشتر</p>
+                        {{-- For search engines (roadmap S38): the same list with the next 20 too; shoppers scroll instead. --}}
+                        @if ($nextPageUrl = $this->nextPageUrl())
+                            <a href="{{ $nextPageUrl }}" rel="next" class="sr-only" tabindex="-1">صفحه بعد</a>
+                        @endif
                     </div>
                 @endif
             @endif

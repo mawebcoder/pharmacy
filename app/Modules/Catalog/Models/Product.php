@@ -12,6 +12,7 @@ use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,7 +31,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * A product (roadmap D3.1). What customers buy are its variants; photos are the "gallery" image collection.
  * Shown on the storefront at /products/{slug} while active (S13).
  */
-final class Product extends Model implements HasActivityLogLabel, HasImagePresets
+final class Product extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
@@ -67,6 +68,9 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     public const string COLUMN_MAX_PER_ORDER = 'max_per_order';
 
     public const string COLUMN_MIN_SHELF_LIFE_MONTHS = 'min_shelf_life_months';
+
+    /** Units sold in the last 30 days, counted nightly (S39, RecalculateProductSales). */
+    public const string COLUMN_SALES_30D = 'sales_30d';
 
     /**
      * The product's Tipax package content (a Tipax id from tipax_references; null: the store default) and whether it
@@ -177,6 +181,16 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     /**
      * The shelf-life guarantee shown on the product page, in months (owner, 2026-11-16); null shows none.
      */
+    public function getSales30d(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_SALES_30D);
+    }
+
+    public function setSales30d(int $units): static
+    {
+        return $this->setAttribute(self::COLUMN_SALES_30D, $units);
+    }
+
     public function getMinShelfLifeMonths(): ?int
     {
         $value = $this->getAttribute(self::COLUMN_MIN_SHELF_LIFE_MONTHS);
@@ -832,10 +846,19 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
             self::COLUMN_MAX_PER_ORDER => 'integer',
             self::COLUMN_MIN_SHELF_LIFE_MONTHS => 'integer',
+            self::COLUMN_SALES_30D => 'integer',
             self::COLUMN_TIPAX_CONTENT_ID => 'integer',
             self::COLUMN_IS_LIQUID => 'boolean',
             self::COLUMN_IS_FRAGILE => 'boolean',
             self::COLUMN_STATUS => ProductStatus::class,
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('products.show', $slug, absolute: false)];
     }
 }

@@ -120,16 +120,22 @@ describe('the storefront page', function (): void {
     });
 
     it('is not found when inactive, deleted or unknown', function (string $state): void {
-        $page = Page::factory()->create([Page::COLUMN_SLUG => 'gone']);
+        $page = Page::factory()->create([Page::COLUMN_SLUG => $state === 'unknown' ? 'other' : 'gone']);
 
         match ($state) {
             'inactive' => $page->setIsActive(false)->save(),
             'deleted' => $page->delete(),
-            default => $page->setSlug('elsewhere')->save(),
+            default => null,
         };
 
         $this->get('/pages/gone')->assertNotFound();
     })->with(['inactive', 'deleted', 'unknown']);
+
+    it('sends its old address to the new one when its slug changes (S38)', function (): void {
+        Page::factory()->create([Page::COLUMN_SLUG => 'gone'])->setSlug('elsewhere')->save();
+
+        $this->get('/pages/gone')->assertStatus(301)->assertRedirect('/pages/elsewhere');
+    });
 });
 
 describe('banners linking to a page', function (): void {

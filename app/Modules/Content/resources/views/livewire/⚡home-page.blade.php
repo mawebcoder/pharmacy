@@ -1,11 +1,13 @@
 <?php
 
+use App\Modules\Settings\Queries\StoreSettings;
+use App\Modules\Seo\Support\StructuredData;
+use App\Modules\Seo\Data\SeoMeta;
 use App\Modules\Content\Models\HomeWidget;
 use App\Modules\Content\Queries\HomeWidgetItems;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
@@ -13,8 +15,16 @@ use Livewire\Component;
  * 6 items; a widget with nothing to show is left out (HomeWidgetItems). With no widget to show, a short welcome and
  * the featured tags.
  */
-new #[Title('خانه')] class extends Component
+new class extends Component
 {
+    /**
+     * The site name alone as title, the default description, and the store's JSON-LD (roadmap S38).
+     */
+    public function render(StoreSettings $settings): \Illuminate\Contracts\View\View
+    {
+        return $this->view()->layoutData(['seo' => new SeoMeta(structuredData: StructuredData::store($settings))]);
+    }
+
     /**
      * @return list<array{widget: HomeWidget, items: Collection<int, Model>|null}>
      */

@@ -140,7 +140,7 @@ deploy() {
         >> "${SHARED}/storage/logs/tipax-sync.log" 2>&1 < /dev/null 9>&- &
 
     # Search documents rebuilt by the new code at once (a release may add document fields the storefront filters on),
-    # instead of waiting for the hourly run; it only queues bulk jobs for Horizon.
+    # instead of waiting for the nightly run; it only queues bulk jobs for Horizon.
     log "Search indexes reconciled"
     artisan "${CURRENT}" search:reconcile || true
 

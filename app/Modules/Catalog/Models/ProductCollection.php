@@ -9,6 +9,7 @@ use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +25,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * empty search box and cannot be deleted. Each may have a small icon shown beside its name. Named ProductCollection
  * so it is not confused with Eloquent collections.
  */
-final class ProductCollection extends Model implements HasActivityLogLabel, HasImagePresets
+final class ProductCollection extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<ProductCollectionFactory> */
     use HasFactory;
@@ -257,5 +258,13 @@ final class ProductCollection extends Model implements HasActivityLogLabel, HasI
             self::COLUMN_ENDS_AT => 'datetime',
             self::COLUMN_SORT => 'integer',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('collections.show', $slug, absolute: false)];
     }
 }

@@ -8,6 +8,7 @@ use App\Modules\Catalog\Data\SearchSuggestions;
 use App\Modules\Catalog\Queries\CollectionProducts;
 use App\Modules\Catalog\Queries\SearchShortcuts;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
+use App\Modules\Catalog\Queries\SearchVocabulary;
 use App\Modules\Search\Actions\ForgetRecentSearches;
 use App\Modules\Search\Queries\RecentSearches;
 use Illuminate\Contracts\View\View;
@@ -117,6 +118,14 @@ final class InstantSearch extends Component
 
         $this->serverRecent = [];
         $this->skipRender();
+    }
+
+    /**
+     * «منظورتان … بود؟» when nothing matched what was typed (S39).
+     */
+    public function didYouMean(): ?string
+    {
+        return app(SearchVocabulary::class)->suggest($this->value);
     }
 
     public function render(): View

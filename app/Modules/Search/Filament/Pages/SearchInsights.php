@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Search\Filament\Pages;
 
+use App\Modules\Catalog\Queries\SearchVocabulary;
 use App\Modules\Search\Actions\SaveSearchSynonym;
 use App\Modules\Search\Models\SearchLog;
 use App\Modules\Shared\Support\PersianDigits;
@@ -82,6 +83,20 @@ final class SearchInsights extends Page implements HasTable
                     ->query(fn (Builder $query, array $data): Builder => $query->where(SearchLog::COLUMN_CREATED_AT, '>=', now()->subDays((int) ($data['value'] ?? 30)))),
             ])
             ->recordActions([
+                // «اصلاح نوشتار» (S39): a misspelt search finds the right word from now on, suggested from the catalog.
+                Action::make('fixSpelling')
+                    ->label('اصلاح نوشتار')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->visible(fn (): bool => auth('admin')->user()?->can('Create:SearchSynonym') ?? false)
+                    ->fillForm(fn (SearchLog $record): array => ['term' => $record->getQuery(), 'correct' => app(SearchVocabulary::class)->suggest($record->getQuery())])
+                    ->schema([
+                        TextInput::make('term')->label('نوشتار مشتری')->disabled()->dehydrated(),
+                        TextInput::make('correct')->label('نوشتار درست')->required()->maxLength(255)->helperText('از این پس جستجوی نوشتار مشتری همین را هم پیدا می‌کند (به‌صورت مترادف ذخیره می‌شود).'),
+                    ])
+                    ->action(function (array $data, SaveSearchSynonym $saveSynonym): void {
+                        $synonym = $saveSynonym((string) $data['term'], [trim((string) $data['correct'])]);
+                        Notification::make()->success()->title('نوشتار «'.$synonym->getTerm().'» اصلاح شد.')->send();
+                    }),
                 Action::make('addSynonym')
                     ->label('افزودن مترادف')
                     ->icon(Heroicon::OutlinedPlus)

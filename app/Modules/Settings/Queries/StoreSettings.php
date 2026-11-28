@@ -99,6 +99,13 @@ final readonly class StoreSettings
     public const string SEARCH_BRAND_IDS = 'search.brand_ids';
 
     /**
+     * Words a search ignores (S39, owner 2026-11-27): buying words like «قیمت» or «خرید» that only blur what is searched.
+     */
+    public const string SEARCH_IGNORED_WORDS = 'search.ignored_words';
+
+    public const array DEFAULT_IGNORED_WORDS = ['قیمت', 'خرید', 'فروش', 'ارزان', 'اصل', 'اصلی', 'بهترین', 'سفارش', 'آنلاین', 'اورجینال'];
+
+    /**
      * «تنظیمات پیامک» (S37, owner 2026-11-27): the provider, its credentials, each template's pattern id per provider
      * (['melipayamak' => ['otp' => '123456', …], 'kavenegar' => […]]) and the low-credit threshold in rial. Empty means
      * the .env value (config/sms.php).
@@ -156,6 +163,7 @@ final readonly class StoreSettings
         self::SOCIAL_LINKS => [],
         self::SEARCH_CATEGORY_IDS => [],
         self::SEARCH_BRAND_IDS => [],
+        self::SEARCH_IGNORED_WORDS => self::DEFAULT_IGNORED_WORDS,
         self::RETURN_NOTIFY_MOBILES => [],
         self::SMS_PROVIDER => '',
         self::SMS_MELIPAYAMAK_USERNAME => '',
@@ -394,6 +402,14 @@ final readonly class StoreSettings
     public function searchBrandIds(): array
     {
         return $this->ids(self::SEARCH_BRAND_IDS);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function searchIgnoredWords(): array
+    {
+        return array_values(array_filter(array_map(fn (mixed $word): string => trim((string) $word), (array) $this->get(self::SEARCH_IGNORED_WORDS)), fn (string $word): bool => $word !== ''));
     }
 
     /**

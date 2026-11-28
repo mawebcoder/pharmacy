@@ -7,6 +7,7 @@ namespace App\Modules\Content\Models;
 use App\Modules\Content\Database\Factories\PageFactory;
 use App\Modules\Content\Queries\MenuLinks;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * A static page (roadmap D3.6, S29) at /pages/{slug}: «درباره ما», «شرایط استفاده», … The body is rich-editor HTML,
  * sanitised again when shown; images in it live on the default filesystem disk. Only active pages are public.
  */
-final class Page extends Model implements HasActivityLogLabel
+final class Page extends Model implements HasActivityLogLabel, HasSlugAddresses
 {
     /** @use HasFactory<PageFactory> */
     use HasFactory;
@@ -171,5 +172,13 @@ final class Page extends Model implements HasActivityLogLabel
         return [
             self::COLUMN_IS_ACTIVE => 'boolean',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('pages.show', $slug, absolute: false)];
     }
 }

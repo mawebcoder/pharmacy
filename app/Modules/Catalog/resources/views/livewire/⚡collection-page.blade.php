@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Seo\Support\SeoText;
+use App\Modules\Seo\Data\SeoMeta;
 use App\Modules\Catalog\Models\ProductCollection;
 use Livewire\Component;
 
@@ -18,7 +20,8 @@ new class extends Component
 
     public function render(): \Illuminate\Contracts\View\View
     {
-        return $this->view()->title($this->collection->getNameFa());
+        return $this->view()->title($this->collection->getNameFa())
+            ->layoutData(['seo' => new SeoMeta(description: SeoText::description($this->collection->getDescription(), $this->collection->getNameFa().' در هوتانا.'))]);
     }
 };
 ?>

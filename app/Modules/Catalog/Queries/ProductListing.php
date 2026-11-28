@@ -16,7 +16,7 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Subcategory;
-use App\Modules\Shared\Support\SearchText;
+use App\Modules\Catalog\Support\SearchQueryText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -67,7 +67,7 @@ final readonly class ProductListing
     private function fromSearch(ListingCriteria $criteria): ListingResult
     {
         $index = (new Product)->indexableAs();
-        $text = $criteria->isSearch() ? SearchText::normalize((string) $criteria->query) : '';
+        $text = $criteria->isSearch() ? app(SearchQueryText::class)->clean((string) $criteria->query) : '';
         $groups = $this->filterGroups($criteria);
         $sort = $criteria->sort === ListingSort::Relevant && $text === '' ? ListingSort::Newest : $criteria->sort;
         $collectionOrder = $sort === ListingSort::Featured && $criteria->collectionId !== null;
@@ -306,6 +306,8 @@ final readonly class ProductListing
                     ->where('collection_id', $criteria->collectionId)
                     ->whereColumn('product_id', 'products.id'),
             ))
+            // «پرفروش‌ترین» without the search engine too (S39).
+            ->when($criteria->sort === ListingSort::BestSelling, fn (Builder $query) => $query->orderByDesc(Product::COLUMN_SALES_30D))
             ->orderByDesc(Product::COLUMN_CREATED_AT)
             ->orderByDesc(Product::COLUMN_ID);
 

@@ -10,6 +10,7 @@ use App\Modules\Catalog\Events\CategorySearchFieldsChanged;
 use App\Modules\Catalog\Events\ProductsSearchFieldsChanged;
 use App\Modules\Catalog\Events\SubcategorySearchFieldsChanged;
 use App\Modules\Catalog\Events\TagSearchFieldsChanged;
+use App\Modules\Catalog\Jobs\RecalculateProductSales;
 use App\Modules\Catalog\Jobs\SyncFlashDeals;
 use App\Modules\Catalog\Listeners\NotifyAdminOfImportChunk;
 use App\Modules\Catalog\Listeners\QueueProductReindex;
@@ -48,9 +49,11 @@ final class CatalogServiceProvider extends ModuleServiceProvider
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             // Flash deals that started or ended put or take their price on the SKU (roadmap S28).
             $schedule->job(new SyncFlashDeals)->everyMinute()->onOneServer();
-            // The search indexes are checked against the database every hour and every product re-pushed, so a lost
-            // update cannot stay lost (owner, 2026-11-27).
-            $schedule->command('search:reconcile')->hourly()->onOneServer()->withoutOverlapping();
+            // The search indexes are checked against the database every night and every product re-pushed, so a lost
+            // update cannot stay lost (owner, 2026-11-28: nightly, not hourly); after the 03:45 popularity count.
+            $schedule->command('search:reconcile')->dailyAt('04:00')->timezone((string) config('app.display_timezone'))->onOneServer()->withoutOverlapping();
+            // Units sold in the last 30 days, for ranking and «پرفروش‌ترین» (S39).
+            $schedule->job(new RecalculateProductSales)->dailyAt('03:45')->timezone((string) config('app.display_timezone'))->onOneServer();
         });
     }
 }

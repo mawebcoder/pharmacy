@@ -10,6 +10,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
+use App\Modules\Catalog\Support\SearchQueryText;
 use App\Modules\Shared\Support\SearchText;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +44,7 @@ final readonly class SearchSuggestionsQuery
 
     public function for(string $text): SearchSuggestions
     {
-        $normalized = SearchText::normalize($text);
+        $normalized = app(SearchQueryText::class)->clean($text);
 
         if (mb_strlen($normalized) < self::MIN_LENGTH) {
             return new SearchSuggestions(new Collection, new Collection, new Collection, new Collection);
@@ -87,7 +88,7 @@ final readonly class SearchSuggestionsQuery
             'categories' => array_slice(array_values(array_intersect(array_unique([...$found['categories'], ...$productCategories]), $this->tree->visibleIds())), 0, self::MAX_SHORTCUTS),
             'subcategories' => array_slice(array_values(array_intersect(array_unique([...$found['subcategories'], ...$productSubcategories]), $this->tree->visibleSubcategoryIds())), 0, self::MAX_SHORTCUTS),
             'brands' => array_slice(array_values(array_unique([...$found['brands'], ...$productBrands])), 0, self::MAX_SHORTCUTS),
-            'tags' => $this->matching($normalized, Tag::query()->get(), fn (Tag $tag): string => $tag->getNameFa().' '.$tag->getNameEn(), self::MAX_TAGS),
+            'tags' => $found['tags'],
         ];
     }
 
@@ -95,12 +96,12 @@ final readonly class SearchSuggestionsQuery
      * Products, brands and categories from Meilisearch in one request; when that fails (e.g. the brand or category
      * index does not exist yet), products alone and brands and categories matched in memory.
      *
-     * @return array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>}
+     * @return array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>}
      */
     private function search(string $normalized): array
     {
         if (config('scout.driver') === 'meilisearch') {
-            $query = fn (Product|Brand|Category|Subcategory $model, int $limit): SearchQuery => (new SearchQuery)
+            $query = fn (Product|Brand|Category|Subcategory|Tag $model, int $limit): SearchQuery => (new SearchQuery)
                 ->setIndexUid($model->indexableAs())
                 ->setQuery($normalized)
                 // Hidden items are in the indexes too (owner, 2026-11-27); shoppers see only these.
@@ -116,13 +117,15 @@ final readonly class SearchSuggestionsQuery
                     $query(new Category, self::MAX_SHORTCUTS),
                     // Room for subcategories under a hidden category, which are dropped afterwards.
                     $query(new Subcategory, self::MAX_SHORTCUTS * 2),
+                    // Tags too, typo-tolerant with synonyms (owner, 2026-11-27, S39).
+                    $query(new Tag, self::MAX_TAGS),
                 ]);
-                [$products, $brands, $categories, $subcategories] = array_map(
+                [$products, $brands, $categories, $subcategories, $tags] = array_map(
                     fn (array $result): array => array_map(fn (array $hit): int => (int) $hit['id'], $result['hits']),
                     $response['results'],
                 );
 
-                return ['products' => $products, 'available' => true, 'brands' => $brands, 'categories' => $categories, 'subcategories' => $subcategories];
+                return ['products' => $products, 'available' => true, 'brands' => $brands, 'categories' => $categories, 'subcategories' => $subcategories, 'tags' => $tags];
             } catch (ApiException|CommunicationException|ClientExceptionInterface $exception) {
                 Log::warning('Brand and category search unavailable for suggestions.', ['error' => $exception->getMessage()]);
             }
@@ -133,6 +136,7 @@ final readonly class SearchSuggestionsQuery
             'brands' => $this->matching($normalized, Brand::query()->active()->get(), fn (Brand $brand): string => $brand->getNameFa().' '.$brand->getNameEn(), self::MAX_SHORTCUTS),
             'categories' => $this->matching($normalized, Category::query()->whereKey($this->tree->visibleIds())->get(), fn (Category $category): string => $category->getNameFa().' '.$category->getNameEn(), self::MAX_SHORTCUTS),
             'subcategories' => $this->matching($normalized, Subcategory::query()->whereKey($this->tree->visibleSubcategoryIds())->get(), fn (Subcategory $subcategory): string => $subcategory->getNameFa().' '.$subcategory->getNameEn(), self::MAX_SHORTCUTS),
+            'tags' => $this->matching($normalized, Tag::query()->get(), fn (Tag $tag): string => $tag->getNameFa().' '.$tag->getNameEn(), self::MAX_TAGS),
         ];
     }
 

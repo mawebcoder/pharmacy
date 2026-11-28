@@ -127,7 +127,7 @@
                     $field(Address::COLUMN_RECEIVER_MOBILE, 'موبایل گیرنده', ['type' => 'tel', 'inputmode' => 'numeric', 'dir' => 'ltr', 'autocomplete' => 'tel', 'placeholder' => '۰۹۱۲ ۳۴۵ ۶۷۸۹']),
                 ] as $input)
                     <div class="space-y-1.5 {{ $input['key'] === Address::COLUMN_TITLE ? 'md:col-span-2' : '' }}">
-                        <label for="address-{{ $input['key'] }}" class="block text-sm font-medium text-ink-900">{{ $input['label'] }}</label>
+                        <label for="address-{{ $input['key'] }}" class="block text-sm font-medium text-ink-900">{{ $input['label'] }}@if ($input['required'])<span class="ms-0.5 text-danger-600" aria-hidden="true">*</span>@endif</label>
                         <input id="address-{{ $input['key'] }}" wire:model="form.{{ $input['key'] }}" {{ new \Illuminate\View\ComponentAttributeBag($input['attributes']) }} class="{{ $input['class'] }}" @error('form.'.$input['key']) aria-invalid="true" aria-describedby="address-{{ $input['key'] }}-error" @enderror>
                         @error('form.'.$input['key']) <p id="address-{{ $input['key'] }}-error" class="text-sm text-danger-600">{{ $message }}</p> @enderror
                     </div>
@@ -138,11 +138,12 @@
                     [Address::COLUMN_CITY_ID, 'شهر', $cities, filled($form[Address::COLUMN_PROVINCE_ID] ?? null) ? 'انتخاب شهر' : 'ابتدا استان را انتخاب کنید'],
                 ] as [$key, $label, $options, $placeholder])
                     <div class="space-y-1.5">
-                        <label for="address-{{ $key }}" class="block text-sm font-medium text-ink-900">{{ $label }}</label>
+                        <label for="address-{{ $key }}" class="block text-sm font-medium text-ink-900">{{ $label }}@if (in_array($key, $requiredFields, true))<span class="ms-0.5 text-danger-600" aria-hidden="true">*</span>@endif</label>
                         <select
                             id="address-{{ $key }}"
                             wire:model.live="form.{{ $key }}"
                             @disabled($options === [])
+                            @if (in_array($key, $requiredFields, true)) aria-required="true" @endif
                             @class([$fieldClass, 'border-danger-600' => $errors->has('form.'.$key), 'border-line-300' => ! $errors->has('form.'.$key)])
                             @error('form.'.$key) aria-invalid="true" aria-describedby="address-{{ $key }}-error" @enderror
                         >
@@ -163,7 +164,7 @@
                         $field(Address::COLUMN_BLOCK, 'بلوک (اختیاری)', ['maxlength' => 20, 'placeholder' => 'مثلاً B']),
                     ] as $input)
                         <div class="space-y-1.5">
-                            <label for="address-{{ $input['key'] }}" class="block text-sm font-medium text-ink-900">{{ $input['label'] }}</label>
+                            <label for="address-{{ $input['key'] }}" class="block text-sm font-medium text-ink-900">{{ $input['label'] }}@if ($input['required'])<span class="ms-0.5 text-danger-600" aria-hidden="true">*</span>@endif</label>
                             <input id="address-{{ $input['key'] }}" wire:model="form.{{ $input['key'] }}" {{ new \Illuminate\View\ComponentAttributeBag($input['attributes']) }} class="{{ $input['class'] }}" @error('form.'.$input['key']) aria-invalid="true" aria-describedby="address-{{ $input['key'] }}-error" @enderror>
                             @error('form.'.$input['key']) <p id="address-{{ $input['key'] }}-error" class="text-sm text-danger-600">{{ $message }}</p> @enderror
                         </div>
@@ -177,7 +178,7 @@
                         $field(Address::COLUMN_FLOOR, 'طبقه', ['maxlength' => 10, 'placeholder' => 'مثلاً ۲ یا همکف']),
                     ] as $input)
                         <div class="space-y-1.5">
-                            <label for="address-{{ $input['key'] }}" class="block text-sm font-medium text-ink-900">{{ $input['label'] }}</label>
+                            <label for="address-{{ $input['key'] }}" class="block text-sm font-medium text-ink-900">{{ $input['label'] }}@if ($input['required'])<span class="ms-0.5 text-danger-600" aria-hidden="true">*</span>@endif</label>
                             <input id="address-{{ $input['key'] }}" wire:model="form.{{ $input['key'] }}" {{ new \Illuminate\View\ComponentAttributeBag($input['attributes']) }} class="{{ $input['class'] }}" @error('form.'.$input['key']) aria-invalid="true" aria-describedby="address-{{ $input['key'] }}-error" @enderror>
                             @error('form.'.$input['key']) <p id="address-{{ $input['key'] }}-error" class="text-sm text-danger-600">{{ $message }}</p> @enderror
                         </div>
@@ -192,7 +193,7 @@
 
                 @php($postal = $field(Address::COLUMN_POSTAL_CODE, 'کد پستی ۱۰ رقمی', ['inputmode' => 'numeric', 'dir' => 'ltr', 'maxlength' => 12, 'autocomplete' => 'postal-code', 'placeholder' => '۱۲۳۴۵۶۷۸۹۰']))
                 <div class="space-y-1.5">
-                    <label for="address-{{ $postal['key'] }}" class="block text-sm font-medium text-ink-900">{{ $postal['label'] }}</label>
+                    <label for="address-{{ $postal['key'] }}" class="block text-sm font-medium text-ink-900">{{ $postal['label'] }}@if ($postal['required'])<span class="ms-0.5 text-danger-600" aria-hidden="true">*</span>@endif</label>
                     <input id="address-{{ $postal['key'] }}" wire:model="form.{{ $postal['key'] }}" {{ new \Illuminate\View\ComponentAttributeBag($postal['attributes']) }} class="{{ $postal['class'] }}" @error('form.'.$postal['key']) aria-invalid="true" aria-describedby="address-postal-error" @enderror>
                     @error('form.'.$postal['key']) <p id="address-postal-error" class="text-sm text-danger-600">{{ $message }}</p> @enderror
                 </div>

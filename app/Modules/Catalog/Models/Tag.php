@@ -6,15 +6,18 @@ namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\TagFactory;
 use App\Modules\Catalog\Enums\TagType;
+use App\Modules\Catalog\Search\NameDocument;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
+use App\Modules\Shared\Contracts\HasSlugAddresses;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -22,13 +25,14 @@ use Spatie\Activitylog\Support\LogOptions;
  * A nutrient or need shortcut, e.g. «آهن» or «بی‌خوابی» (roadmap D3.1, B1 Darochi). Shown as chips; featured tags
  * appear on the home page. /t/{slug} lists its products.
  */
-final class Tag extends Model implements HasActivityLogLabel, HasImagePresets
+final class Tag extends Model implements HasActivityLogLabel, HasImagePresets, HasSlugAddresses
 {
     /** @use HasFactory<TagFactory> */
     use HasFactory;
 
     use InteractsWithImagePresets;
     use LogsActivity;
+    use Searchable;
     use SoftDeletes;
 
     public const string COLUMN_ID = 'id';
@@ -185,5 +189,35 @@ final class Tag extends Model implements HasActivityLogLabel, HasImagePresets
             self::COLUMN_IS_FEATURED => 'boolean',
             self::COLUMN_SORT => 'integer',
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function addressesForSlug(string $slug): array
+    {
+        return [route('tags.show', $slug, absolute: false)];
+    }
+
+    /**
+     * Tags have their own search index (owner, 2026-11-27, S39), like brands and categories, so the search panel finds
+     * them with typo tolerance and synonyms.
+     */
+    public function searchableAs(): string
+    {
+        return config('scout.prefix').'tags';
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        return ! $this->trashed();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), true, $this->getSlug(), $this->getAttribute('updated_at'));
     }
 }

@@ -6,6 +6,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Subcategory;
+use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Search\ProductSearchIndex;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\ParallelTesting;
@@ -26,7 +27,7 @@ function useSearchIndex(): void
 
     Artisan::call('scout:sync-index-settings');
     $client = app(Client::class);
-    foreach (['products', 'brands', 'categories', 'subcategories'] as $index) {
+    foreach (['products', 'brands', 'categories', 'subcategories', 'tags'] as $index) {
         $client->index($prefix.$index)->deleteAllDocuments();
     }
     waitForSearchIndex();
@@ -44,7 +45,7 @@ function indexProductsForSearch(): void
 function waitForSearchIndex(): void
 {
     $client = app(Client::class);
-    $indexes = [(new Product)->indexableAs(), (new Brand)->indexableAs(), (new Category)->indexableAs(), (new Subcategory)->indexableAs()];
+    $indexes = [(new Product)->indexableAs(), (new Brand)->indexableAs(), (new Category)->indexableAs(), (new Subcategory)->indexableAs(), (new Tag)->indexableAs()];
 
     for ($attempt = 0; $attempt < 200; $attempt++) {
         $pending = $client->getTasks((new TasksQuery)->setIndexUids($indexes)->setStatuses(['enqueued', 'processing']))->getResults();

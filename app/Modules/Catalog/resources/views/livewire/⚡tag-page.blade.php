@@ -1,5 +1,7 @@
 <?php
 
+use App\Modules\Seo\Support\SeoText;
+use App\Modules\Seo\Data\SeoMeta;
 use App\Modules\Catalog\Models\Tag;
 use Livewire\Component;
 
@@ -17,7 +19,8 @@ new class extends Component
 
     public function render(): \Illuminate\Contracts\View\View
     {
-        return $this->view()->title($this->tag->getNameFa());
+        return $this->view()->title($this->tag->getNameFa())
+            ->layoutData(['seo' => new SeoMeta(description: SeoText::description('خرید آنلاین محصولات '.$this->tag->getNameFa().' در هوتانا.'))]);
     }
 };
 ?>
