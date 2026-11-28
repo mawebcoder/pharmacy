@@ -2039,7 +2039,7 @@ Admin uploads original → validation (D14.2) → medialibrary stores original p
 | OG/social share | — | — | 1200×630 | 1200 | ≤ 150 KB JPEG |
 
 ### D14.4 Formats and quality
-- Output **AVIF** (quality 50) + **WebP** (quality 75) + **JPEG** fallback (quality 80, progressive). Logos/icons with transparency: **SVG**, else WebP lossless.
+- Output **AVIF** (quality 50) + **WebP** (quality 75) + **JPEG** fallback (quality 80, progressive). Logos/icons with transparency: **SVG**, else **AVIF** (quality 70) with a **WebP** (quality 90) fallback, both keeping transparency (owner, 2026-11-28).
 - Strip EXIF/GPS, convert to sRGB, auto-orient.
 - ThumbHash (≤ 100 px source) + dominant colour stored per media item (ThumbHash only, no BlurHash: confirmed 2026-11-07).
 - Uploaded SVG (logos, icons) is sanitized with `rhukster/dom-sanitizer` (MIT) and served as-is with a restrictive CSP; `enshrined/svg-sanitize` is not used because it is GPL.

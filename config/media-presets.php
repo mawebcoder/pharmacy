@@ -63,33 +63,34 @@ return [
             'widths' => [480, 800],
             'formats' => ['avif' => 50, 'webp' => 75, 'jpg' => 80],
         ],
-        // Transparent artwork: SVG is served as-is (sanitized); PNG/WebP become WebP, which keeps transparency.
+        // Transparent artwork: SVG is served as-is (sanitized); PNG/WebP become AVIF with a WebP fallback, both keeping
+        // transparency (AVIF too, owner 2026-11-28). No JPEG: it has no transparency.
         'category_icon' => [
             'min_width' => 256, 'min_height' => 256, 'ratio' => 1,
             'max_kb' => 500, 'mimes' => ['image/svg+xml', 'image/png'],
             'widths' => [96, 192],
-            'formats' => ['webp' => 90],
+            'formats' => ['avif' => 70, 'webp' => 90],
         ],
         // The tiny icon beside a category in the desktop mega menu (owner, 2026-11-15), shown at 24 px.
         'category_menu_icon' => [
             'min_width' => 48, 'min_height' => 48, 'ratio' => 1,
             'max_kb' => 50, 'mimes' => ['image/svg+xml', 'image/png'],
             'widths' => [48, 96],
-            'formats' => ['webp' => 90],
+            'formats' => ['avif' => 70, 'webp' => 90],
         ],
         'brand_logo' => [
             // Any shape, padded (not trimmed: a logo's own background stays) to a white square (owner, 2026-11-27).
             'min_width' => 400, 'min_height' => 400, 'ratio' => null, 'pad_to_square' => true, 'trim' => false,
             'max_kb' => 1024, 'mimes' => ['image/svg+xml', 'image/png', 'image/webp'],
             'widths' => [160, 320],
-            'formats' => ['webp' => 90],
+            'formats' => ['avif' => 70, 'webp' => 90],
         ],
         // Trust badges (S30): licences and seals, any shape.
         'trust_badge' => [
             'min_width' => 80, 'min_height' => 80, 'ratio' => null,
             'max_kb' => 512, 'mimes' => ['image/svg+xml', 'image/png', 'image/webp', 'image/jpeg'],
             'widths' => [120, 240],
-            'formats' => ['webp' => 90],
+            'formats' => ['avif' => 70, 'webp' => 90],
         ],
         // Pharmacists (S30): a square portrait.
         'pharmacist_photo' => [

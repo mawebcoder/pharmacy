@@ -144,6 +144,12 @@ deploy() {
     log "Search indexes reconciled"
     artisan "${CURRENT}" search:reconcile || true
 
+    # Image files a preset gained since the last release (AVIF for logos and icons, 2026-11-28): only queues jobs; the
+    # heavy Horizon worker encodes them one at a time at low priority. Nothing is queued when no file is missing.
+    log "Missing image files queued"
+    artisan "${CURRENT}" media-library:regenerate --only-missing --force || true
+    artisan "${CURRENT}" content:page-images || true
+
     log "Keeping the last ${KEEP_RELEASES} releases"
     local keep_live
     keep_live="$(previous_live_release)"

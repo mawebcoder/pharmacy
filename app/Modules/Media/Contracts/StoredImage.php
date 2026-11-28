@@ -18,6 +18,11 @@ interface StoredImage
      */
     public function url(int $width, string $format): ?string;
 
+    /**
+     * Whether that file was generated: a format added to a preset later has no files until they are regenerated.
+     */
+    public function hasFile(int $width, string $format): bool;
+
     public function svgUrl(): string;
 
     /**

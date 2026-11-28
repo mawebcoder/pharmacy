@@ -8,7 +8,9 @@ use App\Modules\Media\Contracts\StoredImage;
 
 /**
  * What <x-media::picture> renders for an image in a slot (roadmap D14.5): one <source> per modern format with
- * its srcset, an <img> fallback, intrinsic width/height (no layout shift) and the placeholder background.
+ * its srcset, an <img> fallback, intrinsic width/height (no layout shift) and the placeholder background. A modern
+ * format is offered only once all its files exist, so adding AVIF to a preset never breaks older images before
+ * `media-library:regenerate --only-missing` has made their AVIF copies.
  */
 final readonly class Picture
 {
@@ -38,7 +40,7 @@ final readonly class Picture
         $sources = [];
 
         foreach (array_keys($preset->formats) as $format) {
-            if ($format !== $fallback) {
+            if ($format !== $fallback && self::generated($media, $widths, $format)) {
                 $sources[] = ['type' => self::mimeOf($format), 'srcset' => $srcset($format)];
             }
         }
@@ -95,6 +97,20 @@ final readonly class Picture
         $color = $media->getDominantColor();
 
         return $color === null ? '' : "background-color:{$color}";
+    }
+
+    /**
+     * @param  list<int>  $widths
+     */
+    private static function generated(StoredImage $media, array $widths, string $format): bool
+    {
+        foreach ($widths as $width) {
+            if (! $media->hasFile($width, $format)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function mimeOf(string $format): string
