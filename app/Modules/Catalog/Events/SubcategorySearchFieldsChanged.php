@@ -8,8 +8,8 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /**
- * A subcategory's name changed, which the documents of its products copy (subcategory_names). Raised only when such a field
- * changed; QueueProductReindex rebuilds just those products (owner, 2026-11-27).
+ * A subcategory's name or category changed, which the documents of its products copy (subcategory_names, category_ids).
+ * Raised only when such a field changed; QueueProductReindex rebuilds just those products (owner, 2026-11-27).
  */
 final readonly class SubcategorySearchFieldsChanged implements ShouldDispatchAfterCommit
 {

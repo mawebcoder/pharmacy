@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\CreateCategory;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\EditCategory;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\ListCategories;
+use App\Modules\Catalog\Filament\Resources\Categories\Pages\ViewCategory;
+use App\Modules\Catalog\Filament\Resources\Categories\RelationManagers\CategoryProductsRelationManager;
 use App\Modules\Catalog\Filament\Resources\Categories\RelationManagers\SubcategoriesRelationManager;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
@@ -84,6 +86,24 @@ describe('as a super admin', function (): void {
         expect($category->subcategories()->sole())
             ->getNameFa()->toBe('ویتامین‌ها')
             ->getSlug()->toBe('vitamins');
+    });
+
+    it('lists every product of a category, its own and its subcategories\', on its view and edit pages', function (string $pageClass): void {
+        $category = Category::factory()->create();
+        $main = Product::factory()->for(Subcategory::factory()->of($category), 'primarySubcategory')->create();
+        $extra = Product::factory()->create();
+        $extra->subcategories()->attach(Subcategory::factory()->of($category)->create());
+        $other = Product::factory()->create();
+
+        livewire(CategoryProductsRelationManager::class, ['ownerRecord' => $category, 'pageClass' => $pageClass])
+            ->assertCanSeeTableRecords([$main, $extra])
+            ->assertCanNotSeeTableRecords([$other]);
+    })->with(['edit page' => [EditCategory::class], 'view page' => [ViewCategory::class]]);
+
+    it('opens the category view page', function (): void {
+        $category = Category::factory()->create();
+
+        $this->get('/admin/categories/'.$category->getRouteKey())->assertOk();
     });
 
     it('shows the refusal and keeps a subcategory that has products', function (): void {

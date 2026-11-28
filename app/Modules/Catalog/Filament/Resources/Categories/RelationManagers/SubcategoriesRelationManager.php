@@ -8,21 +8,15 @@ use App\Modules\Catalog\Actions\DeleteSubcategory;
 use App\Modules\Catalog\Actions\SaveSubcategory;
 use App\Modules\Catalog\Data\SubcategoryData;
 use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
-use App\Modules\Catalog\Filament\Forms\DescriptionEditor;
-use App\Modules\Catalog\Http\Requests\StoreSubcategoryRequest;
+use App\Modules\Catalog\Filament\Resources\Subcategories\Schemas\SubcategoryForm;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Subcategory;
-use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\RestoreAction;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
@@ -57,50 +51,7 @@ final class SubcategoriesRelationManager extends RelationManager
 
     public function form(Schema $schema): Schema
     {
-        $rules = fn (?Subcategory $record, string $field): array => StoreSubcategoryRequest::baseRules($record?->getId())[$field] ?? [];
-
-        return $schema->columns(1)->components([
-            Section::make('مشخصات')
-                ->columns(2)
-                ->schema([
-                    TextInput::make(Subcategory::COLUMN_NAME_FA)
-                        ->label('نام فارسی')
-                        ->required()
-                        ->maxLength(255)
-                        ->rules(fn (?Subcategory $record): array => $rules($record, Subcategory::COLUMN_NAME_FA)),
-                    TextInput::make(Subcategory::COLUMN_NAME_EN)
-                        ->label('نام انگلیسی')
-                        ->extraInputAttributes(['dir' => 'ltr'])
-                        ->maxLength(255)
-                        ->rules(fn (?Subcategory $record): array => $rules($record, Subcategory::COLUMN_NAME_EN)),
-                    TextInput::make(Subcategory::COLUMN_SLUG)
-                        ->label('نامک (آدرس)')
-                        ->prefix(fn (): string => '/categories/'.$this->category()->getSlug().'/')
-                        ->extraInputAttributes(['dir' => 'ltr'])
-                        ->maxLength(255)
-                        ->rules(fn (?Subcategory $record): array => $rules($record, Subcategory::COLUMN_SLUG))
-                        ->helperText('خالی بگذارید تا از نام انگلیسی (یا فارسی) ساخته شود.'),
-                    Toggle::make(Subcategory::COLUMN_IS_ACTIVE)
-                        ->label('فعال')
-                        ->default(true),
-                    DescriptionEditor::make(Subcategory::COLUMN_DESCRIPTION, maxLength: 5000)
-                        ->columnSpanFull(),
-                ]),
-            Section::make('تصویرها')
-                ->columns(3)
-                ->schema([
-                    ImageUpload::make(Subcategory::IMAGE_ICON, 'category_icon')->label('آیکن'),
-                    ImageUpload::make(Subcategory::IMAGE_BANNER_DESKTOP, 'category_banner_desktop')->label('بنر دسکتاپ و تبلت'),
-                    ImageUpload::make(Subcategory::IMAGE_BANNER_MOBILE, 'category_banner_mobile')->label('بنر موبایل'),
-                ]),
-            Section::make('سئو')
-                ->collapsible()
-                ->collapsed()
-                ->schema([
-                    TextInput::make(Subcategory::COLUMN_SEO_TITLE)->label('عنوان صفحه')->maxLength(255),
-                    Textarea::make(Subcategory::COLUMN_SEO_DESCRIPTION)->label('توضیحات متا')->rows(3)->maxLength(500),
-                ]),
-        ]);
+        return SubcategoryForm::configure($schema, fn (): string => $this->category()->getSlug());
     }
 
     public function table(Table $table): Table

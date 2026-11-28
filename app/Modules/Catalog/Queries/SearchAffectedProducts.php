@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Queries;
 
 use App\Modules\Catalog\Models\Product;
-use App\Modules\Catalog\Models\Subcategory;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -29,10 +28,7 @@ final readonly class SearchAffectedProducts
      */
     public function ofCategory(int $categoryId): array
     {
-        return $this->ids(Product::withTrashed()->where(fn (Builder $query) => $query
-            ->where(Product::COLUMN_PRIMARY_CATEGORY_ID, $categoryId)
-            ->orWhereHas('categories', fn (Builder $categories) => $categories->whereKey($categoryId))
-            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->where(Subcategory::COLUMN_CATEGORY_ID, $categoryId))));
+        return $this->ids(Product::withTrashed()->inCategory($categoryId));
     }
 
     /**
@@ -42,9 +38,7 @@ final readonly class SearchAffectedProducts
      */
     public function ofSubcategory(int $subcategoryId): array
     {
-        return $this->ids(Product::withTrashed()->where(fn (Builder $query) => $query
-            ->where(Product::COLUMN_PRIMARY_SUBCATEGORY_ID, $subcategoryId)
-            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->whereKey($subcategoryId))));
+        return $this->ids(Product::withTrashed()->inSubcategory($subcategoryId));
     }
 
     /**

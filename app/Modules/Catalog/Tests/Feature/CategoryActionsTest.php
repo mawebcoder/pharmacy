@@ -15,6 +15,8 @@ use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Subcategory;
+use App\Modules\Catalog\Queries\CategoryTree;
+use App\Modules\Seo\Models\SeoRedirect;
 
 function categoryData(array $overrides = []): CategoryData
 {
@@ -132,6 +134,43 @@ describe('subcategories', function (): void {
         expect($renamed->fresh())
             ->getNameEn()->toBe('Vitamins & Minerals')
             ->getSlug()->toBe('vitamins');
+    });
+
+    it('moves a subcategory to another category with its products, keeping its slug and redirecting its old address', function (): void {
+        $supplements = Category::factory()->create([Category::COLUMN_SLUG => 'supplements']);
+        $vitamins = Subcategory::factory()->of($supplements)->create([Subcategory::COLUMN_SLUG => 'vitamins']);
+        $beauty = Category::factory()->create([Category::COLUMN_SLUG => 'beauty']);
+        Subcategory::factory()->of($beauty)->create([Subcategory::COLUMN_SORT => 4]);
+        $main = Product::factory()->for($vitamins, 'primarySubcategory')->create();
+        $extra = Product::factory()->create();
+        $extra->subcategories()->attach($vitamins);
+        $extraCategoryId = $extra->getPrimaryCategoryId();
+        app(CategoryTree::class)->roots();
+
+        $moved = app(SaveSubcategory::class)($beauty, subcategoryData([Subcategory::COLUMN_SLUG => 'vitamins']), $vitamins);
+
+        expect($moved->fresh())
+            ->getCategoryId()->toBe($beauty->getId())
+            ->getSort()->toBe(5)
+            ->getSlug()->toBe('vitamins')
+            ->and($main->fresh()->getPrimaryCategoryId())->toBe($beauty->getId())
+            ->and($extra->fresh()->getPrimaryCategoryId())->toBe($extraCategoryId)
+            ->and($extra->subcategories()->pluck('subcategories.id')->all())->toBe([$vitamins->getId()])
+            ->and(collect(app(CategoryTree::class)->roots())->firstWhere('id', $beauty->getId())->children)->toHaveCount(2);
+
+        expect(SeoRedirect::query()->sole())
+            ->getFromPath()->toBe('/categories/supplements/vitamins')
+            ->getToPath()->toBe('/categories/beauty/vitamins');
+    });
+
+    it('refuses to move a subcategory to a deleted category', function (): void {
+        $subcategory = Subcategory::factory()->create();
+        $deleted = Category::factory()->create();
+        $deleted->delete();
+
+        expect(fn () => app(SaveSubcategory::class)($deleted, subcategoryData(), $subcategory))->toThrow(CategoryChangeRefused::class);
+
+        expect($subcategory->fresh()->getCategoryId())->not->toBe($deleted->getId());
     });
 
     it('refuses to delete a subcategory that has products, as main or extra subcategory', function (Closure $attach): void {

@@ -10,6 +10,7 @@ use App\Modules\Catalog\Filament\Resources\Categories\CategoryResource;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -52,6 +53,7 @@ final class CategoriesTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 CategoryResource::deleteAction(),
                 CategoryResource::restoreAction(),

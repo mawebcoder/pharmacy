@@ -15,8 +15,9 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * When a model with slug addresses (HasSlugAddresses: products, categories, subcategories, brands, tags, collections,
  * pages) gets a new slug, each old address is sent to the new one with a 301 (owner, 2026-11-27), so shared links and
- * search results keep working; a category's slug moves its subcategories' addresses too. A redirect from a new address
- * (an old one in use again) is removed.
+ * search results keep working; a category's slug moves its subcategories' addresses too. So does a move to another
+ * parent (a subcategory's category_id; owner, 2026-11-28): the old addresses are read from the model as it was. A
+ * redirect from a new address (an old one in use again) is removed.
  */
 final readonly class RecordSlugRedirects
 {
@@ -31,11 +32,13 @@ final readonly class RecordSlugRedirects
     {
         $model = $payload[0] ?? null;
 
-        if (! $model instanceof Model || ! $model instanceof HasSlugAddresses || ! $model->wasChanged('slug') || blank($model->getOriginal('slug'))) {
+        if (! $model instanceof Model || ! $model instanceof HasSlugAddresses || ! $model->wasChanged(['slug', 'category_id']) || blank($model->getOriginal('slug'))) {
             return;
         }
 
-        $old = $model->addressesForSlug((string) $model->getOriginal('slug'));
+        /** @var Model&HasSlugAddresses $before */
+        $before = (clone $model)->setRawAttributes($model->getRawOriginal());
+        $old = $before->addressesForSlug((string) $model->getOriginal('slug'));
         $new = $model->addressesForSlug((string) $model->getAttribute('slug'));
 
         foreach ($old as $position => $from) {

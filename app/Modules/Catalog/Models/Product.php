@@ -738,6 +738,34 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     }
 
     /**
+     * Products of a category: its main or extra category, or placed in one of its subcategories (main or extra), as
+     * the category page lists them.
+     *
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    public function scopeInCategory(Builder $query, int $categoryId): Builder
+    {
+        return $query->where(fn (Builder $inCategory) => $inCategory
+            ->where(self::COLUMN_PRIMARY_CATEGORY_ID, $categoryId)
+            ->orWhereHas('categories', fn (Builder $categories) => $categories->whereKey($categoryId))
+            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->where(Subcategory::COLUMN_CATEGORY_ID, $categoryId)));
+    }
+
+    /**
+     * Products of a subcategory, as main or extra subcategory.
+     *
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    public function scopeInSubcategory(Builder $query, int $subcategoryId): Builder
+    {
+        return $query->where(fn (Builder $inSubcategory) => $inSubcategory
+            ->where(self::COLUMN_PRIMARY_SUBCATEGORY_ID, $subcategoryId)
+            ->orWhereHas('subcategories', fn (Builder $subcategories) => $subcategories->whereKey($subcategoryId)));
+    }
+
+    /**
      * Products for sale, as in search (shouldBeSearchable): active, not prescription-only, a sellable type, with an
      * active SKU.
      *
