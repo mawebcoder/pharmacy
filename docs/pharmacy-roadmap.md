@@ -1522,6 +1522,7 @@ REPORTING_DB_PASSWORD=
 # ---------- Images / CDN ----------
 # Image originals go on FILESYSTEM_DISK (owner, 2026-11-28); uploaded spreadsheets stay on IMPORTS_DISK (local).
 IMPORTS_DISK=local
+LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local
 IMAGES_VARIANTS_DISK=cdn
 IMAGES_CDN_URL=https://cdn.example.ir
 
