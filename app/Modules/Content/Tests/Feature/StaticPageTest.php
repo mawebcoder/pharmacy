@@ -236,6 +236,17 @@ describe('page images', function (): void {
         ]));
     }
 
+    it('links images at their plain address on a public disk, never a signed one', function (): void {
+        config(['filesystems.disks.'.PageContent::disk().'.visibility' => 'public']);
+        pageWithPhoto();
+
+        $html = (string) $this->get('/pages/with-photo')->assertOk()->getContent();
+
+        expect($html)->toContain(Storage::disk(PageContent::disk())->url(PageImages::avifPath('pages/photo.png')))
+            ->not->toContain('signature=')
+            ->not->toContain('X-Amz-Signature');
+    });
+
     it('makes an AVIF copy of each image in the background and offers it first, lazily', function (): void {
         pageWithPhoto();
 

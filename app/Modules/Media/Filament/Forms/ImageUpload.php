@@ -6,14 +6,15 @@ namespace App\Modules\Media\Filament\Forms;
 
 use App\Modules\Media\Rules\ImageMatchesPreset;
 use App\Modules\Media\Support\ImagePreset;
+use App\Modules\Shared\Support\DiskVisibility;
 use App\Modules\Shared\Support\PersianDigits;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 
 /**
  * An admin upload field for one image collection, validated by its preset (roadmap D14.2, D13.10).
  * The Filament media plugin stores the file when the form is saved; processing then runs on the "media" queue.
- * Images are public on their disk (owner, 2026-11-28: the whole bucket is public behind the CDN), so the preview is
- * a generated WebP size at its normal address (AWS_URL), never a signed link to the bucket.
+ * The preview is a generated WebP size: at its plain address (AWS_URL, the CDN) when the images disk is public, as the
+ * s3 bucket is (owner, 2026-11-28), else a signed link (DiskVisibility).
  */
 final class ImageUpload
 {
@@ -24,7 +25,7 @@ final class ImageUpload
 
         return SpatieMediaLibraryFileUpload::make($collection)
             ->collection($collection)
-            ->visibility('public')
+            ->visibility(DiskVisibility::of((string) config('media-library.disk_name')))
             // WebP: the upload widget (FilePond) cannot draw AVIF previews.
             ->conversion($settings->conversionName($previewWidth, 'webp'))
             // image() turns on the preview; the preset's own types then replace its "image/*".

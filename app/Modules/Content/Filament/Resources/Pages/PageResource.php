@@ -103,7 +103,7 @@ final class PageResource extends Resource
                             ])
                             ->fileAttachmentsDisk(PageContent::disk())
                             ->fileAttachmentsDirectory(Page::ATTACHMENTS_DIRECTORY)
-                            ->fileAttachmentsVisibility('private')
+                            ->fileAttachmentsVisibility(PageContent::visibility())
                             ->fileAttachmentsAcceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                             ->fileAttachmentsMaxSize(2048)
                             ->extraInputAttributes(['style' => 'min-height: 24rem']),

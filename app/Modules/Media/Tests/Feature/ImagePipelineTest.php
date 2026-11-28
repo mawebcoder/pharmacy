@@ -7,6 +7,7 @@ use App\Modules\Catalog\Models\Category;
 use App\Modules\Media\Actions\AttachImage;
 use App\Modules\Media\Enums\MediaStatus;
 use App\Modules\Media\Filament\Forms\ImageUpload;
+use App\Modules\Media\Filament\Tables\ImageThumbnail;
 use App\Modules\Media\Jobs\ProcessImage;
 use App\Modules\Media\Models\Media;
 use App\Modules\Media\Support\ImageNormalizer;
@@ -109,6 +110,11 @@ it('keeps a category banner pair as separate desktop and mobile images', functio
         ->and($mobile->fresh()->url(800, 'webp'))->toContain('category_banner_mobile-800-webp.webp');
 });
 
-it('previews uploads in the admin at their public address, never a signed link to the bucket', function (): void {
-    expect(ImageUpload::make(Brand::IMAGE_LOGO, 'brand_logo')->getVisibility())->toBe('public');
+it('previews admin images at their plain address on a public disk, and signs them only on a private one', function (): void {
+    config(['filesystems.disks.'.originalsDisk().'.visibility' => 'public']);
+    expect(ImageUpload::make(Brand::IMAGE_LOGO, 'brand_logo')->getVisibility())->toBe('public')
+        ->and(ImageThumbnail::make(Brand::IMAGE_LOGO, 'brand_logo')->getVisibility())->toBe('public');
+
+    config(['filesystems.disks.'.originalsDisk().'.visibility' => null]);
+    expect(ImageUpload::make(Brand::IMAGE_LOGO, 'brand_logo')->getVisibility())->toBe('private');
 });
