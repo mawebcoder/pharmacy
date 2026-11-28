@@ -32,7 +32,7 @@
                 @foreach ($banners as $banner)
                     <a
                         href="{{ $banner->linkUrl() }}"
-                        @if ($banner->opensInNewTab()) target="_blank" rel="noopener" @else wire:navigate @endif
+                        @if ($banner->opensInNewTab()) target="_blank" rel="noopener" @else wire:navigate.hover @endif
                         class="swiper-slide block focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-primary-700"
                         aria-roledescription="slide"
                         aria-label="{{ $banner->getTitle() }} ({{ $loop->iteration }} از {{ $count }})"

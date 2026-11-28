@@ -13,10 +13,13 @@ use Livewire\Component;
 /**
  * The home page (roadmap B5, B9.2, S14): the live widgets of «چیدمان صفحه اصلی» in the admin's order, each with 1 to
  * 6 items; a widget with nothing to show is left out (HomeWidgetItems). With no widget to show, a short welcome and
- * the featured tags.
+ * the featured tags. Only the first widgets, on the first screen, come with the page; each one after them loads
+ * when the visitor scrolls near it (content::home-widget; owner, 2026-11-28).
  */
 new class extends Component
 {
+    public const int EAGER_WIDGETS = 2;
+
     /**
      * The site name alone as title, the default description, and the store's JSON-LD (roadmap S38).
      */
@@ -26,20 +29,43 @@ new class extends Component
     }
 
     /**
-     * @return list<array{widget: HomeWidget, items: Collection<int, Model>|null}>
+     * The first live widgets with their items (left out when empty); the rest without items, loaded later.
+     *
+     * @return list<array{widget: HomeWidget, items: Collection<int, Model>|null, lazy: bool}>
      */
     #[Computed]
     public function widgets(): array
     {
-        return app(HomeWidgetItems::class)->shown();
+        $widgetItems = app(HomeWidgetItems::class);
+        $widgets = [];
+
+        foreach (HomeWidget::query()->live()->get() as $index => $widget) {
+            if ($index >= self::EAGER_WIDGETS) {
+                $widgets[] = ['widget' => $widget, 'items' => null, 'lazy' => true];
+
+                continue;
+            }
+
+            $items = $widgetItems->for($widget);
+
+            if (! $items instanceof Collection || $items->isNotEmpty()) {
+                $widgets[] = ['widget' => $widget, 'items' => $items, 'lazy' => false];
+            }
+        }
+
+        return $widgets;
     }
 };
 ?>
 
 <div class="space-y-8 xl:space-y-10">
-    @forelse ($this->widgets as ['widget' => $widget, 'items' => $items])
+    @forelse ($this->widgets as ['widget' => $widget, 'items' => $items, 'lazy' => $lazy])
         <div wire:key="home-widget-{{ $widget->getId() }}">
-            @include('content::widgets.'.$widget->getType()->value, ['widget' => $widget, 'items' => $items, 'first' => $loop->first])
+            @if ($lazy)
+                <livewire:content::home-widget :widget-id="$widget->getId()" :type="$widget->getType()->value" :wire:key="'lazy-home-widget-'.$widget->getId()" />
+            @else
+                @include('content::widgets.'.$widget->getType()->value, ['widget' => $widget, 'items' => $items, 'first' => $loop->first])
+            @endif
         </div>
     @empty
         <section class="rounded-card bg-primary-50 px-6 py-10 text-center md:py-16">

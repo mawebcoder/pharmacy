@@ -25,7 +25,7 @@
                     <span class="font-bold tabular-nums" dir="ltr" x-text="remaining"></span>
                 </p>
             @endif
-            <a href="{{ route('products.index', ['deal' => 1]) }}" wire:navigate class="ms-auto flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
+            <a href="{{ route('products.index', ['deal' => 1]) }}" wire:navigate.hover class="ms-auto flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
                 مشاهده همه
                 <x-ts-icon icon="chevron-left" class="size-4" />
             </a>

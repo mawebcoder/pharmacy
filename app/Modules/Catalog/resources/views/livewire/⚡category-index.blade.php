@@ -51,7 +51,7 @@ new #[Title('دسته‌بندی‌ها')] class extends Component
             @foreach ($this->roots as $root)
                 @php($icon = ($this->withIcons[$root->id] ?? null)?->getIcon())
                 <li wire:key="category-{{ $root->id }}">
-                    <a href="{{ $root->url() }}" wire:navigate class="flex h-full flex-col items-center gap-2 rounded-card border border-line-200 bg-card p-3 text-center hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                    <a href="{{ $root->url() }}" wire:navigate.hover class="flex h-full flex-col items-center gap-2 rounded-card border border-line-200 bg-card p-3 text-center hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
                         <span class="grid size-16 place-items-center rounded-full bg-primary-50 md:size-20">
                             @if ($icon)
                                 <x-media::picture :media="$icon" slot-name="category-icon" alt="" class="size-10 object-contain md:size-12" />

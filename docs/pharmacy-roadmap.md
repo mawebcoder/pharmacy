@@ -287,6 +287,10 @@ The home page is built by the admin from widgets (D3.6 «Home widgets», decided
 
 Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop only.
 
+**Lazy sections** (owner, 2026-11-28): only the first 2 widgets come with the page. Every later widget is a placeholder of its own height at each screen width (no queries for it yet) and loads from the server once the visitor scrolls within 300 px of it (`content::home-widget`, Alpine `x-intersect.margin`); one that has nothing to show by then leaves no trace. Images load lazily too.
+
+**Prefetching pages** (owner, 2026-11-28): product cards, «مشاهده همه», the home brand, category, tag and banner links and the brand, category and collection list pages use `wire:navigate.hover`: the next page starts loading after 60 ms of hover or on focus, and on phones as soon as a finger touches the link (`resources/js/components/touch-prefetch.js`; a finger that moves over 10 px is scrolling and loads nothing). Livewire keeps the page 30 s for the click. Not on the header category menu (a mouse crossing it would load many pages), and never every link on screen (server load).
+
 ### B9.3 Category / brand / tag / search PLP
 
 | Element | Mobile | Tablet | Desktop |

@@ -12,6 +12,8 @@ use Database\Seeders\NearExpiryDemoSeeder;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
+use function Pest\Livewire\livewire;
+
 beforeEach(function (): void {
     Storage::fake('local');
     Storage::fake('media');
@@ -35,5 +37,9 @@ it('shows a «زودمصرف» collection row on the home page, with the badge a
         ->and($collection->products()->count())->toBe(NearExpiryDemoSeeder::PRODUCTS)
         ->and($rows)->toHaveCount(1);
 
-    $this->get(route('home'))->assertOk()->assertSee(['زودمصرف', 'انقضای نزدیک؛ دلیل تخفیف']);
+    // The row is below the first screen, so it loads as the visitor scrolls (content::home-widget).
+    $this->get(route('home'))->assertOk();
+    livewire('content::home-widget', ['widgetId' => $rows->sole()->getId(), 'type' => HomeWidgetType::Collection->value])
+        ->call('load')
+        ->assertSee(['زودمصرف', 'انقضای نزدیک؛ دلیل تخفیف']);
 });

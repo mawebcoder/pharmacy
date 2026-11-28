@@ -45,7 +45,7 @@
 
     <div class="flex flex-1 flex-col gap-0.5 p-2.5 md:p-3">
         <h3 class="line-clamp-2 h-10 text-sm leading-5 text-ink-900">
-            <a href="{{ $href ?? route('products.show', $product) }}" @unless ($href) wire:navigate @endunless class="after:absolute after:inset-0 focus-visible:outline-none after:focus-visible:rounded-card after:focus-visible:outline-2 after:focus-visible:outline-primary-700">
+            <a href="{{ $href ?? route('products.show', $product) }}" @unless ($href) wire:navigate.hover @endunless class="after:absolute after:inset-0 focus-visible:outline-none after:focus-visible:rounded-card after:focus-visible:outline-2 after:focus-visible:outline-primary-700">
                 {{ $product->getNameFa() }}
             </a>
         </h3>

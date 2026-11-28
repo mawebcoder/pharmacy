@@ -12,6 +12,8 @@ use Database\Seeders\HomePageDemoSeeder;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
+use function Pest\Livewire\livewire;
+
 beforeEach(function (): void {
     Storage::fake('local');
     Storage::fake('media');
@@ -34,5 +36,8 @@ it('puts 6 live deals in the home page «پیشنهاد لحظه‌ای» row wi
         ->and($deals->every(fn (FlashDeal $deal): bool => $deal->getVariant()?->regularPrice() === $regular[$deal->getVariantId()]
             && $deal->getVariant()->currentPrice() === $deal->getDealPrice()))->toBeTrue();
 
-    $this->get(route('home'))->assertOk()->assertSee('پیشنهاد لحظه‌ای');
+    $this->get(route('home'))->assertOk();
+    livewire('content::home-widget', ['widgetId' => $row['widget']->getId(), 'type' => HomeWidgetType::FlashDeal->value])
+        ->call('load')
+        ->assertSee('پیشنهاد لحظه‌ای');
 });
