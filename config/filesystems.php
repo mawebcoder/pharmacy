@@ -18,6 +18,12 @@ return [
     'default' => env('FILESYSTEM_DISK', 'local'),
 
     /*
+    | Spreadsheet imports (prices, synonyms) stay on the server's own disk while images may go to S3 (owner,
+    | 2026-11-28). App\Modules\Shared\Support\ImportFiles.
+    */
+    'imports_disk' => env('IMPORTS_DISK', 'local'),
+
+    /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
@@ -88,7 +94,7 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
+            'throw' => true,
             'report' => false,
         ],
 

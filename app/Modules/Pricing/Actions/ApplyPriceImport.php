@@ -10,7 +10,7 @@ use App\Modules\Pricing\Enums\PriceImportStatus;
 use App\Modules\Pricing\Models\PriceImport;
 use App\Modules\Pricing\Models\PriceImportRow;
 use App\Modules\Pricing\Models\ProviderPrice;
-use Illuminate\Support\Facades\Storage;
+use App\Modules\Shared\Support\ImportFiles;
 
 /**
  * Applies a previewed supplier price import (roadmap D13.9): every checked row that changes something is saved
@@ -54,6 +54,6 @@ final readonly class ApplyPriceImport
         }
 
         $import->setRowsUpdated($updated)->setStatus(PriceImportStatus::Done)->setAppliedAt(now())->save();
-        Storage::disk('local')->delete($import->getFilePath());
+        ImportFiles::delete($import->getFilePath());
     }
 }

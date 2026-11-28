@@ -24,6 +24,7 @@ use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Pricing\Support\PriceSpreadsheet;
+use App\Modules\Shared\Support\ImportFiles;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
@@ -33,7 +34,7 @@ use Illuminate\Support\Facades\Storage;
 use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
-    Storage::fake('local');
+    Storage::fake(ImportFiles::disk());
 });
 
 /**
@@ -58,8 +59,8 @@ function importSku(string $sku, ?string $barcode = null): ProductVariant
 function importFile(array $rows): PriceImport
 {
     $path = 'imports/prices/test-'.uniqid().'.xlsx';
-    Storage::disk('local')->put($path, '');
-    PriceSpreadsheet::writeTemplate(Storage::disk('local')->path($path), $rows);
+    Storage::disk(ImportFiles::disk())->put($path, '');
+    PriceSpreadsheet::writeTemplate(Storage::disk(ImportFiles::disk())->path($path), $rows);
 
     return app(StartPriceImport::class)($path, 'prices.xlsx')->fresh();
 }
@@ -76,7 +77,7 @@ describe('template', function (): void {
     it('holds every current supplier price in toman', function (): void {
         $sku = importSku('EUC-0001-01', '6260001');
         $price = ProviderPrice::factory()->forVariant($sku->getId())->create([ProviderPrice::COLUMN_COST => 8_500_000, ProviderPrice::COLUMN_IS_ENABLED => false, ProviderPrice::COLUMN_LEAD_TIME_HOURS => 24]);
-        $path = Storage::disk('local')->path('template.xlsx');
+        $path = Storage::disk(ImportFiles::disk())->path('template.xlsx');
 
         app(WritePriceTemplate::class)($path);
 
@@ -148,7 +149,7 @@ describe('checking a file', function (): void {
     });
 
     it('fails an import whose file cannot be read', function (): void {
-        Storage::disk('local')->put('imports/prices/broken.xlsx', 'not a spreadsheet');
+        Storage::disk(ImportFiles::disk())->put('imports/prices/broken.xlsx', 'not a spreadsheet');
 
         $import = app(StartPriceImport::class)('imports/prices/broken.xlsx', 'broken.xlsx')->fresh();
 
@@ -172,7 +173,7 @@ describe('applying', function (): void {
             ->and($kept->fresh())->getCost()->toBe(8_000_000)->isEnabled()->toBeFalse()->getLeadTimeHours()->toBe(48)
             ->and(ProviderPrice::query()->where(ProviderPrice::COLUMN_VARIANT_ID, $new->getId())->sole())->isAvailable()->toBeFalse()->isEnabled()->toBeTrue()
             ->and($untouched->fresh()->getCost())->toBe(5_000_000)
-            ->and(Storage::disk('local')->exists($import->getFilePath()))->toBeFalse();
+            ->and(Storage::disk(ImportFiles::disk())->exists($import->getFilePath()))->toBeFalse();
     });
 
     it('reprices the SKUs with the import as the reason', function (): void {
@@ -203,7 +204,7 @@ describe('applying', function (): void {
 
     it('reads and applies on the price-import queue', function (): void {
         Queue::fake();
-        Storage::disk('local')->put('imports/prices/queued.xlsx', '');
+        Storage::disk(ImportFiles::disk())->put('imports/prices/queued.xlsx', '');
 
         $import = app(StartPriceImport::class)('imports/prices/queued.xlsx', 'prices.xlsx');
         Queue::assertPushedOn('price-import', ParsePriceImport::class);
@@ -225,7 +226,7 @@ describe('admin', function (): void {
         $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->superAdmin()->create(), 'admin');
         $provider = Provider::factory()->create();
         importSku('EUC-0001-01');
-        $path = Storage::disk('local')->path('upload.xlsx');
+        $path = Storage::disk(ImportFiles::disk())->path('upload.xlsx');
         PriceSpreadsheet::writeTemplate($path, [priceRow($provider->getId(), 'EUC-0001-01', 850_000)]);
 
         livewire(ListProviders::class)

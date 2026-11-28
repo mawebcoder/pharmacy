@@ -25,8 +25,8 @@ use App\Modules\Media\Actions\AttachImage;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
 });
 
 function productData(Product $product, array $overrides = []): ProductData

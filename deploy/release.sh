@@ -76,6 +76,9 @@ activate() {
     # Horizon finishes its running jobs and Supervisor starts it again from the new release; "start" also brings it
     # up when a deploy stopped it, or on the first release (until then Supervisor has nothing to run).
     artisan "${CURRENT}" horizon:terminate || true
+    # The «فرمان‌ها» worker (hutana-commands, deploy user) exits after its current command; Supervisor starts it
+    # again from the new release.
+    artisan "${CURRENT}" queue:restart || true
     sudo supervisorctl start hutana:hutana-horizon > /dev/null || true
     sudo supervisorctl restart hutana:hutana-scheduler
 

@@ -16,6 +16,7 @@ use App\Modules\Pricing\Filament\Resources\Providers\RelationManagers\ProviderPr
 use App\Modules\Pricing\Http\Requests\StoreProviderRequest;
 use App\Modules\Pricing\Models\PriceImport;
 use App\Modules\Pricing\Models\Provider;
+use App\Modules\Shared\Support\ImportFiles;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -122,7 +123,7 @@ final class ProviderResource extends Resource
                     ->schema([
                         FileUpload::make('file')
                             ->label('فایل اکسل یا CSV')
-                            ->disk('local')
+                            ->disk(ImportFiles::disk())
                             ->directory('imports/prices')
                             ->imageEditor(false)
                             ->storeFileNamesIn('original_name')

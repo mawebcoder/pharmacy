@@ -31,10 +31,10 @@ use Spatie\MediaLibrary\Support\UrlGenerator\DefaultUrlGenerator;
 return [
 
     /*
-     * The disk on which to store added files and derived images by default. Choose
-     * one or more of the disks you've configured in config/filesystems.php.
+     * The disk of image originals: the application's default disk (FILESYSTEM_DISK; owner, 2026-11-28), the same
+     * for the admin's Filament uploads and for images attached in code. Generated sizes go on conversions_disk_name.
      */
-    'disk_name' => env('IMAGES_ORIGINALS_DISK', 'local'),
+    'disk_name' => env('FILESYSTEM_DISK', 'local'),
 
     /*
      * The disk on which to store conversions (thumbnails, etc.) and responsive images

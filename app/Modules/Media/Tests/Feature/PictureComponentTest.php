@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
 });
 
 it('renders a lazy responsive picture with srcset, sizes and intrinsic size, without a placeholder behind transparent logos', function (): void {

@@ -27,6 +27,7 @@ use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Models\VariantPrice;
 use App\Modules\Pricing\Support\PriceSpreadsheet;
+use App\Modules\Shared\Support\ImportFiles;
 use Filament\Actions\CreateAction;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
@@ -178,7 +179,7 @@ describe('which supplier sells', function (): void {
 
 describe('Excel', function (): void {
     beforeEach(function (): void {
-        Storage::fake('local');
+        Storage::fake(ImportFiles::disk());
     });
 
     it('sets and clears the SKU × supplier commission and the preferred supplier', function (): void {
@@ -187,8 +188,8 @@ describe('Excel', function (): void {
         [$sina, $alborz] = Provider::factory()->count(2)->create();
         $sinaRow = offerFrom($sina, $sku, 1_000_000, [ProviderPrice::COLUMN_COMMISSION_PERCENT => 5]);
         $path = 'imports/prices/s15b.xlsx';
-        Storage::disk('local')->put($path, '');
-        PriceSpreadsheet::writeTemplate(Storage::disk('local')->path($path), [
+        Storage::disk(ImportFiles::disk())->put($path, '');
+        PriceSpreadsheet::writeTemplate(Storage::disk(ImportFiles::disk())->path($path), [
             [$sina->getId(), '', 'EUC-0001-01', '', '', 100_000, '', '', '', '-', ''],
             [$alborz->getId(), '', 'EUC-0001-01', '', '', 100_000, '', '', '', '۲۰', 'بله'],
         ]);

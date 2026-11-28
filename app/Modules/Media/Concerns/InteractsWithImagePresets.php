@@ -27,7 +27,10 @@ trait InteractsWithImagePresets
         foreach ($this->imagePresets() as $collection => $presetName) {
             $preset = ImagePreset::named($presetName);
 
-            $mediaCollection = $this->addMediaCollection($collection)->acceptsMimeTypes($preset->mimes);
+            // Named here so Filament's upload field stores originals on the same disk as code does.
+            $mediaCollection = $this->addMediaCollection($collection)
+                ->useDisk((string) config('media-library.disk_name'))
+                ->acceptsMimeTypes($preset->mimes);
 
             if (! in_array($collection, $this->multipleImageCollections(), true)) {
                 $mediaCollection->singleFile();

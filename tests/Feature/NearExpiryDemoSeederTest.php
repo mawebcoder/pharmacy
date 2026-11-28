@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Storage;
 use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
     // The seeder runs the pricing engine itself; everything else stays queued.
     Queue::fake()->except([RecalculateVariantPrices::class]);
     $this->seed(HomePageDemoSeeder::class);

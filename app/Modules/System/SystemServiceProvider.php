@@ -16,11 +16,16 @@ use Spatie\Activitylog\Models\Activity;
 
 final class SystemServiceProvider extends ModuleServiceProvider
 {
+    public const string RUN_COMMANDS = 'runArtisanCommands';
+
     public function boot(): void
     {
         parent::boot();
 
         Gate::policy(Activity::class, ActivityPolicy::class);
+
+        // «فرمان‌ها»: super admins only, who pass every Gate through Shield.
+        Gate::define(self::RUN_COMMANDS, fn (): bool => false);
 
         // Http::integration('tipax', 'pricing.quote') → a client whose calls are logged (see IntegrationHttp).
         Http::macro('integration', fn (string $service, string $operation, ?int $orderId = null, array $redact = []): PendingRequest => IntegrationHttp::for($service, $operation, $orderId, array_values(array_map(strval(...), $redact))));
