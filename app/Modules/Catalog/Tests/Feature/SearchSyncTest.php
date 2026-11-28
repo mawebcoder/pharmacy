@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
+use App\Modules\Catalog\Actions\SaveSubcategory;
 use App\Modules\Catalog\Actions\UpdateBrand;
 use App\Modules\Catalog\Actions\UpdateProduct;
 use App\Modules\Catalog\Data\BrandData;
 use App\Modules\Catalog\Data\ProductData;
+use App\Modules\Catalog\Data\SubcategoryData;
 use App\Modules\Catalog\Enums\ProductStatus;
 use App\Modules\Catalog\Events\BrandSearchFieldsChanged;
 use App\Modules\Catalog\Jobs\ReindexProducts;
 use App\Modules\Catalog\Listeners\QueueProductReindex;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Search\ProductSearchIndex;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
@@ -100,6 +104,23 @@ describe('the index', function (): void {
         waitForSearchIndex();
 
         expect(productDocument($product->getId())['tag_ids'] ?? [])->toBe([$tag->getId()]);
+    });
+
+    it('moves a subcategory\'s products, main and extra, to the new category in search', function (): void {
+        $from = Category::factory()->create();
+        $to = Category::factory()->create();
+        $subcategory = Subcategory::factory()->of($from)->create();
+        $main = Product::factory()->active()->withVariants()->for($subcategory, 'primarySubcategory')->create();
+        $extra = Product::factory()->active()->withVariants()->create();
+        $extra->subcategories()->attach($subcategory);
+        indexProductsForSearch();
+
+        (void) app(SaveSubcategory::class)($to, SubcategoryData::fromArray($subcategory->attributesToArray()), $subcategory);
+        waitForSearchIndex();
+
+        expect(productDocument($main->getId())['category_ids'] ?? [])->toBe([$to->getId()])
+            ->and(productDocument($main->getId())['subcategory_ids'] ?? [])->toBe([$subcategory->getId()])
+            ->and(productDocument($extra->getId())['category_ids'] ?? [])->toContain($to->getId())->not->toContain($from->getId());
     });
 
     it('reconciles: removes documents whose record is gone and adds the missing ones', function (): void {

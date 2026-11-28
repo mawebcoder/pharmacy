@@ -30,4 +30,9 @@ final class CategoryChangeRefused extends RuntimeException
     {
         return new self("دستهٔ زیردسته «{$subcategoryName}» حذف شده است. ابتدا دسته را بازگردانید.");
     }
+
+    public static function movedToDeletedCategory(string $subcategoryName, string $categoryName): self
+    {
+        return new self("زیردسته «{$subcategoryName}» به دستهٔ حذف‌شدهٔ «{$categoryName}» منتقل نمی‌شود. ابتدا دسته را بازگردانید.");
+    }
 }

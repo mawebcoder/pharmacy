@@ -7,6 +7,7 @@ use App\Modules\Catalog\Filament\Resources\Brands\BrandResource;
 use App\Modules\Catalog\Filament\Resources\Categories\CategoryResource;
 use App\Modules\Catalog\Filament\Resources\Collections\CollectionResource;
 use App\Modules\Catalog\Filament\Resources\Products\ProductResource;
+use App\Modules\Catalog\Filament\Resources\Subcategories\SubcategoryResource;
 use App\Modules\Catalog\Filament\Resources\Tags\TagResource;
 use App\Modules\Content\Filament\Resources\Banners\BannerResource;
 use App\Modules\Content\Filament\Resources\HomeWidgets\HomeWidgetResource;
@@ -343,7 +344,8 @@ return [
             ],
         ],
         'exclude' => [
-            //
+            // Subcategories use the category permissions (SubcategoryPolicy).
+            SubcategoryResource::class,
         ],
     ],
 

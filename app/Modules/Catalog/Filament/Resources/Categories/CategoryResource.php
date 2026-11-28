@@ -10,6 +10,8 @@ use App\Modules\Catalog\Exceptions\CategoryChangeRefused;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\CreateCategory;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\EditCategory;
 use App\Modules\Catalog\Filament\Resources\Categories\Pages\ListCategories;
+use App\Modules\Catalog\Filament\Resources\Categories\Pages\ViewCategory;
+use App\Modules\Catalog\Filament\Resources\Categories\RelationManagers\CategoryProductsRelationManager;
 use App\Modules\Catalog\Filament\Resources\Categories\RelationManagers\SubcategoriesRelationManager;
 use App\Modules\Catalog\Filament\Resources\Categories\Schemas\CategoryForm;
 use App\Modules\Catalog\Filament\Resources\Categories\Tables\CategoriesTable;
@@ -27,8 +29,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use UnitEnum;
 
 /**
- * Categories (roadmap S08, B6 Catalog group): a drag-and-drop tree, a searchable list, and create/edit forms.
- * Deleted categories stay in the trash and can be restored.
+ * Categories (roadmap S08, B6 Catalog group): a drag-and-drop tree, a searchable list, create/edit forms and a view
+ * page; edit and view list the subcategories and the products. Deleted categories stay in the trash and can be restored.
  */
 final class CategoryResource extends Resource
 {
@@ -94,6 +96,7 @@ final class CategoryResource extends Resource
     {
         return [
             SubcategoriesRelationManager::class,
+            CategoryProductsRelationManager::class,
         ];
     }
 
@@ -102,6 +105,7 @@ final class CategoryResource extends Resource
         return [
             'index' => ListCategories::route('/'),
             'create' => CreateCategory::route('/create'),
+            'view' => ViewCategory::route('/{record}'),
             'edit' => EditCategory::route('/{record}/edit'),
         ];
     }
