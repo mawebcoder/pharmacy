@@ -8,9 +8,7 @@ use App\Modules\Settings\Enums\SocialPlatform;
 use App\Modules\Settings\Models\Setting;
 use App\Modules\Shared\Support\IranMobile;
 use App\Modules\Shared\Support\PersianDigits;
-use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
 
 /**
  * Typed store settings with their defaults (roadmap D3.6, started in S21), cached until SaveStoreSettings changes
@@ -106,26 +104,10 @@ final readonly class StoreSettings
     public const array DEFAULT_IGNORED_WORDS = ['قیمت', 'خرید', 'فروش', 'ارزان', 'اصل', 'اصلی', 'بهترین', 'سفارش', 'آنلاین', 'اورجینال'];
 
     /**
-     * «تنظیمات پیامک» (S37, owner 2026-11-27): the provider, its credentials, each template's pattern id per provider
-     * (['melipayamak' => ['otp' => '123456', …], 'kavenegar' => […]]) and the low-credit threshold in rial. Empty means
-     * the .env value (config/sms.php).
+     * «تنظیمات پیامک» (S37): the low-credit threshold in rial; empty means SMS_LOW_CREDIT_BELOW. The provider, its
+     * credentials and pattern ids come from .env only (config/sms.php; owner, 2026-11-28).
      */
-    public const string SMS_PROVIDER = 'sms.provider';
-
-    public const string SMS_MELIPAYAMAK_USERNAME = 'sms.melipayamak.username';
-
-    public const string SMS_MELIPAYAMAK_API_KEY = 'sms.melipayamak.api_key';
-
-    public const string SMS_KAVENEGAR_API_KEY = 'sms.kavenegar.api_key';
-
-    public const string SMS_PATTERNS = 'sms.patterns';
-
     public const string SMS_LOW_CREDIT_BELOW = 'sms.low_credit_below';
-
-    /**
-     * Saved encrypted, never shown again and never written to the activity log; an empty value keeps the saved one.
-     */
-    public const array SECRET_KEYS = [self::SMS_MELIPAYAMAK_API_KEY, self::SMS_KAVENEGAR_API_KEY];
 
     /**
      * Most categories, and most brands, the admin can pin to the search panel.
@@ -165,11 +147,6 @@ final readonly class StoreSettings
         self::SEARCH_BRAND_IDS => [],
         self::SEARCH_IGNORED_WORDS => self::DEFAULT_IGNORED_WORDS,
         self::RETURN_NOTIFY_MOBILES => [],
-        self::SMS_PROVIDER => '',
-        self::SMS_MELIPAYAMAK_USERNAME => '',
-        self::SMS_MELIPAYAMAK_API_KEY => '',
-        self::SMS_KAVENEGAR_API_KEY => '',
-        self::SMS_PATTERNS => [],
         self::SMS_LOW_CREDIT_BELOW => null,
     ];
 
@@ -410,43 +387,6 @@ final readonly class StoreSettings
     public function searchIgnoredWords(): array
     {
         return array_values(array_filter(array_map(fn (mixed $word): string => trim((string) $word), (array) $this->get(self::SEARCH_IGNORED_WORDS)), fn (string $word): bool => $word !== ''));
-    }
-
-    /**
-     * An SMS setting from «تنظیمات پیامک» (SMS_* keys above; secrets decrypted), or null while the admin has not set it.
-     */
-    public function smsSetting(string $key): ?string
-    {
-        $value = trim((string) $this->get($key));
-
-        if ($value === '' || ! in_array($key, self::SECRET_KEYS, true)) {
-            return $value === '' ? null : $value;
-        }
-
-        try {
-            return Crypt::decryptString($value);
-        } catch (DecryptException) {
-            return null;
-        }
-    }
-
-    /**
-     * Whether a secret (an API key) has been saved, without reading it.
-     */
-    public function hasSmsSecret(string $key): bool
-    {
-        return $this->smsSetting($key) !== null;
-    }
-
-    /**
-     * The pattern id (Kavenegar: template name) the admin set for a template, or null for the .env value.
-     */
-    public function smsPatternId(string $provider, string $template): ?string
-    {
-        $patterns = (array) $this->get(self::SMS_PATTERNS);
-        $patternId = trim((string) ($patterns[$provider][$template] ?? ''));
-
-        return $patternId === '' ? null : $patternId;
     }
 
     /**

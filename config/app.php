@@ -93,6 +93,12 @@ return [
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
+    | The system user that runs commands from «فرمان‌ها» in the admin (owner, 2026-11-28): "deploy" on the server,
+    | where only the deploy user's worker takes the "commands" queue. Empty: any user (local Docker).
+    */
+    'commands_user' => env('ADMIN_COMMANDS_USER'),
+
+    /*
     |--------------------------------------------------------------------------
     | Display and Schedule Timezone
     |--------------------------------------------------------------------------

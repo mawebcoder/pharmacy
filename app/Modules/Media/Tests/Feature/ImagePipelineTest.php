@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function (): void {
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
 });
 
 it('queues processing on the media queue with only the preset sizes', function (): void {
@@ -52,11 +52,11 @@ it('processes an image into public sizes with its placeholder data, keeping the 
         ->getDominantColor()->toMatch('/^#[0-9a-f]{6}$/');
 
     $conversionsPath = $media->uuid.'/'.$media->getContentHash().'/';
-    Storage::disk('media')->assertExists($conversionsPath.'image-brand_logo-160-webp.webp');
-    Storage::disk('media')->assertExists($conversionsPath.'image-brand_logo-320-webp.webp');
-    Storage::disk('media')->assertExists($conversionsPath.'image-brand_logo-320-avif.avif');
-    Storage::disk('local')->assertExists($media->uuid.'/image.png');
-    Storage::disk('media')->assertMissing($media->uuid.'/image.png');
+    Storage::disk(variantsDisk())->assertExists($conversionsPath.'image-brand_logo-160-webp.webp');
+    Storage::disk(variantsDisk())->assertExists($conversionsPath.'image-brand_logo-320-webp.webp');
+    Storage::disk(variantsDisk())->assertExists($conversionsPath.'image-brand_logo-320-avif.avif');
+    Storage::disk(originalsDisk())->assertExists($media->uuid.'/image.png');
+    Storage::disk(variantsDisk())->assertMissing($media->uuid.'/image.png');
     expect($media->url(320, 'webp'))->toContain($conversionsPath.'image-brand_logo-320-webp.webp');
 });
 
@@ -75,7 +75,7 @@ it('sanitizes an uploaded SVG and publishes it as-is', function (): void {
 
     $media = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testSvg('<rect width="40" height="20"/><script>alert(1)</script><circle r="5" onload="alert(2)"/>'))->fresh();
 
-    $published = Storage::disk('media')->get($media->svgPath());
+    $published = Storage::disk(variantsDisk())->get($media->svgPath());
 
     expect($media->isReady())->toBeTrue()
         ->and($published)->toContain('<rect')

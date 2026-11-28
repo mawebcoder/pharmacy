@@ -39,8 +39,8 @@ beforeEach(function (): void {
     $this->seed(TipaxCartonsSeeder::class);
     $this->seed(RolesSeeder::class);
     Filament::setCurrentPanel('admin');
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
     $this->admin = AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::ContentEditor)->create();
 });
 

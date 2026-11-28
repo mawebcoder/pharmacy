@@ -12,15 +12,13 @@ use App\Modules\Notifications\Filament\Widgets\SmsCreditWidget;
 use App\Modules\Notifications\Support\SmsManager;
 use App\Modules\Settings\Models\Setting;
 use App\Modules\Settings\Queries\StoreSettings;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 use function Pest\Livewire\livewire;
 
 /*
-| «تنظیمات پیامک» (roadmap D11.6, S37; owner 2026-11-27): super admins set the SMS provider, its credentials (API keys
-| encrypted, never shown or logged), pattern ids and the low-credit threshold; empty fields fall back to .env. The
-| dashboard shows the panel's credit.
+| «تنظیمات پیامک» (roadmap D11.6, S37): super admins set the low-credit threshold and the return-request mobiles; the
+| provider, its credentials and pattern ids come from .env only (owner, 2026-11-28). The dashboard shows the credit.
 */
 
 beforeEach(function (): void {
@@ -48,59 +46,36 @@ it('is for super admins only', function (): void {
     livewire(SmsSettingsPage::class)->assertOk()->assertSee('تنظیمات پیامک');
 });
 
-it('saves the provider, credentials, patterns and threshold, and they win over .env', function (): void {
+it('saves the threshold and the return mobiles, and offers no field for the provider, keys or patterns', function (): void {
     actingAsSuperAdmin();
 
     livewire(SmsSettingsPage::class)
-        ->fillForm([
-            'provider' => 'kavenegar',
-            'low_credit_below' => '250,000',
-            'melipayamak_username' => 'panel-user',
-            'melipayamak_api_key' => 'admin-secret-key',
-            'patterns.melipayamak.otp' => '998877',
-            'patterns.kavenegar.order_paid' => 'hutana-paid',
-            'return_notify_mobiles' => ['۰۹۱۲۱۱۱۰۰۰۰'],
-        ])
+        ->assertFormFieldDoesNotExist('provider')
+        ->assertFormFieldDoesNotExist('melipayamak_api_key')
+        ->assertFormFieldDoesNotExist('patterns.melipayamak.otp')
+        ->fillForm(['low_credit_below' => '250,000', 'return_notify_mobiles' => ['۰۹۱۲۱۱۱۰۰۰۰']])
         ->call('save')
-        ->assertHasNoFormErrors()
-        ->assertSet('data.melipayamak_api_key', null);
+        ->assertHasNoFormErrors();
 
-    $sms = app(SmsManager::class);
-
-    expect($sms->provider())->toBe(SmsProvider::Kavenegar)
-        ->and($sms->lowCreditBelow())->toBe(2_500_000)
-        ->and($sms->credential(SmsProvider::Melipayamak, 'username'))->toBe('panel-user')
-        ->and($sms->credential(SmsProvider::Melipayamak, 'api_key'))->toBe('admin-secret-key')
-        ->and($sms->patternId(SmsTemplate::Otp, SmsProvider::Melipayamak))->toBe('998877')
-        ->and($sms->patternId(SmsTemplate::OrderPaid))->toBe('hutana-paid')
-        ->and($sms->patternId(SmsTemplate::OrderCancelled, SmsProvider::Melipayamak))->toBeNull()
+    expect(app(SmsManager::class)->lowCreditBelow())->toBe(2_500_000)
         ->and(app(StoreSettings::class)->returnNotifyMobiles())->toBe(['09121110000']);
 });
 
-it('falls back to .env for what the admin left empty', function (): void {
+it('takes the provider, credentials and pattern ids from .env only, even with values saved before', function (): void {
+    foreach (['sms.provider' => 'kavenegar', 'sms.melipayamak.username' => 'old-user', 'sms.patterns' => ['melipayamak' => ['otp' => '998877']]] as $key => $value) {
+        (new Setting)->setSettingKey($key)->setValue($value)->save();
+    }
+
     $sms = app(SmsManager::class);
 
     expect($sms->provider())->toBe(SmsProvider::Melipayamak)
+        ->and($sms->credential(SmsProvider::Melipayamak, 'username'))->toBe('env-user')
         ->and($sms->credential(SmsProvider::Melipayamak, 'api_key'))->toBe('env-key')
         ->and($sms->patternId(SmsTemplate::Otp))->toBe('111111')
         ->and($sms->lowCreditBelow())->toBe(1_000_000);
 });
 
-it('stores API keys encrypted, keeps them when the field is left empty, and never logs them', function (): void {
-    actingAsSuperAdmin();
-
-    livewire(SmsSettingsPage::class)->fillForm(['melipayamak_api_key' => 'admin-secret-key'])->call('save')->assertHasNoFormErrors();
-    livewire(SmsSettingsPage::class)->fillForm(['melipayamak_username' => 'changed-user'])->call('save')->assertHasNoFormErrors();
-
-    $stored = Setting::query()->where(Setting::COLUMN_KEY, StoreSettings::SMS_MELIPAYAMAK_API_KEY)->sole()->getValue();
-
-    expect($stored)->not->toContain('admin-secret-key')
-        ->and(app(SmsManager::class)->credential(SmsProvider::Melipayamak, 'api_key'))->toBe('admin-secret-key')
-        ->and(DB::table('activity_log')->where('properties', 'like', '%admin-secret-key%')->exists())->toBeFalse()
-        ->and(DB::table('activity_log')->where('properties', 'like', '%'.substr((string) $stored, 0, 20).'%')->exists())->toBeFalse();
-});
-
-it('sends a test sign-in code with the saved settings', function (): void {
+it('sends a test sign-in code with the .env settings', function (): void {
     actingAsSuperAdmin();
     Http::fake(['*' => Http::response(['Value' => '1234567890123456789', 'RetStatus' => 1])]);
 

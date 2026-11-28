@@ -25,3 +25,19 @@ function testSvg(string $body = '<rect width="40" height="20" fill="#0f766e"/>')
 {
     return UploadedFile::fake()->createWithContent('logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20">'.$body.'</svg>');
 }
+
+/**
+ * The disk of image originals (FILESYSTEM_DISK), for Storage::fake() and assertions.
+ */
+function originalsDisk(): string
+{
+    return (string) config('media-library.disk_name');
+}
+
+/**
+ * The disk of generated image sizes (IMAGES_VARIANTS_DISK), for Storage::fake() and assertions.
+ */
+function variantsDisk(): string
+{
+    return (string) config('media-library.conversions_disk_name');
+}

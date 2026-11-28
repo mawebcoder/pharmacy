@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Settings\Models;
 
-use App\Modules\Settings\Queries\StoreSettings;
 use App\Modules\Shared\Contracts\HasActivityLogLabel;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -52,23 +50,6 @@ final class Setting extends Model implements HasActivityLogLabel
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->useLogName('settings')->logOnly([self::COLUMN_KEY, self::COLUMN_VALUE])->logOnlyDirty()->dontLogEmptyChanges();
-    }
-
-    /**
-     * API keys (S37) never reach the activity log, not even encrypted.
-     */
-    public function beforeActivityLogged(Model $activity, string $eventName): void
-    {
-        if (! in_array($this->getSettingKey(), StoreSettings::SECRET_KEYS, true)) {
-            return;
-        }
-
-        /** @var Collection<string, mixed> $properties */
-        $properties = new Collection((array) $activity->getAttribute('properties')?->all());
-
-        $activity->setAttribute('properties', $properties->map(
-            fn (mixed $values): mixed => is_array($values) && array_key_exists(self::COLUMN_VALUE, $values) ? [...$values, self::COLUMN_VALUE => '••••'] : $values,
-        ));
     }
 
     public function activityLogLabel(): string

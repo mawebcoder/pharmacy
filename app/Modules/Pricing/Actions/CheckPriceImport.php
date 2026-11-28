@@ -14,9 +14,9 @@ use App\Modules\Pricing\Models\Provider;
 use App\Modules\Pricing\Models\ProviderPrice;
 use App\Modules\Pricing\Queries\ActiveSuppliers;
 use App\Modules\Pricing\Support\PriceSpreadsheet;
+use App\Modules\Shared\Support\ImportFiles;
 use App\Modules\Shared\Support\Toman;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use Throwable;
 
@@ -40,8 +40,7 @@ final readonly class CheckPriceImport
         $import->setStatus(PriceImportStatus::Processing)->save();
 
         try {
-            $path = Storage::disk('local')->path($import->getFilePath());
-            $cells = PriceSpreadsheet::read($path, pathinfo($import->getOriginalName(), PATHINFO_EXTENSION));
+            $cells = ImportFiles::withLocalCopy($import->getFilePath(), fn (string $path): array => PriceSpreadsheet::read($path, pathinfo($import->getOriginalName(), PATHINFO_EXTENSION)));
         } catch (Throwable $exception) {
             $import->setStatus(PriceImportStatus::Failed)->setError('فایل خوانده نشد: '.$exception->getMessage())->save();
 

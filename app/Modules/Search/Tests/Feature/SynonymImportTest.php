@@ -9,6 +9,7 @@ use App\Modules\Search\Actions\ImportSearchSynonyms;
 use App\Modules\Search\Filament\Resources\SearchSynonyms\Pages\ManageSearchSynonyms;
 use App\Modules\Search\Jobs\SyncSearchSynonyms;
 use App\Modules\Search\Models\SearchSynonym;
+use App\Modules\Shared\Support\ImportFiles;
 use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -81,7 +82,7 @@ it('reads CSV files too', function (): void {
 
 it('imports from the admin page', function (): void {
     Filament::setCurrentPanel('admin');
-    Storage::fake('local');
+    Storage::fake(ImportFiles::disk());
     $this->seed(RolesSeeder::class);
     $this->actingAs(AdminUser::factory()->withTwoFactorAuthentication()->withRole(AdminRole::ContentEditor)->create(), 'admin');
     $upload = UploadedFile::fake()->createWithContent('synonyms.xlsx', (string) file_get_contents(synonymsWorkbook([['کلسیم', 'calcium']])));

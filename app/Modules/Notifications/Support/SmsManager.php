@@ -14,10 +14,10 @@ use App\Modules\Settings\Queries\StoreSettings;
 use Kavenegar\KavenegarApi;
 
 /**
- * Picks the SMS sender for a provider (roadmap D11.6, strategy pattern). The provider, credentials, pattern ids and
- * low-credit threshold come from «تنظیمات پیامک» (S37, owner 2026-11-27), else from .env (config/sms.php), unless a
- * caller names a provider; with SMS_PRETEND on every provider is served by the log sender, so nothing leaves the app.
- * Senders are kept per provider and credentials, so a long-running worker picks up keys changed in the admin.
+ * Picks the SMS sender for a provider (roadmap D11.6, strategy pattern). The provider, credentials and pattern ids
+ * come from .env only (config/sms.php; owner, 2026-11-28), unless a caller names a provider; the low-credit threshold
+ * from «تنظیمات پیامک», else .env. With SMS_PRETEND on every provider is served by the log sender, so nothing leaves
+ * the app.
  */
 final class SmsManager
 {
@@ -28,9 +28,7 @@ final class SmsManager
 
     public function provider(?SmsProvider $provider = null): SmsProvider
     {
-        return $provider
-            ?? SmsProvider::tryFrom((string) $this->settings->smsSetting(StoreSettings::SMS_PROVIDER))
-            ?? SmsProvider::configured();
+        return $provider ?? SmsProvider::configured();
     }
 
     public function isPretending(): bool
@@ -49,7 +47,7 @@ final class SmsManager
         $apiKey = (string) $this->credential($provider, 'api_key');
         $username = (string) $this->credential($provider, 'username');
 
-        return $this->senders[$provider->value.':'.hash('sha256', $username.'|'.$apiKey)] ??= match ($provider) {
+        return $this->senders[$provider->value] ??= match ($provider) {
             SmsProvider::Melipayamak => new MelipayamakSmsSender(
                 username: $username,
                 apiKey: $apiKey,
@@ -66,29 +64,22 @@ final class SmsManager
     }
 
     /**
-     * A provider's username or API key: the one saved in the admin, else .env.
+     * A provider's username or API key from .env.
      */
     public function credential(SmsProvider $provider, string $key): ?string
     {
-        $saved = match ($provider->value.'.'.$key) {
-            'melipayamak.username' => $this->settings->smsSetting(StoreSettings::SMS_MELIPAYAMAK_USERNAME),
-            'melipayamak.api_key' => $this->settings->smsSetting(StoreSettings::SMS_MELIPAYAMAK_API_KEY),
-            'kavenegar.api_key' => $this->settings->smsSetting(StoreSettings::SMS_KAVENEGAR_API_KEY),
-            default => null,
-        };
-        $value = $saved ?? (string) $this->setting($provider, $key);
+        $value = (string) $this->setting($provider, $key);
 
         return $value === '' ? null : $value;
     }
 
     /**
-     * The provider's pattern id for a template (the admin's, else .env), or null when it is not set up yet.
+     * The provider's pattern id for a template from .env, or null when it is not set up yet.
      */
     public function patternId(SmsTemplate $template, ?SmsProvider $provider = null): ?string
     {
         $provider = $this->provider($provider);
-        $patternId = $this->settings->smsPatternId($provider->value, $template->value)
-            ?? (string) $this->setting($provider, 'patterns.'.$template->value);
+        $patternId = (string) $this->setting($provider, 'patterns.'.$template->value);
 
         return $patternId === '' ? null : $patternId;
     }

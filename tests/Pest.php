@@ -20,7 +20,7 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature', '../app/Modules/*/Tests/Feature');
 
-// testImage() and testSvg(): real image files for media upload tests.
+// testImage() and testSvg(): real image files for media upload tests; originalsDisk() and variantsDisk().
 require_once __DIR__.'/../app/Modules/Media/Tests/helpers.php';
 
 // useSearchIndex(), indexProductsForSearch(): product search tests against a real Meilisearch index.

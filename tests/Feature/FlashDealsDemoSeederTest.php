@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Storage;
 use function Pest\Livewire\livewire;
 
 beforeEach(function (): void {
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
     Queue::fake();
     $this->seed(HomePageDemoSeeder::class);
 });

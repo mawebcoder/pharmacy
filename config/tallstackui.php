@@ -1153,7 +1153,7 @@ return [
                 'accept' => null,
                 'tmp_disk' => 'local',
                 'tmp_directory' => 'async-uploads',
-                'disk' => 'local',
+                'disk' => env('IMPORTS_DISK', 'local'),
                 'keep' => 60 * 60 * 6,
             ],
         ],

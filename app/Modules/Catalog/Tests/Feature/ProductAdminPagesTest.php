@@ -35,8 +35,8 @@ beforeEach(function (): void {
     // The boxes a SKU says how many of it fit (S31).
     $this->seed(TipaxCartonsSeeder::class);
     Filament::setCurrentPanel('admin');
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
     $this->seed(RolesSeeder::class);
 });
 

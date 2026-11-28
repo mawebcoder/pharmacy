@@ -127,8 +127,8 @@ it('shows the description with its rich-editor formatting and without scripts', 
 });
 
 it('puts the picked SKU\'s own photo first in the gallery, and the product photos alone for a SKU without one', function (): void {
-    Storage::fake('local');
-    Storage::fake('media');
+    Storage::fake(originalsDisk());
+    Storage::fake(variantsDisk());
     $plain = ProductVariant::factory()->for($this->product)->create([ProductVariant::COLUMN_TITLE_FA => '۵۰ گرمی']);
     $large = ProductVariant::factory()->for($this->product)->create([ProductVariant::COLUMN_TITLE_FA => '۱۰۰ گرمی']);
     $productPhoto = app(AttachImage::class)($this->product, Product::IMAGE_GALLERY, testImage(1200, 1200))->fresh();

@@ -9,13 +9,13 @@ use App\Modules\Search\Actions\SaveSearchSynonym;
 use App\Modules\Search\Filament\Resources\SearchSynonyms\SearchSynonymResource;
 use App\Modules\Search\Models\SearchSynonym;
 use App\Modules\Search\Support\SynonymSpreadsheet;
+use App\Modules\Shared\Support\ImportFiles;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
@@ -38,7 +38,7 @@ final class ManageSearchSynonyms extends ManageRecords
                 ->schema([
                     FileUpload::make('file')
                         ->label('فایل اکسل یا CSV')
-                        ->disk('local')
+                        ->disk(ImportFiles::disk())
                         ->directory('imports/synonyms')
                         ->imageEditor(false)
                         ->acceptedFileTypes([
@@ -51,16 +51,16 @@ final class ManageSearchSynonyms extends ManageRecords
                         ->required(),
                 ])
                 ->action(function (array $data, ImportSearchSynonyms $import): void {
-                    $path = Storage::disk('local')->path((string) $data['file']);
+                    $file = (string) $data['file'];
 
                     try {
-                        $result = $import($path, pathinfo($path, PATHINFO_EXTENSION));
+                        $result = ImportFiles::withLocalCopy($file, fn (string $path): mixed => $import($path, pathinfo($file, PATHINFO_EXTENSION)));
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('فایل خوانده نشد.')->body($exception->getMessage())->persistent()->send();
 
                         return;
                     } finally {
-                        Storage::disk('local')->delete((string) $data['file']);
+                        ImportFiles::delete($file);
                     }
 
                     $notification = Notification::make()->title($result->summary());
