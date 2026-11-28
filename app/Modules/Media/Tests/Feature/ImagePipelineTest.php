@@ -6,6 +6,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Media\Actions\AttachImage;
 use App\Modules\Media\Enums\MediaStatus;
+use App\Modules\Media\Filament\Forms\ImageUpload;
 use App\Modules\Media\Jobs\ProcessImage;
 use App\Modules\Media\Models\Media;
 use App\Modules\Media\Support\ImageNormalizer;
@@ -106,4 +107,8 @@ it('keeps a category banner pair as separate desktop and mobile images', functio
 
     expect($desktop->fresh()->url(1920, 'avif'))->toContain('category_banner_desktop-1920-avif.avif')
         ->and($mobile->fresh()->url(800, 'webp'))->toContain('category_banner_mobile-800-webp.webp');
+});
+
+it('previews uploads in the admin at their public address, never a signed link to the bucket', function (): void {
+    expect(ImageUpload::make(Brand::IMAGE_LOGO, 'brand_logo')->getVisibility())->toBe('public');
 });

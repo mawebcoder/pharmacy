@@ -321,3 +321,12 @@ it('renders a listing page in a fixed number of queries', function (int $product
     // counters since S29–S30).
     expect($queries)->toBeLessThan(50);
 })->with([3, 20]);
+
+it('glides back to the top of the list after a filter change, but not when more products load', function (): void {
+    livewire(ProductListingComponent::class)
+        ->call('loadMore')
+        ->assertNotDispatched('listing-filtered')
+        ->set('inStock', true)
+        ->assertDispatched('listing-filtered')
+        ->assertSeeHtml('x-on:listing-filtered.window');
+});

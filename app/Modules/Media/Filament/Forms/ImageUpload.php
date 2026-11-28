@@ -12,7 +12,8 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 /**
  * An admin upload field for one image collection, validated by its preset (roadmap D14.2, D13.10).
  * The Filament media plugin stores the file when the form is saved; processing then runs on the "media" queue.
- * The original stays private, so the preview uses a generated WebP size once it exists, else a temporary URL.
+ * Images are public on their disk (owner, 2026-11-28: the whole bucket is public behind the CDN), so the preview is
+ * a generated WebP size at its normal address (AWS_URL), never a signed link to the bucket.
  */
 final class ImageUpload
 {
@@ -23,7 +24,7 @@ final class ImageUpload
 
         return SpatieMediaLibraryFileUpload::make($collection)
             ->collection($collection)
-            ->visibility('private')
+            ->visibility('public')
             // WebP: the upload widget (FilePond) cannot draw AVIF previews.
             ->conversion($settings->conversionName($previewWidth, 'webp'))
             // image() turns on the preview; the preset's own types then replace its "image/*".

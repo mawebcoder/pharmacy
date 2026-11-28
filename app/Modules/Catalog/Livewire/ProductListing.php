@@ -128,11 +128,16 @@ final class ProductListing extends Component
             : null;
     }
 
+    /**
+     * A changed filter, sort or search starts the list again from its first page, and the page glides back to the top
+     * of the list (owner, 2026-11-28; the view listens for "listing-filtered").
+     */
     public function updated(string $property): void
     {
         if ($property !== 'shown') {
             $this->shown = self::PER_PAGE;
             unset($this->result);
+            $this->dispatch('listing-filtered');
         }
     }
 

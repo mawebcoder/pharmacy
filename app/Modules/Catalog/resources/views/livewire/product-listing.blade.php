@@ -7,7 +7,20 @@
     $hasFilters = $result->facets !== [] || ! $result->degraded;
 @endphp
 
-<section aria-labelledby="listing-title" class="space-y-4">
+{{-- After a filter change the page glides up to the top of the list, just below the sticky header; only up, never
+     down, and at once for visitors who asked for less motion. --}}
+<section
+    aria-labelledby="listing-title"
+    class="space-y-4"
+    x-data
+    x-on:listing-filtered.window="
+        const offset = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 0) + 12;
+        const top = $el.getBoundingClientRect().top + window.scrollY - offset;
+        if (window.scrollY > top) {
+            window.scrollTo({ top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        }
+    "
+>
     <h2 id="listing-title" class="sr-only">فهرست محصولات</h2>
 
     @if ($result->degraded)
