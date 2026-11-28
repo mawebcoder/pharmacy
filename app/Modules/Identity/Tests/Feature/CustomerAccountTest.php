@@ -175,7 +175,7 @@ describe('profile', function (): void {
 
 it('renders the storefront light only, ignoring an old theme cookie', function (): void {
     $this->withCookie('theme', 'dark')->get('/')
-        ->assertSee('<meta name="theme-color" content="#ffffff">', false)
+        ->assertSee('<meta name="theme-color" content="#0f766e">', false)
         ->assertDontSee('class="dark"', false);
 });
 

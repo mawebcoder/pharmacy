@@ -7,6 +7,16 @@
 @source '../../app/Modules/**/*.blade.php';
 
 /*
+| TallStackUI's stylesheet scans every one of its components (`@source '../src/'`), which put the classes of ~50 unused
+| components in our CSS. Only the components the storefront uses, and the ones they render inside, stay in the scan.
+| Using a new <x-ts-*> component? Take it out of these lists.
+*/
+@source not '../../vendor/tallstackui/tallstackui/src/resources/views/components/{accordion,alert,avatar,back-to-top,banner,boolean,breadcrumbs,calendar,card,carousel,chart,clipboard,command-palette,debug,dial,dropdown,editor,environment,gallery,kbd,key-value,layout,link,list,qr-code,reaction,signature,stats,step,swap,tab,table,theme-switch,timeline,tooltip}';
+@source not '../../vendor/tallstackui/tallstackui/src/resources/views/components/form/{autocomplete,checkbox,color,currency,date,input-select,password,pin,radio,range,tag,time,upload}*';
+@source not '../../vendor/tallstackui/tallstackui/src/Components/{Accordion,Alert,Avatar,BackToTop,Banner,Boolean,Breadcrumbs,Calendar,Card,Carousel,Chart,Clipboard,CommandPalette,Dial,Dropdown,Editor,Environment,Gallery,Kbd,KeyValue,Layout,Link,List,QrCode,Reaction,Signature,Stats,Step,Swap,Tab,Table,ThemeSwitch,Timeline,Tooltip}';
+@source not '../../vendor/tallstackui/tallstackui/src/Components/Form/{Autocomplete,Checkbox,Color,Currency,Date,InputSelect,Password,Pin,Radio,Range,Tag,Time,Upload}*';
+
+/*
 | Design system (roadmap B3; owner, 2026-11-14). Templates use only these token names, never raw hex values, so a colour
 | changes in one place. Light theme only (owner, 2026-11-28: dark mode removed).
 |

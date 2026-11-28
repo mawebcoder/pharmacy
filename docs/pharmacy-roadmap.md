@@ -136,7 +136,7 @@ Not part of the MVP; planned for P2, after launch.
 | `danger-600` | `#DC2626` | Errors, out of stock |
 | `rx-600` | `#7C3AED` | Prescription badge |
 
-**Dark mode: removed from the storefront** (owner, 2026-11-28; it was added on 2026-11-14): the storefront is light only. There is no header switch and no «ظاهر سایت» choice on «اطلاعات حساب», and `customers.theme` is dropped. The browser's address bar takes the header colour (`<meta name="theme-color" content="#ffffff">`). Admin keeps Filament's own light/dark switch.
+**Dark mode: removed from the storefront** (owner, 2026-11-28; it was added on 2026-11-14): the storefront is light only. There is no header switch and no «ظاهر سایت» choice on «اطلاعات حساب», and `customers.theme` is dropped. The browser bar is the brand teal (`theme-color` `#0f766e`, also in `public/manifest.webmanifest`; desktop Chrome tabs ignore it). Admin keeps Filament's own light/dark switch.
 
 **Design system** (owner, 2026-11-14): the token block at the top of `resources/css/app.css` documents colour roles, shape (12 px radius; borders instead of shadows on cards), type (Vazirmatn 12–24 px, line-height 1.7, weight for emphasis, never italics), spacing (16/24/32 px gutters, max width 1280 px, touch targets ≥ 44 px) and the **RTL rules**: logical utilities only (`ms-/me-`, `ps-/pe-`, `start-/end-`, `text-start`); never `flex-row-reverse` to fix direction (rows already run right to left); previous points right, next points left; carousels and progress run right to left; no letter-spacing on Persian; Persian digits in everything shown, including prefilled inputs; mobiles, postal codes, emails, URLs and codes in `dir="ltr"` / `<bdi>`; labels, help and errors at the start, under the field.
 

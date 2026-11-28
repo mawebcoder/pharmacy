@@ -3,8 +3,10 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-        {{-- The browser's address bar takes the header's colour (bg-card), so it reads as part of the page. --}}
-        <meta name="theme-color" content="#ffffff">
+        {{-- The browser bar in the brand teal (primary-700; owner, 2026-11-28). Chrome uses it on Android and in the
+             installed app (manifest); desktop Chrome tabs keep the browser's own theme. --}}
+        <meta name="theme-color" content="#0f766e">
+        <link rel="manifest" href="/manifest.webmanifest">
         <link rel="icon" href="/favicon.ico" sizes="48x48">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -12,7 +14,7 @@
         <x-seo::head :title="$title ?? null" :description="$description ?? null" :seo="$seo ?? null" />
 
         @fonts
-        <tallstackui:script />
+        <x-layout.tallstackui-script />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         @livewireStyles

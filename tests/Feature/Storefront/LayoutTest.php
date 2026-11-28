@@ -25,6 +25,15 @@ it('renders the home page right-to-left in Persian inside the storefront layout'
         ->assertSee('ضمانت بازگشت');
 });
 
+it('loads only the TallStackUI scripts the storefront uses', function (): void {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('/tallstackui/script/tallstackui-select-', false)
+        ->assertSee('<link rel="manifest" href="/manifest.webmanifest">', false)
+        ->assertDontSee('/tallstackui/script/tallstackui-editor-', false)
+        ->assertDontSee('/tallstackui/script/tallstackui-chart-', false);
+});
+
 it('shows the five bottom navigation items and marks the current page', function (): void {
     // Guests see «ورود» in place of «حساب من» (S19).
     $this->get('/')
