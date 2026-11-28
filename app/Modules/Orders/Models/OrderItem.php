@@ -187,6 +187,20 @@ final class OrderItem extends Model
         return $value === null ? null : (string) $value;
     }
 
+    /**
+     * The AVIF copy of the snapshot photo, offered before the WebP in a <picture>: product photos have always had AVIF
+     * files of the same width beside the WebP ("…-product-320-webp.webp" → "…-product-320-avif.avif"). Null for any
+     * other URL.
+     */
+    public function getImageAvifUrl(): ?string
+    {
+        $url = $this->getImageUrl();
+
+        return $url !== null && preg_match('#-product-\d+-webp\.webp$#', $url) === 1
+            ? (string) preg_replace('#-webp\.webp$#', '-avif.avif', $url)
+            : null;
+    }
+
     public function setImageUrl(?string $value): static
     {
         return $this->setAttribute(self::COLUMN_IMAGE_URL, $value);

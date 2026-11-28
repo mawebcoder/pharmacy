@@ -24,6 +24,7 @@ it('renders a lazy responsive picture with srcset, sizes and intrinsic size, wit
     $html = Blade::render('<x-media::picture :media="$logo" slot-name="brand-logo" alt="اوسرین" />', ['logo' => $logo]);
 
     expect($html)
+        ->toContain('<source type="image/avif" srcset="'.$logo->url(160, 'avif').' 160w, '.$logo->url(320, 'avif').' 320w"')
         ->toContain('srcset="'.$logo->url(160, 'webp').' 160w, '.$logo->url(320, 'webp').' 320w"')
         ->toContain('sizes="(min-width: 768px) 128px, 112px"')
         ->toContain('width="320"')
@@ -31,6 +32,15 @@ it('renders a lazy responsive picture with srcset, sizes and intrinsic size, wit
         ->toContain('alt="اوسرین"')
         ->toContain('loading="lazy"')
         ->not->toContain('background-color');
+});
+
+it('offers AVIF only once its files exist, so an image made before AVIF was added still shows its WebP', function (): void {
+    $logo = app(AttachImage::class)(Brand::factory()->create(), Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
+    $logo->markAsConversionNotGenerated('brand_logo-320-avif')->save();
+
+    $html = Blade::render('<x-media::picture :media="$logo" slot-name="brand-logo" />', ['logo' => $logo->fresh()]);
+
+    expect($html)->not->toContain('image/avif')->toContain('src="'.$logo->url(320, 'webp').'"');
 });
 
 it('loads a priority image eagerly with high fetch priority', function (): void {
@@ -84,6 +94,11 @@ it('never offers widths larger than the original, because copies are not enlarge
         public function url(int $width, string $format): string
         {
             return "/p-{$width}.{$format}";
+        }
+
+        public function hasFile(int $width, string $format): bool
+        {
+            return true;
         }
 
         public function svgUrl(): string

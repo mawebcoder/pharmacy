@@ -14,16 +14,21 @@ use App\Modules\Content\Exceptions\BannerChangeRefused;
 use App\Modules\Content\Filament\Resources\Pages\PageResource;
 use App\Modules\Content\Filament\Resources\Pages\Pages\CreatePage;
 use App\Modules\Content\Filament\Resources\Pages\Pages\EditPage;
+use App\Modules\Content\Jobs\ConvertPageImages;
 use App\Modules\Content\Models\Banner;
 use App\Modules\Content\Models\HomeWidget;
 use App\Modules\Content\Models\Page;
 use App\Modules\Content\Queries\PlaceBanners;
+use App\Modules\Content\Support\PageContent;
 use App\Modules\Content\Support\PageHtml;
+use App\Modules\Content\Support\PageImages;
 use App\Modules\Identity\Database\Seeders\RolesSeeder;
 use App\Modules\Identity\Enums\AdminRole;
 use App\Modules\Identity\Models\AdminUser;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Livewire\livewire;
 
@@ -212,5 +217,48 @@ describe('the admin', function (): void {
         $this->actingAs(pageAdmin(AdminRole::Operator), 'admin')
             ->get(PageResource::getUrl('index'))
             ->assertForbidden();
+    });
+});
+
+describe('page images', function (): void {
+    beforeEach(function (): void {
+        Storage::fake(PageContent::disk());
+        Storage::disk(PageContent::disk())->put('pages/photo.png', testImage(400, 300)->getContent());
+    });
+
+    function pageWithPhoto(): Page
+    {
+        return app(SavePage::class)(PageData::fromArray([
+            Page::COLUMN_TITLE => 'درباره ما',
+            Page::COLUMN_SLUG => 'with-photo',
+            Page::COLUMN_BODY => '<p>متن</p><img data-id="pages/photo.png" src="/storage/pages/photo.png" alt="داروخانه">',
+            Page::COLUMN_IS_ACTIVE => true,
+        ]));
+    }
+
+    it('makes an AVIF copy of each image in the background and offers it first, lazily', function (): void {
+        pageWithPhoto();
+
+        Storage::disk(PageContent::disk())->assertExists(PageImages::avifPath('pages/photo.png'));
+        expect(Storage::disk(PageContent::disk())->mimeType(PageImages::avifPath('pages/photo.png')))->toBe('image/avif');
+        $html = (string) $this->get('/pages/with-photo')
+            ->assertOk()
+            ->assertSee('<picture><source type="image/avif" srcset="', false)
+            ->assertSee('loading="lazy"', false)
+            ->getContent();
+
+        // A browser without AVIF skips the <source> and loads the uploaded file from the <img>.
+        preg_match('#<picture>.*?<img[^>]* src="([^"]+)"#s', $html, $fallback);
+        expect($fallback[1] ?? '')->toContain('photo.png')->not->toContain('.avif');
+    });
+
+    it('queues the copy on the media queue, and shows the uploaded image lazily until it exists', function (): void {
+        Queue::fake();
+
+        pageWithPhoto();
+
+        Queue::assertPushedOn('media', ConvertPageImages::class);
+        $this->get('/pages/with-photo')->assertOk()->assertDontSee('image/avif', false)->assertSee('loading="lazy"', false);
+        $this->artisan('content:page-images')->expectsOutputToContain('1 pages queued')->assertSuccessful();
     });
 });

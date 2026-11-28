@@ -54,6 +54,7 @@ it('processes an image into public sizes with its placeholder data, keeping the 
     $conversionsPath = $media->uuid.'/'.$media->getContentHash().'/';
     Storage::disk('media')->assertExists($conversionsPath.'image-brand_logo-160-webp.webp');
     Storage::disk('media')->assertExists($conversionsPath.'image-brand_logo-320-webp.webp');
+    Storage::disk('media')->assertExists($conversionsPath.'image-brand_logo-320-avif.avif');
     Storage::disk('local')->assertExists($media->uuid.'/image.png');
     Storage::disk('media')->assertMissing($media->uuid.'/image.png');
     expect($media->url(320, 'webp'))->toContain($conversionsPath.'image-brand_logo-320-webp.webp');

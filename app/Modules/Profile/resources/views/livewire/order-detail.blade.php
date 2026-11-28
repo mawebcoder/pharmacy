@@ -161,7 +161,7 @@
                         <li wire:key="order-item-{{ $item->getId() }}" class="flex gap-3 py-3">
                             <span class="size-16 shrink-0 overflow-hidden rounded-md border border-line-200 bg-media">
                                 @if ($item->getImageUrl())
-                                    <img src="{{ $item->getImageUrl() }}" alt="" width="64" height="64" class="size-full object-contain" loading="lazy">
+                                    <picture>@if ($item->getImageAvifUrl())<source type="image/avif" srcset="{{ $item->getImageAvifUrl() }}">@endif<img src="{{ $item->getImageUrl() }}" alt="" width="64" height="64" class="size-full object-contain" loading="lazy" decoding="async"></picture>
                                 @endif
                             </span>
                             <div class="min-w-0 flex-1">

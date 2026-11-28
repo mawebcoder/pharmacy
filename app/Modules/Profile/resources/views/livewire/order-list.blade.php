@@ -73,7 +73,7 @@
                             @foreach ($order->items->take(4) as $item)
                                 <span class="size-11 overflow-hidden rounded-full border-2 border-card bg-media ring-1 ring-line-200">
                                     @if ($item->getImageUrl())
-                                        <img src="{{ $item->getImageUrl() }}" alt="" width="44" height="44" class="size-full object-contain" loading="lazy">
+                                        <picture>@if ($item->getImageAvifUrl())<source type="image/avif" srcset="{{ $item->getImageAvifUrl() }}">@endif<img src="{{ $item->getImageUrl() }}" alt="" width="44" height="44" class="size-full object-contain" loading="lazy" decoding="async"></picture>
                                     @endif
                                 </span>
                             @endforeach

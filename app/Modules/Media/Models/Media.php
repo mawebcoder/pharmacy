@@ -243,6 +243,13 @@ final class Media extends SpatieMedia implements StoredImage
         return $preset instanceof ImagePreset ? $this->getUrl($preset->conversionName($width, $format)) : null;
     }
 
+    public function hasFile(int $width, string $format): bool
+    {
+        $preset = $this->getPreset();
+
+        return $preset instanceof ImagePreset && $this->hasGeneratedConversion($preset->conversionName($width, $format));
+    }
+
     /**
      * Where the sanitized SVG is published on the conversions disk (relative path).
      */
