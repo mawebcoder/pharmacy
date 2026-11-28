@@ -131,7 +131,7 @@ it('falls back to the pinned categories and brands, in the admin\'s order, when 
     ]);
     waitForSearchIndex();
 
-    $suggestions = app(SearchSuggestionsQuery::class)->for('زززز');
+    $suggestions = app(SearchSuggestionsQuery::class)->for('ژخپچ');
 
     expect($suggestions->isEmpty())->toBeTrue()
         ->and($suggestions->pinnedCategories)->toBeTrue()
@@ -139,7 +139,7 @@ it('falls back to the pinned categories and brands, in the admin\'s order, when 
         ->and($suggestions->pinnedBrands)->toBeTrue()
         ->and($suggestions->brands->map->getNameFa()->all())->toBe(['نیلوفر']);
 
-    livewire(InstantSearch::class)->set('value', 'زززز')->assertSee('دسته‌بندی‌های پیشنهادی')->assertSee('برندهای پیشنهادی')->assertSee('مادر و کودک');
+    livewire(InstantSearch::class)->set('value', 'ژخپچ')->assertSee('دسته‌بندی‌های پیشنهادی')->assertSee('برندهای پیشنهادی')->assertSee('مادر و کودک');
     livewire(InstantSearch::class)->set('popularRequested', true)->assertSee('مراقبت پوست')->assertSee('نیلوفر');
 });
 

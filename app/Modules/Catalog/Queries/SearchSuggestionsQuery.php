@@ -50,8 +50,8 @@ final readonly class SearchSuggestionsQuery
             return new SearchSuggestions(new Collection, new Collection, new Collection, new Collection);
         }
 
-        /** @var array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>} $ids */
-        $ids = Cache::remember('catalog:suggestions:'.md5($normalized), now()->addMinutes(10), fn (): array => $this->ids($normalized));
+        /** @var array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>, searched_for: string|null} $ids */
+        $ids = Cache::remember('catalog:suggestions:'.md5($normalized.'|'.$text), now()->addMinutes(10), fn (): array => $this->ids($normalized, $text));
 
         // Categories, then subcategories (owner, 2026-11-15: their own table), in one row of at most 8.
         /** @var Collection<int, Category|Subcategory> $categories */
@@ -69,17 +69,18 @@ final readonly class SearchSuggestionsQuery
             categories: $categories->isEmpty() ? $pinnedCategories : $categories,
             tags: $this->inOrder(Tag::query()->with('media')->whereKey($ids['tags'])->get(), $ids['tags']),
             productsAvailable: $ids['available'],
+            searchedFor: $ids['searched_for'],
             pinnedCategories: $categories->isEmpty(),
             pinnedBrands: $brands->isEmpty(),
         );
     }
 
     /**
-     * @return array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>}
+     * @return array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>, searched_for: string|null}
      */
-    private function ids(string $normalized): array
+    private function ids(string $normalized, string $text): array
     {
-        $found = $this->search($normalized);
+        [$found, $searchedFor] = $this->searchOrRetry($normalized, $text);
         [$productCategories, $productBrands, $productSubcategories] = $this->categoriesAndBrandsOf($found['products']);
 
         return [
@@ -89,25 +90,66 @@ final readonly class SearchSuggestionsQuery
             'subcategories' => array_slice(array_values(array_intersect(array_unique([...$found['subcategories'], ...$productSubcategories]), $this->tree->visibleSubcategoryIds())), 0, self::MAX_SHORTCUTS),
             'brands' => array_slice(array_values(array_unique([...$found['brands'], ...$productBrands])), 0, self::MAX_SHORTCUTS),
             'tags' => $found['tags'],
+            'searched_for' => $searchedFor,
         ];
+    }
+
+    /**
+     * The search, and when it finds nothing at all the same second tries as the product list (S39b): the sound key
+     * against the phonetic fields, the other keyboard layout (named, so the panel can say what it showed), then Persian
+     * typed in Latin letters.
+     *
+     * @return array{0: array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>}, 1: string|null}
+     */
+    private function searchOrRetry(string $normalized, string $text): array
+    {
+        $found = $this->search($normalized);
+        $nothing = fn (array $result): bool => $result['products'] === [] && $result['brands'] === [] && $result['categories'] === [] && $result['subcategories'] === [] && $result['tags'] === [];
+
+        if (! $nothing($found) || ! $found['available'] || config('scout.driver') !== 'meilisearch') {
+            return [$found, null];
+        }
+
+        $phonetic = $this->search(SearchText::phonetic($normalized), ['phonetic']);
+
+        if (! $nothing($phonetic)) {
+            return [$phonetic, null];
+        }
+
+        $otherLayout = SearchText::otherLayout($text);
+        $converted = $otherLayout === null ? '' : app(SearchQueryText::class)->clean($otherLayout);
+
+        if ($converted !== '' && ! $nothing($result = $this->search($converted))) {
+            return [$result, $otherLayout];
+        }
+
+        $finglish = SearchText::finglish($text);
+
+        if ($finglish !== null && SearchText::phonetic($finglish) !== '' && ! $nothing($result = $this->search(SearchText::phonetic($finglish), ['phonetic']))) {
+            return [$result, null];
+        }
+
+        return [$found, null];
     }
 
     /**
      * Products, brands and categories from Meilisearch in one request; when that fails (e.g. the brand or category
      * index does not exist yet), products alone and brands and categories matched in memory.
      *
+     * @param  non-empty-list<non-empty-string>|null  $attributes  the attributes to search on; null: all searchable ones
      * @return array{products: list<int>, available: bool, brands: list<int>, categories: list<int>, subcategories: list<int>, tags: list<int>}
      */
-    private function search(string $normalized): array
+    private function search(string $normalized, ?array $attributes = null): array
     {
         if (config('scout.driver') === 'meilisearch') {
-            $query = fn (Product|Brand|Category|Subcategory|Tag $model, int $limit): SearchQuery => (new SearchQuery)
+            $query = fn (Product|Brand|Category|Subcategory|Tag $model, int $limit): SearchQuery => tap((new SearchQuery)
                 ->setIndexUid($model->indexableAs())
                 ->setQuery($normalized)
+                ->setLocales(ProductListing::LOCALES)
                 // Hidden items are in the indexes too (owner, 2026-11-27); shoppers see only these.
                 ->setFilter([$model instanceof Product ? 'is_visible = true' : 'is_active = true'])
                 ->setLimit(max(1, $limit))
-                ->setAttributesToRetrieve(['id']);
+                ->setAttributesToRetrieve(['id']), fn (SearchQuery $search) => $attributes === null ? null : $search->setAttributesToSearchOn($attributes));
 
             try {
                 /** @var array{results: list<array{hits: list<array{id: int}>}>} $response */

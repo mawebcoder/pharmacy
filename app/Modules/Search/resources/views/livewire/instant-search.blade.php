@@ -186,6 +186,10 @@
                 aria-label="پیشنهادهای جستجو"
                 class="z-50 overflow-y-auto bg-card p-2 max-xl:min-h-0 max-xl:flex-1 max-xl:px-3 xl:absolute xl:top-full xl:left-1/2 xl:mt-2 xl:w-[44rem] xl:-translate-x-1/2 xl:max-h-[70vh] xl:rounded-card xl:border xl:border-line-200 xl:shadow-card"
             >
+                {{-- Typed on the wrong keyboard layout (S39b): say what was searched instead. --}}
+                @if ($suggestions->searchedFor !== null)
+                    <p class="px-3 pt-2 pb-1 text-sm text-ink-500">نتایج برای <span class="font-bold text-ink-900">«{{ $suggestions->searchedFor }}»</span></p>
+                @endif
                 @if ($suggestions->isEmpty())
                     <p class="px-3 py-4 text-sm text-ink-500">
                         @if (! $suggestions->productsAvailable)

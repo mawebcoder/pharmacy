@@ -25,5 +25,14 @@ final readonly class ListingResult
         public ?int $priceCeiling,
         public array $flagCounts,
         public bool $degraded,
+        public ?string $searchedFor = null,
     ) {}
+
+    /**
+     * The same result, found by searching another text than the one typed (the other keyboard layout).
+     */
+    public function searchedFor(string $text): self
+    {
+        return new self($this->products, $this->facets, $this->priceFloor, $this->priceCeiling, $this->flagCounts, $this->degraded, $text);
+    }
 }

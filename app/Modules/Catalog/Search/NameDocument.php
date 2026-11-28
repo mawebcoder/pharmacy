@@ -19,14 +19,15 @@ final class NameDocument
      * The slugs and update time are for sitemap.xml, read from the index (owner, 2026-11-27); a subcategory's address
      * also needs its category's slug.
      *
-     * @return array{id: int, name_fa: string, name_en: string, is_active: bool, slug: string, category_slug: string|null, updated_at: int}
+     * @return array{id: int, name_fa: string, name_en: string, phonetic: string, is_active: bool, slug: string, category_slug: string|null, updated_at: int}
      */
     public static function for(int $id, string $nameFa, ?string $nameEn, bool $isActive, string $slug, ?CarbonInterface $updatedAt, ?string $categorySlug = null): array
     {
         return [
             'id' => $id,
             'name_fa' => SearchText::forIndex($nameFa),
-            'name_en' => SearchText::normalize((string) $nameEn),
+            'name_en' => SearchText::forIndex((string) $nameEn),
+            'phonetic' => SearchText::phoneticForIndex($nameFa.' '.$nameEn),
             'is_active' => $isActive,
             'slug' => $slug,
             'category_slug' => $categorySlug,
@@ -42,7 +43,12 @@ final class NameDocument
     public static function indexSettings(): array
     {
         return [
-            'searchableAttributes' => ['name_fa', 'name_en'],
+            'searchableAttributes' => ['name_fa', 'name_en', 'phonetic'],
+            'localizedAttributes' => [
+                ['attributePatterns' => ['name_fa'], 'locales' => ['pes']],
+                ['attributePatterns' => ['name_en'], 'locales' => ['eng']],
+                ['attributePatterns' => ['phonetic'], 'locales' => ['pes', 'eng']],
+            ],
             'filterableAttributes' => ['is_active'],
             'typoTolerance' => [
                 // One typo from 3 letters (owner, 2026-11-28): many Persian product words are 3 letters («کرم»، «قرص»), so
