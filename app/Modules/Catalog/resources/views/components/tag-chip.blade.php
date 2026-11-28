@@ -10,7 +10,7 @@
 
 <a
     href="{{ route('tags.show', $tag) }}"
-    wire:navigate
+    wire:navigate.hover
     @if ($current) aria-current="page" @endif
     {{ $attributes->class([
         'flex h-11 items-center gap-2 rounded-full border px-4 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:outline-primary-700',

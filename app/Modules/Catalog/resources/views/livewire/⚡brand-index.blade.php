@@ -52,7 +52,7 @@ new #[Title('برندها')] class extends Component
         <ul class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
             @foreach (array_slice($this->brands, 0, $shown) as $brand)
                 <li wire:key="brand-{{ $brand->getId() }}">
-                    <a href="{{ route('brands.show', $brand) }}" wire:navigate class="group flex h-full flex-col items-center gap-1 rounded-card p-4 text-center focus-visible:outline-2 focus-visible:outline-primary-700">
+                    <a href="{{ route('brands.show', $brand) }}" wire:navigate.hover class="group flex h-full flex-col items-center gap-1 rounded-card p-4 text-center focus-visible:outline-2 focus-visible:outline-primary-700">
                         {{-- No border or card around the tile; the logo (padded to a white square on upload) with rounded
                              corners, not a circle (owner, 2026-11-27); the first two letters without a logo. --}}
                         @if ($brand->getLogo())

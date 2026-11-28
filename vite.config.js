@@ -2,6 +2,62 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import tailwindcss from '@tailwindcss/vite';
+import { transform } from 'lightningcss';
+
+/**
+ * The storefront is light only (owner, 2026-11-28), but TallStackUI's components carry dark: classes, so Tailwind
+ * still writes their rules (about 40% of the CSS). This drops every selector that needs the `.dark` class before Vite
+ * minifies and hashes the file. lightningcss comes with Vite.
+ */
+const containsDarkClass = (node) => {
+    if (Array.isArray(node)) {
+        return node.some(containsDarkClass);
+    }
+
+    if (node === null || typeof node !== 'object') {
+        return false;
+    }
+
+    return (node.type === 'class' && node.name === 'dark') || Object.values(node).some(containsDarkClass);
+};
+
+const dropDarkRules = () => ({
+    name: 'drop-dark-rules',
+    apply: 'build',
+    // After Tailwind (also "pre", listed before this) and before Vite minifies and hashes the file.
+    enforce: 'pre',
+    transform(code, id) {
+        if (!id.split('?')[0].endsWith('.css')) {
+            return null;
+        }
+
+        const result = transform({
+            filename: id,
+            code: Buffer.from(code),
+            visitor: {
+                Rule: {
+                    style(rule) {
+                        const selectors = rule.value.selectors.filter((selector) => !containsDarkClass(selector));
+
+                        if (selectors.length === rule.value.selectors.length) {
+                            return undefined;
+                        }
+
+                        if (selectors.length === 0) {
+                            return [];
+                        }
+
+                        rule.value.selectors = selectors;
+
+                        return rule;
+                    },
+                },
+            },
+        });
+
+        return { code: result.code.toString(), map: null };
+    },
+});
 
 export default defineConfig({
     plugins: [
@@ -20,6 +76,7 @@ export default defineConfig({
             ],
         }),
         tailwindcss(),
+        dropDarkRules(),
     ],
     server: {
         // Listen on all interfaces so the dev server is reachable from the app container's published port.

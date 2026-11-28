@@ -10,6 +10,7 @@ import searchHistory from './components/search-history';
 import slider from './components/slider';
 import swipeClose from './components/swipe-close';
 import swipeToasts from './components/toast-swipe';
+import touchPrefetch from './components/touch-prefetch';
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('jalaliDate', jalaliDate);
@@ -65,6 +66,7 @@ document.addEventListener('alpine:init', () => {
 
 swipeToasts();
 imagePlaceholders();
+touchPrefetch();
 
 // A page restored from the back/forward cache shows old quantities: refresh them from the lightweight endpoint.
 window.addEventListener('pageshow', async (event) => {

@@ -47,15 +47,17 @@ export default (count = 0) => ({
         return `${persianDigits(this.active + 1)} / ${persianDigits(this.count)}`;
     },
 
+    /**
+     * The page behind stops scrolling through x-trap.noscroll on the full-screen view. Locking it here as well broke
+     * scrolling after closing: the trap saved this "hidden" as the page's own value and put it back on release.
+     */
     open() {
         this.zoomed = false;
         this.fullscreen = true;
-        document.documentElement.style.overflow = 'hidden';
     },
 
     close() {
         this.fullscreen = false;
-        document.documentElement.style.overflow = '';
         this.$refs.slider?.focus();
     },
 

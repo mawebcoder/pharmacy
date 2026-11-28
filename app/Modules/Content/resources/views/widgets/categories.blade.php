@@ -15,7 +15,7 @@
                 <ul class="swiper-wrapper">
                     @foreach ($categories as $category)
                         <li wire:key="widget-{{ $widget->getId() }}-category-{{ $category->getId() }}" class="swiper-slide w-[30%] md:w-[calc((100%-64px)/5)] xl:w-[calc((100%-80px)/6)]">
-                            <a href="{{ route('category.show', $category->getSlug()) }}" wire:navigate class="flex flex-col items-center gap-2 rounded-card p-2 text-center select-none hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
+                            <a href="{{ route('category.show', $category->getSlug()) }}" wire:navigate.hover class="flex flex-col items-center gap-2 rounded-card p-2 text-center select-none hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700">
                                 <span class="grid size-20 place-items-center rounded-full bg-primary-50 xl:size-24">
                                     @if ($category->getIcon())
                                         <x-media::picture :media="$category->getIcon()" slot-name="category-icon" alt="" class="size-12 object-contain xl:size-14" />

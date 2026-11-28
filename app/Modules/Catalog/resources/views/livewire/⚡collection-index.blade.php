@@ -46,7 +46,7 @@ new #[Title('کالکشن‌ها')] class extends Component
         <ul class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             @foreach ($this->collections as $collection)
                 <li wire:key="collection-{{ $collection->getId() }}">
-                    <a href="{{ route('collections.show', $collection) }}" wire:navigate class="flex min-h-16 items-center gap-3 rounded-card border border-line-200 bg-card px-4 py-3 hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
+                    <a href="{{ route('collections.show', $collection) }}" wire:navigate.hover class="flex min-h-16 items-center gap-3 rounded-card border border-line-200 bg-card px-4 py-3 hover:border-primary-700 focus-visible:outline-2 focus-visible:outline-primary-700">
                         <span class="grid size-10 shrink-0 place-items-center rounded-full bg-primary-50">
                             @if ($collection->getIcon())
                                 <x-media::picture :media="$collection->getIcon()" slot-name="category-chip" alt="" class="size-6 object-contain" />

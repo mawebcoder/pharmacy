@@ -136,7 +136,7 @@ Not part of the MVP; planned for P2, after launch.
 | `danger-600` | `#DC2626` | Errors, out of stock |
 | `rx-600` | `#7C3AED` | Prescription badge |
 
-**Dark mode: removed from the storefront** (owner, 2026-11-28; it was added on 2026-11-14): the storefront is light only. There is no header switch and no «ظاهر سایت» choice on «اطلاعات حساب», and `customers.theme` is dropped. The browser's address bar takes the header colour (`<meta name="theme-color" content="#ffffff">`). Admin keeps Filament's own light/dark switch.
+**Dark mode: removed from the storefront** (owner, 2026-11-28; it was added on 2026-11-14): the storefront is light only. There is no header switch and no «ظاهر سایت» choice on «اطلاعات حساب», and `customers.theme` is dropped. The browser bar is the brand teal (`theme-color` `#0f766e`, also in `public/manifest.webmanifest`; desktop Chrome tabs ignore it). Admin keeps Filament's own light/dark switch.
 
 **Design system** (owner, 2026-11-14): the token block at the top of `resources/css/app.css` documents colour roles, shape (12 px radius; borders instead of shadows on cards), type (Vazirmatn 12–24 px, line-height 1.7, weight for emphasis, never italics), spacing (16/24/32 px gutters, max width 1280 px, touch targets ≥ 44 px) and the **RTL rules**: logical utilities only (`ms-/me-`, `ps-/pe-`, `start-/end-`, `text-start`); never `flex-row-reverse` to fix direction (rows already run right to left); previous points right, next points left; carousels and progress run right to left; no letter-spacing on Persian; Persian digits in everything shown, including prefilled inputs; mobiles, postal codes, emails, URLs and codes in `dir="ltr"` / `<bdi>`; labels, help and errors at the start, under the field.
 
@@ -286,6 +286,10 @@ The home page is built by the admin from widgets (D3.6 «Home widgets», decided
 8. Trust block (licences, pharmacist, delivery, returns; 4 icons) + trust counters.
 
 Rails: mobile shows 2.3 cards (peek), tablet 4, desktop 5–6; arrows on desktop only.
+
+**Lazy sections** (owner, 2026-11-28): only the first 2 widgets come with the page. Every later widget is a placeholder of its own height at each screen width (no queries for it yet) and loads from the server once the visitor scrolls within 300 px of it (`content::home-widget`, Alpine `x-intersect.margin`); one that has nothing to show by then leaves no trace. Images load lazily too.
+
+**Prefetching pages** (owner, 2026-11-28): product cards, «مشاهده همه», the home brand, category, tag and banner links and the brand, category and collection list pages use `wire:navigate.hover`: the next page starts loading after 60 ms of hover or on focus, and on phones as soon as a finger touches the link (`resources/js/components/touch-prefetch.js`; a finger that moves over 10 px is scrolling and loads nothing). Livewire keeps the page 30 s for the click. Not on the header category menu (a mouse crossing it would load many pages), and never every link on screen (server load).
 
 ### B9.3 Category / brand / tag / search PLP
 

@@ -20,6 +20,8 @@ use App\Modules\Content\Models\BannerPlacement;
 use App\Modules\Content\Models\HomeWidget;
 use App\Modules\Content\Queries\HomeWidgetItems;
 
+use function Pest\Livewire\livewire;
+
 /**
  * @param  array<string, mixed>  $data
  */
@@ -101,14 +103,40 @@ describe('home page', function (): void {
     it('leaves out widgets with nothing to show and then shows the welcome', function (): void {
         HomeWidget::factory()->ofType(HomeWidgetType::Collection, ['collection_id' => ProductCollection::factory()->create()->getId()], 'کالکشن خالی')->create();
         HomeWidget::factory()->ofType(HomeWidgetType::Brands, ['brand_ids' => [Brand::factory()->inactive()->create()->getId()]], 'برندهای خاموش')->create();
-        HomeWidget::factory()->ofType(HomeWidgetType::Slider, title: 'اسلایدر بی‌بنر')->create();
 
         $this->get(route('home'))
             ->assertSee('ضمانت اصالت کالا')
             ->assertDontSee('کالکشن خالی')
-            ->assertDontSee('برندهای خاموش')
-            ->assertDontSee('اسلایدر بی‌بنر');
+            ->assertDontSee('برندهای خاموش');
     });
+
+    it('sends only the first widgets with the page and loads each later one when it is reached', function (): void {
+        titledWidget('اول', 1);
+        titledWidget('دوم', 2);
+        $third = titledWidget('سوم', 3);
+
+        $this->get(route('home'))
+            ->assertSeeInOrder(['اول', 'دوم'])
+            ->assertDontSee('سوم')
+            ->assertSee('x-intersect.once.margin.300px="$wire.load()"', escape: false);
+
+        livewire('content::home-widget', ['widgetId' => $third->getId(), 'type' => HomeWidgetType::Trust->value])
+            ->assertDontSee('سوم')
+            ->call('load')
+            ->assertSee('سوم')
+            ->assertDontSee('x-intersect', escape: false);
+    });
+
+    it('loads nothing for a later widget that has nothing to show or is no longer live', function (Closure $makeWidget): void {
+        $widget = $makeWidget();
+
+        livewire('content::home-widget', ['widgetId' => $widget->getId(), 'type' => $widget->getType()->value])
+            ->call('load')
+            ->assertDontSee('پنهان');
+    })->with([
+        'slider without banners' => [fn (): HomeWidget => HomeWidget::factory()->ofType(HomeWidgetType::Slider, title: 'پنهان')->create()],
+        'switched off' => [fn (): HomeWidget => HomeWidget::factory()->ofType(HomeWidgetType::Trust, title: 'پنهان')->create([HomeWidget::COLUMN_IS_ACTIVE => false])],
+    ]);
 
     it('shows a welcome before any widget exists', function (): void {
         $this->get(route('home'))->assertOk()->assertSee('ضمانت اصالت کالا');
@@ -137,7 +165,10 @@ describe('home page', function (): void {
         $this->get(route('home'))
             ->assertSeeInOrder(['محصول شماره 1', 'محصول شماره 6'])
             ->assertDontSee('محصول شماره 7')
-            ->assertSee(route('collections.show', 'summer'));
+            ->assertSee(route('collections.show', 'summer'))
+            // Product pages and «مشاهده همه» start loading on hover, focus or touch (owner, 2026-11-28).
+            ->assertSee('href="'.route('collections.show', 'summer').'" wire:navigate.hover', escape: false)
+            ->assertSee('href="'.route('products.show', $products->first()).'"  wire:navigate.hover', escape: false);
     });
 
     it('shows a slider widget with its banners', function (): void {

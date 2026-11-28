@@ -5,7 +5,7 @@
             <h2 class="text-lg font-bold text-ink-900 xl:text-xl">{{ $title }}</h2>
         @endif
         @if ($href !== null)
-            <a href="{{ $href }}" wire:navigate class="ms-auto flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
+            <a href="{{ $href }}" wire:navigate.hover class="ms-auto flex min-h-11 items-center gap-1 text-sm font-bold text-primary-700 hover:underline">
                 مشاهده همه
                 <x-ts-icon icon="chevron-left" class="size-4" />
             </a>
