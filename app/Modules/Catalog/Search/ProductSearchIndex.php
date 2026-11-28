@@ -11,7 +11,7 @@ use App\Modules\Catalog\Models\Product;
  * The only way product documents reach Meilisearch (owner, 2026-11-27: event-driven, bulk). Scout does not index
  * products on save (CatalogServiceProvider turns that off), because a product's document also depends on its SKUs,
  * links, brand and categories, which change elsewhere. Search events (Catalog\Events\*SearchFieldsChanged) name the
- * affected products; QueueProductReindex queues them here in chunks; `search:reconcile` re-pushes everything hourly.
+ * affected products; QueueProductReindex queues them here in chunks; `search:reconcile` re-pushes everything nightly.
  *
  * A chunk is loaded with its relations in one query set, then sent with one call to add every product that is not
  * deleted (hidden ones too, flagged is_visible = false; owner, 2026-11-27) and one to remove the deleted or gone.
@@ -52,6 +52,14 @@ final class ProductSearchIndex
         foreach (array_chunk(self::ids($productIds), self::CHUNK) as $chunk) {
             config('scout.queue') ? ReindexProducts::dispatch($chunk) : ReindexProducts::dispatchSync($chunk);
         }
+    }
+
+    /**
+     * The products index's name (with the Scout prefix), for other modules.
+     */
+    public static function name(): string
+    {
+        return (new Product)->indexableAs();
     }
 
     public static function refresh(Product $product): void

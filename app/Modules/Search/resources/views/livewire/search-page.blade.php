@@ -39,6 +39,9 @@
                 <x-ts-icon icon="magnifying-glass" class="size-7" />
             </span>
             <p class="mt-4 font-bold text-ink-900">کالایی برای «{{ $q }}» پیدا نشد</p>
+            @if ($didYouMean)
+                <p class="mt-2 text-ink-900">منظورتان <a href="{{ route('search', ['q' => $didYouMean]) }}" wire:navigate class="font-bold text-primary-700 underline-offset-4 hover:underline">«{{ $didYouMean }}»</a> بود؟</p>
+            @endif
             <p class="mt-1 text-sm text-ink-500">املای کلمه را بررسی کنید، از کلمه‌های کوتاه‌تر استفاده کنید یا از پیشنهادهای زیر کمک بگیرید.</p>
             <a href="{{ route('categories.index') }}" wire:navigate class="mt-5 inline-flex h-12 items-center justify-center gap-2 rounded-card bg-primary-700 px-6 font-bold text-white hover:bg-primary-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-700">
                 <x-ts-icon icon="squares-2x2" class="size-5" />

@@ -8,6 +8,7 @@ use App\Modules\Catalog\Data\ListingCriteria;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Queries\CategoryTree;
 use App\Modules\Catalog\Queries\ProductListing;
+use App\Modules\Catalog\Queries\SearchVocabulary;
 use App\Modules\Search\Actions\LogSearch;
 use App\Modules\Shared\Support\SearchText;
 use Illuminate\Contracts\View\View;
@@ -51,6 +52,8 @@ final class SearchPage extends Component
     {
         return view('search::livewire.search-page', [
             'categories' => array_slice(app(CategoryTree::class)->roots(), 0, 8),
+            // «منظورتان … بود؟» when nothing was found (S39).
+            'didYouMean' => $this->q !== '' && $this->available && $this->total === 0 ? app(SearchVocabulary::class)->suggest($this->q) : null,
         ])->title($this->q === '' ? 'جستجو' : 'جستجوی «'.$this->q.'»');
     }
 }

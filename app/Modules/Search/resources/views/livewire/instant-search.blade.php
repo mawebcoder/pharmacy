@@ -190,6 +190,8 @@
                     <p class="px-3 py-4 text-sm text-ink-500">
                         @if (! $suggestions->productsAvailable)
                             جستجوی محصولات موقتاً در دسترس نیست.
+                        @elseif ($didYouMean = $this->didYouMean())
+                            منظورتان <a href="{{ route('search', ['q' => $didYouMean]) }}" wire:navigate class="font-bold text-primary-700 hover:underline">«{{ $didYouMean }}»</a> بود؟
                         @else
                             پیشنهادی پیدا نشد؛ Enter را بزنید تا همه نتایج را ببینید.
                         @endif

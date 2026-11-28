@@ -69,6 +69,9 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
 
     public const string COLUMN_MIN_SHELF_LIFE_MONTHS = 'min_shelf_life_months';
 
+    /** Units sold in the last 30 days, counted nightly (S39, RecalculateProductSales). */
+    public const string COLUMN_SALES_30D = 'sales_30d';
+
     /**
      * The product's Tipax package content (a Tipax id from tipax_references; null: the store default) and whether it
      * is liquid or fragile (owner, 2026-11-19: per product, not per SKU).
@@ -178,6 +181,16 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
     /**
      * The shelf-life guarantee shown on the product page, in months (owner, 2026-11-16); null shows none.
      */
+    public function getSales30d(): int
+    {
+        return (int) $this->getAttribute(self::COLUMN_SALES_30D);
+    }
+
+    public function setSales30d(int $units): static
+    {
+        return $this->setAttribute(self::COLUMN_SALES_30D, $units);
+    }
+
     public function getMinShelfLifeMonths(): ?int
     {
         $value = $this->getAttribute(self::COLUMN_MIN_SHELF_LIFE_MONTHS);
@@ -833,6 +846,7 @@ final class Product extends Model implements HasActivityLogLabel, HasImagePreset
             self::COLUMN_PRODUCT_TYPE => ProductType::class,
             self::COLUMN_MAX_PER_ORDER => 'integer',
             self::COLUMN_MIN_SHELF_LIFE_MONTHS => 'integer',
+            self::COLUMN_SALES_30D => 'integer',
             self::COLUMN_TIPAX_CONTENT_ID => 'integer',
             self::COLUMN_IS_LIQUID => 'boolean',
             self::COLUMN_IS_FRAGILE => 'boolean',

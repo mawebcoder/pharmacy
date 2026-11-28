@@ -45,7 +45,9 @@ final class NameDocument
             'searchableAttributes' => ['name_fa', 'name_en'],
             'filterableAttributes' => ['is_active'],
             'typoTolerance' => [
-                'minWordSizeForTypos' => ['oneTypo' => 4, 'twoTypos' => 8],
+                // One typo from 3 letters (owner, 2026-11-28): many Persian product words are 3 letters («کرم»، «قرص»), so
+                // «کمر» still finds «کرم»; exact words rank first (the «typo» ranking rule).
+                'minWordSizeForTypos' => ['oneTypo' => 3, 'twoTypos' => 8],
             ],
         ];
     }

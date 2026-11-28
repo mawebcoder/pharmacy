@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Models;
 
 use App\Modules\Catalog\Database\Factories\TagFactory;
 use App\Modules\Catalog\Enums\TagType;
+use App\Modules\Catalog\Search\NameDocument;
 use App\Modules\Media\Concerns\InteractsWithImagePresets;
 use App\Modules\Media\Contracts\HasImagePresets;
 use App\Modules\Media\Contracts\StoredImage;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -30,6 +32,7 @@ final class Tag extends Model implements HasActivityLogLabel, HasImagePresets, H
 
     use InteractsWithImagePresets;
     use LogsActivity;
+    use Searchable;
     use SoftDeletes;
 
     public const string COLUMN_ID = 'id';
@@ -194,5 +197,27 @@ final class Tag extends Model implements HasActivityLogLabel, HasImagePresets, H
     public function addressesForSlug(string $slug): array
     {
         return [route('tags.show', $slug, absolute: false)];
+    }
+
+    /**
+     * Tags have their own search index (owner, 2026-11-27, S39), like brands and categories, so the search panel finds
+     * them with typo tolerance and synonyms.
+     */
+    public function searchableAs(): string
+    {
+        return config('scout.prefix').'tags';
+    }
+
+    public function shouldBeSearchable(): bool
+    {
+        return ! $this->trashed();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toSearchableArray(): array
+    {
+        return NameDocument::for($this->getId(), $this->getNameFa(), $this->getNameEn(), true, $this->getSlug(), $this->getAttribute('updated_at'));
     }
 }

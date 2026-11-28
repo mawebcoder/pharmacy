@@ -116,8 +116,8 @@ describe('the index', function (): void {
     });
 });
 
-it('reconciles the search indexes every hour', function (): void {
+it('reconciles the search indexes every night at 04:00 Tehran time', function (): void {
     $event = collect(app(Schedule::class)->events())->first(fn (ScheduledEvent $event): bool => str_contains((string) $event->command, 'search:reconcile'));
 
-    expect($event?->expression)->toBe('0 * * * *');
+    expect($event?->expression)->toBe('0 4 * * *')->and($event?->timezone)->toBe('Asia/Tehran');
 });

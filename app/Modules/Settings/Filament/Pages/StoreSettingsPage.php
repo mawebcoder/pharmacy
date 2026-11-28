@@ -20,6 +20,7 @@ use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -84,6 +85,7 @@ final class StoreSettingsPage extends Page
             'social_links' => array_map(fn (array $link): array => ['platform' => $link['platform']->value, 'url' => $link['url']], $settings->socialLinks()),
             'search_category_ids' => $settings->searchCategoryIds(),
             'search_brand_ids' => $settings->searchBrandIds(),
+            'search_ignored_words' => $settings->searchIgnoredWords(),
         ]);
     }
 
@@ -257,6 +259,11 @@ final class StoreSettingsPage extends Page
                     ->schema([
                         self::shortcutPicker('search_category_ids', 'category', 'دسته‌بندی‌های ثابت در جستجو'),
                         self::shortcutPicker('search_brand_ids', 'brand', 'برندهای ثابت در جستجو'),
+                        TagsInput::make('search_ignored_words')
+                            ->label('کلمه‌هایی که جستجو نادیده می‌گیرد')
+                            ->placeholder('کلمه را بنویسید و Enter بزنید')
+                            ->helperText('مثل «قیمت» یا «خرید»: «قیمت کرم سینره» همان «کرم سینره» جستجو می‌شود. جستجویی که فقط از این کلمه‌ها باشد دست نمی‌خورد.')
+                            ->columnSpanFull(),
                     ]),
             ]);
     }
@@ -308,6 +315,7 @@ final class StoreSettingsPage extends Page
             )),
             StoreSettings::SEARCH_CATEGORY_IDS => array_values(array_map(intval(...), (array) ($data['search_category_ids'] ?? []))),
             StoreSettings::SEARCH_BRAND_IDS => array_values(array_map(intval(...), (array) ($data['search_brand_ids'] ?? []))),
+            StoreSettings::SEARCH_IGNORED_WORDS => array_values(array_unique(array_filter(array_map(fn (mixed $word): string => trim(strip_tags((string) $word)), (array) ($data['search_ignored_words'] ?? [])), fn (string $word): bool => $word !== ''))),
         ]);
 
         Notification::make()->success()->title('تنظیمات ذخیره شد.')->send();

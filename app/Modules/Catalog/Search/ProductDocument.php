@@ -73,7 +73,9 @@ final class ProductDocument
             'attribute_value_ids' => $product->getAttributeValues()->map(fn (AttributeValue $value): int => $value->getId())->values()->all(),
             'attribute_values' => $product->getAttributeValues()->map(fn (AttributeValue $value): string => SearchText::forIndex($value->getValueFa()))->values()->all(),
             'ingredients' => SearchText::normalize(mb_substr((string) $product->getIngredients(), 0, 300)),
+            // SKU, barcode and the IRC code (S39), matched exactly: typos are off for codes.
             'codes' => $variants->flatMap(fn (ProductVariant $variant): array => array_filter([$variant->getSku(), $variant->getBarcode()]))
+                ->concat(array_filter([$product->getIrcCode()]))
                 ->map(fn (string $code): string => mb_strtolower($code))
                 ->values()
                 ->all(),
@@ -92,8 +94,8 @@ final class ProductDocument
             // A SKU with a live flash deal (S28): the «پیشنهاد لحظه‌ای» listing filter.
             'has_flash_deal' => $variants->contains(fn (ProductVariant $variant): bool => $variant->getFlashDealId() !== null),
             'product_type' => $product->getProductType()->value,
-            // Orders arrive in S22; until then best-selling sorts like newest.
-            'sales_30d' => 0,
+            // Units sold in the last 30 days (S39): ranks popular products higher and sorts «پرفروش‌ترین».
+            'sales_30d' => $product->getSales30d(),
             'created_at' => $product->getCreatedAt()?->getTimestamp() ?? 0,
             // For sitemap.xml, read from the index (owner, 2026-11-27).
             'slug' => $product->getSlug(),
@@ -132,7 +134,9 @@ final class ProductDocument
             'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
             'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [
-                'minWordSizeForTypos' => ['oneTypo' => 4, 'twoTypos' => 8],
+                // One typo from 3 letters (owner, 2026-11-28): many Persian product words are 3 letters («کرم»، «قرص»), so
+                // «کمر» still finds «کرم»; exact words rank first (the «typo» ranking rule).
+                'minWordSizeForTypos' => ['oneTypo' => 3, 'twoTypos' => 8],
                 'disableOnAttributes' => ['codes'],
             ],
             'pagination' => ['maxTotalHits' => 2000],

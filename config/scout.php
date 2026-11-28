@@ -6,6 +6,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Subcategory;
+use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Search\NameDocument;
 use App\Modules\Catalog\Search\ProductDocument;
 
@@ -161,6 +162,8 @@ return [
             Brand::class => NameDocument::indexSettings(),
             Category::class => NameDocument::indexSettings(),
             Subcategory::class => NameDocument::indexSettings(),
+            // Tags for the search panel too (owner, 2026-11-27, S39).
+            Tag::class => NameDocument::indexSettings(),
             // 'users' => [
             //     'filterableAttributes' => ['id', 'name', 'email'],
             //     'embedders' => [

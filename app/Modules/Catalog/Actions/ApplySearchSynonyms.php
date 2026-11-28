@@ -8,6 +8,7 @@ use App\Modules\Catalog\Models\Brand;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\Subcategory;
+use App\Modules\Catalog\Models\Tag;
 use App\Modules\Shared\Support\SearchText;
 use Meilisearch\Client;
 
@@ -28,7 +29,7 @@ final readonly class ApplySearchSynonyms
         /** @var array<non-empty-string, list<non-empty-string>> $synonyms phrases are non-empty (mutual() drops empty ones) */
         $synonyms = self::mutual($groups);
 
-        foreach ([new Product, new Brand, new Category, new Subcategory] as $model) {
+        foreach ([new Product, new Brand, new Category, new Subcategory, new Tag] as $model) {
             $this->meilisearch->index($model->indexableAs())->updateSynonyms($synonyms);
         }
     }
