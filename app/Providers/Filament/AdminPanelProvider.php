@@ -135,6 +135,7 @@ class AdminPanelProvider extends PanelProvider
             // Staff alerts under the bell, e.g. low SMS credit (S37).
             ->databaseNotifications()
             ->brandName((string) config('app.display_name'))
+            ->favicon(asset('favicon.svg'))
             ->font('Vazirmatn')
             ->colors([
                 'primary' => Color::hex('#0F766E'),

@@ -4,25 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Livewire\Account;
 
-use App\Modules\Identity\Actions\SetCustomerTheme;
 use App\Modules\Identity\Actions\UpdateCustomerProfile;
 use App\Modules\Identity\Data\CustomerProfileData;
 use App\Modules\Identity\Enums\Gender;
-use App\Modules\Identity\Enums\ThemePreference;
 use App\Modules\Identity\Http\Requests\UpdateCustomerProfileRequest;
 use App\Modules\Identity\Livewire\Concerns\InteractsWithCustomer;
 use App\Modules\Identity\Models\Customer;
 use App\Modules\Shared\Support\PersianDigits;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use TallStackUi\Traits\Interactions;
 
 /**
  * The «اطلاعات حساب» form (roadmap B9.9, S20), framed by the Profile module's account page: name, national id, email,
  * birth date (Jalali picker, stored Gregorian) and gender; the mobile is the sign-in identity and cannot be changed
- * here. The theme (owner, 2026-11-14) is saved as soon as it is picked and applied to the page without a reload.
+ * here.
  */
 final class Profile extends Component
 {
@@ -36,12 +33,9 @@ final class Profile extends Component
      */
     public array $form = [];
 
-    public string $theme = '';
-
     public function mount(): void
     {
         $customer = $this->customer();
-        $this->theme = $customer->getTheme()->value;
         $this->form = [
             Customer::COLUMN_FIRST_NAME => $customer->getFirstName() ?? '',
             Customer::COLUMN_LAST_NAME => $customer->getLastName() ?? '',
@@ -70,36 +64,11 @@ final class Profile extends Component
         $this->toast()->success('اطلاعات حساب ذخیره شد')->send();
     }
 
-    public function updatedTheme(SetCustomerTheme $setTheme): void
-    {
-        $theme = ThemePreference::tryFrom($this->theme) ?? ThemePreference::System;
-        $this->theme = $theme->value;
-        $setTheme($this->customer(), $theme);
-
-        $this->dispatch('theme-changed', theme: $theme->value);
-    }
-
-    /**
-     * Keeps the choice in sync when the header switch changes the theme on this page.
-     */
-    #[On('theme-changed')]
-    public function syncTheme(string $theme): void
-    {
-        if ($theme === $this->theme) {
-            $this->skipRender();
-
-            return;
-        }
-
-        $this->theme = ThemePreference::tryFrom($theme)->value ?? $this->theme;
-    }
-
     public function render(): View
     {
         return view('identity::livewire.account.profile', [
             'mobile' => $this->customer()->getMobile(),
             'genders' => Gender::options(),
-            'themes' => ThemePreference::options(),
         ]);
     }
 }

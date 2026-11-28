@@ -140,7 +140,6 @@ final class DemoOrdersSeeder extends Seeder
             'mobile' => $this->mobile,
             'first_name' => 'مشتری',
             'last_name' => 'نمایشی',
-            'theme' => 'system',
             'created_at' => now(),
             'updated_at' => now(),
         ]);

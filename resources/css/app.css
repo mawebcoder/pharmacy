@@ -7,8 +7,8 @@
 @source '../../app/Modules/**/*.blade.php';
 
 /*
-| Design system (roadmap B3; owner, 2026-11-14). Templates use only these token names, never raw hex values, so light
-| and dark (the `.dark` block below) change in one place.
+| Design system (roadmap B3; owner, 2026-11-14). Templates use only these token names, never raw hex values, so a colour
+| changes in one place. Light theme only (owner, 2026-11-28: dark mode removed).
 |
 | Colour roles
 |   primary-*   brand teal. 700 = buttons, links, focus rings, selected states; 800 = hover; 50 = tinted background.
@@ -16,7 +16,7 @@
 |   accent-*    discount badges and sale prices only.
 |   ink-900     main text and headings · ink-500 secondary text, helper text, placeholders.
 |   surface-50  page background · card = cards, panels, inputs, menus · media = the white well behind product photos
-|               (white in both themes, because product photos are shot on white).
+|               (white, because product photos are shot on white).
 |   line-200    default border of cards, dividers and tables (visible on white: owner, 2026-11-14)
 |   line-300    strong border: inputs, selects, checkboxes, chips and outlined buttons.
 |   success / warning / danger / rx  stock and status, near-expiry, errors, prescription items.
@@ -82,29 +82,6 @@
 }
 
 @layer base {
-    /*
-    | Dark theme (owner, 2026-11-14): the customer picks it on «اطلاعات حساب»; the layout puts `dark` on <html>.
-    | Only the tokens change, so templates need no dark: variants. primary-700 is lighter so links and white-text
-    | buttons both stay readable on dark backgrounds.
-    */
-    .dark {
-        color-scheme: dark;
-        --color-primary-50: #10302d;
-        --color-primary-700: #0d9488;
-        --color-primary-800: #0f766e;
-        --color-ink-900: #e2e8f0;
-        --color-ink-500: #94a3b8;
-        --color-line-200: #334155;
-        --color-line-300: #475569;
-        --color-surface-50: #0f172a;
-        --color-card: #1e293b;
-        --color-danger-600: #f87171;
-        --color-warning-500: #fbbf24;
-        --color-success-600: #4ade80;
-        --color-rx-600: #a78bfa;
-        --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
-    }
-
     /* B3: line-height 1.7 for Persian body text. */
     body {
         line-height: 1.7;
@@ -116,9 +93,9 @@
     }
 
     /*
-    | Page loading bar while wire:navigate fetches the next page (owner, 2026-11-14): brand colour (follows dark
-    | mode), 3 px so it is noticed, and mirrored so it fills from right to left like every progress bar here.
-    | `scale` composes with the inline transform Livewire animates.
+    | Page loading bar while wire:navigate fetches the next page (owner, 2026-11-14): brand colour, 3 px so it is
+    | noticed, and mirrored so it fills from right to left like every progress bar here. `scale` composes with the
+    | inline transform Livewire animates.
     */
     :root {
         --livewire-progress-bar-color: var(--color-primary-700);

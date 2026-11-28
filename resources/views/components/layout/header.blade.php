@@ -34,7 +34,6 @@
 
         <nav class="ms-auto flex items-center gap-1" aria-label="حساب و سبد خرید">
             <x-ui.pharmacist-chat label="مشاوره با داروساز" class="flex h-11 min-w-11 items-center justify-center gap-2 rounded-full px-2.5 text-sm text-ink-900 hover:bg-surface-50 focus-visible:outline-2 focus-visible:outline-primary-700 xl:px-3" icon-class="size-6 text-primary-700 xl:size-5" label-class="sr-only xl:not-sr-only" />
-            <livewire:identity::theme-toggle />
             @auth('customer')
                 {{-- Signed-in customer (S19): their name, the account area (S20) and sign-out; the page dims behind the menu
                      (owner, 2026-11-15). --}}

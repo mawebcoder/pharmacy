@@ -1,24 +1,13 @@
 <!DOCTYPE html>
-@php($theme = \App\Modules\Identity\Support\StorefrontTheme::current()->value)
-<html lang="fa" dir="rtl" data-theme="{{ $theme }}"@if ($theme === 'dark') class="dark"@endif>
+<html lang="fa" dir="rtl">
     <head>
         <meta charset="utf-8">
-        {{-- Applies the customer's theme before the page paints (system follows the device) and when «اطلاعات حساب» changes it. --}}
-        <script>
-            (() => {
-                const root = document.documentElement;
-                const media = window.matchMedia('(prefers-color-scheme: dark)');
-                const apply = () => root.classList.toggle('dark', root.dataset.theme === 'dark' || (root.dataset.theme === 'system' && media.matches));
-                apply();
-                media.addEventListener('change', apply);
-                window.addEventListener('theme-changed', (event) => { root.dataset.theme = event.detail.theme; apply(); });
-                // wire:navigate copies the server's <html> attributes, which cannot know the device setting.
-                document.addEventListener('livewire:navigating', (event) => event.detail?.onSwap?.(apply));
-                document.addEventListener('livewire:navigated', apply);
-            })();
-        </script>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-        <meta name="theme-color" content="#0f766e">
+        {{-- The browser's address bar takes the header's colour (bg-card), so it reads as part of the page. --}}
+        <meta name="theme-color" content="#ffffff">
+        <link rel="icon" href="/favicon.ico" sizes="48x48">
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         <x-seo::head :title="$title ?? null" :description="$description ?? null" :seo="$seo ?? null" />
 
