@@ -39,7 +39,7 @@ it('refuses an image that does not match the preset', function (): void {
     expect($brand->getMedia(Brand::IMAGE_LOGO))->toBeEmpty();
 });
 
-it('processes an image into public sizes with its placeholder data, keeping the original private', function (): void {
+it('processes an image into its sizes with its placeholder data, next to the original', function (): void {
     $brand = Brand::factory()->create();
 
     $media = app(AttachImage::class)($brand, Brand::IMAGE_LOGO, testImage(800, 800))->fresh();
@@ -56,7 +56,6 @@ it('processes an image into public sizes with its placeholder data, keeping the 
     Storage::disk(variantsDisk())->assertExists($conversionsPath.'image-brand_logo-320-webp.webp');
     Storage::disk(variantsDisk())->assertExists($conversionsPath.'image-brand_logo-320-avif.avif');
     Storage::disk(originalsDisk())->assertExists($media->uuid.'/image.png');
-    Storage::disk(variantsDisk())->assertMissing($media->uuid.'/image.png');
     expect($media->url(320, 'webp'))->toContain($conversionsPath.'image-brand_logo-320-webp.webp');
 });
 

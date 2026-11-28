@@ -218,6 +218,8 @@ return [
             'tries' => 3,
             'timeout' => 300,
             'nice' => 0,
+            // Keep working in maintenance mode (owner, 2026-11-28): sign-in codes, payments and search updates go on.
+            'force' => true,
         ],
 
         // Slow jobs, one at a time: image processing (AVIF encoding, S09), catalog imports (reading the file, then
@@ -235,6 +237,7 @@ return [
             'timeout' => 1800,
             // Lower CPU priority: on one core, page loads and the short jobs come first.
             'nice' => 10,
+            'force' => true,
         ],
     ],
 

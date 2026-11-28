@@ -1520,10 +1520,11 @@ REPORTING_DB_USERNAME=
 REPORTING_DB_PASSWORD=
 
 # ---------- Images / CDN ----------
-# Image originals go on FILESYSTEM_DISK (owner, 2026-11-28); uploaded spreadsheets stay on IMPORTS_DISK (local).
+# Images (originals and generated sizes) go on FILESYSTEM_DISK, the public s3 bucket behind the CDN (AWS_URL); uploaded
+# spreadsheets stay on IMPORTS_DISK; Livewire's temporary uploads always on local (owner, 2026-11-28).
+FILESYSTEM_DISK=s3
+AWS_URL=https://cdn.example.ir
 IMPORTS_DISK=local
-IMAGES_VARIANTS_DISK=cdn
-IMAGES_CDN_URL=https://cdn.example.ir
 
 # ---------- Queues ----------
 QUEUE_CONNECTION=redis
@@ -3184,7 +3185,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Built (owner, 2026-11-27): low-credit alert.** A send refused for lack of credit (Melli Payamak 2, Kavenegar 418; `SmsResultData::$outOfCredit`) and the daily `CheckSmsCredit` at 09:00 Tehran (credit below the threshold of «تنظیمات پیامک», else `SMS_LOW_CREDIT_BELOW`, rial, default 1,000,000) alert every active super admin under the admin panel's bell (Filament database notifications, `Identity\Actions\NotifySuperAdmins`), at most once an hour. `SmsSender::credit()` reads Kavenegar's account/info `remaincredit` and Melli Payamak's `GetCredit` (`MELIPAYAMAK_CREDIT_PATH`); nothing in pretend mode. **[CONFIRM]** that Melli Payamak's credit is in rial.
 - **Built (owner, 2026-11-27; changed 2026-11-28): «تنظیمات پیامک»** in «سیستم», for super admins only (gate `manageSmsSettings`, which only super admins pass through Shield): the low-credit threshold and the staff mobiles for return requests (moved from «تنظیمات فروشگاه»), stored in `settings`. The provider, Melli Payamak's username and API key, Kavenegar's API key and every pattern id come from .env only (owner, 2026-11-28: no SMS credential is editable in the admin); the page shows which provider is set. «ارسال پیامک آزمایشی» sends a test sign-in code (12345) with the .env settings. Pretend mode (`SMS_PRETEND`) stays in .env only.
 - **Built (owner, 2026-11-28): «فرمان‌ها»** in «سیستم», for super admins only: runs an allowed Artisan command (`System\Support\AdminCommands`; first `media:migrate-to-s3`) with the options its form offers, in the background on the `commands` queue. Only the `hutana-commands` Supervisor worker takes that queue, as the deploy user; with `ADMIN_COMMANDS_USER=deploy` a worker running as anyone else refuses the run. Each run (`command_runs`) keeps who started it, the system user, the exit code and the output, shown on the page.
-- **Built (owner, 2026-11-28): disks from config only.** Image originals (Filament uploads and `AttachImage`) go on `FILESYSTEM_DISK` (S3 in production); generated sizes on `IMAGES_VARIANTS_DISK`; uploaded spreadsheets (prices, synonyms) on `IMPORTS_DISK`, local on the server (`Shared\Support\ImportFiles`). No code names a disk. `media:migrate-to-s3` moves existing originals by hand (never from the deploy scripts), logging each file it cannot move with its record.
+- **Built (owner, 2026-11-28): disks from config only.** Images, originals and generated sizes alike (Filament uploads and `AttachImage`), and page images go on `FILESYSTEM_DISK`: the public `s3` bucket behind the CDN (`AWS_URL`) in production. Uploaded spreadsheets (prices, synonyms) stay on `IMPORTS_DISK`, local on the server (`Shared\Support\ImportFiles`); Livewire's temporary uploads always on `local`. No code names a disk. `media:migrate-to-s3` moves existing originals and generated sizes by hand (never from the deploy scripts): it prints a line per file, skips a file already there, and logs each file it cannot move with its record.
 - **Built (owner, 2026-11-27): «اعتبار پیامک» on the admin dashboard** (`SmsCreditWidget`, super admins): the provider's remaining credit in toman, red with «پنل را شارژ کنید» below the threshold, «حالت آزمایشی» in pretend mode and «نامشخص» when the provider does not answer; asked at most every 10 minutes and again right after the settings are saved (`Queries\SmsCredit`).
 - **Dropped (owner, 2026-11-27):** the delivered SMS (`order_delivered`); customers see «تحویل شد» on their order page.
 - **Moved to S13 (owner, 2026-11-27):** the back-in-stock SMS (`stock_available`), built with the stock-alert sign-up on the product page. No payment-failed, shipped-by-courier or out-for-delivery SMS (Tipax only; owner 2026-11-19).

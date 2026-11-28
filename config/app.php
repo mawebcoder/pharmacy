@@ -165,9 +165,11 @@ return [
     |
     */
 
+    // On Redis by default (owner, 2026-11-28): `php artisan down` reaches every PHP-FPM worker, queue worker and
+    // release, since none of them reads it from a file of its own. The page is resources/views/errors/503.blade.php.
     'maintenance' => [
-        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
-        'store' => env('APP_MAINTENANCE_STORE', 'database'),
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'cache'),
+        'store' => env('APP_MAINTENANCE_STORE', 'redis'),
     ],
 
 ];
