@@ -66,25 +66,9 @@ return [
             'report' => false,
         ],
 
-        // ArvanCloud Object Storage (S3-compatible) behind the ArvanCloud CDN, inside Iran (roadmap B4, D11.1).
-        // Needs league/flysystem-aws-s3-v3, installed with the deployment step.
-        'cdn' => [
-            'driver' => 's3',
-            'key' => env('IMAGES_CDN_ACCESS_KEY'),
-            'secret' => env('IMAGES_CDN_SECRET_KEY'),
-            'region' => env('IMAGES_CDN_REGION', 'default'),
-            'bucket' => env('IMAGES_CDN_BUCKET'),
-            'endpoint' => env('IMAGES_CDN_ENDPOINT'),
-            'url' => env('IMAGES_CDN_URL'),
-            'visibility' => 'public',
-            'use_path_style_endpoint' => true,
-            'options' => [
-                'CacheControl' => 'public, max-age=31536000, immutable',
-            ],
-            'throw' => false,
-            'report' => false,
-        ],
-
+        // ArvanCloud Object Storage (S3-compatible) behind the ArvanCloud CDN (AWS_URL), the default disk in production:
+        // image originals, generated sizes and page images. Public, so visitors load images straight from the CDN
+        // (owner, 2026-11-28: the whole bucket is public).
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -94,6 +78,7 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'public',
             'throw' => true,
             'report' => false,
         ],

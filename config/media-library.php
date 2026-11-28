@@ -32,7 +32,7 @@ return [
 
     /*
      * The disk of image originals: the application's default disk (FILESYSTEM_DISK; owner, 2026-11-28), the same
-     * for the admin's Filament uploads and for images attached in code. Generated sizes go on conversions_disk_name.
+     * for the admin's Filament uploads and for images attached in code. Generated sizes go on the same disk.
      */
     'disk_name' => env('FILESYSTEM_DISK', 'local'),
 
@@ -45,7 +45,7 @@ return [
      * This is useful when the originals live on a remote disk (e.g. S3) but the
      * generated derivatives should stay local for faster access and lower egress.
      */
-    'conversions_disk_name' => env('IMAGES_VARIANTS_DISK', 'media'),
+    'conversions_disk_name' => env('FILESYSTEM_DISK', 'local'),
 
     /*
      * The maximum file size of an item in bytes.

@@ -35,7 +35,7 @@ function originalsDisk(): string
 }
 
 /**
- * The disk of generated image sizes (IMAGES_VARIANTS_DISK), for Storage::fake() and assertions.
+ * The disk of generated image sizes (FILESYSTEM_DISK, like the originals), for Storage::fake() and assertions.
  */
 function variantsDisk(): string
 {
