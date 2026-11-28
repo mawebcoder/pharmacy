@@ -23,12 +23,7 @@
             {{-- Soft background glow, in the theme's colours. --}}
             <div class="pointer-events-none absolute inset-x-0 top-1/4 -z-10 mx-auto size-72 rounded-full bg-primary-50 blur-3xl md:size-[28rem]" aria-hidden="true"></div>
 
-            <div class="flex items-center gap-2" aria-hidden="true">
-                <span class="grid size-9 place-items-center rounded-card bg-primary-700 text-white">
-                    <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
-                </span>
-                <span class="text-lg font-bold text-primary-700">{{ config('app.display_name') }}</span>
-            </div>
+            <x-ui.logo class="h-10 w-auto" aria-hidden="true" />
 
             {{-- A capsule, half brand teal and half coral, with a wrench crossing it; a few floating dots. --}}
             <div class="relative mt-10 select-none" aria-hidden="true">

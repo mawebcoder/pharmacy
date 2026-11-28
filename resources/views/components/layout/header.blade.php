@@ -19,11 +19,8 @@
             <x-ts-icon icon="bars-3" class="size-6" />
         </button>
 
-        <a href="{{ route('home') }}" class="flex h-11 shrink-0 items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary-700">
-            <span class="grid size-9 place-items-center rounded-card bg-primary-700 text-white">
-                <x-ts-icon icon="plus" class="size-5" />
-            </span>
-            <span class="text-lg font-bold text-primary-700">{{ config('app.display_name') }}</span>
+        <a href="{{ route('home') }}" class="flex h-11 shrink-0 items-center rounded-md focus-visible:outline-2 focus-visible:outline-primary-700">
+            <x-ui.logo class="h-8 w-auto md:h-9" />
         </a>
 
         {{-- One search bar per page (owner, 2026-11-15): on /search the header's box holds the query. --}}
