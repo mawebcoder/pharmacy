@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Media\Filament\Tables;
 
 use App\Modules\Media\Support\ImagePreset;
+use App\Modules\Shared\Support\DiskVisibility;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 
 /**
@@ -28,6 +29,8 @@ final class ImageThumbnail
             ->label('تصویر')
             ->collection($collection)
             ->conversion($settings->conversionName($smallestWidth, 'webp'))
+            // Filament signs every link unless the disk is named "public"; the disk's own config decides instead.
+            ->visibility(fn (): string => DiskVisibility::of((string) config('media-library.disk_name')))
             ->limit(1)
             ->circular()
             ->defaultImageUrl(self::PLACEHOLDER)

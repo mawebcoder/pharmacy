@@ -90,10 +90,14 @@ final class PageImages
     }
 
     /**
-     * Like the editor's own links (Filament's RichContentRenderer): signed while the files are private, plain otherwise.
+     * Like the editor's own links (Filament's RichContentRenderer): plain on a public disk, signed otherwise.
      */
     private static function url(string $path): string
     {
+        if (PageContent::visibility() === 'public') {
+            return self::disk()->url($path);
+        }
+
         try {
             return self::disk()->temporaryUrl($path, now()->addMinutes((int) config('filament.temporary_file_url_expiry_minutes', 30))->endOfHour());
         } catch (Throwable) {
