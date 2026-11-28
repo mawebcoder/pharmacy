@@ -45,6 +45,7 @@ Tracks the steps in [docs/pharmacy-roadmap.md](docs/pharmacy-roadmap.md) (Part E
 | S37 | Notifications (SMS; «اعلان‌ها», «تنظیمات پیامک», credit on the dashboard and low-credit alert; back-in-stock moved to S13) | done | 2026-11-27 | 8035855 |
 | S38 | SEO | done | 2026-11-27 | eb8fd9e |
 | S39 | Site search tuning (real-query tuning after launch) | done | 2026-11-28 | 52b682e |
+| S39b | Persian and English search normalization (owner's guide: invisible characters, NFKC, plural/verb and English stopwords, variants and British spellings, accents, plurals; phonetic field, keyboard-layout and Finglish fallbacks; locales pinned to pes/eng; brand, subcategory, category and tag matches list their products, scored below name matches) | done | 2026-11-28 | 8c8a7fe |
 | S40 | Security hardening | todo | | |
 | S41 | Performance | todo | | |
 | S42 | Observability, backups, ops | todo | | |

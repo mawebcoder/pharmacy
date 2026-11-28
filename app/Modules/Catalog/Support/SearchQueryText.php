@@ -18,7 +18,8 @@ final readonly class SearchQueryText
 
     public function clean(string $text): string
     {
-        $normalized = SearchText::normalize($text);
+        // «سلاااام» → «سلام»: three or more of the same letter in a query are one (typing on a phone).
+        $normalized = SearchText::normalize((string) preg_replace('/(\p{L})\1{2,}/u', '$1', $text));
         $ignored = SearchText::words(implode(' ', $this->settings->searchIgnoredWords()));
         $kept = array_values(array_filter(explode(' ', $normalized), fn (string $word): bool => $word !== '' && ! in_array($word, $ignored, true)));
 

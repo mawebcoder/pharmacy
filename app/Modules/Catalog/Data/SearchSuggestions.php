@@ -33,6 +33,7 @@ final readonly class SearchSuggestions
         public bool $productsAvailable = true,
         public bool $pinnedCategories = false,
         public bool $pinnedBrands = false,
+        public ?string $searchedFor = null,
     ) {}
 
     /**

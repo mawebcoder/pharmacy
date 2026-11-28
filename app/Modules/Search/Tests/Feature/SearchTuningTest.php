@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Modules\Catalog\Data\ListingCriteria;
 use App\Modules\Catalog\Enums\ListingSort;
 use App\Modules\Catalog\Models\Brand;
+use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Models\Tag;
 use App\Modules\Catalog\Queries\ProductListing;
 use App\Modules\Catalog\Queries\SearchSuggestionsQuery;
@@ -19,6 +21,7 @@ use App\Modules\Search\Models\SearchLog;
 use App\Modules\Search\Models\SearchSynonym;
 use App\Modules\Settings\Actions\SaveStoreSettings;
 use App\Modules\Settings\Queries\StoreSettings;
+use App\Modules\Shared\Support\SearchText;
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 
@@ -50,6 +53,12 @@ const EXPECTED_FIRST = [
     'مرطوبکنند' => 'کرم مرطوب‌کننده سینره',
     'شامپو کودم' => 'شامپو کودک',
     'کمر سینره' => 'کرم مرطوب‌کننده سینره',
+    // English gets the same normalisation (owner, 2026-11-28): case, accents, apostrophes, plurals, British spelling.
+    'CINERE' => 'کرم مرطوب‌کننده سینره',
+    'Cinéré' => 'کرم مرطوب‌کننده سینره',
+    "cinere's" => 'کرم مرطوب‌کننده سینره',
+    'moisturising creams' => 'کرم مرطوب‌کننده سینره',
+    'the cream for moisturizing' => 'کرم مرطوب‌کننده سینره',
 ];
 
 function tuningProduct(string $name, ?Brand $brand = null, array $attributes = []): Product
@@ -76,6 +85,46 @@ describe('with the search index', function (): void {
 
         expect($found->products->getCollection()->first()?->getNameFa())->toBe($first);
     })->with(array_map(null, array_keys(EXPECTED_FIRST), array_values(EXPECTED_FIRST)));
+
+    it('finds a product by sound, by the other keyboard layout or in Finglish when the search itself finds nothing', function (string $typed, string $first): void {
+        $found = app(ProductListing::class)->get(new ListingCriteria(query: $typed, sort: ListingSort::Relevant));
+
+        expect($found->products->getCollection()->first()?->getNameFa())->toBe($first);
+    })->with([
+        'letters that sound the same' => ['زد افتاب', 'کرم ضدآفتاب SPF50'],
+        'another sound-alike' => ['ظد آفطاب', 'کرم ضدآفتاب SPF50'],
+        'English layout on' => [fn (): string => (string) SearchText::otherLayout('شامپو'), 'شامپو کودک'],
+        'Finglish' => ['shampoo koodak', 'شامپو کودک'],
+        'Finglish brand' => ['sinere', 'کرم مرطوب‌کننده سینره'],
+        'English by sound' => ['cyneere', 'کرم مرطوب‌کننده سینره'],
+    ]);
+
+    it('says on the search page which text it searched when the keyboard layout was wrong', function (): void {
+        $typed = (string) SearchText::otherLayout('شامپو');
+
+        $this->get('/search?q='.urlencode($typed))->assertOk()->assertSee('نتایج <span class="font-bold text-ink-900">«شامپو»</span>', false);
+        expect(app(SearchSuggestionsQuery::class)->for($typed)->searchedFor)->toBe('شامپو');
+    });
+
+    it('lists the products of a searched brand, subcategory, category or tag, below the products whose name matches', function (): void {
+        $care = Category::factory()->create([Category::COLUMN_NAME_FA => 'بهداشت شخصی']);
+        $herbal = Category::factory()->create([Category::COLUMN_NAME_FA => 'محصولات گیاهی']);
+        $herbalCare = Subcategory::factory()->create([Subcategory::COLUMN_CATEGORY_ID => $care->getId(), Subcategory::COLUMN_NAME_FA => 'آرایشی گیاهی']);
+        tuningProduct('لوسیون بدن', Brand::factory()->create([Brand::COLUMN_NAME_FA => 'اوسرین', Brand::COLUMN_NAME_EN => 'Eucerin']));
+        tuningProduct('کرم اوسرن');
+        tuningProduct('ماسک آرگان', attributes: [Product::COLUMN_PRIMARY_CATEGORY_ID => $care->getId(), Product::COLUMN_PRIMARY_SUBCATEGORY_ID => $herbalCare->getId()]);
+        tuningProduct('چای کیسه‌ای', attributes: [Product::COLUMN_PRIMARY_CATEGORY_ID => $herbal->getId()]);
+        tuningProduct('ژل حمام')->tags()->attach(Tag::factory()->create([Tag::COLUMN_NAME_FA => 'هدیه']));
+        indexProductsForSearch();
+        $found = fn (string $query): array => app(ProductListing::class)->get(new ListingCriteria(query: $query, sort: ListingSort::Relevant))->products->getCollection()->map->getNameFa()->all();
+
+        // A name, even misspelt, outranks the brand; a subcategory outranks a category.
+        expect($found('اوسرین'))->toBe(['کرم اوسرن', 'لوسیون بدن'])
+            ->and($found('Eucerin'))->toBe(['لوسیون بدن'])
+            ->and($found('گیاهی'))->toBe(['ماسک آرگان', 'چای کیسه‌ای'])
+            ->and($found('بهداشت شخصی'))->toBe(['ماسک آرگان'])
+            ->and($found('هدیه'))->toBe(['ژل حمام']);
+    });
 
     it('finds tags in the search panel, with typos', function (): void {
         Tag::factory()->create([Tag::COLUMN_NAME_FA => 'مولتی ویتامین']);

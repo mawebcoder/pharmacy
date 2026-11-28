@@ -17,6 +17,7 @@ use App\Modules\Catalog\Models\ProductCollection;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Catalog\Models\Subcategory;
 use App\Modules\Catalog\Support\SearchQueryText;
+use App\Modules\Shared\Support\SearchText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -47,6 +48,12 @@ final readonly class ProductListing
      */
     private const int COLLECTION_ORDER_LIMIT = 2000;
 
+    /**
+     * Queries are Persian, or Latin brand and product names (owner's normalization guide: pin the language, so a short
+     * query is never read as Arabic, whose rules treat «ال» differently).
+     */
+    public const array LOCALES = ['pes', 'eng'];
+
     public function __construct(private Client $meilisearch) {}
 
     public function get(ListingCriteria $criteria): ListingResult
@@ -64,10 +71,60 @@ final readonly class ProductListing
         }
     }
 
+    /**
+     * The search, and when it finds nothing (owner's normalization guide, 2026-11-28) a second try: the sound key of the
+     * words against the phonetic field («زد افتاب» finds «ضدآفتاب»), then the text on the other keyboard layout («sghl»
+     * → «سلام»), which the result names so the page can say what it showed, then Persian typed in Latin letters
+     * («kerem» → «کرم»). Searches that find something cost one request, as before.
+     */
     private function fromSearch(ListingCriteria $criteria): ListingResult
     {
+        $queryText = app(SearchQueryText::class);
+        $text = $criteria->isSearch() ? $queryText->clean((string) $criteria->query) : '';
+        $result = $this->searchWith($criteria, $text);
+
+        if ($text === '' || $result->products->total() > 0) {
+            return $result;
+        }
+
+        $phonetic = $this->searchWith($criteria, SearchText::phonetic($text), ['phonetic']);
+
+        if ($phonetic->products->total() > 0) {
+            return $phonetic;
+        }
+
+        $otherLayout = SearchText::otherLayout((string) $criteria->query);
+
+        if ($otherLayout !== null && $queryText->clean($otherLayout) !== '') {
+            $converted = $this->searchWith($criteria, $queryText->clean($otherLayout));
+
+            if ($converted->products->total() > 0) {
+                return $converted->searchedFor($otherLayout);
+            }
+        }
+
+        // Persian typed in Latin letters («kerem» → «کرم»), as a sound skeleton against the phonetic field.
+        $finglish = SearchText::finglish((string) $criteria->query);
+
+        if ($finglish !== null && SearchText::phonetic($finglish) !== '') {
+            $transliterated = $this->searchWith($criteria, SearchText::phonetic($finglish), ['phonetic']);
+
+            if ($transliterated->products->total() > 0) {
+                return $transliterated;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * One search with its facet counts, in one multi-search request.
+     *
+     * @param  non-empty-list<non-empty-string>|null  $attributes  the attributes to search on; null: all searchable ones
+     */
+    private function searchWith(ListingCriteria $criteria, string $text, ?array $attributes = null): ListingResult
+    {
         $index = (new Product)->indexableAs();
-        $text = $criteria->isSearch() ? app(SearchQueryText::class)->clean((string) $criteria->query) : '';
         $groups = $this->filterGroups($criteria);
         $sort = $criteria->sort === ListingSort::Relevant && $text === '' ? ListingSort::Newest : $criteria->sort;
         $collectionOrder = $sort === ListingSort::Featured && $criteria->collectionId !== null;
@@ -76,11 +133,16 @@ final readonly class ProductListing
             (new SearchQuery)
                 ->setIndexUid($index)
                 ->setQuery($text)
+                ->setLocales(self::LOCALES)
                 ->setFilter($this->filtersExcept($criteria, $groups, null))
                 ->setFacets(['brand_id', 'attribute_value_ids', 'price', 'in_stock', 'is_near_expiry', 'has_flash_deal'])
                 ->setSort($sort->meilisearchSort())
                 ->setAttributesToRetrieve(['id']),
         ];
+        if ($attributes !== null) {
+            $queries[0]->setAttributesToSearchOn($attributes);
+        }
+
         // The collection's order is not in the index: take every match (collections are small) and page here.
         $collectionOrder
             ? $queries[0]->setLimit(self::COLLECTION_ORDER_LIMIT)->setOffset(0)
@@ -92,9 +154,14 @@ final readonly class ProductListing
             $queries[] = (new SearchQuery)
                 ->setIndexUid($index)
                 ->setQuery($text)
+                ->setLocales(self::LOCALES)
                 ->setFilter($this->filtersExcept($criteria, $groups, $group))
                 ->setFacets([$group === 'brand' ? 'brand_id' : ($group === 'price' ? 'price' : 'attribute_value_ids')])
                 ->setLimit(0);
+
+            if ($attributes !== null) {
+                $queries[array_key_last($queries)]->setAttributesToSearchOn($attributes);
+            }
         }
 
         /** @var array{results: list<array{hits: list<array{id: int}>, totalHits?: int, estimatedTotalHits?: int, facetDistribution?: array<string, array<string, int>>, facetStats?: array<string, array{min: float, max: float}>}>} $response */

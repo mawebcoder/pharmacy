@@ -26,6 +26,9 @@
             جستجو موقتاً در دسترس نیست. لطفاً چند دقیقه دیگر دوباره امتحان کنید یا از دسته‌بندی‌ها استفاده کنید.
         </div>
     @elseif ($q !== '' && $total > 0)
+        @if ($searchedFor !== null)
+            <p class="text-sm text-ink-500">چیزی برای «{{ $q }}» پیدا نشد؛ نتایج <span class="font-bold text-ink-900">«{{ $searchedFor }}»</span> نمایش داده می‌شود.</p>
+        @endif
         <livewire:catalog::product-listing
             :query="$q"
             product-route="search.open"

@@ -39,6 +39,7 @@ final class ProductDocument
         $subcategories = collect([$product->getPrimarySubcategory(), ...$product->getSubcategories()->all()])->filter();
         $categoryIds = [];
         $categoryNames = [];
+        $subcategoryNames = [];
 
         /** @var Category $category */
         foreach (collect([$product->getPrimaryCategory(), ...$product->getCategories()->all()])->filter() as $category) {
@@ -49,7 +50,7 @@ final class ProductDocument
         /** @var Subcategory $subcategory */
         foreach ($subcategories as $subcategory) {
             $categoryIds[] = $subcategory->getCategoryId();
-            $categoryNames[] = $subcategory->getNameFa();
+            $subcategoryNames[] = $subcategory->getNameFa();
         }
 
         $default = $product->getDefaultVariant();
@@ -60,19 +61,22 @@ final class ProductDocument
             'is_visible' => $product->isShownOnStorefront(),
             'status' => $product->getStatus()->value,
             'name_fa' => SearchText::forIndex($product->getNameFa()),
-            'name_en' => SearchText::normalize((string) $product->getNameEn()),
+            'name_en' => SearchText::forIndex((string) $product->getNameEn()),
             'brand_id' => $product->getBrandId(),
             'brand_fa' => SearchText::forIndex((string) $product->getBrand()?->getNameFa()),
-            'brand_en' => SearchText::normalize((string) $product->getBrand()?->getNameEn()),
+            'brand_en' => SearchText::forIndex((string) $product->getBrand()?->getNameEn()),
             'category_ids' => array_values(array_unique($categoryIds)),
             'subcategory_ids' => array_values(array_unique($subcategories->map(fn (Subcategory $subcategory): int => $subcategory->getId())->all())),
             'category_names' => array_values(array_unique(array_map(SearchText::forIndex(...), $categoryNames))),
+            'subcategory_names' => array_values(array_unique(array_map(SearchText::forIndex(...), $subcategoryNames))),
             'collection_ids' => $product->getCollections()->map(fn (ProductCollection $collection): int => $collection->getId())->values()->all(),
             'tag_ids' => $product->getTags()->map(fn (Tag $tag): int => $tag->getId())->values()->all(),
             'tags' => $product->getTags()->map(fn (Tag $tag): string => SearchText::forIndex($tag->getNameFa().' '.$tag->getNameEn()))->values()->all(),
             'attribute_value_ids' => $product->getAttributeValues()->map(fn (AttributeValue $value): int => $value->getId())->values()->all(),
             'attribute_values' => $product->getAttributeValues()->map(fn (AttributeValue $value): string => SearchText::forIndex($value->getValueFa()))->values()->all(),
             'ingredients' => SearchText::normalize(mb_substr((string) $product->getIngredients(), 0, 300)),
+            // The sound key of the name, brand and categories, searched only when nothing else matched (S39b).
+            'phonetic' => SearchText::phoneticForIndex(implode(' ', [$product->getNameFa(), $product->getNameEn(), $product->getBrand()?->getNameFa(), $product->getBrand()?->getNameEn(), ...$categoryNames, ...$subcategoryNames])),
             // SKU, barcode and the IRC code (S39), matched exactly: typos are off for codes.
             'codes' => $variants->flatMap(fn (ProductVariant $variant): array => array_filter([$variant->getSku(), $variant->getBarcode()]))
                 ->concat(array_filter([$product->getIrcCode()]))
@@ -129,10 +133,15 @@ final class ProductDocument
     public static function indexSettings(): array
     {
         return [
-            'searchableAttributes' => ['name_fa', 'name_en', 'brand_fa', 'brand_en', 'tags', 'category_names', 'attribute_values', 'ingredients', 'codes'],
+            // In score order (owner, 2026-11-28): the product's own name and codes, then its brand, subcategory, category
+            // and tags, so searching a brand or a category lists its products, below any whose name matches. The phonetic
+            // field last, so it never outranks a real match.
+            'searchableAttributes' => ['name_fa', 'name_en', 'codes', 'brand_fa', 'brand_en', 'subcategory_names', 'category_names', 'tags', 'attribute_values', 'ingredients', 'phonetic'],
             'filterableAttributes' => ['is_visible', 'status', 'category_ids', 'subcategory_ids', 'brand_id', 'tag_ids', 'collection_ids', 'attribute_value_ids', 'price', 'discount_pct', 'in_stock', 'is_near_expiry', 'has_flash_deal', 'product_type'],
             'sortableAttributes' => ['price', 'discount_pct', 'sales_30d', 'created_at'],
-            'rankingRules' => ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
+            // attributeRank (the field order above) right after words: a name match, even with a typo, comes before an
+            // exact brand or category match.
+            'rankingRules' => ['words', 'attributeRank', 'typo', 'proximity', 'wordPosition', 'sort', 'exactness', 'in_stock_rank:desc', 'sales_30d:desc'],
             'typoTolerance' => [
                 // One typo from 3 letters (owner, 2026-11-28): many Persian product words are 3 letters («کرم»، «قرص»), so
                 // «کمر» still finds «کرم»; exact words rank first (the «typo» ranking rule).
@@ -140,6 +149,13 @@ final class ProductDocument
                 'disableOnAttributes' => ['codes'],
             ],
             'pagination' => ['maxTotalHits' => 2000],
+            // Persian fields are Persian, English names English: a short query is never read as Arabic (S39b).
+            'localizedAttributes' => [
+                ['attributePatterns' => ['name_fa', 'brand_fa', 'tags', 'category_names', 'subcategory_names', 'attribute_values', 'ingredients'], 'locales' => ['pes']],
+                ['attributePatterns' => ['name_en', 'brand_en'], 'locales' => ['eng']],
+                // Sound keys of both the Persian and the English names.
+                ['attributePatterns' => ['phonetic'], 'locales' => ['pes', 'eng']],
+            ],
             'faceting' => ['maxValuesPerFacet' => 200],
         ];
     }

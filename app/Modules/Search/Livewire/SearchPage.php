@@ -30,6 +30,9 @@ final class SearchPage extends Component
 
     public bool $available = true;
 
+    /** The text actually searched when the query was typed on the other keyboard layout (S39b). */
+    public ?string $searchedFor = null;
+
     public function mount(ProductListing $listing, LogSearch $logSearch): void
     {
         $this->q = mb_substr(trim($this->q), 0, 120);
@@ -41,6 +44,7 @@ final class SearchPage extends Component
         $result = $listing->get(new ListingCriteria(query: $this->q, sort: ListingSort::Relevant, perPage: 1));
         $this->total = $result->products->total();
         $this->available = ! $result->degraded;
+        $this->searchedFor = $result->searchedFor;
 
         if ($this->available) {
             $customerId = auth('customer')->id();
