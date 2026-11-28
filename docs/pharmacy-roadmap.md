@@ -129,14 +129,14 @@ Not part of the MVP; planned for P2, after launch.
 | `line-200` | `#D0D7DE` | Borders of cards, dividers, tables (darker than first planned so borders show on white; owner, 2026-11-14) |
 | `line-300` | `#AFB8C1` | Strong borders: inputs, selects, checkboxes, chips, outlined buttons (owner, 2026-11-14) |
 | `surface-50` | `#F8FAFC` | Page background |
-| `card` | `#FFFFFF` | Cards, panels, inputs, menus (was `white`; a token so dark mode can change it) |
-| `media` | `#FFFFFF` | The well behind product photos: white in both themes, because product photos are shot on white |
+| `card` | `#FFFFFF` | Cards, panels, inputs, menus (was `white`) |
+| `media` | `#FFFFFF` | The well behind product photos: white, because product photos are shot on white |
 | `success-600` | `#16A34A` | In stock, success |
 | `warning-500` | `#F59E0B` | Near expiry, warnings |
 | `danger-600` | `#DC2626` | Errors, out of stock |
 | `rx-600` | `#7C3AED` | Prescription badge |
 
-**Dark mode** (owner, 2026-11-14; replaces «not in MVP»): the customer picks «مطابق دستگاه» (default), «روشن» or «تیره» on «اطلاعات حساب» (`customers.theme`, `Identity\Enums\ThemePreference`, saved at once); the header has a sun/moon switch that flips light ↔ dark, saved on the account when signed in and in an encrypted `theme` cookie (1 year) for guests (`Identity\Support\StorefrontTheme`). The layout renders `class="dark"` on `<html>` from the server (no flash) and a small script follows the device for «مطابق دستگاه» and keeps the class across `wire:navigate`. Only the tokens change in `.dark` (no `dark:` variants in templates); TallStackUI follows the same class. Admin keeps Filament's own dark mode.
+**Dark mode: removed from the storefront** (owner, 2026-11-28; it was added on 2026-11-14): the storefront is light only. There is no header switch and no «ظاهر سایت» choice on «اطلاعات حساب», and `customers.theme` is dropped. The browser's address bar takes the header colour (`<meta name="theme-color" content="#ffffff">`). Admin keeps Filament's own light/dark switch.
 
 **Design system** (owner, 2026-11-14): the token block at the top of `resources/css/app.css` documents colour roles, shape (12 px radius; borders instead of shadows on cards), type (Vazirmatn 12–24 px, line-height 1.7, weight for emphasis, never italics), spacing (16/24/32 px gutters, max width 1280 px, touch targets ≥ 44 px) and the **RTL rules**: logical utilities only (`ms-/me-`, `ps-/pe-`, `start-/end-`, `text-start`); never `flex-row-reverse` to fix direction (rows already run right to left); previous points right, next points left; carousels and progress run right to left; no letter-spacing on Persian; Persian digits in everything shown, including prefilled inputs; mobiles, postal codes, emails, URLs and codes in `dir="ltr"` / `<bdi>`; labels, help and errors at the start, under the field.
 
@@ -924,7 +924,7 @@ Example: printed 1,000,000 toman, cheapest supplier 850,000, commission 10 % →
 
 ### D3.3 Customers
 
-**customers**: `mobile` (unique, `09xxxxxxxxx`), `first_name`, `last_name`, `national_id` (nullable), `email` (nullable), `birth_date`, `gender`, `theme` (`system` default, `light`, `dark`; owner, 2026-11-14, see B3), `is_blocked`, `last_login_at`.
+**customers**: `mobile` (unique, `09xxxxxxxxx`), `first_name`, `last_name`, `national_id` (nullable), `email` (nullable), `birth_date`, `gender`, `is_blocked`, `last_login_at`.
 
 **otp_codes**: `mobile`, `code_hash`, `purpose` (`login`), `expires_at` (2 min), `attempts`, `ip`. Rate limit: 1 per 2 min per mobile, 5 per hour per IP.
 
@@ -2999,7 +2999,7 @@ Each step lists: **Refs** (sections to read), **Build**, **Tests**, **Done when*
 - **Refs:** D13.4, B5 (checkout), D3.4 (orders), D3.5, B7–B13
 - **Build:** CheckoutWizard (address → shipping → review → pay), `PlaceOrder` action with snapshots (each item copies the supplier and cost, commission and source, printed, list, haraj and paid price of that moment, plus `variant_price_id`; D3.4), order numbering (`PH-{Jalali Ym}-{id, 6 digits}`), status `pending`; `PaymentGateway` contract and a `FakePaymentGateway` (local/staging only: pays at once or fails on demand) so orders can be paid end to end until Zarinpal (S36, phase 7); one shipping option at a flat rate from the store settings (`shipping.flat_rate`, «هزینه ارسال», on the S21 settings page; free over `cart.free_shipping_threshold`), stored on the order like any quote, until the shipping foundation (S31), own courier zones (S32) and Tipax quotes (S34) in phase 7 (owner, 2026-11-14).
 - **Tests:** totals recomputed server-side, tampered prices ignored, coupon re-validated, order snapshot content (address, customer, coupon, shipping quote and every item field of the D3.4 «Snapshot rule»; editing the product, price, address or city afterwards leaves the order unchanged).
-- **Built (owner, 2026-11-14):** the address step and review page (B9.7, D13.4), `PlaceOrder` with re-checks and snapshots, the seven statuses and `ChangeOrderStatus` (D3.5), payments with one link per order and the fake gateway (`config('payments.gateway') = 'fake'`, refused unless `payments.fake_enabled`, so production can never take fake payments), `/checkout/result/{order}` (paid, failed-but-payable, expired), «سفارش‌ها» with «پرداخت», «لغو سفارش» and «سفارش دوباره» (`ReorderItems`: still-buyable items back into the cart at today's price, added and capped; the rest reported), addresses in parts with `AddressText`, the flat shipping setting, owner-only checks on every account action. Also in this step at the owner's request: dark mode and the design system (B3), Iranian postal-code rules and the 0900 prefix (D3.3), the product page layout ahead of S13 (B9.5) and the WhatsApp/Telegram contact settings (D3.4 settings).
+- **Built (owner, 2026-11-14):** the address step and review page (B9.7, D13.4), `PlaceOrder` with re-checks and snapshots, the seven statuses and `ChangeOrderStatus` (D3.5), payments with one link per order and the fake gateway (`config('payments.gateway') = 'fake'`, refused unless `payments.fake_enabled`, so production can never take fake payments), `/checkout/result/{order}` (paid, failed-but-payable, expired), «سفارش‌ها» with «پرداخت», «لغو سفارش» and «سفارش دوباره» (`ReorderItems`: still-buyable items back into the cart at today's price, added and capped; the rest reported), addresses in parts with `AddressText`, the flat shipping setting, owner-only checks on every account action. Also in this step at the owner's request: dark mode (removed 2026-11-28) and the design system (B3), Iranian postal-code rules and the 0900 prefix (D3.3), the product page layout ahead of S13 (B9.5) and the WhatsApp/Telegram contact settings (D3.4 settings).
 
 ### S24 Order admin and state machine
 - **Refs:** D3.5, D15.3 (OrderResource), D13.6–D13.8, B7–B13
