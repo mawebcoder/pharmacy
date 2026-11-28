@@ -5,5 +5,8 @@
       "Bash(docker compose *)",
       "Bash(composer require *)"
     ]
-  }
+  },
+  "disabledMcpjsonServers": [
+    "laravel-boost"
+  ]
 }

@@ -13,21 +13,22 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 /**
  * An admin upload field for one image collection, validated by its preset (roadmap D14.2, D13.10).
  * The Filament media plugin stores the file when the form is saved; processing then runs on the "media" queue.
- * The preview is a generated WebP size: at its plain address (AWS_URL, the CDN) when the images disk is public, as the
- * s3 bucket is (owner, 2026-11-28), else a signed link (DiskVisibility).
+ * On create and edit the preview is the uploaded original itself, so the admin sees exactly what was uploaded; on a view
+ * page it is a small generated WebP, like the tables' thumbnails (owner, 2026-11-28). Either is at its plain address
+ * (AWS_URL, the CDN) when the images disk is public, as the s3 bucket is, else a signed link (DiskVisibility).
  */
 final class ImageUpload
 {
     public static function make(string $collection, string $preset): SpatieMediaLibraryFileUpload
     {
         $settings = ImagePreset::named($preset);
-        $previewWidth = $settings->widths[(int) floor((count($settings->widths) - 1) / 2)];
+        // WebP: the upload widget (FilePond) cannot draw AVIF previews.
+        $thumbnail = $settings->conversionName($settings->widths[(int) floor((count($settings->widths) - 1) / 2)], 'webp');
 
         return SpatieMediaLibraryFileUpload::make($collection)
             ->collection($collection)
             ->visibility(DiskVisibility::of((string) config('media-library.disk_name')))
-            // WebP: the upload widget (FilePond) cannot draw AVIF previews.
-            ->conversion($settings->conversionName($previewWidth, 'webp'))
+            ->conversion(fn (string $operation): ?string => $operation === 'view' ? $thumbnail : null)
             // image() turns on the preview; the preset's own types then replace its "image/*".
             ->image()
             ->acceptedFileTypes($settings->mimes)
